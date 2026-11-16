@@ -1,3 +1,7 @@
+const APP_BUILD_VERSION = 'v2026.11.17-01';
+window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
+window.__MOD_VERSIONS.config = APP_BUILD_VERSION;
+
 const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwH-hzWi2Z3_oTFt0PWBhzYMP10VEx4e-32E9EW7d5SMF2k_bwxQL0_3ONaQ8Ze3sdKUQ/exec';
 
 const FALLBACK_COVER = "data:image/svg+xml;utf8," + encodeURIComponent(`
@@ -25,8 +29,8 @@ function esc(str) {
     .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-// Win95 고전 년/월/일 콤보박스 채우기 및 값 읽기/설정
 function populateWin95DateSelects(ySel, mSel, dSel, isoDateStr) {
+  if (!ySel || !mSel || !dSel) return;
   const curYear = new Date().getFullYear();
   ySel.innerHTML = '';
   for (let y = curYear + 1; y >= 1980; y--) {
@@ -115,9 +119,45 @@ function setLoadingCursor(on) {
   document.body.classList.toggle('is-loading', on);
 }
 
+// 첫 로딩 화면 버전 표시 및 모든 JS/CSS 구성요소 최신 버전 무결성 검증
+function verifySystemModules() {
+  const v = window.__MOD_VERSIONS || {};
+  const cssLoaded = Array.from(document.styleSheets).some(s => (s.href || '').includes('style.css'));
+  const checks = [
+    { name: 'config.js', ver: v.config || 'OLD/MISSING', ok: v.config === APP_BUILD_VERSION },
+    { name: 'window-mgr.js', ver: v.windowMgr || 'OLD/MISSING', ok: v.windowMgr === APP_BUILD_VERSION },
+    { name: 'archive-app.js', ver: v.archiveApp || 'OLD/MISSING', ok: v.archiveApp === APP_BUILD_VERSION },
+    { name: 'style.css', ver: cssLoaded ? 'LINKED' : 'MISSING', ok: cssLoaded }
+  ];
+  const allOk = checks.every(c => c.ok);
+  return { allOk, checks };
+}
+
 function runBootAnimation() {
   const bar = document.getElementById('boot-progress');
   const splash = document.getElementById('win95-boot-screen');
+  if (!bar || !splash) return;
+
+  const bootBox = splash.querySelector('.boot-box') || splash;
+  const { allOk, checks } = verifySystemModules();
+
+  let diagEl = document.getElementById('boot-version-diag');
+  if (!diagEl) {
+    diagEl = document.createElement('div');
+    diagEl.id = 'boot-version-diag';
+    diagEl.style.cssText = 'margin-top:14px; padding:8px 10px; background:#111111; color:#2ed573; border:2px solid #ffffff; font-size:0.74rem; text-align:left; line-height:1.55;';
+    bootBox.appendChild(diagEl);
+  }
+
+  const lines = checks.map(c => `${c.ok ? '[OK]' : '[!] '} ${c.name} : ${c.ver}`);
+  diagEl.innerHTML = `
+    <div style="color:#ffd83b; font-weight:900; margin-bottom:4px;">SYSTEM BUILD : ${APP_BUILD_VERSION}</div>
+    ${lines.map(l => `<div>${esc(l)}</div>`).join('')}
+    <div style="margin-top:5px; color:${allOk ? '#48dbfb' : '#ff4757'}; font-weight:900;">
+      ${allOk ? '>> 모든 구성요소 최신 버전 동기화 완료' : '>> [경고] 일부 구버전 캐시 감지 (Ctrl+Shift+R 권장)'}
+    </div>
+  `;
+
   let count = 0;
   const timer = setInterval(() => {
     count++;
@@ -129,13 +169,13 @@ function runBootAnimation() {
       setTimeout(() => {
         splash.style.display = 'none';
         playRetroTone('boot');
-      }, 160);
+      }, allOk ? 450 : 1400);
     }
   }, 40);
 }
 
 // BSOD & Screensaver & Sound Toggle
-document.getElementById('btn-sound-toggle').addEventListener('click', e => {
+document.getElementById('btn-sound-toggle')?.addEventListener('click', e => {
   soundEnabled = !soundEnabled;
   e.target.textContent = soundEnabled ? 'SPK:ON' : 'SPK:OFF';
   if (soundEnabled) playRetroTone('click');
@@ -143,20 +183,22 @@ document.getElementById('btn-sound-toggle').addEventListener('click', e => {
 
 const bsodEl = document.getElementById('win95-bsod');
 function triggerBSOD() {
+  if (!bsodEl) return;
   playRetroTone('boom');
   bsodEl.style.display = 'flex';
 }
-bsodEl.addEventListener('click', () => { bsodEl.style.display = 'none'; });
+bsodEl?.addEventListener('click', () => { bsodEl.style.display = 'none'; });
 document.addEventListener('keydown', e => {
-  if (bsodEl.style.display === 'flex') bsodEl.style.display = 'none';
+  if (bsodEl && bsodEl.style.display === 'flex') bsodEl.style.display = 'none';
   if (e.ctrlKey && e.altKey && e.key.toLowerCase() === 'b') triggerBSOD();
 });
-document.getElementById('mnu-bsod').addEventListener('click', triggerBSOD);
+document.getElementById('mnu-bsod')?.addEventListener('click', triggerBSOD);
 
 let ssAnimId = null;
 function startScreensaver() {
   const overlay = document.getElementById('screensaver-overlay');
   const canvas = document.getElementById('screensaver-canvas');
+  if (!overlay || !canvas) return;
   const ctx = canvas.getContext('2d');
   overlay.style.display = 'block';
   canvas.width = window.innerWidth;
@@ -193,13 +235,13 @@ function startScreensaver() {
 
 function stopScreensaver() {
   const overlay = document.getElementById('screensaver-overlay');
-  if (overlay.style.display === 'block') {
+  if (overlay && overlay.style.display === 'block') {
     overlay.style.display = 'none';
     if (ssAnimId) cancelAnimationFrame(ssAnimId);
   }
 }
-document.getElementById('screensaver-overlay').addEventListener('click', stopScreensaver);
+document.getElementById('screensaver-overlay')?.addEventListener('click', stopScreensaver);
 document.addEventListener('keydown', stopScreensaver);
-document.getElementById('mnu-run-screensaver').addEventListener('click', startScreensaver);
-document.getElementById('btn-widget-ss').addEventListener('click', startScreensaver);
-document.getElementById('sm-screensaver').addEventListener('click', startScreensaver);
+document.getElementById('mnu-run-screensaver')?.addEventListener('click', startScreensaver);
+document.getElementById('btn-widget-ss')?.addEventListener('click', startScreensaver);
+document.getElementById('sm-screensaver')?.addEventListener('click', startScreensaver);
