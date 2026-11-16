@@ -1,6 +1,9 @@
+window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
+window.__MOD_VERSIONS.archiveApp = typeof APP_BUILD_VERSION !== 'undefined' ? APP_BUILD_VERSION : 'v2026.11.17-01';
+
 // Menu & Start Menu Events
 document.querySelectorAll('.menu-item-wrap').forEach(wrap => {
-  wrap.querySelector('.menu-root').addEventListener('click', e => {
+  wrap.querySelector('.menu-root')?.addEventListener('click', e => {
     e.stopPropagation();
     const wasOpen = wrap.classList.contains('open');
     document.querySelectorAll('.menu-item-wrap').forEach(w => w.classList.remove('open'));
@@ -10,10 +13,8 @@ document.querySelectorAll('.menu-item-wrap').forEach(wrap => {
 
 document.addEventListener('click', () => {
   document.querySelectorAll('.menu-item-wrap').forEach(w => w.classList.remove('open'));
-  const startMenu = document.getElementById('start-menu');
-  const btnStart = document.getElementById('btn-start');
-  if (startMenu) startMenu.classList.remove('open');
-  if (btnStart) btnStart.classList.remove('pressed');
+  document.getElementById('start-menu')?.classList.remove('open');
+  document.getElementById('btn-start')?.classList.remove('pressed');
 });
 
 document.getElementById('mnu-new-archive')?.addEventListener('click', openRegisterModal);
@@ -70,21 +71,28 @@ if (startBtn && startMenu) {
   });
 }
 
+// 위임 이벤트(Event Delegation) 포함하여 버튼/아이콘 클릭 무반응 원천 차단
+document.addEventListener('click', e => {
+  const trigger = e.target.closest('#icon-new, #sm-new, #btn-open-register, #mnu-new-archive');
+  if (trigger) {
+    e.preventDefault();
+    e.stopPropagation();
+    openRegisterModal();
+  }
+});
+
 document.getElementById('icon-main')?.addEventListener('click', () => selectCategoryFilter('ALL'));
-document.getElementById('icon-new')?.addEventListener('click', openRegisterModal);
 document.getElementById('icon-memo')?.addEventListener('click', openMemoWindow);
 document.getElementById('icon-book')?.addEventListener('click', () => selectCategoryFilter('도서'));
 document.getElementById('icon-music')?.addEventListener('click', () => selectCategoryFilter('음악'));
 document.getElementById('icon-video')?.addEventListener('click', () => selectCategoryFilter('영상'));
 
-document.getElementById('sm-new')?.addEventListener('click', openRegisterModal);
 document.getElementById('sm-memo')?.addEventListener('click', openMemoWindow);
 document.getElementById('sm-all')?.addEventListener('click', () => selectCategoryFilter('ALL'));
 document.getElementById('sm-book')?.addEventListener('click', () => selectCategoryFilter('도서'));
 document.getElementById('sm-music')?.addEventListener('click', () => selectCategoryFilter('음악'));
 document.getElementById('sm-video')?.addEventListener('click', () => selectCategoryFilter('영상'));
 document.getElementById('sm-reload')?.addEventListener('click', loadArchiveData);
-document.getElementById('btn-open-register')?.addEventListener('click', openRegisterModal);
 
 function selectCategoryFilter(cat) {
   openWindow('win-main');
@@ -96,21 +104,7 @@ function selectCategoryFilter(cat) {
 // Initial Boot & Data Fetch
 document.addEventListener('DOMContentLoaded', () => {
   runBootAnimation();
-
-  const ySel = document.getElementById('inp-date-y');
-  const mSel = document.getElementById('inp-date-m');
-  const dSel = document.getElementById('inp-date-d');
-  const singleDate = document.getElementById('inp-date');
-
-  if (ySel && mSel && dSel && typeof populateWin95DateSelects === 'function') {
-    populateWin95DateSelects(ySel, mSel, dSel);
-  } else if (singleDate) {
-    singleDate.value = new Date().toISOString().slice(0, 10);
-  }
-
-  const prevImg = document.getElementById('preview-cover');
-  if (prevImg) prevImg.src = FALLBACK_COVER;
-
+  ensureRegisterWindowExists();
   loadArchiveData();
   loadNotesData();
 });
@@ -118,7 +112,7 @@ document.addEventListener('DOMContentLoaded', () => {
 async function loadArchiveData() {
   setLoadingCursor(true);
   const statusLeft = document.getElementById('status-left');
-  if (statusLeft) statusLeft.textContent = '구글 시트 동기화 중...';
+  if (statusLeft) statusLeft.textContent = `구글 시트 동기화 중... (${APP_BUILD_VERSION})`;
   try {
     const res = await fetch(`${GAS_WEB_APP_URL}?action=list`);
     const json = await res.json();
@@ -127,7 +121,7 @@ async function loadArchiveData() {
     archiveItems = [];
   } finally {
     setLoadingCursor(false);
-    if (statusLeft) statusLeft.textContent = '준비 완료 — 모든 창 제목 표시줄을 드래그하여 이동할 수 있습니다';
+    if (statusLeft) statusLeft.textContent = `준비 완료 [${APP_BUILD_VERSION}] — 모든 창 제목 표시줄을 드래그하여 이동할 수 있습니다`;
   }
   refreshAllViews();
 }
@@ -248,7 +242,7 @@ function renderArchiveGrid() {
   });
 }
 
-// Detail Window (View + Edit + Delete + Recommendations)
+// Detail Window
 async function spawnDetailWindow(item) {
   const winId = `win-detail-${item.id || Date.now()}`;
   if (document.getElementById(winId)) { openWindow(winId); return; }
@@ -350,16 +344,14 @@ async function spawnDetailWindow(item) {
     </div>
   `;
 
-  document.getElementById('dynamic-windows-container').appendChild(winEl);
+  (document.getElementById('dynamic-windows-container') || document.body).appendChild(winEl);
   enableWindowDrag(winEl);
   focusWindow(winEl);
   playRetroTone('open');
 
   const viewBox = winEl.querySelector('.det-view-mode');
   const editForm = winEl.querySelector('.det-edit-form');
-  if (typeof populateWin95DateSelects === 'function') {
-    populateWin95DateSelects(editForm.dateY, editForm.dateM, editForm.dateD, item.watchDate);
-  }
+  populateWin95DateSelects(editForm.dateY, editForm.dateM, editForm.dateD, item.watchDate);
 
   winEl.querySelector('.btn-toggle-edit').addEventListener('click', () => { playRetroTone('click'); viewBox.style.display = 'none'; editForm.style.display = 'block'; });
   winEl.querySelector('.btn-cancel-edit').addEventListener('click', () => { playRetroTone('click'); editForm.style.display = 'none'; viewBox.style.display = 'block'; });
@@ -371,26 +363,16 @@ async function spawnDetailWindow(item) {
     saveBtn.textContent = '시트 반영 중...';
     setLoadingCursor(true);
     const checkedRating = editForm.querySelector('input[name="editRating"]:checked');
-    const watchDateStr = typeof getWin95DateValue === 'function'
-      ? getWin95DateValue(editForm.dateY, editForm.dateM, editForm.dateD)
-      : item.watchDate;
-
     try {
       const res = await fetch(GAS_WEB_APP_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify({
-          action: 'update',
-          id: item.id,
-          category: editForm.category.value,
-          title: editForm.title.value.trim(),
-          creator: editForm.creator.value.trim(),
-          genre: editForm.genre.value.trim() || '일반',
+          action: 'update', id: item.id, category: editForm.category.value, title: editForm.title.value.trim(),
+          creator: editForm.creator.value.trim(), genre: editForm.genre.value.trim() || '일반',
           rating: checkedRating ? Number(checkedRating.value) : 5,
-          watchDate: watchDateStr,
-          coverUrl: editForm.coverUrl.value.trim(),
-          sourceUrl: editForm.sourceUrl.value.trim(),
-          review: editForm.review.value.trim()
+          watchDate: getWin95DateValue(editForm.dateY, editForm.dateM, editForm.dateD),
+          coverUrl: editForm.coverUrl.value.trim(), sourceUrl: editForm.sourceUrl.value.trim(), review: editForm.review.value.trim()
         })
       });
       const json = await res.json();
@@ -425,7 +407,6 @@ async function spawnDetailWindow(item) {
     finally { setLoadingCursor(false); }
   });
 
-  // Recommendations
   const statusEl = winEl.querySelector('.rec-status-msg');
   const recGrid = winEl.querySelector('.rec-grid');
   try {
@@ -476,8 +457,118 @@ async function spawnDetailWindow(item) {
   } catch { statusEl.textContent = '연관 작품 조회 중 오류가 발생했습니다.'; }
 }
 
-// Register Modal
+// Register Modal — index.html에 창이 없어도 스스로 DOM을 생성하여 무조건 열림
+let regEventsBound = false;
+
+function ensureRegisterWindowExists() {
+  let regWin = document.getElementById('win-register');
+  if (!regWin) {
+    regWin = document.createElement('div');
+    regWin.className = 'floating-win';
+    regWin.id = 'win-register';
+    regWin.dataset.winTitle = '[+] 새 감상 기록하기';
+    regWin.style.top = '58px';
+    regWin.style.left = '180px';
+    regWin.style.width = '680px';
+    regWin.innerHTML = `
+      <div class="win-titlebar draggable yellow-bar">
+        <div class="win-title-left"><span class="win-title-dot"></span><span>새 감상 기록하기 — 메타데이터 통합 검색 및 등록</span></div>
+        <div class="win-controls">
+          <button type="button" class="win-ctrl-btn" data-action="minimize" data-target="win-register">_</button>
+          <button type="button" class="win-ctrl-btn close" data-action="close" data-target="win-register">X</button>
+        </div>
+      </div>
+      <div class="win-body">
+        <div class="sunken-box" style="margin-bottom:12px; background:var(--win-gray);">
+          <label style="display:block; font-size:0.8rem; font-weight:900; margin-bottom:5px;">[SEARCH] 작품명 · 아티스트 · URL 자동 검색</label>
+          <div style="display:flex; gap:6px;">
+            <input type="text" id="inp-search-query" placeholder="예: 소나기, 뉴진스 Hype Boy, 인셉션 또는 링크..." style="flex:1;" />
+            <button type="button" class="btn95 yellow sm" id="btn-auto-search">검색</button>
+          </div>
+          <div id="reg-alert" class="dialog-banner"></div>
+          <div id="rank-list" class="rank-list"></div>
+        </div>
+        <form id="archive-form" class="sunken-box">
+          <div style="display:grid; grid-template-columns:130px 1fr; gap:12px; margin-bottom:10px;">
+            <div>
+              <img id="preview-cover" src="${FALLBACK_COVER}" alt="표지" style="width:100%; height:165px; object-fit:cover; border:2px solid #111; background:#111;" />
+            </div>
+            <div style="display:flex; flex-direction:column; gap:8px;">
+              <div style="display:grid; grid-template-columns:1fr 1.25fr; gap:8px;">
+                <div>
+                  <label style="display:block; font-size:0.78rem; font-weight:800; margin-bottom:2px;">매체 *</label>
+                  <select id="inp-category" class="win95-select" style="width:100%;">
+                    <option value="도서">도서</option>
+                    <option value="음악">음악</option>
+                    <option value="영상">영상</option>
+                    <option value="기타">기타</option>
+                  </select>
+                </div>
+                <div>
+                  <label style="display:block; font-size:0.78rem; font-weight:800; margin-bottom:2px;">감상 일자 (년/월/일)</label>
+                  <div class="win95-date-group">
+                    <select id="inp-date-y" class="win95-select"></select>
+                    <select id="inp-date-m" class="win95-select"></select>
+                    <select id="inp-date-d" class="win95-select"></select>
+                  </div>
+                </div>
+              </div>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+                <div><label style="display:block; font-size:0.78rem; font-weight:800; margin-bottom:2px;">작품 제목 *</label><input type="text" id="inp-title" required style="width:100%;" /></div>
+                <div><label style="display:block; font-size:0.78rem; font-weight:800; margin-bottom:2px;">제작자 / 저자 *</label><input type="text" id="inp-creator" required style="width:100%;" /></div>
+              </div>
+              <div><label style="display:block; font-size:0.78rem; font-weight:800; margin-bottom:2px;">장르 / 키워드</label><input type="text" id="inp-genre" placeholder="예: 소설, 인디록, SF" style="width:100%;" /></div>
+            </div>
+          </div>
+          <div style="margin-bottom:8px;">
+            <span style="display:block; font-size:0.78rem; font-weight:800; margin-bottom:3px;">평점 선택</span>
+            <div class="win95-radio-group">
+              ${[1, 2, 3, 4, 5].map(r => `
+                <label class="win95-radio">
+                  <input type="radio" name="reg-rating" value="${r}" ${r === 5 ? 'checked' : ''} />
+                  <span>${r}점</span>
+                </label>
+              `).join('')}
+            </div>
+          </div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px;">
+            <div><label style="display:block; font-size:0.78rem; font-weight:800; margin-bottom:2px;">표지 이미지 URL</label><input type="text" id="inp-cover-url" style="width:100%;" /></div>
+            <div><label style="display:block; font-size:0.78rem; font-weight:800; margin-bottom:2px;">원본 링크 URL</label><input type="text" id="inp-source-url" style="width:100%;" /></div>
+          </div>
+          <div style="margin-bottom:10px;">
+            <label style="display:block; font-size:0.78rem; font-weight:800; margin-bottom:2px;">한줄평 / 감상 메모 *</label>
+            <textarea id="inp-review" rows="3" required style="width:100%;" placeholder="감상한 소감을 기록하십시오..."></textarea>
+          </div>
+          <div style="display:flex; justify-content:flex-end; gap:8px;">
+            <button type="button" class="btn95 sm" data-action="close" data-target="win-register">취소</button>
+            <button type="submit" class="btn95 yellow sm" id="btn-submit-reg">확인 및 시트 저장</button>
+          </div>
+        </form>
+      </div>
+    `;
+    (document.getElementById('dynamic-windows-container') || document.body).appendChild(regWin);
+    enableWindowDrag(regWin);
+  }
+
+  if (!regEventsBound) {
+    regEventsBound = true;
+    document.getElementById('btn-auto-search')?.addEventListener('click', runRankedSearch);
+    document.getElementById('inp-search-query')?.addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); runRankedSearch(); }
+    });
+    document.getElementById('inp-cover-url')?.addEventListener('input', e => {
+      const img = document.getElementById('preview-cover');
+      if (!img) return;
+      img.src = e.target.value.trim() || FALLBACK_COVER;
+      img.onerror = () => { img.src = FALLBACK_COVER; };
+    });
+    document.getElementById('archive-form')?.addEventListener('submit', handleRegisterSubmit);
+  }
+}
+
 function openRegisterModal() {
+  ensureRegisterWindowExists();
+
   const form = document.getElementById('archive-form');
   if (form) form.reset();
 
@@ -492,7 +583,7 @@ function openRegisterModal() {
   const dSel = document.getElementById('inp-date-d');
   const singleDate = document.getElementById('inp-date');
 
-  if (ySel && mSel && dSel && typeof populateWin95DateSelects === 'function') {
+  if (ySel && mSel && dSel) {
     populateWin95DateSelects(ySel, mSel, dSel);
   } else if (singleDate) {
     singleDate.value = new Date().toISOString().slice(0, 10);
@@ -511,13 +602,6 @@ function openRegisterModal() {
   if (searchInp) searchInp.focus();
 }
 
-document.getElementById('inp-cover-url')?.addEventListener('input', e => {
-  const img = document.getElementById('preview-cover');
-  if (!img) return;
-  img.src = e.target.value.trim() || FALLBACK_COVER;
-  img.onerror = () => { img.src = FALLBACK_COVER; };
-});
-
 function showRegAlert(msg, type = 'info') {
   const el = document.getElementById('reg-alert');
   if (!el) return;
@@ -527,11 +611,6 @@ function showRegAlert(msg, type = 'info') {
   if (type === 'ok') el.classList.add('ok');
   el.textContent = msg;
 }
-
-document.getElementById('btn-auto-search')?.addEventListener('click', runRankedSearch);
-document.getElementById('inp-search-query')?.addEventListener('keydown', e => {
-  if (e.key === 'Enter') { e.preventDefault(); runRankedSearch(); }
-});
 
 async function runRankedSearch() {
   const query = document.getElementById('inp-search-query').value.trim();
@@ -589,9 +668,8 @@ function applyCandidateToForm(c) {
   }
 }
 
-document.getElementById('archive-form')?.addEventListener('submit', async e => {
+async function handleRegisterSubmit(e) {
   e.preventDefault();
-
   const checkedRating = document.querySelector('input[name="reg-rating"]:checked');
   const selectRating = document.getElementById('inp-rating');
   const ratingVal = checkedRating
@@ -602,7 +680,7 @@ document.getElementById('archive-form')?.addEventListener('submit', async e => {
   const mSel = document.getElementById('inp-date-m');
   const dSel = document.getElementById('inp-date-d');
   const singleDate = document.getElementById('inp-date');
-  const watchDateVal = (ySel && mSel && dSel && typeof getWin95DateValue === 'function')
+  const watchDateVal = (ySel && mSel && dSel)
     ? getWin95DateValue(ySel, mSel, dSel)
     : (singleDate ? singleDate.value : new Date().toISOString().slice(0, 10));
 
@@ -629,7 +707,7 @@ document.getElementById('archive-form')?.addEventListener('submit', async e => {
     else showRegAlert(json.message || '저장 오류', 'err');
   } catch { showRegAlert('서버 통신 중 오류가 발생했습니다.', 'err'); }
   finally { btn.disabled = false; btn.textContent = '확인 및 시트 저장'; setLoadingCursor(false); }
-});
+}
 
 // Desktop Quick Memo
 function openMemoWindow() { openWindow('win-memo'); loadNotesData(); }
