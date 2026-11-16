@@ -206,25 +206,185 @@ function updateClocks() {
 setInterval(updateClocks, 1000);
 updateClocks();
 
-// Winamp Jukebox
-let jbIndex = 0, eqTimer = null;
-function updateJukebox() {
+// Winamp Jukebox (YouTube Music / YouTube Background Player — No Account Required)
+let jbIndex = 0;
+let eqTimer = null;
+let ytPlayer = null;
+let ytApiReady = false;
+let pendingVideoId = null;
+const jbVideoCache = {};
+
+// YouTube IFrame Player API 비동기 로드 및 숨김 백그라운드 컨테이너 생성
+(function initYouTubeBackgroundAPI() {
+  if (!document.getElementById('yt-bg-player-host')) {
+    const host = document.createElement('div');
+    host.id = 'yt-bg-player-host';
+    host.style.cssText = 'position:fixed; width:1px; height:1px; left:-9999px; top:-9999px; opacity:0; pointer-events:none;';
+    host.innerHTML = '<div id="yt-bg-player"></div>';
+    document.body.appendChild(host);
+  }
+  if (!window.YT && !document.querySelector('script[src*="youtube.com/iframe_api"]')) {
+    const tag = document.createElement('script');
+    tag.src = 'https://www.youtube.com/iframe_api';
+    document.head.appendChild(tag);
+  }
+})();
+
+window.onYouTubeIframeAPIReady = function () {
+  ytPlayer = new YT.Player('yt-bg-player', {
+    height: '1',
+    width: '1',
+    playerVars: {
+      autoplay: 0,
+      controls: 0,
+      disablekb: 1,
+      fs: 0,
+      rel: 0,
+      playsinline: 1
+    },
+    events: {
+      onReady: () => {
+        ytApiReady = true;
+        if (pendingVideoId) {
+          const vid = pendingVideoId;
+          pendingVideoId = null;
+          ytPlayer.loadVideoById(vid);
+        }
+      },
+      onStateChange: e => {
+        if (e.data === YT.PlayerState.PLAYING) {
+          setEqualizer(true);
+        } else if (e.data === YT.PlayerState.PAUSED || e.data === YT.PlayerState.BUFFERING) {
+          setEqualizer(false);
+        } else if (e.data === YT.PlayerState.ENDED) {
+          // 곡 종료 시 다음 트랙 자동 재생
+          setEqualizer(false);
+          jbIndex++;
+          updateJukebox(true);
+        }
+      },
+      onError: () => {
+        // 임베드 제한 영상일 경우 다음 트랙으로 자동 스킵
+        const tracks = archiveItems.filter(i => i.category === '음악');
+        if (tracks.length > 1) {
+          jbIndex++;
+          updateJukebox(true);
+        } else {
+          setEqualizer(false);
+        }
+      }
+    }
+  });
+};
+
+function extractYouTubeVideoId(url) {
+  if (!url) return null;
+  const reg = /(?:youtube\.com\/(?:watch\?v=|embed\/|v\/|shorts\/)|music\.youtube\.com\/watch\?v=|youtu\.be\/)([A-Za-z0-9_-]{11})/;
+  const m = String(url).match(reg);
+  return m ? m[1] : null;
+}
+
+function normalizeMatchText(str) {
+  return String(str || '').toLowerCase().replace(/[\s\(\)\[\]\-\_\.\,\!\?\'\"·]/g, '');
+}
+
+// 저작자·제목이 일치하는 YouTube 영상 ID 자동 해석
+async function resolveTrackYouTubeId(track) {
+  const cacheKey = track.id || `${track.creator}::${track.title}`;
+  if (jbVideoCache[cacheKey]) return jbVideoCache[cacheKey];
+
+  // 1) 원본 소스가 유튜브 / 유튜브 뮤직 링크인 경우 즉시 ID 추출
+  const directId = extractYouTubeVideoId(track.sourceUrl);
+  if (directId) {
+    jbVideoCache[cacheKey] = directId;
+    return directId;
+  }
+
+  // 2) 원본 소스가 유튜브가 아닌 경우 GAS 통합 검색으로 저작자·제목 일치 유튜브 트랙 탐색
+  try {
+    const q = `${track.creator} ${track.title}`.trim();
+    const res = await fetch(`${GAS_WEB_APP_URL}?action=search&q=${encodeURIComponent(q)}&category=${encodeURIComponent('음악')}`);
+    const data = await res.json();
+    const candidates = Array.isArray(data.candidates) ? data.candidates : [];
+
+    const normTitle = normalizeMatchText(track.title);
+    const normCreator = normalizeMatchText(track.creator);
+
+    let bestVid = null;
+    let bestScore = -1;
+
+    for (const cand of candidates) {
+      const vid = extractYouTubeVideoId(cand.sourceUrl);
+      if (!vid) continue;
+      const cTitle = normalizeMatchText(cand.title);
+      const cCreator = normalizeMatchText(cand.creator);
+
+      let score = 0;
+      if (cTitle === normTitle) score += 50;
+      else if (cTitle.includes(normTitle) || normTitle.includes(cTitle)) score += 30;
+
+      if (cCreator === normCreator) score += 50;
+      else if (cCreator.includes(normCreator) || normCreator.includes(cCreator)) score += 30;
+
+      if (String(cand.source || '').toLowerCase().includes('youtube')) score += 10;
+
+      if (score > bestScore) {
+        bestScore = score;
+        bestVid = vid;
+      }
+    }
+
+    if (bestVid) {
+      jbVideoCache[cacheKey] = bestVid;
+      return bestVid;
+    }
+  } catch {}
+  return null;
+}
+
+function playYouTubeTrackId(videoId) {
+  if (!videoId) return;
+  if (ytApiReady && ytPlayer && typeof ytPlayer.loadVideoById === 'function') {
+    ytPlayer.loadVideoById(videoId);
+  } else {
+    pendingVideoId = videoId;
+  }
+}
+
+async function updateJukebox(autoPlay = false) {
   const musicTracks = archiveItems.filter(i => i.category === '음악');
   const trackEl = document.getElementById('jukebox-track');
   const artistEl = document.getElementById('jukebox-artist');
   const ytBtn = document.getElementById('jb-yt');
   if (!trackEl || !artistEl || !ytBtn) return;
+
   if (!musicTracks.length) {
     trackEl.textContent = '01. MY-ARCHIVE 95 THEME';
     artistEl.textContent = '음악 기록 추가 시 자동 연동';
-    ytBtn.href = 'https://www.youtube.com/results?search_query=synthwave+windows+95';
+    ytBtn.href = 'https://music.youtube.com/search?q=synthwave+windows+95';
     return;
   }
+
   jbIndex = (jbIndex + musicTracks.length) % musicTracks.length;
   const cur = musicTracks[jbIndex];
+  const ytMusicSearchUrl = `https://music.youtube.com/search?q=${encodeURIComponent(`${cur.creator} ${cur.title}`)}`;
+
   trackEl.textContent = `${String(jbIndex + 1).padStart(2, '0')}. ${cur.title}`;
   artistEl.textContent = `${cur.creator} (${cur.genre || '음악'})`;
-  ytBtn.href = cur.sourceUrl || `https://www.youtube.com/results?search_query=${encodeURIComponent(`${cur.creator} ${cur.title}`)}`;
+  ytBtn.href = extractYouTubeVideoId(cur.sourceUrl) ? cur.sourceUrl : ytMusicSearchUrl;
+
+  if (autoPlay) {
+    artistEl.textContent = `${cur.creator} — 트랙 매칭 중...`;
+    const vid = await resolveTrackYouTubeId(cur);
+    if (vid) {
+      artistEl.textContent = `${cur.creator} [YT MUSIC PLAY]`;
+      ytBtn.href = `https://music.youtube.com/watch?v=${vid}`;
+      playYouTubeTrackId(vid);
+    } else {
+      artistEl.textContent = `${cur.creator} (일치 영상 없음)`;
+      setEqualizer(false);
+    }
+  }
 }
 
 function setEqualizer(active) {
@@ -233,11 +393,41 @@ function setEqualizer(active) {
   if (!active) { bars.forEach(b => { b.style.height = '18%'; }); return; }
   eqTimer = setInterval(() => { bars.forEach(b => { b.style.height = `${15 + Math.floor(Math.random() * 85)}%`; }); }, 150);
 }
-document.getElementById('jb-play')?.addEventListener('click', () => { playRetroTone('open'); setEqualizer(true); });
-document.getElementById('jb-stop')?.addEventListener('click', () => { playRetroTone('click'); setEqualizer(false); });
-document.getElementById('jb-prev')?.addEventListener('click', () => { jbIndex--; updateJukebox(); playRetroTone('click'); });
-document.getElementById('jb-next')?.addEventListener('click', () => { jbIndex++; updateJukebox(); playRetroTone('click'); });
 
+document.getElementById('jb-play')?.addEventListener('click', async () => {
+  playRetroTone('open');
+  const musicTracks = archiveItems.filter(i => i.category === '음악');
+  if (!musicTracks.length) {
+    setEqualizer(true);
+    return;
+  }
+  // 일시정지 상태라면 이어서 재생, 아니면 현재 트랙 로드 후 재생
+  if (ytApiReady && ytPlayer && typeof ytPlayer.getPlayerState === 'function' && ytPlayer.getPlayerState() === YT.PlayerState.PAUSED) {
+    ytPlayer.playVideo();
+    return;
+  }
+  await updateJukebox(true);
+});
+
+document.getElementById('jb-stop')?.addEventListener('click', () => {
+  playRetroTone('click');
+  setEqualizer(false);
+  if (ytApiReady && ytPlayer && typeof ytPlayer.pauseVideo === 'function') {
+    ytPlayer.pauseVideo();
+  }
+});
+
+document.getElementById('jb-prev')?.addEventListener('click', () => {
+  jbIndex--;
+  playRetroTone('click');
+  updateJukebox(true);
+});
+
+document.getElementById('jb-next')?.addEventListener('click', () => {
+  jbIndex++;
+  playRetroTone('click');
+  updateJukebox(true);
+});
 // GAME PACK 95: 지뢰찾기 + 아카이브 카드 게임 2종
 function openGamePackWindow() {
   const winId = 'win-gamepack';
