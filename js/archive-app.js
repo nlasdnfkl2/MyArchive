@@ -759,6 +759,7 @@ function openRegisterModal() {
 
   const form = document.getElementById('archive-form');
   if (form) form.reset();
+  if (form) delete form.dataset.editId; // 신규 등록 시 편집 ID 초기화
 
   const searchInp = document.getElementById('inp-search-query');
   if (searchInp) searchInp.value = '';
@@ -875,9 +876,6 @@ async function handleRegisterSubmit(e) {
   const categoryVal = document.getElementById('inp-category').value;
   const titleVal = document.getElementById('inp-title').value.trim();
 
-const categoryVal = document.getElementById('inp-category').value;
-  const titleVal = document.getElementById('inp-title').value.trim();
-
   // ★ 현재 수정/등록 중인 폼에 편집 중인 ID가 있다면 가져옴 (신규 등록 시에는 빈 문자열)
   const formEl = document.getElementById('archive-form');
   const editingId = formEl ? (formEl.dataset.editId || '') : '';
@@ -896,7 +894,7 @@ const categoryVal = document.getElementById('inp-category').value;
   }
 
   const payload = {
-    action: editingId ? 'update' : 'create', // ID가 있으면 update, 없으면 create로 유연하게 대응 가능
+    action: editingId ? 'update' : 'create',
     id: editingId,
     category: categoryVal,
     title: titleVal,
@@ -908,6 +906,39 @@ const categoryVal = document.getElementById('inp-category').value;
     coverUrl: document.getElementById('inp-cover-url').value.trim(),
     sourceUrl: document.getElementById('inp-source-url').value.trim()
   };
+
+  const btn = document.getElementById('btn-submit-reg');
+  btn.disabled = true; btn.textContent = '저장 중...'; setLoadingCursor(true);
+  try {
+    const res = await fetch(GAS_WEB_APP_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload) });
+    const json = await res.json();
+    if (json.status === 'duplicate') {
+      const dupMsg = json.message || `이미 ${categoryVal} 목록에 동일한 이름이 존재합니다.`;
+      showRegAlert(dupMsg, 'err');
+      showWin95MessageBox('중복 등록 오류 — MY-ARCHIVE 95', dupMsg, 'boom');
+      return;
+    }
+    if (json.status === 'success' && (json.item || json.note)) {
+      playRetroTone('boot');
+      if (editingId) {
+        const idx = archiveItems.findIndex(x => x.id === editingId);
+        if (idx !== -1 && json.item) archiveItems[idx] = json.item;
+      } else if (json.item) {
+        archiveItems.unshift(json.item);
+      }
+      refreshAllViews();
+      closeWindow('win-register');
+    } else {
+      showRegAlert(json.message || '저장 오류', 'err');
+    }
+  } catch {
+    showRegAlert('서버 통신 중 오류가 발생했습니다.', 'err');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '확인 및 시트 저장';
+    setLoadingCursor(false);
+  }
+}
 
 // ==========================================
 // Desktop Quick Memo
