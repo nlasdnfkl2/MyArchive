@@ -68,13 +68,29 @@ body.crt-on .crt-overlay { display: block; }
   background: rgba(255, 216, 59, 0.08); pointer-events: none; z-index: 9800; display: none;
 }
 
+/* 1995 Award Modular BIOS POST Screen */
 #win95-boot-screen {
-  position: fixed; inset: 0; background: #000000; color: #ffffff; z-index: 9999;
-  display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; font-family: monospace;
+  position: fixed; inset: 0; background: #000000; color: #cccccc; z-index: 9999;
+  display: flex; flex-direction: column; justify-content: space-between;
+  padding: 28px 36px; font-family: 'Courier New', Courier, monospace;
+  font-size: clamp(0.78rem, 1.35vw, 0.96rem); line-height: 1.55;
+  user-select: none;
 }
-.boot-box { border: 3px solid #c0c0c0; background: #008080; padding: 26px 32px; box-shadow: 8px 8px 0px #ffd83b; text-align: center; max-width: 440px; width: 100%; }
-.boot-progress { width: 100%; height: 22px; background: #c0c0c0; border: 2px solid #111111; box-shadow: var(--bevel-in); margin-top: 16px; overflow: hidden; display: flex; gap: 3px; padding: 3px; }
-.boot-block { width: 16px; height: 100%; background: #000080; }
+.bios-top-wrap { max-width: 860px; width: 100%; margin: 0 auto; }
+.bios-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 18px; }
+.bios-epa-box {
+  border: 2px solid #ffd83b; color: #ffd83b; padding: 6px 10px;
+  font-size: 0.72rem; line-height: 1.25; text-align: center; font-weight: 700;
+  white-space: pre;
+}
+.bios-line { white-space: pre-wrap; margin-bottom: 3px; }
+.bios-bright { color: #ffffff; font-weight: 700; }
+.bios-yellow { color: #ffd83b; }
+.bios-cyan { color: #48dbfb; }
+.bios-green { color: #2ed573; }
+.bios-cursor { display: inline-block; width: 9px; height: 15px; background: #cccccc; vertical-align: middle; animation: biosBlink 0.7s steps(2, start) infinite; }
+@keyframes biosBlink { to { visibility: hidden; } }
+.bios-footer { max-width: 860px; width: 100%; margin: 0 auto; border-top: 1px solid #444444; padding-top: 10px; color: #aaaaaa; font-size: 0.82rem; }
 
 #win95-bsod {
   position: fixed; inset: 0; background: #0000aa; color: #ffffff; font-family: monospace; z-index: 9998;
@@ -359,6 +375,7 @@ input[type="text"], textarea { padding: 7px 10px; background: #ffffff; border: 2
 .start-item { padding: 7px 10px; font-size: 0.83rem; font-weight: 800; text-align: left; background: transparent; border: none; display: flex; align-items: center; gap: 8px; }
 .start-item:hover { background: #000080; color: #ffffff; }
 .start-divider { height: 2px; background: #808080; border-bottom: 1px solid #ffffff; margin: 4px 0; }
+
 /* Classic Windows Solitaire & Spider Card Styles */
 .sol-board { background: #006633; border: 3px solid #111111; box-shadow: var(--bevel-in); padding: 10px; user-select: none; }
 .sol-top-row { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-bottom: 12px; }
