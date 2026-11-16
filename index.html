@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>MY-ARCHIVE 95 // 감상 아카이빙 &amp; 아이디어 OS</title>
+  <title>MY-ARCHIVE 95 // 감상 아카이빙 &amp; 레트로 OS</title>
 
   <!-- Pretendard Variable -->
   <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css" />
@@ -29,7 +29,6 @@
       --brutal-border: 3px solid #111111;
       --brutal-shadow: 6px 6px 0px #111111;
 
-      /* Custom Windows 95 Pixel Cursors */
       --cursor-default: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'><path d='M2 2 L2 19 L6.5 14.5 L10 21 L12.5 19.5 L9 13 L15 13 Z' fill='white' stroke='%23111111' stroke-width='2'/></svg>") 2 2, auto;
       --cursor-pointer: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'><path d='M8 2 V11 H5 V15 L8 21 H17 L19 14 V9 H15 V8 H12 V2 Z' fill='%23ffd83b' stroke='%23111111' stroke-width='2'/></svg>") 8 2, pointer;
       --cursor-move: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'><path d='M12 2 L15 5 H13 V11 H19 V9 L22 12 L19 15 V13 H13 V19 H15 L12 22 L9 19 H11 V13 H5 V15 L2 12 L5 9 V11 H11 V5 H9 Z' fill='%2348dbfb' stroke='%23111111' stroke-width='1.5'/></svg>") 12 12, move;
@@ -47,7 +46,7 @@
       cursor: var(--cursor-wait) !important;
     }
 
-    button, a, select, input[type="checkbox"], .desktop-icon, .item-card, .pill-btn, .win-ctrl-btn, .menu-root, .menu-opt, .rank-item {
+    button, a, select, input[type="checkbox"], .desktop-icon, .item-card, .pill-btn, .win-ctrl-btn, .menu-root, .menu-opt, .rank-item, .mine-cell {
       cursor: var(--cursor-pointer);
     }
 
@@ -71,32 +70,109 @@
       -webkit-font-smoothing: antialiased;
     }
 
+    /* Optional Retro CRT Scanline Overlay */
+    .crt-overlay {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 9990;
+      background: linear-gradient(
+        rgba(18, 16, 16, 0) 50%,
+        rgba(0, 0, 0, 0.14) 50%
+      );
+      background-size: 100% 4px;
+      display: none;
+    }
+    body.crt-on .crt-overlay {
+      display: block;
+    }
+
+    /* Win95 Classic Dotted Ghost Drag Outline */
+    #drag-ghost-box {
+      position: fixed;
+      border: 3px dashed #ffffff;
+      outline: 2px dashed #111111;
+      background: rgba(255, 216, 59, 0.08);
+      pointer-events: none;
+      z-index: 9800;
+      display: none;
+    }
+
+    /* Windows 95 Boot Splash Screen */
+    #win95-boot-screen {
+      position: fixed;
+      inset: 0;
+      background: #000000;
+      color: #ffffff;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      font-family: monospace;
+    }
+
+    .boot-box {
+      border: 3px solid #c0c0c0;
+      background: #008080;
+      padding: 28px 36px;
+      box-shadow: 8px 8px 0px #ffd83b;
+      text-align: center;
+      max-width: 460px;
+      width: 100%;
+    }
+
+    .boot-progress {
+      width: 100%;
+      height: 22px;
+      background: #c0c0c0;
+      border: 2px solid #111111;
+      box-shadow: var(--bevel-in);
+      margin-top: 18px;
+      overflow: hidden;
+      display: flex;
+      gap: 3px;
+      padding: 3px;
+    }
+
+    .boot-block {
+      width: 16px;
+      height: 100%;
+      background: #000080;
+    }
+
     /* Desktop Grid */
     .desktop-workspace {
-      max-width: 1320px;
+      max-width: 1380px;
       margin: 0 auto;
       display: grid;
-      grid-template-columns: 96px 1fr;
+      grid-template-columns: 96px 1fr 240px;
       gap: 18px;
       align-items: start;
     }
 
-    @media (max-width: 820px) {
+    @media (max-width: 1120px) {
+      .desktop-workspace { grid-template-columns: 96px 1fr; }
+      .desktop-widgets-col { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; }
+    }
+
+    @media (max-width: 780px) {
       .desktop-workspace { grid-template-columns: 1fr; }
-      .desktop-icons { display: flex; flex-wrap: wrap; gap: 10px; }
+      .desktop-icons { display: flex; flex-wrap: wrap; gap: 8px; }
     }
 
     .desktop-icons {
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 14px;
       user-select: none;
     }
 
     .desktop-icon {
       width: 90px;
       text-align: center;
-      padding: 6px 4px;
+      padding: 5px 4px;
       border: 2px solid transparent;
     }
 
@@ -106,16 +182,16 @@
     }
 
     .icon-glyph {
-      width: 44px;
-      height: 44px;
-      margin: 0 auto 6px;
+      width: 42px;
+      height: 42px;
+      margin: 0 auto 5px;
       border: 3px solid #111111;
       box-shadow: 3px 3px 0px #111111;
       display: flex;
       align-items: center;
       justify-content: center;
       font-weight: 900;
-      font-size: 1.05rem;
+      font-size: 1rem;
       background: var(--brutal-yellow);
     }
 
@@ -123,16 +199,107 @@
     .icon-glyph.green { background: var(--brutal-green); }
     .icon-glyph.pink { background: var(--brutal-pink); color: #ffffff; }
     .icon-glyph.white { background: #ffffff; }
+    .icon-glyph.dark { background: #222222; color: #2ed573; }
 
     .icon-label {
       display: inline-block;
       background: #000080;
       color: #ffffff;
-      font-size: 0.76rem;
+      font-size: 0.75rem;
       font-weight: 700;
       padding: 2px 5px;
       line-height: 1.25;
       word-break: keep-all;
+    }
+
+    /* Desktop Right Widgets Column */
+    .desktop-widgets-col {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .desk-widget {
+      background: var(--win-gray);
+      border: 3px solid #111111;
+      box-shadow: var(--bevel-out), 5px 5px 0px #111111;
+    }
+
+    .widget-head {
+      background: #111111;
+      color: var(--brutal-yellow);
+      padding: 4px 8px;
+      font-size: 0.76rem;
+      font-weight: 900;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .widget-body {
+      padding: 12px;
+      background: var(--brutal-paper);
+    }
+
+    /* Analog Clock Widget */
+    .analog-clock-face {
+      width: 126px;
+      height: 126px;
+      margin: 0 auto 8px;
+      border-radius: 50%;
+      background: #ffffff;
+      border: 3px solid #111111;
+      box-shadow: var(--bevel-in);
+      position: relative;
+    }
+
+    .clock-hand {
+      position: absolute;
+      bottom: 50%;
+      left: 50%;
+      transform-origin: bottom center;
+      background: #111111;
+    }
+
+    .hand-hour { width: 4px; height: 32px; margin-left: -2px; }
+    .hand-min { width: 3px; height: 46px; margin-left: -1.5px; background: #000080; }
+    .hand-sec { width: 2px; height: 52px; margin-left: -1px; background: #ff4757; }
+    .clock-pin {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 10px;
+      height: 10px;
+      background: var(--brutal-yellow);
+      border: 2px solid #111111;
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    /* Winamp Style Mini Jukebox Widget */
+    .winamp-lcd {
+      background: #111111;
+      color: #2ed573;
+      border: 2px solid #111111;
+      box-shadow: var(--bevel-in);
+      padding: 8px;
+      font-family: monospace;
+      margin-bottom: 8px;
+    }
+
+    .eq-bars {
+      display: flex;
+      align-items: flex-end;
+      gap: 3px;
+      height: 26px;
+      margin-top: 6px;
+    }
+
+    .eq-bar {
+      flex: 1;
+      background: linear-gradient(180deg, #ff4757 0%, #ffd83b 50%, #2ed573 100%);
+      height: 20%;
+      transition: height 0.14s ease;
     }
 
     /* Base Windows 95 Window Frame */
@@ -165,18 +332,9 @@
       z-index: 100;
     }
 
-    .floating-win.open {
-      display: flex;
-    }
-
-    .floating-win.minimized {
-      display: none !important;
-    }
-
-    .floating-win .win-body {
-      overflow-y: auto;
-      flex: 1;
-    }
+    .floating-win.open { display: flex; }
+    .floating-win.minimized { display: none !important; }
+    .floating-win .win-body { overflow-y: auto; flex: 1; }
 
     /* Titlebar */
     .win-titlebar {
@@ -222,10 +380,7 @@
       border: 2px solid #111111;
     }
 
-    .win-controls {
-      display: flex;
-      gap: 4px;
-    }
+    .win-controls { display: flex; gap: 4px; }
 
     .win-ctrl-btn {
       width: 24px;
@@ -251,7 +406,7 @@
       color: #ffffff;
     }
 
-    /* Interactive Dropdown Menu Bar */
+    /* Dropdown Menu Bar */
     .win-menubar {
       background: var(--win-gray);
       border-bottom: 2px solid #111111;
@@ -263,9 +418,7 @@
       user-select: none;
     }
 
-    .menu-item-wrap {
-      position: relative;
-    }
+    .menu-item-wrap { position: relative; }
 
     .menu-root {
       background: transparent;
@@ -286,7 +439,7 @@
       position: absolute;
       top: 100%;
       left: 0;
-      min-width: 210px;
+      min-width: 225px;
       background: var(--win-gray);
       border: 3px solid #111111;
       box-shadow: var(--bevel-out), 4px 4px 0px #111111;
@@ -296,9 +449,7 @@
       z-index: 900;
     }
 
-    .menu-item-wrap.open .menu-dropdown {
-      display: flex;
-    }
+    .menu-item-wrap.open .menu-dropdown { display: flex; }
 
     .menu-opt {
       background: transparent;
@@ -314,22 +465,10 @@
       gap: 12px;
     }
 
-    .menu-opt:hover {
-      background: #000080;
-      color: #ffffff;
-    }
+    .menu-opt:hover { background: #000080; color: #ffffff; }
+    .menu-sep { height: 2px; background: #808080; border-bottom: 1px solid #ffffff; margin: 4px 0; }
 
-    .menu-sep {
-      height: 2px;
-      background: #808080;
-      border-bottom: 1px solid #ffffff;
-      margin: 4px 0;
-    }
-
-    .win-body {
-      padding: 18px;
-      background: var(--brutal-paper);
-    }
+    .win-body { padding: 18px; background: var(--brutal-paper); }
 
     /* Buttons */
     .btn95 {
@@ -337,13 +476,13 @@
       align-items: center;
       justify-content: center;
       gap: 6px;
-      padding: 9px 15px;
+      padding: 9px 14px;
       background: var(--win-gray);
       color: #111111;
       border: 2px solid #111111;
       box-shadow: var(--bevel-out), 3px 3px 0px #111111;
       font-family: inherit;
-      font-size: 0.86rem;
+      font-size: 0.85rem;
       font-weight: 800;
       text-decoration: none;
     }
@@ -358,42 +497,31 @@
     .btn95.sky { background: var(--brutal-sky); }
     .btn95.green { background: var(--brutal-green); }
     .btn95.pink { background: var(--brutal-pink); color: #ffffff; }
-    .btn95.sm { padding: 6px 10px; font-size: 0.78rem; }
+    .btn95.sm { padding: 5px 9px; font-size: 0.77rem; }
 
     /* Hero & KPI */
     .os-hero {
       background: #ffffff;
       border: var(--brutal-border);
       box-shadow: 4px 4px 0px #111111;
-      padding: 18px 22px;
-      margin-bottom: 18px;
+      padding: 16px 20px;
+      margin-bottom: 16px;
       display: flex;
       justify-content: space-between;
       align-items: center;
       flex-wrap: wrap;
-      gap: 14px;
+      gap: 12px;
     }
 
-    .os-hero h1 {
-      font-size: clamp(1.35rem, 2.5vw, 1.9rem);
-      font-weight: 900;
-      letter-spacing: -0.03em;
-      margin-bottom: 4px;
-    }
-
-    .os-hero p {
-      font-size: 0.88rem;
-      font-weight: 600;
-      color: #4a4a4a;
-    }
+    .os-hero h1 { font-size: clamp(1.3rem, 2.3vw, 1.8rem); font-weight: 900; letter-spacing: -0.03em; margin-bottom: 3px; }
+    .os-hero p { font-size: 0.86rem; font-weight: 600; color: #4a4a4a; }
 
     .kpi-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      gap: 14px;
-      margin-bottom: 18px;
+      gap: 12px;
+      margin-bottom: 16px;
     }
-
     @media (max-width: 920px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
     @media (max-width: 520px) { .kpi-grid { grid-template-columns: 1fr; } }
 
@@ -401,32 +529,28 @@
       background: #ffffff;
       border: 2px solid #111111;
       box-shadow: var(--bevel-in), 3px 3px 0px #111111;
-      padding: 14px 16px;
+      padding: 12px 14px;
     }
-
     .kpi-panel.yellow { background: var(--brutal-yellow); }
     .kpi-panel.sky { background: var(--brutal-sky); }
     .kpi-panel.green { background: var(--brutal-green); }
+    .kpi-lbl { font-size: 0.76rem; font-weight: 800; margin-bottom: 3px; }
+    .kpi-val { font-size: 1.6rem; font-weight: 900; line-height: 1.15; }
+    .kpi-sub { font-size: 0.76rem; font-weight: 700; margin-top: 4px; }
 
-    .kpi-lbl { font-size: 0.78rem; font-weight: 800; margin-bottom: 4px; }
-    .kpi-val { font-size: 1.7rem; font-weight: 900; line-height: 1.15; }
-    .kpi-sub { font-size: 0.78rem; font-weight: 700; margin-top: 5px; }
-
-    /* Charts */
     .charts-grid {
       display: grid;
       grid-template-columns: 1fr 1.45fr;
-      gap: 16px;
-      margin-bottom: 20px;
+      gap: 14px;
+      margin-bottom: 18px;
     }
-
     @media (max-width: 860px) { .charts-grid { grid-template-columns: 1fr; } }
 
     .sunken-box {
       background: #ffffff;
       border: 2px solid #111111;
       box-shadow: var(--bevel-in);
-      padding: 14px 16px;
+      padding: 14px;
     }
 
     .box-head {
@@ -434,20 +558,19 @@
       justify-content: space-between;
       align-items: center;
       margin-bottom: 10px;
-      padding-bottom: 8px;
+      padding-bottom: 6px;
       border-bottom: 2px solid #111111;
       font-weight: 900;
-      font-size: 0.94rem;
+      font-size: 0.92rem;
     }
 
-    .chart-wrap { height: 210px; position: relative; }
+    .chart-wrap { height: 200px; position: relative; }
 
-    /* Toolbar & Inputs */
     .toolbar-95 {
       background: var(--win-gray);
       border: 2px solid #111111;
       box-shadow: var(--bevel-out);
-      padding: 10px 14px;
+      padding: 10px 12px;
       margin-bottom: 16px;
       display: flex;
       justify-content: space-between;
@@ -456,15 +579,15 @@
       gap: 10px;
     }
 
-    .pill-group { display: flex; flex-wrap: wrap; gap: 6px; }
+    .pill-group { display: flex; flex-wrap: wrap; gap: 5px; }
 
     .pill-btn {
-      padding: 6px 11px;
+      padding: 5px 10px;
       background: var(--win-gray);
       border: 2px solid #111111;
       box-shadow: var(--bevel-out);
       font-family: inherit;
-      font-size: 0.82rem;
+      font-size: 0.8rem;
       font-weight: 800;
     }
 
@@ -475,12 +598,12 @@
     }
 
     input[type="text"], input[type="date"], select, textarea {
-      padding: 8px 11px;
+      padding: 7px 10px;
       background: #ffffff;
       border: 2px solid #111111;
       box-shadow: var(--bevel-in);
       font-family: inherit;
-      font-size: 0.86rem;
+      font-size: 0.85rem;
       font-weight: 600;
       color: #111111;
       border-radius: 0;
@@ -490,9 +613,8 @@
     .archive-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 16px;
+      gap: 14px;
     }
-
     @media (max-width: 980px) { .archive-grid { grid-template-columns: repeat(2, 1fr); } }
     @media (max-width: 620px) { .archive-grid { grid-template-columns: 1fr; } }
 
@@ -515,14 +637,14 @@
       background: #111111;
       color: #ffffff;
       padding: 4px 10px;
-      font-size: 0.74rem;
+      font-size: 0.72rem;
       font-weight: 800;
       display: flex;
       justify-content: space-between;
     }
 
     .item-thumb-box {
-      height: 165px;
+      height: 155px;
       border-bottom: 3px solid #111111;
       position: relative;
       background: #222222;
@@ -537,12 +659,11 @@
       left: 8px;
       padding: 2px 8px;
       border: 2px solid #111111;
-      font-size: 0.75rem;
+      font-size: 0.74rem;
       font-weight: 900;
       background: var(--brutal-yellow);
       box-shadow: 2px 2px 0px #111111;
     }
-
     .cat-sticker.music { background: var(--brutal-sky); }
     .cat-sticker.video { background: var(--brutal-pink); color: #ffffff; }
     .cat-sticker.etc { background: var(--brutal-green); }
@@ -551,37 +672,35 @@
       position: absolute;
       bottom: 8px;
       right: 8px;
-      padding: 2px 8px;
+      padding: 2px 7px;
       border: 2px solid #111111;
       background: #ffffff;
-      font-size: 0.78rem;
+      font-size: 0.76rem;
       font-weight: 900;
       box-shadow: 2px 2px 0px #111111;
     }
 
-    .item-content { padding: 14px; display: flex; flex-direction: column; flex: 1; }
-    .item-title { font-size: 1.05rem; font-weight: 900; margin-bottom: 4px; line-height: 1.3; }
-    .item-creator { font-size: 0.8rem; font-weight: 700; color: #4a4a4a; margin-bottom: 10px; }
+    .item-content { padding: 12px; display: flex; flex-direction: column; flex: 1; }
+    .item-title { font-size: 1.02rem; font-weight: 900; margin-bottom: 3px; line-height: 1.3; }
+    .item-creator { font-size: 0.78rem; font-weight: 700; color: #4a4a4a; margin-bottom: 8px; }
     .item-memo {
       background: var(--brutal-paper);
       border: 2px solid #111111;
-      padding: 8px 10px;
-      font-size: 0.84rem;
+      padding: 8px 9px;
+      font-size: 0.82rem;
       font-weight: 600;
-      margin-bottom: 10px;
+      margin-bottom: 9px;
       flex: 1;
     }
-
     .item-footer {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      font-size: 0.76rem;
+      font-size: 0.75rem;
       font-weight: 800;
-      padding-top: 8px;
+      padding-top: 7px;
       border-top: 2px dashed #111111;
     }
-
     .inspect-hint {
       background: var(--brutal-sky);
       border: 1.5px solid #111111;
@@ -595,130 +714,123 @@
       padding: 4px 10px;
       display: flex;
       justify-content: space-between;
-      font-size: 0.76rem;
+      font-size: 0.75rem;
       font-weight: 700;
     }
+    .status-cell { box-shadow: var(--bevel-in); padding: 2px 10px; background: var(--win-gray); }
 
-    .status-cell {
-      box-shadow: var(--bevel-in);
-      padding: 2px 10px;
-      background: var(--win-gray);
-    }
-
-    /* Ranked Search Candidate Selector List */
+    /* Ranked Search List */
     .rank-list {
       margin-top: 10px;
-      max-height: 210px;
+      max-height: 200px;
       overflow-y: auto;
       border: 2px solid #111111;
       background: #ffffff;
       display: none;
     }
-
     .rank-item {
       display: flex;
       align-items: center;
       gap: 10px;
-      padding: 8px 10px;
+      padding: 7px 10px;
       border-bottom: 2px solid #111111;
-      transition: background 0.08s ease;
     }
-
     .rank-item:last-child { border-bottom: none; }
     .rank-item:hover { background: var(--brutal-yellow); }
-
-    .rank-badge {
-      background: #111111;
-      color: #ffffff;
-      font-size: 0.72rem;
-      font-weight: 900;
-      padding: 2px 6px;
-      white-space: nowrap;
-    }
-
-    .rank-src {
-      background: var(--brutal-sky);
-      border: 1.5px solid #111111;
-      font-size: 0.72rem;
-      font-weight: 800;
-      padding: 1px 5px;
-      white-space: nowrap;
-    }
-
-    .rank-thumb {
-      width: 40px;
-      height: 40px;
-      object-fit: cover;
-      border: 1.5px solid #111111;
-      flex-shrink: 0;
-    }
+    .rank-badge { background: #111111; color: #ffffff; font-size: 0.72rem; font-weight: 900; padding: 2px 6px; white-space: nowrap; }
+    .rank-src { background: var(--brutal-sky); border: 1.5px solid #111111; font-size: 0.7rem; font-weight: 800; padding: 1px 5px; }
+    .rank-thumb { width: 38px; height: 38px; object-fit: cover; border: 1.5px solid #111111; flex-shrink: 0; }
 
     .dialog-banner {
       margin-top: 8px;
-      padding: 8px 10px;
+      padding: 7px 10px;
       border: 2px solid #111111;
       background: var(--brutal-sky);
-      font-size: 0.82rem;
+      font-size: 0.8rem;
       font-weight: 800;
       display: none;
     }
     .dialog-banner.err { background: var(--brutal-pink); color: #ffffff; }
     .dialog-banner.ok { background: var(--brutal-green); }
 
-    /* Detail & Recommendation Explorer */
+    /* Detail Explorer */
     .detail-hero {
       display: grid;
-      grid-template-columns: 150px 1fr;
-      gap: 16px;
+      grid-template-columns: 145px 1fr;
+      gap: 14px;
       background: #ffffff;
       border: 3px solid #111111;
       box-shadow: 4px 4px 0px #111111;
       padding: 14px;
-      margin-bottom: 16px;
+      margin-bottom: 14px;
     }
     @media (max-width: 560px) { .detail-hero { grid-template-columns: 1fr; } }
+    .detail-cover { width: 100%; height: 185px; object-fit: cover; border: 2px solid #111111; background: #111111; }
 
-    .detail-cover {
-      width: 100%;
-      height: 190px;
-      object-fit: cover;
-      border: 2px solid #111111;
-      background: #111111;
-    }
-
-    .rec-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
-      margin-top: 10px;
-    }
+    .rec-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 10px; }
     @media (max-width: 640px) { .rec-grid { grid-template-columns: 1fr; } }
+    .rec-card { background: #ffffff; border: 2px solid #111111; box-shadow: 3px 3px 0px #111111; padding: 10px; display: flex; flex-direction: column; justify-content: space-between; }
+    .rec-thumb { width: 100%; height: 95px; object-fit: cover; border: 2px solid #111111; margin-bottom: 8px; }
 
-    .rec-card {
-      background: #ffffff;
-      border: 2px solid #111111;
-      box-shadow: 3px 3px 0px #111111;
-      padding: 10px;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-    }
-
-    .rec-thumb {
-      width: 100%;
-      height: 100px;
-      object-fit: cover;
-      border: 2px solid #111111;
-      margin-bottom: 8px;
-    }
-
-    /* Quick Idea Notepad (MEMO95.EXE) */
+    /* Memo Note Card */
     .note-card {
       background: #fff9c4;
       border: 2px solid #111111;
       box-shadow: 3px 3px 0px #111111;
-      padding: 10px 12px;
-      margin-bottom: 10px;
+      padding: 9px 11px;
+      margin-bottom: 9px;
+    }
+
+    /* Minesweeper Grid */
+    .mine-grid {
+      display: grid;
+      grid-template-columns: repeat(8, 32px);
+      gap: 2px;
+      justify-content: center;
+      background: #808080;
+      padding: 6px;
+      border: 3px solid #111111;
+      box-shadow: var(--bevel-in);
+    }
+
+    .mine-cell {
+      width: 32px;
+      height: 32px;
+      background: var(--win-gray);
+      border: 2px solid #111111;
+      box-shadow: var(--bevel-out);
+      font-weight: 900;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+    }
+
+    .mine-cell.revealed {
+      background: #e8e6df;
+      box-shadow: none;
+      border: 1px solid #808080;
+    }
+
+    .mine-cell.boom {
+      background: var(--brutal-pink);
+      color: #ffffff;
+    }
+
+    /* 3D Retro Screensaver Overlay */
+    #screensaver-overlay {
+      position: fixed;
+      inset: 0;
+      background: #000000;
+      z-index: 9995;
+      display: none;
+    }
+
+    #screensaver-canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
     }
 
     /* Taskbar & Start Menu */
@@ -739,12 +851,7 @@
       user-select: none;
     }
 
-    .taskbar-left {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      overflow-x: auto;
-    }
+    .taskbar-left { display: flex; align-items: center; gap: 6px; overflow-x: auto; }
 
     .start-btn {
       display: inline-flex;
@@ -760,19 +867,9 @@
       font-size: 0.88rem;
       flex-shrink: 0;
     }
+    .start-btn.pressed { box-shadow: var(--bevel-in); transform: translate(1px, 1px); }
 
-    .start-btn.pressed {
-      box-shadow: var(--bevel-in);
-      transform: translate(1px, 1px);
-    }
-
-    .win-flag {
-      display: inline-grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1.5px;
-      width: 14px;
-      height: 14px;
-    }
+    .win-flag { display: inline-grid; grid-template-columns: 1fr 1fr; gap: 1.5px; width: 14px; height: 14px; }
     .win-flag span:nth-child(1) { background: #ff4757; }
     .win-flag span:nth-child(2) { background: #2ed573; }
     .win-flag span:nth-child(3) { background: #48dbfb; }
@@ -780,35 +877,30 @@
 
     .task-tab {
       height: 32px;
-      padding: 0 11px;
+      padding: 0 10px;
       background: var(--win-gray);
       border: 2px solid #111111;
       box-shadow: var(--bevel-out);
       font-family: inherit;
-      font-size: 0.8rem;
+      font-size: 0.78rem;
       font-weight: 800;
       display: inline-flex;
       align-items: center;
-      gap: 6px;
+      gap: 5px;
       white-space: nowrap;
     }
-
-    .task-tab.active {
-      background: #e8e6df;
-      box-shadow: var(--bevel-in);
-      font-weight: 900;
-    }
+    .task-tab.active { background: #e8e6df; box-shadow: var(--bevel-in); font-weight: 900; }
 
     .system-tray {
       height: 32px;
-      padding: 0 12px;
+      padding: 0 10px;
       background: var(--win-gray);
       border: 2px solid #111111;
       box-shadow: var(--bevel-in);
       display: flex;
       align-items: center;
-      gap: 10px;
-      font-size: 0.8rem;
+      gap: 8px;
+      font-size: 0.78rem;
       font-weight: 800;
       flex-shrink: 0;
     }
@@ -817,14 +909,13 @@
       position: fixed;
       left: 8px;
       bottom: 46px;
-      width: 265px;
+      width: 270px;
       background: var(--win-gray);
       border: 3px solid #111111;
       box-shadow: var(--bevel-out), 6px 6px 0px #111111;
       display: none;
       z-index: 9500;
     }
-
     .start-menu.open { display: flex; }
 
     .start-sidebar {
@@ -839,67 +930,81 @@
       letter-spacing: 0.08em;
     }
 
-    .start-items {
-      flex: 1;
-      padding: 6px;
-      display: flex;
-      flex-direction: column;
-      gap: 3px;
-    }
-
-    .start-item {
-      padding: 8px 10px;
-      font-size: 0.85rem;
-      font-weight: 800;
-      text-align: left;
-      background: transparent;
-      border: none;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
+    .start-items { flex: 1; padding: 6px; display: flex; flex-direction: column; gap: 3px; }
+    .start-item { padding: 7px 10px; font-size: 0.84rem; font-weight: 800; text-align: left; background: transparent; border: none; display: flex; align-items: center; gap: 8px; }
     .start-item:hover { background: #000080; color: #ffffff; }
     .start-divider { height: 2px; background: #808080; border-bottom: 1px solid #ffffff; margin: 4px 0; }
   </style>
 </head>
 <body>
 
+<!-- CRT Scanline Layer -->
+<div class="crt-overlay" id="crt-overlay"></div>
+
+<!-- Win95 Dotted Ghost Drag Outline -->
+<div id="drag-ghost-box"></div>
+
+<!-- Windows 95 Boot Splash -->
+<div id="win95-boot-screen">
+  <div class="boot-box">
+    <div style="font-size: 1.45rem; font-weight: 900; color: #ffffff; text-shadow: 2px 2px 0 #111111;">
+      MY-ARCHIVE 95 OS
+    </div>
+    <div style="font-size: 0.85rem; color: #ffd83b; font-weight: 700; margin-top: 6px;">
+      Neo-Brutalism Desktop &amp; Media Database
+    </div>
+    <div class="boot-progress" id="boot-progress"></div>
+    <div style="font-size: 0.78rem; color: #ffffff; margin-top: 10px;">
+      시스템 리소스 및 Google Sheets 커널 초기화 중...
+    </div>
+  </div>
+</div>
+
+<!-- 3D Retro Starfield Screensaver -->
+<div id="screensaver-overlay" title="클릭하거나 키를 누르면 바탕화면으로 복귀합니다">
+  <canvas id="screensaver-canvas"></canvas>
+</div>
+
 <div class="desktop-workspace">
-  <!-- Desktop Shortcut Icons -->
+  <!-- Left Desktop Icons -->
   <aside class="desktop-icons" aria-label="바탕화면 아이콘">
-    <div class="desktop-icon" id="icon-main" title="내 감상함 열기">
+    <div class="desktop-icon" id="icon-main">
       <div class="icon-glyph">DB</div>
       <span class="icon-label">내 감상함.exe</span>
     </div>
 
-    <div class="desktop-icon" id="icon-new" title="새 감상 기록 등록">
+    <div class="desktop-icon" id="icon-new">
       <div class="icon-glyph yellow">+</div>
       <span class="icon-label">새 기록 등록</span>
     </div>
 
-    <div class="desktop-icon" id="icon-memo" title="바탕화면 아이디어 메모장">
+    <div class="desktop-icon" id="icon-memo">
       <div class="icon-glyph white">📝</div>
       <span class="icon-label">아이디어 메모</span>
     </div>
 
-    <div class="desktop-icon" id="icon-book" title="도서 서가 필터">
+    <div class="desktop-icon" id="icon-mine">
+      <div class="icon-glyph dark">💣</div>
+      <span class="icon-label">지뢰찾기.exe</span>
+    </div>
+
+    <div class="desktop-icon" id="icon-book">
       <div class="icon-glyph sky">BK</div>
       <span class="icon-label">도서 서가</span>
     </div>
 
-    <div class="desktop-icon" id="icon-music" title="음반 플레이어 필터">
+    <div class="desktop-icon" id="icon-music">
       <div class="icon-glyph green">LP</div>
       <span class="icon-label">음반 플레이어</span>
     </div>
 
-    <div class="desktop-icon" id="icon-video" title="영상 비디오 필터">
+    <div class="desktop-icon" id="icon-video">
       <div class="icon-glyph pink">TV</div>
       <span class="icon-label">영상 비디오</span>
     </div>
   </aside>
 
-  <!-- Primary Explorer Window -->
+  <!-- Center Main Explorer Window -->
   <main class="win95-window focused" id="win-main" data-win-id="win-main" data-win-title="📁 MY-ARCHIVE.EXE">
     <div class="win-titlebar">
       <div class="win-title-left">
@@ -913,27 +1018,29 @@
       </div>
     </div>
 
-    <!-- Functional Windows 95 Menu Bar -->
-    <div class="win-menubar" id="main-menubar">
+    <!-- Menu Bar -->
+    <div class="win-menubar">
       <div class="menu-item-wrap">
         <button type="button" class="menu-root">파일(F)</button>
         <div class="menu-dropdown">
           <button type="button" class="menu-opt" id="mnu-new-archive"><span>새 감상 기록 등록...</span><span>Ctrl+N</span></button>
           <button type="button" class="menu-opt" id="mnu-open-memo"><span>아이디어 메모장 열기</span><span>Ctrl+M</span></button>
           <div class="menu-sep"></div>
-          <button type="button" class="menu-opt" id="mnu-export-csv"><span>아카이브 CSV 백업</span><span>Export</span></button>
-          <button type="button" class="menu-opt" id="mnu-sync-sheet"><span>구글 시트 새로고침</span><span>F5</span></button>
+          <button type="button" class="menu-opt" id="mnu-export-csv"><span>아카이브 CSV 내보내기</span><span>CSV</span></button>
+          <button type="button" class="menu-opt" id="mnu-sync-sheet"><span>구글 시트 동기화</span><span>F5</span></button>
         </div>
       </div>
 
       <div class="menu-item-wrap">
-        <button type="button" class="menu-root">보기(V)</button>
+        <button type="button" class="menu-root">보기(V) &amp; 레트로 효과</button>
         <div class="menu-dropdown">
           <button type="button" class="menu-opt" data-cat-menu="ALL"><span>전체 매체 보기</span></button>
           <button type="button" class="menu-opt" data-cat-menu="도서"><span>도서 기록만 보기</span></button>
           <button type="button" class="menu-opt" data-cat-menu="음악"><span>음악 기록만 보기</span></button>
           <button type="button" class="menu-opt" data-cat-menu="영상"><span>영상 기록만 보기</span></button>
           <div class="menu-sep"></div>
+          <button type="button" class="menu-opt" id="mnu-toggle-crt"><span>CRT 브라운관 스캔라인 켜기/끄기</span></button>
+          <button type="button" class="menu-opt" id="mnu-run-screensaver"><span>3D 별빛 화면 보호기 실행</span></button>
           <button type="button" class="menu-opt" id="mnu-toggle-charts"><span>통계 차트 접기/펼치기</span></button>
         </div>
       </div>
@@ -949,17 +1056,17 @@
       <div class="menu-item-wrap">
         <button type="button" class="menu-root">도움말(H)</button>
         <div class="menu-dropdown">
+          <button type="button" class="menu-opt" id="mnu-open-mine"><span>지뢰찾기 (WINMINE.EXE)</span></button>
           <button type="button" class="menu-opt" id="mnu-about"><span>MY-ARCHIVE 95 정보...</span></button>
         </div>
       </div>
     </div>
 
     <div class="win-body">
-      <!-- Hero -->
       <section class="os-hero">
         <div>
           <h1>감상 아카이빙 및 취향 통계 대시보드</h1>
-          <p>다중 창 띄우기, 다중 음원·영상 순위 검색, 바탕화면 아이디어 메모장을 지원하는 개인 아카이브 OS입니다.</p>
+          <p>점선 와이어프레임 창 이동, 8비트 효과음, Winamp 주크박스 위젯, 다중 검색이 탑재된 아카이브 OS입니다.</p>
         </div>
         <div style="display: flex; gap: 8px; flex-wrap: wrap;">
           <button type="button" class="btn95 sky" id="btn-open-memo-hero">📝 아이디어 메모</button>
@@ -986,7 +1093,7 @@
         </div>
         <div class="kpi-panel green">
           <div class="kpi-lbl">선호 장르 TOP 1</div>
-          <div class="kpi-val" id="kpi-top-genre" style="font-size: 1.4rem;">-</div>
+          <div class="kpi-val" id="kpi-top-genre" style="font-size: 1.35rem;">-</div>
           <div class="kpi-sub" id="kpi-top-genre-sub">장르 키워드 통계</div>
         </div>
       </section>
@@ -996,7 +1103,7 @@
         <div class="sunken-box">
           <div class="box-head">
             <span>매체별 비율 분석</span>
-            <span style="font-size: 0.74rem; background: var(--brutal-sky); padding: 2px 6px; border: 1.5px solid #111;">MEDIA</span>
+            <span style="font-size: 0.72rem; background: var(--brutal-sky); padding: 2px 6px; border: 1.5px solid #111;">MEDIA</span>
           </div>
           <div class="chart-wrap"><canvas id="chart-category"></canvas></div>
         </div>
@@ -1004,7 +1111,7 @@
         <div class="sunken-box">
           <div class="box-head">
             <span>월별 감상 기록 추이</span>
-            <span style="font-size: 0.74rem; background: var(--brutal-green); padding: 2px 6px; border: 1.5px solid #111;">TIMELINE</span>
+            <span style="font-size: 0.72rem; background: var(--brutal-green); padding: 2px 6px; border: 1.5px solid #111;">TIMELINE</span>
           </div>
           <div class="chart-wrap"><canvas id="chart-monthly"></canvas></div>
         </div>
@@ -1027,7 +1134,7 @@
             <option value="4">★ 4점 이상</option>
             <option value="3">★ 3점 이상</option>
           </select>
-          <input type="text" id="filter-keyword" placeholder="제목·제작자·메모 검색..." style="width: 210px;" />
+          <input type="text" id="filter-keyword" placeholder="제목·제작자·메모 검색..." style="width: 195px;" />
         </div>
       </div>
 
@@ -1036,14 +1143,82 @@
     </div>
 
     <div class="win-statusbar">
-      <div class="status-cell" id="status-left">준비 완료 — 여러 팝업 창을 동시에 띄워 탐색할 수 있습니다</div>
+      <div class="status-cell" id="status-left">준비 완료 — 창 제목을 드래그하면 Win95 점선 프레임이 나타납니다</div>
       <div class="status-cell" id="status-right">0개 개체 표시됨</div>
     </div>
   </main>
+
+  <!-- Right Desktop Widgets Column -->
+  <aside class="desktop-widgets-col" aria-label="바탕화면 레트로 위젯">
+    <!-- Widget 1: Winamp Style Archive Jukebox -->
+    <div class="desk-widget">
+      <div class="widget-head">
+        <span>⚡ WINAMP 95 JUKEBOX</span>
+        <span>128kbps</span>
+      </div>
+      <div class="widget-body">
+        <div class="winamp-lcd">
+          <div id="jukebox-track" style="font-size: 0.78rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+            01. 아카이브 트랙 대기 중...
+          </div>
+          <div id="jukebox-artist" style="font-size: 0.7rem; color: #ffd83b; margin-top: 2px;">
+            음악 기록을 등록하면 자동 연동
+          </div>
+          <div class="eq-bars" id="eq-bars">
+            <div class="eq-bar"></div><div class="eq-bar"></div><div class="eq-bar"></div><div class="eq-bar"></div>
+            <div class="eq-bar"></div><div class="eq-bar"></div><div class="eq-bar"></div><div class="eq-bar"></div>
+            <div class="eq-bar"></div><div class="eq-bar"></div><div class="eq-bar"></div><div class="eq-bar"></div>
+          </div>
+        </div>
+        <div style="display: flex; gap: 4px; justify-content: space-between;">
+          <button type="button" class="btn95 sm" id="jb-prev" title="이전 트랙">⏮</button>
+          <button type="button" class="btn95 green sm" id="jb-play" title="이퀄라이저 재생">▶</button>
+          <button type="button" class="btn95 sm" id="jb-stop" title="정지">⏹</button>
+          <button type="button" class="btn95 sm" id="jb-next" title="다음 트랙">⏭</button>
+          <a class="btn95 pink sm" id="jb-yt" href="https://www.youtube.com" target="_blank" rel="noopener noreferrer" title="YouTube에서 듣기">YT</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Widget 2: Classic Analog Clock -->
+    <div class="desk-widget">
+      <div class="widget-head">
+        <span>🕒 CLOCK.EXE</span>
+        <span>KST</span>
+      </div>
+      <div class="widget-body" style="text-align: center;">
+        <div class="analog-clock-face">
+          <div class="clock-hand hand-hour" id="clk-hour"></div>
+          <div class="clock-hand hand-min" id="clk-min"></div>
+          <div class="clock-hand hand-sec" id="clk-sec"></div>
+          <div class="clock-pin"></div>
+        </div>
+        <div id="digital-date-lbl" style="font-size: 0.78rem; font-weight: 900;">2026-11-16 (월)</div>
+      </div>
+    </div>
+
+    <!-- Widget 3: System Resource & Retro Toggles -->
+    <div class="desk-widget">
+      <div class="widget-head">
+        <span>📟 SYS_MONITOR</span>
+        <span>OK</span>
+      </div>
+      <div class="widget-body" style="font-size: 0.78rem; font-weight: 800;">
+        <div style="margin-bottom: 6px;">메모리 여유: <span style="color: #000080;">84% Free</span></div>
+        <div style="height: 12px; background: #fff; border: 2px solid #111; box-shadow: var(--bevel-in); margin-bottom: 10px;">
+          <div style="width: 84%; height: 100%; background: var(--brutal-green);"></div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+          <button type="button" class="btn95 sm yellow" id="btn-widget-crt">📺 CRT 스캔라인 토글</button>
+          <button type="button" class="btn95 sm sky" id="btn-widget-ss">🌌 3D 화면 보호기 가동</button>
+        </div>
+      </div>
+    </div>
+  </aside>
 </div>
 
 <!-- ======================================================================= -->
-<!-- FLOATING WINDOW 1: 새 감상 기록 마법사 (순위화 다중 소스 검색)                  -->
+<!-- FLOATING WINDOW 1: 새 감상 기록 마법사                                      -->
 <!-- ======================================================================= -->
 <div class="floating-win" id="win-register" data-win-id="win-register" data-win-title="➕ 새 감상 기록 마법사" style="top: 56px; left: 160px; width: 690px;">
   <div class="win-titlebar draggable yellow-bar">
@@ -1052,13 +1227,13 @@
       <span>새 감상 기록 마법사 (MULTI-SOURCE SEARCH)</span>
     </div>
     <div class="win-controls">
-      <button type="button" class="win-ctrl-btn" data-action="minimize" data-target="win-register" title="최소화">_</button>
-      <button type="button" class="win-ctrl-btn close" data-action="close" data-target="win-register" title="닫기">✕</button>
+      <button type="button" class="win-ctrl-btn" data-action="minimize" data-target="win-register">_</button>
+      <button type="button" class="win-ctrl-btn close" data-action="close" data-target="win-register">✕</button>
     </div>
   </div>
 
   <div class="win-body">
-    <div class="sunken-box" style="margin-bottom: 14px; background: var(--win-gray);">
+    <div class="sunken-box" style="margin-bottom: 12px; background: var(--win-gray);">
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
         <div>
           <label style="display:block; font-size:0.8rem; font-weight:800; margin-bottom:4px;" for="inp-category">매체 구분</label>
@@ -1080,19 +1255,17 @@
           작품 제목, 유사어, 또는 YouTube·음원·도서 링크(URL) 입력
         </label>
         <div style="display: flex; gap: 8px;">
-          <input type="text" id="inp-search-query" placeholder="동명곡/유사어 검색 지원 (예: 소나기, 밤양갱, 아몬드, 유튜브 URL)" style="flex: 1;" />
+          <input type="text" id="inp-search-query" placeholder="예: 소나기, 밤양갱, 아몬드, 유튜브 링크" style="flex: 1;" />
           <button type="button" class="btn95 sky" id="btn-auto-search" style="white-space: nowrap;">순위 검색</button>
         </div>
       </div>
 
       <div id="reg-alert" class="dialog-banner"></div>
-
-      <!-- Ranked Candidate List (동명 음악/영상/도서 구분 선택기) -->
       <div id="rank-list" class="rank-list"></div>
     </div>
 
     <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 12px; background: #ffffff; border: 2px solid #111; padding: 10px;">
-      <img id="preview-cover" alt="표지" style="width: 56px; height: 56px; object-fit: cover; border: 2px solid #111;" />
+      <img id="preview-cover" alt="표지" style="width: 54px; height: 54px; object-fit: cover; border: 2px solid #111;" />
       <div style="flex: 1;">
         <label style="display:block; font-size:0.8rem; font-weight:800; margin-bottom:4px;" for="inp-cover-url">표지 / 썸네일 URL</label>
         <input type="text" id="inp-cover-url" placeholder="https://..." style="width: 100%;" />
@@ -1147,51 +1320,75 @@
 </div>
 
 <!-- ======================================================================= -->
-<!-- FLOATING WINDOW 2: 바탕화면 퀵 아이디어 메모장 (MEMO95.EXE)                    -->
+<!-- FLOATING WINDOW 2: 바탕화면 아이디어 메모장 (MEMO95.EXE)                    -->
 <!-- ======================================================================= -->
-<div class="floating-win" id="win-memo" data-win-id="win-memo" data-win-title="📝 MEMO95.EXE (아이디어 메모)" style="top: 90px; left: 220px; width: 460px;">
+<div class="floating-win" id="win-memo" data-win-id="win-memo" data-win-title="📝 MEMO95.EXE" style="top: 88px; left: 220px; width: 450px;">
   <div class="win-titlebar draggable green-bar">
     <div class="win-title-left">
       <span class="win-title-dot" style="background: var(--brutal-yellow);"></span>
       <span>MEMO95.EXE — 바탕화면 아이디어 메모장</span>
     </div>
     <div class="win-controls">
-      <button type="button" class="win-ctrl-btn" data-action="minimize" data-target="win-memo" title="최소화">_</button>
-      <button type="button" class="win-ctrl-btn close" data-action="close" data-target="win-memo" title="닫기">✕</button>
+      <button type="button" class="win-ctrl-btn" data-action="minimize" data-target="win-memo">_</button>
+      <button type="button" class="win-ctrl-btn close" data-action="close" data-target="win-memo">✕</button>
     </div>
   </div>
 
   <div class="win-body">
-    <form id="memo-form" class="sunken-box" style="margin-bottom: 14px; background: var(--win-gray);">
+    <form id="memo-form" class="sunken-box" style="margin-bottom: 12px; background: var(--win-gray);">
       <div style="margin-bottom: 8px;">
         <label style="display:block; font-size:0.8rem; font-weight:800; margin-bottom:3px;" for="memo-title">아이디어 제목</label>
         <input type="text" id="memo-title" placeholder="예: 다음에 읽을 책 / 작업 아이디어" style="width: 100%;" />
       </div>
       <div style="margin-bottom: 10px;">
         <label style="display:block; font-size:0.8rem; font-weight:800; margin-bottom:3px;" for="memo-content">짧은 메모 내용 *</label>
-        <textarea id="memo-content" rows="3" required placeholder="떠오른 아이디어를 바로 적어두십시오. 구글 시트(Notes 탭)에 즉시 저장됩니다." style="width: 100%;"></textarea>
+        <textarea id="memo-content" rows="3" required placeholder="떠오른 아이디어를 바로 적어두십시오." style="width: 100%;"></textarea>
       </div>
       <div style="display: flex; justify-content: flex-end;">
         <button type="submit" class="btn95 green sm" id="btn-save-memo">메모 시트에 저장</button>
       </div>
     </form>
 
-    <div class="sunken-box" style="max-height: 250px; overflow-y: auto;">
+    <div class="sunken-box" style="max-height: 240px; overflow-y: auto;">
       <div class="box-head">
         <span>저장된 아이디어 노트</span>
-        <span id="memo-count-badge" style="font-size: 0.74rem; background: var(--brutal-yellow); padding: 2px 6px; border: 1.5px solid #111;">0건</span>
+        <span id="memo-count-badge" style="font-size: 0.72rem; background: var(--brutal-yellow); padding: 2px 6px; border: 1.5px solid #111;">0건</span>
       </div>
       <div id="memo-list-container">
-        <div style="font-size: 0.84rem; font-weight: 700; color: #4a4a4a;">메모를 불러오는 중...</div>
+        <div style="font-size: 0.82rem; font-weight: 700; color: #4a4a4a;">메모를 불러오는 중...</div>
       </div>
     </div>
   </div>
 </div>
 
 <!-- ======================================================================= -->
-<!-- FLOATING WINDOW 3: 시스템 정보 창 (ABOUT.EXE)                              -->
+<!-- FLOATING WINDOW 3: 클래식 지뢰찾기 (WINMINE.EXE)                           -->
 <!-- ======================================================================= -->
-<div class="floating-win" id="win-about" data-win-id="win-about" data-win-title="ℹ️ MY-ARCHIVE 95 정보" style="top: 140px; left: 280px; width: 420px;">
+<div class="floating-win" id="win-mine" data-win-id="win-mine" data-win-title="💣 지뢰찾기.exe" style="top: 110px; left: 320px; width: 340px;">
+  <div class="win-titlebar draggable">
+    <div class="win-title-left">
+      <span class="win-title-dot" style="background: var(--brutal-pink);"></span>
+      <span>WINMINE.EXE — 지뢰찾기</span>
+    </div>
+    <div class="win-controls">
+      <button type="button" class="win-ctrl-btn" data-action="minimize" data-target="win-mine">_</button>
+      <button type="button" class="win-ctrl-btn close" data-action="close" data-target="win-mine">✕</button>
+    </div>
+  </div>
+  <div class="win-body" style="text-align: center;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; background: var(--win-gray); padding: 6px 10px; border: 2px solid #111; box-shadow: var(--bevel-in);">
+      <span id="mine-left-lbl" style="font-family: monospace; font-size: 1.1rem; font-weight: 900; background: #111; color: #ff4757; padding: 2px 8px;">010</span>
+      <button type="button" class="btn95 yellow sm" id="btn-mine-reset">🙂 다시 시작</button>
+      <span style="font-size: 0.75rem; font-weight: 800;">우클릭: 깃발</span>
+    </div>
+    <div class="mine-grid" id="mine-grid"></div>
+  </div>
+</div>
+
+<!-- ======================================================================= -->
+<!-- FLOATING WINDOW 4: 시스템 정보 창 (ABOUT.EXE)                              -->
+<!-- ======================================================================= -->
+<div class="floating-win" id="win-about" data-win-id="win-about" data-win-title="ℹ️ MY-ARCHIVE 95 정보" style="top: 140px; left: 280px; width: 430px;">
   <div class="win-titlebar draggable">
     <div class="win-title-left">
       <span class="win-title-dot" style="background: var(--brutal-sky);"></span>
@@ -1202,12 +1399,12 @@
     </div>
   </div>
   <div class="win-body">
-    <div class="sunken-box" style="margin-bottom: 14px;">
-      <h3 style="font-weight: 900; margin-bottom: 6px;">MY-ARCHIVE 95 (Neo-Brutalism Edition)</h3>
-      <p style="font-size: 0.85rem; font-weight: 600; line-height: 1.6;">
-        • <strong>멀티 윈도우 매니저:</strong> 제목 표시줄 드래그 이동, 다중 팝업 동시 열기, 작업 표시줄 전환 지원<br/>
-        • <strong>다중 메타데이터 검색:</strong> Apple Music, Deezer, MusicBrainz, YouTube oEmbed, Google Books 유사도 순위화 지원<br/>
-        • <strong>실시간 DB:</strong> Google Sheets &amp; Apps Script 백그라운드 자동 연동
+    <div class="sunken-box" style="margin-bottom: 12px;">
+      <h3 style="font-weight: 900; margin-bottom: 6px;">MY-ARCHIVE 95 (Retro &amp; Neo-Brutalism OS)</h3>
+      <p style="font-size: 0.84rem; font-weight: 600; line-height: 1.6;">
+        • <strong>고스트 와이어프레임 드래그:</strong> 창 이동 시 Win95 점선 프레임 미리보기 지원<br/>
+        • <strong>레트로 효과:</strong> CRT 스캔라인 필터, 3D 별빛 화면 보호기, 8비트 신시사이저 효과음<br/>
+        • <strong>데스크톱 위젯:</strong> Winamp 아카이브 주크박스, 아날로그 시계, 지뢰찾기, 아이디어 메모장
       </p>
     </div>
     <div style="display: flex; justify-content: flex-end;">
@@ -1216,7 +1413,6 @@
   </div>
 </div>
 
-<!-- 동적 상세 탐색기 창들이 생성되는 컨테이너 -->
 <div id="dynamic-windows-container"></div>
 
 <!-- ======================================================================= -->
@@ -1227,12 +1423,14 @@
   <div class="start-items">
     <button type="button" class="start-item" id="sm-new">➕ 새 감상 기록 마법사</button>
     <button type="button" class="start-item" id="sm-memo">📝 아이디어 메모장 (MEMO95)</button>
+    <button type="button" class="start-item" id="sm-mine">💣 지뢰찾기 (WINMINE.EXE)</button>
     <div class="start-divider"></div>
     <button type="button" class="start-item" id="sm-all">📂 전체 아카이브 탐색기</button>
     <button type="button" class="start-item" id="sm-book">📚 도서 서가만 보기</button>
     <button type="button" class="start-item" id="sm-music">🎵 음악 음반만 보기</button>
     <button type="button" class="start-item" id="sm-video">🎬 영상 비디오만 보기</button>
     <div class="start-divider"></div>
+    <button type="button" class="start-item" id="sm-screensaver">🌌 3D 화면 보호기 가동</button>
     <button type="button" class="start-item" id="sm-reload">🔄 구글 시트 데이터 새로고침</button>
   </div>
 </div>
@@ -1247,12 +1445,14 @@
   </div>
 
   <div class="system-tray">
+    <button type="button" id="btn-sound-toggle" style="background:none; border:none; font-size:0.85rem;" title="8비트 효과음 켜기/끄기">🔊</button>
     <span title="Google Sheets 연결됨">🟢 DB</span>
-    <span id="tray-clock">오후 11:52</span>
+    <span id="tray-clock">오후 11:58</span>
   </div>
 </footer>
 
 <script>
+  // 새로 배포된 Google Apps Script 웹 앱 URL 반영
   const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwH-hzWi2Z3_oTFt0PWBhzYMP10VEx4e-32E9EW7d5SMF2k_bwxQL0_3ONaQ8Ze3sdKUQ/exec';
 
   const FALLBACK_COVER = "data:image/svg+xml;utf8," + encodeURIComponent(`
@@ -1271,13 +1471,90 @@
   let monthlyChart = null;
   let topZIndex = 200;
   let detailWindowCount = 0;
+  let soundEnabled = true;
+
+  /* =========================================================================
+   * 0. WEB AUDIO 8-BIT RETRO SOUND SYNTHESIZER & BOOT SEQUENCE
+   * ========================================================================= */
+  function playRetroTone(type = 'click') {
+    if (!soundEnabled) return;
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      const ctx = new AudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      const now = ctx.currentTime;
+      if (type === 'boot') {
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(261.63, now);
+        osc.frequency.setValueAtTime(329.63, now + 0.12);
+        osc.frequency.setValueAtTime(392.00, now + 0.24);
+        osc.frequency.setValueAtTime(523.25, now + 0.36);
+        gain.gain.setValueAtTime(0.08, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.7);
+        osc.start(now);
+        osc.stop(now + 0.7);
+      } else if (type === 'open') {
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(440, now);
+        osc.frequency.setValueAtTime(660, now + 0.05);
+        gain.gain.setValueAtTime(0.03, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+        osc.start(now);
+        osc.stop(now + 0.12);
+      } else if (type === 'boom') {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(140, now);
+        osc.frequency.exponentialRampToValueAtTime(40, now + 0.3);
+        gain.gain.setValueAtTime(0.09, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+        osc.start(now);
+        osc.stop(now + 0.3);
+      } else {
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(580, now);
+        gain.gain.setValueAtTime(0.02, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+        osc.start(now);
+        osc.stop(now + 0.05);
+      }
+    } catch {}
+  }
+
+  document.getElementById('btn-sound-toggle').addEventListener('click', e => {
+    soundEnabled = !soundEnabled;
+    e.target.textContent = soundEnabled ? '🔊' : '🔇';
+    if (soundEnabled) playRetroTone('click');
+  });
+
+  function runBootAnimation() {
+    const bar = document.getElementById('boot-progress');
+    const splash = document.getElementById('win95-boot-screen');
+    let count = 0;
+    const timer = setInterval(() => {
+      count++;
+      const block = document.createElement('div');
+      block.className = 'boot-block';
+      bar.appendChild(block);
+      if (count >= 16) {
+        clearInterval(timer);
+        setTimeout(() => {
+          splash.style.display = 'none';
+          playRetroTone('boot');
+        }, 180);
+      }
+    }, 45);
+  }
 
   function setLoadingCursor(on) {
     document.body.classList.toggle('is-loading', on);
   }
 
   /* =========================================================================
-   * 0. MULTI-WINDOW MANAGER (창 포커스, 드래그 이동, 작업 표시줄 연동)
+   * 1. MULTI-WINDOW MANAGER + WIN95 GHOST WIREFRAME DRAG
    * ========================================================================= */
   function focusWindow(winEl) {
     if (!winEl) return;
@@ -1297,11 +1574,13 @@
     winEl.classList.add('open');
     winEl.classList.remove('minimized');
     focusWindow(winEl);
+    playRetroTone('open');
   }
 
   function closeWindow(winId) {
     const winEl = document.getElementById(winId);
     if (!winEl) return;
+    playRetroTone('click');
     if (winEl.dataset.dynamic === 'true') {
       winEl.remove();
     } else {
@@ -1314,6 +1593,7 @@
   function minimizeWindow(winId) {
     const winEl = document.getElementById(winId);
     if (!winEl) return;
+    playRetroTone('click');
     winEl.classList.add('minimized');
     winEl.classList.remove('focused');
     syncTaskbar();
@@ -1350,7 +1630,6 @@
     });
   }
 
-  // 창 컨트롤 버튼 위임 (_, □, ✕)
   document.addEventListener('click', e => {
     const ctrl = e.target.closest('.win-ctrl-btn');
     if (ctrl) {
@@ -1367,11 +1646,13 @@
     if (clickedWin) focusWindow(clickedWin);
   });
 
-  // 드래그 이동 기능 (Windows 95 타이틀바 드래그)
+  // Win95 점선 와이어프레임 고스트 드래그 구현
+  const ghostBox = document.getElementById('drag-ghost-box');
+
   function enableWindowDrag(winEl) {
     const bar = winEl.querySelector('.win-titlebar.draggable');
     if (!bar) return;
-    let isDragging = false, startX = 0, startY = 0, origLeft = 0, origTop = 0;
+    let isDragging = false, startX = 0, startY = 0, origLeft = 0, origTop = 0, targetLeft = 0, targetTop = 0;
 
     bar.addEventListener('mousedown', e => {
       if (e.target.closest('.win-ctrl-btn')) return;
@@ -1382,36 +1663,281 @@
       const rect = winEl.getBoundingClientRect();
       origLeft = rect.left;
       origTop = rect.top;
+      targetLeft = origLeft;
+      targetTop = origTop;
+
+      ghostBox.style.width = `${rect.width}px`;
+      ghostBox.style.height = `${rect.height}px`;
+      ghostBox.style.left = `${origLeft}px`;
+      ghostBox.style.top = `${origTop}px`;
+      ghostBox.style.display = 'block';
     });
 
     document.addEventListener('mousemove', e => {
       if (!isDragging) return;
       const dx = e.clientX - startX;
       const dy = e.clientY - startY;
-      const nextLeft = Math.max(0, Math.min(window.innerWidth - 120, origLeft + dx));
-      const nextTop = Math.max(0, Math.min(window.innerHeight - 80, origTop + dy));
-      winEl.style.left = `${nextLeft}px`;
-      winEl.style.top = `${nextTop}px`;
+      targetLeft = Math.max(0, Math.min(window.innerWidth - 120, origLeft + dx));
+      targetTop = Math.max(0, Math.min(window.innerHeight - 80, origTop + dy));
+      ghostBox.style.left = `${targetLeft}px`;
+      ghostBox.style.top = `${targetTop}px`;
     });
 
-    document.addEventListener('mouseup', () => { isDragging = false; });
+    document.addEventListener('mouseup', () => {
+      if (!isDragging) return;
+      isDragging = false;
+      ghostBox.style.display = 'none';
+      winEl.style.left = `${targetLeft}px`;
+      winEl.style.top = `${targetTop}px`;
+      playRetroTone('click');
+    });
   }
 
   document.querySelectorAll('.floating-win').forEach(enableWindowDrag);
 
   /* =========================================================================
-   * 1. MENU BAR & START MENU & CLOCK
+   * 2. CLOCKS, CRT TOGGLE, 3D SCREENSAVER, WINAMP JUKEBOX, MINESWEEPER
    * ========================================================================= */
-  function updateTrayClock() {
+  function updateClocks() {
     const now = new Date();
     const h = now.getHours();
-    const m = String(now.getMinutes()).padStart(2, '0');
-    document.getElementById('tray-clock').textContent = `${h >= 12 ? '오후' : '오전'} ${h % 12 || 12}:${m}`;
-  }
-  setInterval(updateTrayClock, 10000);
-  updateTrayClock();
+    const m = now.getMinutes();
+    const s = now.getSeconds();
+    document.getElementById('tray-clock').textContent = `${h >= 12 ? '오후' : '오전'} ${h % 12 || 12}:${String(m).padStart(2, '0')}`;
 
-  // 상단 메뉴바 드롭다운
+    const days = ['일', '월', '화', '수', '목', '금', '토'];
+    document.getElementById('digital-date-lbl').textContent =
+      `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} (${days[now.getDay()]})`;
+
+    document.getElementById('clk-hour').style.transform = `rotate(${(h % 12) * 30 + m * 0.5}deg)`;
+    document.getElementById('clk-min').style.transform = `rotate(${m * 6}deg)`;
+    document.getElementById('clk-sec').style.transform = `rotate(${s * 6}deg)`;
+  }
+  setInterval(updateClocks, 1000);
+  updateClocks();
+
+  // CRT 스캔라인 효과 토글
+  function toggleCRT() {
+    document.body.classList.toggle('crt-on');
+    playRetroTone('click');
+  }
+  document.getElementById('mnu-toggle-crt').addEventListener('click', toggleCRT);
+  document.getElementById('btn-widget-crt').addEventListener('click', toggleCRT);
+
+  // 3D Starfield Retro Screensaver
+  let ssAnimId = null;
+  function startScreensaver() {
+    const overlay = document.getElementById('screensaver-overlay');
+    const canvas = document.getElementById('screensaver-canvas');
+    const ctx = canvas.getContext('2d');
+    overlay.style.display = 'block';
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const stars = Array.from({ length: 180 }, () => ({
+      x: (Math.random() - 0.5) * canvas.width,
+      y: (Math.random() - 0.5) * canvas.height,
+      z: Math.random() * canvas.width,
+      color: ['#ffffff', '#ffd83b', '#48dbfb', '#2ed573', '#ff4757'][Math.floor(Math.random() * 5)]
+    }));
+
+    function draw() {
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      const cx = canvas.width / 2;
+      const cy = canvas.height / 2;
+
+      stars.forEach(st => {
+        st.z -= 8;
+        if (st.z <= 1) {
+          st.z = canvas.width;
+          st.x = (Math.random() - 0.5) * canvas.width;
+          st.y = (Math.random() - 0.5) * canvas.height;
+        }
+        const sx = cx + (st.x / st.z) * cx;
+        const sy = cy + (st.y / st.z) * cy;
+        const size = Math.max(1.5, (1 - st.z / canvas.width) * 5);
+        ctx.fillStyle = st.color;
+        ctx.fillRect(sx, sy, size, size);
+      });
+      ssAnimId = requestAnimationFrame(draw);
+    }
+    draw();
+  }
+
+  function stopScreensaver() {
+    const overlay = document.getElementById('screensaver-overlay');
+    if (overlay.style.display === 'block') {
+      overlay.style.display = 'none';
+      if (ssAnimId) cancelAnimationFrame(ssAnimId);
+    }
+  }
+
+  document.getElementById('screensaver-overlay').addEventListener('click', stopScreensaver);
+  document.addEventListener('keydown', stopScreensaver);
+  document.getElementById('mnu-run-screensaver').addEventListener('click', startScreensaver);
+  document.getElementById('btn-widget-ss').addEventListener('click', startScreensaver);
+  document.getElementById('sm-screensaver').addEventListener('click', startScreensaver);
+
+  // Winamp Mini Jukebox Widget
+  let jbIndex = 0;
+  let jbPlaying = false;
+  let eqTimer = null;
+
+  function updateJukebox() {
+    const musicTracks = archiveItems.filter(i => i.category === '음악');
+    const trackEl = document.getElementById('jukebox-track');
+    const artistEl = document.getElementById('jukebox-artist');
+    const ytBtn = document.getElementById('jb-yt');
+
+    if (!musicTracks.length) {
+      trackEl.textContent = '01. MY-ARCHIVE 95 THEME';
+      artistEl.textContent = '음악 기록 추가 시 자동 연동';
+      ytBtn.href = 'https://www.youtube.com/results?search_query=synthwave+windows+95';
+      return;
+    }
+
+    jbIndex = (jbIndex + musicTracks.length) % musicTracks.length;
+    const cur = musicTracks[jbIndex];
+    trackEl.textContent = `${String(jbIndex + 1).padStart(2, '0')}. ${cur.title}`;
+    artistEl.textContent = `${cur.creator} (${cur.genre || '음악'})`;
+    ytBtn.href = cur.sourceUrl || `https://www.youtube.com/results?search_query=${encodeURIComponent(`${cur.creator} ${cur.title}`)}`;
+  }
+
+  function setEqualizer(active) {
+    jbPlaying = active;
+    if (eqTimer) clearInterval(eqTimer);
+    const bars = document.querySelectorAll('#eq-bars .eq-bar');
+    if (!active) {
+      bars.forEach(b => { b.style.height = '18%'; });
+      return;
+    }
+    eqTimer = setInterval(() => {
+      bars.forEach(b => {
+        b.style.height = `${15 + Math.floor(Math.random() * 85)}%`;
+      });
+    }, 150);
+  }
+
+  document.getElementById('jb-play').addEventListener('click', () => { playRetroTone('open'); setEqualizer(true); });
+  document.getElementById('jb-stop').addEventListener('click', () => { playRetroTone('click'); setEqualizer(false); });
+  document.getElementById('jb-prev').addEventListener('click', () => { jbIndex--; updateJukebox(); playRetroTone('click'); });
+  document.getElementById('jb-next').addEventListener('click', () => { jbIndex++; updateJukebox(); playRetroTone('click'); });
+
+  // Minesweeper Mini-Game (8x8, 10 Mines)
+  const MINE_SIZE = 8;
+  const MINE_TOTAL = 10;
+  let mineBoard = [];
+  let mineGameOver = false;
+
+  function initMinesweeper() {
+    mineGameOver = false;
+    document.getElementById('btn-mine-reset').textContent = '🙂 다시 시작';
+    document.getElementById('mine-left-lbl').textContent = '010';
+    mineBoard = Array.from({ length: MINE_SIZE * MINE_SIZE }, (_, idx) => ({
+      idx, mine: false, revealed: false, flagged: false, count: 0
+    }));
+
+    let placed = 0;
+    while (placed < MINE_TOTAL) {
+      const r = Math.floor(Math.random() * mineBoard.length);
+      if (!mineBoard[r].mine) {
+        mineBoard[r].mine = true;
+        placed++;
+      }
+    }
+
+    mineBoard.forEach(cell => {
+      if (cell.mine) return;
+      const neighbors = getMineNeighbors(cell.idx);
+      cell.count = neighbors.filter(n => mineBoard[n].mine).length;
+    });
+
+    renderMinesweeper();
+  }
+
+  function getMineNeighbors(idx) {
+    const r = Math.floor(idx / MINE_SIZE);
+    const c = idx % MINE_SIZE;
+    const res = [];
+    for (let dr = -1; dr <= 1; dr++) {
+      for (let dc = -1; dc <= 1; dc++) {
+        if (dr === 0 && dc === 0) continue;
+        const nr = r + dr, nc = c + dc;
+        if (nr >= 0 && nr < MINE_SIZE && nc >= 0 && nc < MINE_SIZE) {
+          res.push(nr * MINE_SIZE + nc);
+        }
+      }
+    }
+    return res;
+  }
+
+  function revealMineCell(idx) {
+    const cell = mineBoard[idx];
+    if (mineGameOver || cell.revealed || cell.flagged) return;
+    cell.revealed = true;
+
+    if (cell.mine) {
+      mineGameOver = true;
+      playRetroTone('boom');
+      document.getElementById('btn-mine-reset').textContent = '😵 게임 오버';
+      mineBoard.forEach(c => { if (c.mine) c.revealed = true; });
+      renderMinesweeper();
+      return;
+    }
+
+    playRetroTone('click');
+    if (cell.count === 0) {
+      getMineNeighbors(idx).forEach(n => revealMineCell(n));
+    }
+
+    const unrevealedSafe = mineBoard.filter(c => !c.mine && !c.revealed).length;
+    if (unrevealedSafe === 0) {
+      mineGameOver = true;
+      playRetroTone('boot');
+      document.getElementById('btn-mine-reset').textContent = '😎 클리어!';
+    }
+    renderMinesweeper();
+  }
+
+  function renderMinesweeper() {
+    const grid = document.getElementById('mine-grid');
+    grid.innerHTML = '';
+    const flaggedCount = mineBoard.filter(c => c.flagged).length;
+    document.getElementById('mine-left-lbl').textContent = String(Math.max(0, MINE_TOTAL - flaggedCount)).padStart(3, '0');
+
+    mineBoard.forEach(cell => {
+      const div = document.createElement('div');
+      div.className = 'mine-cell' + (cell.revealed ? ' revealed' : '') + (cell.revealed && cell.mine ? ' boom' : '');
+      if (cell.revealed) {
+        div.textContent = cell.mine ? '💣' : (cell.count > 0 ? cell.count : '');
+        if (cell.count === 1) div.style.color = '#000080';
+        if (cell.count === 2) div.style.color = '#008000';
+        if (cell.count >= 3) div.style.color = '#ff4757';
+      } else if (cell.flagged) {
+        div.textContent = '🚩';
+      }
+
+      div.addEventListener('click', () => revealMineCell(cell.idx));
+      div.addEventListener('contextmenu', e => {
+        e.preventDefault();
+        if (mineGameOver || cell.revealed) return;
+        cell.flagged = !cell.flagged;
+        playRetroTone('click');
+        renderMinesweeper();
+      });
+      grid.appendChild(div);
+    });
+  }
+
+  document.getElementById('btn-mine-reset').addEventListener('click', initMinesweeper);
+  document.getElementById('icon-mine').addEventListener('click', () => { initMinesweeper(); openWindow('win-mine'); });
+  document.getElementById('sm-mine').addEventListener('click', () => { initMinesweeper(); openWindow('win-mine'); });
+  document.getElementById('mnu-open-mine').addEventListener('click', () => { initMinesweeper(); openWindow('win-mine'); });
+
+  /* =========================================================================
+   * 3. MENU BAR & START MENU BINDINGS
+   * ========================================================================= */
   document.querySelectorAll('.menu-item-wrap').forEach(wrap => {
     wrap.querySelector('.menu-root').addEventListener('click', e => {
       e.stopPropagation();
@@ -1427,7 +1953,6 @@
     document.getElementById('btn-start').classList.remove('pressed');
   });
 
-  // 메뉴바 액션들
   document.getElementById('mnu-new-archive').addEventListener('click', openRegisterModal);
   document.getElementById('mnu-open-memo').addEventListener('click', openMemoWindow);
   document.getElementById('mnu-sync-sheet').addEventListener('click', loadArchiveData);
@@ -1474,16 +1999,15 @@
 
   document.getElementById('mnu-about').addEventListener('click', () => openWindow('win-about'));
 
-  // 시작 버튼
   const startBtn = document.getElementById('btn-start');
   const startMenu = document.getElementById('start-menu');
   startBtn.addEventListener('click', e => {
     e.stopPropagation();
     const isOpen = startMenu.classList.toggle('open');
     startBtn.classList.toggle('pressed', isOpen);
+    playRetroTone('click');
   });
 
-  // 아이콘 및 시작 메뉴 바인딩
   document.getElementById('icon-main').addEventListener('click', () => selectCategoryFilter('ALL'));
   document.getElementById('icon-new').addEventListener('click', openRegisterModal);
   document.getElementById('icon-memo').addEventListener('click', openMemoWindow);
@@ -1512,9 +2036,10 @@
   }
 
   /* =========================================================================
-   * 2. INITIAL LOAD (ARCHIVE & NOTES)
+   * 4. INITIAL LOAD & DATA RENDERING
    * ========================================================================= */
   document.addEventListener('DOMContentLoaded', () => {
+    runBootAnimation();
     document.getElementById('inp-date').value = new Date().toISOString().slice(0, 10);
     document.getElementById('preview-cover').src = FALLBACK_COVER;
     loadArchiveData();
@@ -1532,16 +2057,14 @@
       archiveItems = [];
     } finally {
       setLoadingCursor(false);
-      document.getElementById('status-left').textContent = '준비 완료 — 카드를 클릭하면 새 팝업 창으로 연관 추천이 열립니다';
+      document.getElementById('status-left').textContent = '준비 완료 — 창 제목을 드래그하면 Win95 점선 프레임이 나타납니다';
     }
     updateKPIs();
     renderCharts();
     renderArchiveGrid();
+    updateJukebox();
   }
 
-  /* =========================================================================
-   * 3. KPI & CHARTS
-   * ========================================================================= */
   function updateKPIs() {
     const total = archiveItems.length;
     document.getElementById('kpi-total').textContent = `${total}건`;
@@ -1598,7 +2121,7 @@
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: { legend: { position: 'right', labels: { boxWidth: 14, padding: 12 } } }
+        plugins: { legend: { position: 'right', labels: { boxWidth: 13, padding: 10 } } }
       }
     });
 
@@ -1634,9 +2157,6 @@
     });
   }
 
-  /* =========================================================================
-   * 4. ARCHIVE GRID & MULTI-WINDOW DETAIL EXPLORER
-   * ========================================================================= */
   document.querySelectorAll('#cat-filter-group .pill-btn').forEach(btn => {
     btn.addEventListener('click', () => selectCategoryFilter(btn.dataset.cat));
   });
@@ -1701,7 +2221,6 @@
     });
   }
 
-  // 카드를 누를 때마다 독립적인 Windows 95 탐색기 창을 여러 개 띄울 수 있음
   async function spawnDetailWindow(item) {
     const existing = document.getElementById(`win-detail-${item.id}`);
     if (existing) {
@@ -1710,7 +2229,7 @@
     }
 
     detailWindowCount += 1;
-    const offset = (detailWindowCount % 6) * 28;
+    const offset = (detailWindowCount % 6) * 26;
     const winId = `win-detail-${item.id || Date.now()}`;
 
     const ytQuery = item.category === '음악'
@@ -1726,8 +2245,8 @@
     winEl.dataset.dynamic = 'true';
     winEl.dataset.winTitle = `🔍 ${item.title}`;
     winEl.style.top = `${70 + offset}px`;
-    winEl.style.left = `${160 + offset}px`;
-    winEl.style.width = '720px';
+    winEl.style.left = `${150 + offset}px`;
+    winEl.style.width = '710px';
 
     winEl.innerHTML = `
       <div class="win-titlebar draggable">
@@ -1745,13 +2264,13 @@
           <img class="detail-cover" src="${esc(item.coverUrl || FALLBACK_COVER)}" alt="${esc(item.title)}" onerror="this.onerror=null;this.src='${FALLBACK_COVER}';" />
           <div>
             <div style="display:flex; gap:6px; margin-bottom:8px; flex-wrap:wrap;">
-              <span style="padding:2px 8px; border:2px solid #111; background:var(--brutal-yellow); font-size:0.76rem; font-weight:900;">${esc(item.category)}</span>
-              <span style="padding:2px 8px; border:2px solid #111; background:#fff; font-size:0.76rem; font-weight:900;">${'★'.repeat(item.rating)}${'☆'.repeat(5 - item.rating)}</span>
-              <span style="padding:2px 8px; border:2px solid #111; background:var(--win-gray); font-size:0.76rem; font-weight:800;">${esc(item.watchDate)}</span>
+              <span style="padding:2px 8px; border:2px solid #111; background:var(--brutal-yellow); font-size:0.75rem; font-weight:900;">${esc(item.category)}</span>
+              <span style="padding:2px 8px; border:2px solid #111; background:#fff; font-size:0.75rem; font-weight:900;">${'★'.repeat(item.rating)}${'☆'.repeat(5 - item.rating)}</span>
+              <span style="padding:2px 8px; border:2px solid #111; background:var(--win-gray); font-size:0.75rem; font-weight:800;">${esc(item.watchDate)}</span>
             </div>
-            <h2 style="font-size:1.3rem; font-weight:900; margin-bottom:4px;">${esc(item.title)}</h2>
-            <div style="font-size:0.88rem; font-weight:700; color:#4a4a4a; margin-bottom:10px;">${esc(item.creator)} · ${esc(item.genre || '일반')}</div>
-            <p style="background:var(--brutal-paper); border:2px solid #111; padding:10px; font-size:0.88rem; font-weight:600;">${esc(item.review)}</p>
+            <h2 style="font-size:1.25rem; font-weight:900; margin-bottom:4px;">${esc(item.title)}</h2>
+            <div style="font-size:0.86rem; font-weight:700; color:#4a4a4a; margin-bottom:10px;">${esc(item.creator)} · ${esc(item.genre || '일반')}</div>
+            <p style="background:var(--brutal-paper); border:2px solid #111; padding:10px; font-size:0.86rem; font-weight:600;">${esc(item.review)}</p>
             <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:12px;">
               <a class="btn95 pink sm" href="${ytUrl}" target="_blank" rel="noopener noreferrer">▶ YouTube에서 바로 보기·듣기</a>
               ${item.sourceUrl ? `<a class="btn95 sky sm" href="${esc(item.sourceUrl)}" target="_blank" rel="noopener noreferrer">원본 링크 열기 ↗</a>` : ''}
@@ -1762,9 +2281,9 @@
         <div class="sunken-box">
           <div class="box-head">
             <span>「${esc(item.creator)} · ${esc(item.title)}」 연관 추천</span>
-            <span style="font-size:0.74rem; background:var(--brutal-yellow); padding:2px 6px; border:1.5px solid #111;">SIMILAR</span>
+            <span style="font-size:0.72rem; background:var(--brutal-yellow); padding:2px 6px; border:1.5px solid #111;">SIMILAR</span>
           </div>
-          <div class="rec-status-msg" style="font-size:0.84rem; font-weight:700; color:#4a4a4a;">연관 작품을 검색하고 있습니다...</div>
+          <div class="rec-status-msg" style="font-size:0.82rem; font-weight:700; color:#4a4a4a;">연관 작품을 검색하고 있습니다...</div>
           <div class="rec-grid"></div>
         </div>
       </div>
@@ -1773,8 +2292,8 @@
     document.getElementById('dynamic-windows-container').appendChild(winEl);
     enableWindowDrag(winEl);
     focusWindow(winEl);
+    playRetroTone('open');
 
-    // 연관 추천 로드
     const statusEl = winEl.querySelector('.rec-status-msg');
     const recGrid = winEl.querySelector('.rec-grid');
     setLoadingCursor(true);
@@ -1834,8 +2353,8 @@
           <div class="rec-card">
             <div>
               <img class="rec-thumb" src="${esc(r.thumb)}" alt="${esc(r.title)}" onerror="this.onerror=null;this.src='${FALLBACK_COVER}';" />
-              <div style="font-size:0.86rem; font-weight:900; margin-bottom:2px;">${esc(r.title)}</div>
-              <div style="font-size:0.76rem; font-weight:700; color:#4a4a4a; margin-bottom:8px;">${esc(r.creator)}</div>
+              <div style="font-size:0.84rem; font-weight:900; margin-bottom:2px;">${esc(r.title)}</div>
+              <div style="font-size:0.74rem; font-weight:700; color:#4a4a4a; margin-bottom:8px;">${esc(r.creator)}</div>
             </div>
             <div style="display:flex; gap:5px;">
               <a class="btn95 pink sm" style="flex:1;" href="${r.yt}" target="_blank" rel="noopener noreferrer">▶ YouTube</a>
@@ -1852,7 +2371,7 @@
   }
 
   /* =========================================================================
-   * 5. REGISTER WIZARD (다중 소스 순위화 검색 & 동명 작품 선택)
+   * 5. REGISTER WIZARD & MULTI-SOURCE RANKED SEARCH
    * ========================================================================= */
   function openRegisterModal() {
     document.getElementById('archive-form').reset();
@@ -1913,7 +2432,6 @@
         return;
       }
 
-      // 1위 후보를 기본 자동 채움
       applyCandidateToForm(list[0]);
       showRegAlert(
         list.length > 1
@@ -1922,7 +2440,6 @@
         'ok'
       );
 
-      // 여러 후보가 있으면 순위 선택 리스트 표시
       if (list.length > 1) {
         rankBox.innerHTML = '';
         list.forEach((cand, idx) => {
@@ -1932,10 +2449,10 @@
             <span class="rank-badge">#${idx + 1} (${cand.score}점)</span>
             <img class="rank-thumb" src="${esc(cand.coverUrl || FALLBACK_COVER)}" alt="" onerror="this.onerror=null;this.src='${FALLBACK_COVER}';" />
             <div style="flex:1; min-width:0;">
-              <div style="font-size:0.84rem; font-weight:900; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+              <div style="font-size:0.82rem; font-weight:900; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
                 ${esc(cand.title)} <span style="font-weight:700; color:#4a4a4a;">— ${esc(cand.creator)}</span>
               </div>
-              <div style="font-size:0.74rem; font-weight:700; color:#4a4a4a;">
+              <div style="font-size:0.72rem; font-weight:700; color:#4a4a4a;">
                 <span class="rank-src">${esc(cand.source)}</span>
                 ${cand.year ? ` · ${esc(cand.year)}년` : ''}
                 ${cand.extra ? ` · ${esc(cand.extra)}` : ''}
@@ -1944,6 +2461,7 @@
           `;
           row.addEventListener('click', () => {
             applyCandidateToForm(cand);
+            playRetroTone('click');
             showRegAlert(`선택됨: 「${cand.title}」 (${cand.creator} / ${cand.source})`, 'ok');
           });
           rankBox.appendChild(row);
@@ -2000,14 +2518,17 @@
       const json = await res.json();
 
       if (json.status === 'duplicate') {
+        playRetroTone('boom');
         showRegAlert(json.message, 'err');
         return;
       }
       if (json.status === 'success' && json.item) {
+        playRetroTone('boot');
         archiveItems.unshift(json.item);
         updateKPIs();
         renderCharts();
         renderArchiveGrid();
+        updateJukebox();
         closeWindow('win-register');
       } else {
         showRegAlert(json.message || '저장 오류', 'err');
@@ -2045,17 +2566,17 @@
     document.getElementById('memo-count-badge').textContent = `${memoNotes.length}건`;
 
     if (!memoNotes.length) {
-      container.innerHTML = `<div style="font-size:0.83rem; font-weight:700; color:#4a4a4a;">저장된 아이디어 메모가 없습니다. 위 입력란에 짧은 아이디어를 남겨보십시오.</div>`;
+      container.innerHTML = `<div style="font-size:0.82rem; font-weight:700; color:#4a4a4a;">저장된 아이디어 메모가 없습니다. 위 입력란에 짧은 아이디어를 남겨보십시오.</div>`;
       return;
     }
 
     container.innerHTML = memoNotes.map(n => `
       <div class="note-card">
-        <div style="display:flex; justify-content:space-between; font-size:0.75rem; font-weight:800; color:#4a4a4a; margin-bottom:4px;">
+        <div style="display:flex; justify-content:space-between; font-size:0.74rem; font-weight:800; color:#4a4a4a; margin-bottom:4px;">
           <span>📌 ${esc(n.title || '무제 메모')}</span>
           <span>${esc(n.createdAt)}</span>
         </div>
-        <div style="font-size:0.86rem; font-weight:700; white-space:pre-wrap;">${esc(n.content)}</div>
+        <div style="font-size:0.84rem; font-weight:700; white-space:pre-wrap;">${esc(n.content)}</div>
       </div>
     `).join('');
   }
@@ -2079,6 +2600,7 @@
       });
       const json = await res.json();
       if (json.status === 'success' && json.note) {
+        playRetroTone('open');
         memoNotes.unshift(json.note);
         renderNotesList();
         document.getElementById('memo-form').reset();
