@@ -1,4 +1,4 @@
-const APP_BUILD_VERSION = 'v2026.11.17-01';
+const APP_BUILD_VERSION = 'v2026.11.17-03';
 window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
 window.__MOD_VERSIONS.config = APP_BUILD_VERSION;
 
@@ -67,50 +67,93 @@ function getWin95DateValue(ySel, mSel, dSel) {
   return `${ySel.value}-${mSel.value}-${dSel.value}`;
 }
 
+// Windows 95 스타일 다성부 8비트/신스 효과음 합성기
 function playRetroTone(type = 'click') {
   if (!soundEnabled) return;
   try {
     const AudioCtx = window.AudioContext || window.webkitAudioContext;
     const ctx = new AudioCtx();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-
     const now = ctx.currentTime;
+
     if (type === 'boot') {
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(261.63, now);
-      osc.frequency.setValueAtTime(329.63, now + 0.12);
-      osc.frequency.setValueAtTime(392.00, now + 0.24);
-      osc.frequency.setValueAtTime(523.25, now + 0.36);
-      gain.gain.setValueAtTime(0.07, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.7);
-      osc.start(now);
-      osc.stop(now + 0.7);
+      // Windows 95 시동음풍 4성부 화음 아르페지오
+      const notes = [
+        { freq: 311.13, t: 0.00, dur: 0.55 }, // Eb4
+        { freq: 466.16, t: 0.14, dur: 0.55 }, // Bb4
+        { freq: 622.25, t: 0.28, dur: 0.65 }, // Eb5
+        { freq: 698.46, t: 0.44, dur: 0.85 }  // F5
+      ];
+      notes.forEach(n => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(n.freq, now + n.t);
+        gain.gain.setValueAtTime(0.001, now + n.t);
+        gain.gain.linearRampToValueAtTime(0.055, now + n.t + 0.05);
+        gain.gain.exponentialRampToValueAtTime(0.0008, now + n.t + n.dur);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now + n.t);
+        osc.stop(now + n.t + n.dur);
+      });
     } else if (type === 'open') {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
       osc.type = 'square';
       osc.frequency.setValueAtTime(440, now);
-      osc.frequency.setValueAtTime(660, now + 0.05);
-      gain.gain.setValueAtTime(0.03, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+      osc.frequency.setValueAtTime(660, now + 0.045);
+      gain.gain.setValueAtTime(0.028, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.11);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
       osc.start(now);
-      osc.stop(now + 0.12);
+      osc.stop(now + 0.11);
+    } else if (type === 'close') {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(520, now);
+      osc.frequency.setValueAtTime(340, now + 0.045);
+      gain.gain.setValueAtTime(0.025, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.1);
     } else if (type === 'boom') {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
       osc.type = 'sawtooth';
       osc.frequency.setValueAtTime(140, now);
-      osc.frequency.exponentialRampToValueAtTime(40, now + 0.3);
-      gain.gain.setValueAtTime(0.09, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+      osc.frequency.exponentialRampToValueAtTime(38, now + 0.32);
+      gain.gain.setValueAtTime(0.08, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.32);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
       osc.start(now);
-      osc.stop(now + 0.3);
-    } else {
+      osc.stop(now + 0.32);
+    } else if (type === 'post') {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
       osc.type = 'square';
-      osc.frequency.setValueAtTime(580, now);
-      gain.gain.setValueAtTime(0.02, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+      osc.frequency.setValueAtTime(880, now);
+      gain.gain.setValueAtTime(0.03, now);
+      gain.gain.exponentialRampToValueAtTime(0.0008, now + 0.13);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
       osc.start(now);
-      osc.stop(now + 0.05);
+      osc.stop(now + 0.13);
+    } else {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(620, now);
+      gain.gain.setValueAtTime(0.018, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.045);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.045);
     }
   } catch {}
 }
@@ -119,7 +162,7 @@ function setLoadingCursor(on) {
   document.body.classList.toggle('is-loading', on);
 }
 
-// 첫 로딩 화면 버전 표시 및 모든 JS/CSS 구성요소 최신 버전 무결성 검증
+// 모든 JS/CSS 구성요소 최신 버전 무결성 검증
 function verifySystemModules() {
   const v = window.__MOD_VERSIONS || {};
   const cssLoaded = Array.from(document.styleSheets).some(s => (s.href || '').includes('style.css'));
@@ -133,48 +176,171 @@ function verifySystemModules() {
   return { allOk, checks };
 }
 
+// 1995 Award Modular BIOS POST 화면 + DEL 키 CMOS SETUP 진입 지원
 function runBootAnimation() {
-  const bar = document.getElementById('boot-progress');
   const splash = document.getElementById('win95-boot-screen');
-  if (!bar || !splash) return;
+  if (!splash) return;
 
-  const bootBox = splash.querySelector('.boot-box') || splash;
   const { allOk, checks } = verifySystemModules();
+  let finished = false;
+  let inSetup = false;
+  const timers = [];
 
-  let diagEl = document.getElementById('boot-version-diag');
-  if (!diagEl) {
-    diagEl = document.createElement('div');
-    diagEl.id = 'boot-version-diag';
-    diagEl.style.cssText = 'margin-top:14px; padding:8px 10px; background:#111111; color:#2ed573; border:2px solid #ffffff; font-size:0.74rem; text-align:left; line-height:1.55;';
-    bootBox.appendChild(diagEl);
+  function finishBoot() {
+    if (finished) return;
+    finished = true;
+    timers.forEach(t => clearInterval(t));
+    timers.forEach(t => clearTimeout(t));
+    splash.style.display = 'none';
+    document.removeEventListener('keydown', onBootKey);
+    playRetroTone('boot');
   }
 
-  const lines = checks.map(c => `${c.ok ? '[OK]' : '[!] '} ${c.name} : ${c.ver}`);
-  diagEl.innerHTML = `
-    <div style="color:#ffd83b; font-weight:900; margin-bottom:4px;">SYSTEM BUILD : ${APP_BUILD_VERSION}</div>
-    ${lines.map(l => `<div>${esc(l)}</div>`).join('')}
-    <div style="margin-top:5px; color:${allOk ? '#48dbfb' : '#ff4757'}; font-weight:900;">
-      ${allOk ? '>> 모든 구성요소 최신 버전 동기화 완료' : '>> [경고] 일부 구버전 캐시 감지 (Ctrl+Shift+R 권장)'}
+  function openCmosSetup() {
+    inSetup = true;
+    timers.forEach(t => clearInterval(t));
+    timers.forEach(t => clearTimeout(t));
+    playRetroTone('post');
+
+    splash.style.background = '#0000aa';
+    splash.style.color = '#ffffff';
+    splash.innerHTML = `
+      <div class="bios-top-wrap" style="border: 3px double #ffffff; padding: 18px 22px; background: #0000aa;">
+        <div style="text-align:center; background:#c0c0c0; color:#111111; font-weight:900; padding:4px; margin-bottom:16px;">
+          ROM PCI/ISA BIOS (2A59CA39) — CMOS SETUP UTILITY — AWARD SOFTWARE, INC.
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:18px;">
+          <div style="border:1px solid #ffffff; padding:12px;">
+            <div class="bios-yellow" style="margin-bottom:8px;">[ SYSTEM CONFIGURATION ]</div>
+            <div style="margin-bottom:8px; cursor:pointer;" id="cmos-opt-sound">1. Onboard Speaker   : <span class="bios-cyan">[${soundEnabled ? 'ENABLED' : 'DISABLED'}]</span></div>
+            <div style="margin-bottom:8px; cursor:pointer;" id="cmos-opt-drag">2. Window Drag Mode  : <span class="bios-cyan">[${useGhostDrag ? 'WIREFRAME' : 'REALTIME'}]</span></div>
+            <div style="margin-bottom:8px; cursor:pointer;" id="cmos-opt-crt">3. CRT Scanline FX   : <span class="bios-cyan">[${document.body.classList.contains('crt-on') ? 'ON' : 'OFF'}]</span></div>
+          </div>
+          <div style="border:1px solid #ffffff; padding:12px;">
+            <div class="bios-yellow" style="margin-bottom:8px;">[ MODULE INTEGRITY TABLE ]</div>
+            ${checks.map(c => `<div>${c.name.padEnd(15, ' ')} : <span style="color:${c.ok ? '#2ed573' : '#ff4757'};">${c.ok ? 'OK' : 'WARN'} (${c.ver})</span></div>`).join('')}
+          </div>
+        </div>
+        <div style="border-top:1px solid #ffffff; padding-top:10px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+          <span>항목을 클릭하여 설정 변경 | <span class="bios-yellow">F10 / ENTER</span> : 저장 후 OS 부팅</span>
+          <button type="button" id="cmos-save-exit" style="background:#ffd83b; color:#111111; border:2px solid #ffffff; padding:4px 12px; font-family:monospace; font-weight:900; cursor:pointer;">SAVE &amp; EXIT SETUP (F10)</button>
+        </div>
+      </div>
+    `;
+
+    document.getElementById('cmos-opt-sound')?.addEventListener('click', e => {
+      soundEnabled = !soundEnabled;
+      const spkBtn = document.getElementById('btn-sound-toggle');
+      if (spkBtn) spkBtn.textContent = soundEnabled ? 'SPK:ON' : 'SPK:OFF';
+      e.currentTarget.querySelector('span').textContent = `[${soundEnabled ? 'ENABLED' : 'DISABLED'}]`;
+      playRetroTone('click');
+    });
+
+    document.getElementById('cmos-opt-drag')?.addEventListener('click', e => {
+      useGhostDrag = !useGhostDrag;
+      e.currentTarget.querySelector('span').textContent = `[${useGhostDrag ? 'WIREFRAME' : 'REALTIME'}]`;
+      playRetroTone('click');
+    });
+
+    document.getElementById('cmos-opt-crt')?.addEventListener('click', e => {
+      document.body.classList.toggle('crt-on');
+      e.currentTarget.querySelector('span').textContent = `[${document.body.classList.contains('crt-on') ? 'ON' : 'OFF'}]`;
+      playRetroTone('click');
+    });
+
+    document.getElementById('cmos-save-exit')?.addEventListener('click', finishBoot);
+  }
+
+  function onBootKey(e) {
+    if (inSetup) {
+      if (e.key === 'F10' || e.key === 'Enter' || e.key === 'Escape') {
+        e.preventDefault();
+        finishBoot();
+      }
+      return;
+    }
+    if (e.key === 'Delete') {
+      e.preventDefault();
+      openCmosSetup();
+    } else {
+      finishBoot();
+    }
+  }
+
+  splash.addEventListener('click', () => {
+    if (!inSetup) finishBoot();
+  });
+  document.addEventListener('keydown', onBootKey);
+
+  playRetroTone('post');
+
+  splash.innerHTML = `
+    <div class="bios-top-wrap">
+      <div class="bios-header">
+        <div>
+          <div class="bios-bright">Award Modular BIOS v4.51PG, An Energy Star Ally</div>
+          <div>Copyright (C) 1984-95, Award Software, Inc.</div>
+          <div class="bios-cyan" style="margin-top:6px;">MY-ARCHIVE 95 OS REVISION 2.0 (${APP_BUILD_VERSION})</div>
+        </div>
+        <div class="bios-epa-box">  ★ ENERGY ★
+  ┌──────────┐
+  │   EPA    │
+  │ POLLUTION│
+  │ PREVENTER│
+  └──────────┘</div>
+      </div>
+
+      <div class="bios-line">PENTIUM-S CPU at 133MHz</div>
+      <div class="bios-line">Memory Test : <span id="bios-mem-val" class="bios-bright">0K</span></div>
+      <div id="bios-post-log" style="margin-top:12px;"></div>
+      <div style="margin-top:8px;"><span class="bios-cursor"></span></div>
+    </div>
+
+    <div class="bios-footer">
+      <div>Press <span class="bios-bright">DEL</span> to enter SETUP, <span class="bios-bright">CLICK</span> or <span class="bios-bright">ANY KEY</span> to skip POST</div>
+      <div style="margin-top:2px;">11/17/95-i430FX-2A59CA39C-00</div>
     </div>
   `;
 
-  let count = 0;
-  const timer = setInterval(() => {
-    count++;
-    const block = document.createElement('div');
-    block.className = 'boot-block';
-    bar.appendChild(block);
-    if (count >= 16) {
-      clearInterval(timer);
-      setTimeout(() => {
-        splash.style.display = 'none';
-        playRetroTone('boot');
-      }, allOk ? 450 : 1400);
+  // 메모리 카운팅 (0K -> 65536K OK)
+  const memEl = document.getElementById('bios-mem-val');
+  let mem = 0;
+  const memInterval = setInterval(() => {
+    mem += 4096;
+    if (mem >= 65536) {
+      mem = 65536;
+      if (memEl) memEl.textContent = '65536K OK';
+      clearInterval(memInterval);
+    } else if (memEl) {
+      memEl.textContent = `${mem}K`;
     }
-  }, 40);
+  }, 22);
+  timers.push(memInterval);
+
+  const modSummary = checks.map(c => `${c.name}[${c.ok ? 'OK' : 'OLD'}]`).join('  ');
+  const logBox = document.getElementById('bios-post-log');
+  const postSteps = [
+    { delay: 360, html: `<div class="bios-line">Award Plug and Play BIOS Extension v1.0A</div>` },
+    { delay: 600, html: `<div class="bios-line">Detecting HDD Primary Master   ... <span class="bios-green">MY-ARCHIVE-STORAGE 2100MB</span></div>` },
+    { delay: 820, html: `<div class="bios-line">Detecting HDD Primary Slave    ... <span class="bios-yellow">GOOGLE-SHEETS-CLOUD-DB</span></div>` },
+    { delay: 1020, html: `<div class="bios-line">Detecting CD-ROM Secondary     ... <span class="bios-cyan">YT-MUSIC-JUKEBOX-DRIVE</span></div>` },
+    { delay: 1240, html: `<div class="bios-line" style="margin-top:8px; color:${allOk ? '#2ed573' : '#ff4757'};">System Modules : ${esc(modSummary)}</div>` },
+    { delay: 1480, html: `<div class="bios-line" style="margin-top:6px;">Starting MY-ARCHIVE 95 Desktop Environment ...</div>` }
+  ];
+
+  postSteps.forEach(step => {
+    const t = setTimeout(() => {
+      if (logBox && !finished && !inSetup) logBox.insertAdjacentHTML('beforeend', step.html);
+    }, step.delay);
+    timers.push(t);
+  });
+
+  timers.push(setTimeout(() => {
+    if (!inSetup) finishBoot();
+  }, allOk ? 2050 : 2850));
 }
 
-// BSOD & Screensaver & Sound Toggle
+// BSOD & Screensaver & Sound Toggle & Win95 Keyboard Shortcuts
 document.getElementById('btn-sound-toggle')?.addEventListener('click', e => {
   soundEnabled = !soundEnabled;
   e.target.textContent = soundEnabled ? 'SPK:ON' : 'SPK:OFF';
@@ -188,9 +354,31 @@ function triggerBSOD() {
   bsodEl.style.display = 'flex';
 }
 bsodEl?.addEventListener('click', () => { bsodEl.style.display = 'none'; });
+
 document.addEventListener('keydown', e => {
   if (bsodEl && bsodEl.style.display === 'flex') bsodEl.style.display = 'none';
   if (e.ctrlKey && e.altKey && e.key.toLowerCase() === 'b') triggerBSOD();
+
+  // Ctrl + Esc: 시작 메뉴 토글
+  if (e.ctrlKey && e.key === 'Escape') {
+    e.preventDefault();
+    const sm = document.getElementById('start-menu');
+    const sb = document.getElementById('btn-start');
+    if (sm && sb) {
+      const open = sm.classList.toggle('open');
+      sb.classList.toggle('pressed', open);
+      playRetroTone('click');
+    }
+  }
+
+  // Alt + F4: 현재 포커스된 팝업 창 닫기
+  if (e.altKey && e.key === 'F4') {
+    const focusedPopup = document.querySelector('.floating-win.open.focused');
+    if (focusedPopup && typeof closeWindow === 'function') {
+      e.preventDefault();
+      closeWindow(focusedPopup.id);
+    }
+  }
 });
 document.getElementById('mnu-bsod')?.addEventListener('click', triggerBSOD);
 
