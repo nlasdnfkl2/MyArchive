@@ -51,9 +51,11 @@ my-archive-95/
 └── backend/                    # Google Apps Script 프로젝트 파일
     ├── Code.gs                 # doGet / doPost 라우팅, Archive/Notes 시트 CRUD, YouTube 트랙 폴백 검색
     └── SearchService.gs        # 다중 외부 API 검색, OpenGraph 파싱, 관련도 내부 정렬 로직
+```
+---
 
-##3. 설치 및 배포 방법 (Setup & Deployment)
-###3.1 Google Apps Script 백엔드 설정
+## 3. 설치 및 배포 방법 (Setup & Deployment)
+### 3.1 Google Apps Script 백엔드 설정
 - 새 Google 스프레드시트를 생성하고 상단 메뉴에서 [확장 프로그램] → [Apps Script]를 엽니다.
 
 - backend/Code.gs와 backend/SearchService.gs의 코드를 Apps Script 프로젝트에 각각 붙여넣고 저장합니다. (최초 실행 - 시 Archive 및 Notes 시트와 헤더가 자동 생성됩니다.)
@@ -66,7 +68,7 @@ my-archive-95/
 
 - 발급된 웹 앱 URL(/exec)을 복사합니다.
 
-###3.2 프론트엔드 연결 및 실행
+### 3.2 프론트엔드 연결 및 실행
 - js/config.js 파일 상단의 GAS_WEB_APP_URL 상수에 발급받은 웹 앱 URL을 입력합니다.
 
 - 별도의 빌드 과정 없이 index.html을 브라우저로 열거나 GitHub Pages, Vercel, Netlify 등 정적 호스팅에 업로드하여 즉시 사용할 수 있습니다.
