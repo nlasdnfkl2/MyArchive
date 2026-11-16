@@ -1,0 +1,1151 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MY-ARCHIVE // 감상 아카이빙 및 취향 통계 대시보드</title>
+
+  <!-- Pretendard Variable -->
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css" />
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <style>
+    :root {
+      --bg-main: #dfdcd3;
+      --bg-card: #ffffff;
+      --bg-subtle: #f4f2ec;
+      --ink: #111111;
+      --ink-muted: #4a4a4a;
+      --accent-yellow: #ffd83b;
+      --accent-pink: #ff4757;
+      --accent-sky: #48dbfb;
+      --accent-green: #2ed573;
+      --border-thick: 4px solid #111111;
+      --border-mid: 3px solid #111111;
+      --shadow-lg: 6px 6px 0px #111111;
+      --shadow-md: 4px 4px 0px #111111;
+      --shadow-sm: 2px 2px 0px #111111;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-main);
+      color: var(--ink);
+      font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, sans-serif;
+      line-height: 1.55;
+      padding: 28px 16px 84px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      max-width: 1140px;
+      margin: 0 auto;
+    }
+
+    /* Header */
+    .hero-header {
+      background: var(--bg-card);
+      border: var(--border-thick);
+      box-shadow: var(--shadow-lg);
+      padding: 28px 32px;
+      margin-bottom: 28px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+
+    .hero-left {
+      max-width: 720px;
+    }
+
+    .badge-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .brutal-badge {
+      display: inline-block;
+      padding: 4px 10px;
+      font-size: 0.78rem;
+      font-weight: 800;
+      border: var(--border-mid);
+      background: var(--accent-yellow);
+      color: var(--ink);
+    }
+
+    .brutal-badge.sky { background: var(--accent-sky); }
+    .brutal-badge.green { background: var(--accent-green); }
+    .brutal-badge.pink { background: var(--accent-pink); color: #ffffff; }
+
+    .hero-title {
+      font-size: clamp(1.7rem, 3.2vw, 2.35rem);
+      font-weight: 900;
+      letter-spacing: -0.03em;
+      line-height: 1.2;
+      margin-bottom: 6px;
+    }
+
+    .hero-desc {
+      font-size: 0.96rem;
+      font-weight: 600;
+      color: var(--ink-muted);
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 12px 20px;
+      border: var(--border-mid);
+      box-shadow: var(--shadow-md);
+      background: var(--bg-card);
+      color: var(--ink);
+      font-family: inherit;
+      font-size: 0.95rem;
+      font-weight: 800;
+      cursor: pointer;
+      border-radius: 0;
+      transition: transform 0.08s ease, box-shadow 0.08s ease;
+    }
+
+    .btn:hover:not(:disabled) {
+      transform: translate(-1px, -1px);
+      box-shadow: 5px 5px 0px #111111;
+    }
+
+    .btn:active:not(:disabled) {
+      transform: translate(3px, 3px);
+      box-shadow: 1px 1px 0px #111111;
+    }
+
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .btn-yellow { background: var(--accent-yellow); }
+    .btn-sky { background: var(--accent-sky); }
+    .btn-green { background: var(--accent-green); }
+    .btn-pink { background: var(--accent-pink); color: #ffffff; }
+
+    .btn-lg {
+      padding: 15px 24px;
+      font-size: 1.05rem;
+    }
+
+    .btn-sm {
+      padding: 7px 12px;
+      font-size: 0.82rem;
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* KPI Grid */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 18px;
+      margin-bottom: 28px;
+    }
+
+    @media (max-width: 900px) {
+      .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (max-width: 540px) {
+      .kpi-grid { grid-template-columns: 1fr; }
+    }
+
+    .kpi-card {
+      background: var(--bg-card);
+      border: var(--border-thick);
+      box-shadow: var(--shadow-md);
+      padding: 20px;
+    }
+
+    .kpi-card.bg-yellow { background: var(--accent-yellow); }
+    .kpi-card.bg-sky { background: var(--accent-sky); }
+    .kpi-card.bg-green { background: var(--accent-green); }
+
+    .kpi-label {
+      font-size: 0.82rem;
+      font-weight: 800;
+      margin-bottom: 6px;
+    }
+
+    .kpi-value {
+      font-size: 2rem;
+      font-weight: 900;
+      line-height: 1.15;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .kpi-sub {
+      font-size: 0.82rem;
+      font-weight: 700;
+      margin-top: 6px;
+      color: var(--ink);
+    }
+
+    /* Charts Section */
+    .charts-grid {
+      display: grid;
+      grid-template-columns: 1fr 1.45fr;
+      gap: 24px;
+      margin-bottom: 28px;
+    }
+
+    @media (max-width: 860px) {
+      .charts-grid { grid-template-columns: 1fr; }
+    }
+
+    .brutal-card {
+      background: var(--bg-card);
+      border: var(--border-thick);
+      box-shadow: var(--shadow-lg);
+      padding: 24px 26px;
+      margin-bottom: 28px;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding-bottom: 14px;
+      margin-bottom: 18px;
+      border-bottom: var(--border-mid);
+    }
+
+    .card-title {
+      font-size: 1.18rem;
+      font-weight: 900;
+    }
+
+    .chart-canvas-wrap {
+      position: relative;
+      height: 250px;
+      width: 100%;
+    }
+
+    /* Filter Bar */
+    .filter-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 22px;
+    }
+
+    .cat-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .pill-btn {
+      padding: 8px 14px;
+      border: var(--border-mid);
+      box-shadow: var(--shadow-sm);
+      background: var(--bg-subtle);
+      font-family: inherit;
+      font-size: 0.88rem;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .pill-btn.active {
+      background: var(--accent-yellow);
+      transform: translate(1px, 1px);
+    }
+
+    .filter-controls {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    input[type="text"],
+    input[type="date"],
+    select,
+    textarea {
+      padding: 10px 13px;
+      border: var(--border-mid);
+      background: var(--bg-subtle);
+      color: var(--ink);
+      font-family: inherit;
+      font-size: 0.92rem;
+      font-weight: 600;
+      border-radius: 0;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      background: #ffffff;
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* Archive Cards Grid */
+    .archive-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 22px;
+    }
+
+    @media (max-width: 960px) {
+      .archive-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (max-width: 620px) {
+      .archive-grid { grid-template-columns: 1fr; }
+    }
+
+    .item-card {
+      background: var(--bg-subtle);
+      border: var(--border-thick);
+      box-shadow: var(--shadow-md);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      transition: transform 0.12s ease;
+    }
+
+    .item-card:hover {
+      transform: translate(-2px, -2px);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .item-thumb-wrap {
+      width: 100%;
+      height: 190px;
+      border-bottom: var(--border-mid);
+      background: #111111;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .item-thumb {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .item-cat-tag {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      padding: 3px 9px;
+      border: 2px solid var(--ink);
+      font-size: 0.78rem;
+      font-weight: 900;
+      background: var(--accent-yellow);
+    }
+
+    .item-cat-tag.music { background: var(--accent-sky); }
+    .item-cat-tag.video { background: var(--accent-pink); color: #ffffff; }
+    .item-cat-tag.etc { background: var(--accent-green); }
+
+    .item-rating-tag {
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+      padding: 3px 9px;
+      border: 2px solid var(--ink);
+      background: #ffffff;
+      font-size: 0.82rem;
+      font-weight: 900;
+    }
+
+    .item-body {
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+    }
+
+    .item-title {
+      font-size: 1.12rem;
+      font-weight: 900;
+      line-height: 1.3;
+      margin-bottom: 4px;
+      word-break: keep-all;
+    }
+
+    .item-meta {
+      font-size: 0.84rem;
+      font-weight: 700;
+      color: var(--ink-muted);
+      margin-bottom: 12px;
+    }
+
+    .item-review {
+      background: #ffffff;
+      border: 2px solid var(--ink);
+      padding: 10px 12px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      margin-bottom: 14px;
+      flex: 1;
+      word-break: keep-all;
+    }
+
+    .item-foot {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.8rem;
+      font-weight: 800;
+      color: var(--ink-muted);
+    }
+
+    .item-link {
+      color: var(--ink);
+      text-decoration: none;
+      border-bottom: 2px solid var(--ink);
+    }
+
+    .item-link:hover {
+      background: var(--accent-yellow);
+    }
+
+    /* Modal Popup */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(17, 17, 17, 0.72);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      z-index: 1000;
+      overflow-y: auto;
+    }
+
+    .modal-backdrop.open {
+      display: flex;
+    }
+
+    .modal-window {
+      background: var(--bg-card);
+      border: var(--border-thick);
+      box-shadow: 10px 10px 0px #111111;
+      width: 100%;
+      max-width: 640px;
+      max-height: 92vh;
+      overflow-y: auto;
+      padding: 28px;
+    }
+
+    .modal-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 14px;
+      margin-bottom: 20px;
+      border-bottom: var(--border-mid);
+    }
+
+    .modal-title {
+      font-size: 1.3rem;
+      font-weight: 900;
+    }
+
+    .form-group {
+      margin-bottom: 14px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 800;
+      margin-bottom: 5px;
+    }
+
+    .form-row-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    @media (max-width: 540px) {
+      .form-row-2 { grid-template-columns: 1fr; }
+    }
+
+    .search-box-wrap {
+      background: var(--bg-subtle);
+      border: var(--border-mid);
+      padding: 16px;
+      margin-bottom: 18px;
+    }
+
+    .search-inline {
+      display: flex;
+      gap: 10px;
+      margin-top: 8px;
+    }
+
+    .search-inline input {
+      flex: 1;
+      background: #ffffff;
+    }
+
+    .modal-alert {
+      margin-top: 10px;
+      padding: 10px 12px;
+      border: 2px solid var(--ink);
+      background: var(--accent-sky);
+      font-size: 0.85rem;
+      font-weight: 800;
+      display: none;
+    }
+
+    .modal-alert.error {
+      background: var(--accent-pink);
+      color: #ffffff;
+    }
+
+    .modal-alert.ok {
+      background: var(--accent-green);
+    }
+
+    .preview-strip {
+      display: flex;
+      gap: 14px;
+      align-items: center;
+      margin-bottom: 16px;
+      padding: 12px;
+      border: 2px solid var(--ink);
+      background: var(--bg-subtle);
+    }
+
+    .preview-strip img {
+      width: 64px;
+      height: 64px;
+      object-fit: cover;
+      border: 2px solid var(--ink);
+      background: #111111;
+    }
+
+    .footer-note {
+      text-align: center;
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--ink-muted);
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <!-- Header -->
+  <header class="hero-header">
+    <div class="hero-left">
+      <div class="badge-row">
+        <span class="brutal-badge">MY-ARCHIVE</span>
+        <span class="brutal-badge sky">METADATA AUTO-FETCH</span>
+        <span class="brutal-badge green">TASTE ANALYTICS</span>
+      </div>
+      <h1 class="hero-title">감상 아카이빙 및 취향 통계 대시보드</h1>
+      <p class="hero-desc">
+        도서·음악·영상의 제목이나 링크만으로 서지·음원 메타데이터를 자동 수집해 기록하고, 누적된 취향 데이터를 시각화합니다.
+      </p>
+    </div>
+    <div>
+      <button type="button" class="btn btn-yellow btn-lg" id="btn-open-modal">
+        + 새 감상 기록하기
+      </button>
+    </div>
+  </header>
+
+  <!-- KPI Summary Strip -->
+  <section class="kpi-grid">
+    <div class="kpi-card bg-yellow">
+      <div class="kpi-label">총 누적 감상 기록</div>
+      <div class="kpi-value" id="kpi-total">0건</div>
+      <div class="kpi-sub" id="kpi-recent-sub">데이터 불러오는 중...</div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-label">전체 평균 별점</div>
+      <div class="kpi-value" id="kpi-avg-rating">0.0점</div>
+      <div class="kpi-sub">5.0점 만점 기준</div>
+    </div>
+
+    <div class="kpi-card bg-sky">
+      <div class="kpi-label">최다 감상 매체</div>
+      <div class="kpi-value" id="kpi-top-cat">-</div>
+      <div class="kpi-sub" id="kpi-top-cat-sub">매체 비중 분석</div>
+    </div>
+
+    <div class="kpi-card bg-green">
+      <div class="kpi-label">선호 장르 TOP 1</div>
+      <div class="kpi-value" id="kpi-top-genre" style="font-size: 1.55rem;">-</div>
+      <div class="kpi-sub" id="kpi-top-genre-sub">장르 키워드 집계</div>
+    </div>
+  </section>
+
+  <!-- Charts Section -->
+  <section class="charts-grid">
+    <div class="brutal-card" style="margin-bottom: 0;">
+      <div class="card-header">
+        <h2 class="card-title">매체별 아카이브 비율</h2>
+        <span class="brutal-badge sky">CATEGORY</span>
+      </div>
+      <div class="chart-canvas-wrap">
+        <canvas id="chart-category"></canvas>
+      </div>
+    </div>
+
+    <div class="brutal-card" style="margin-bottom: 0;">
+      <div class="card-header">
+        <h2 class="card-title">월별 감상 기록 추이</h2>
+        <span class="brutal-badge green">MONTHLY</span>
+      </div>
+      <div class="chart-canvas-wrap">
+        <canvas id="chart-monthly"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <!-- Archive Feed Section -->
+  <section class="brutal-card" style="margin-top: 28px;">
+    <div class="card-header">
+      <h2 class="card-title">감상 아카이브 피드</h2>
+      <span class="brutal-badge" id="feed-count-badge">총 0건 표시</span>
+    </div>
+
+    <div class="filter-toolbar">
+      <div class="cat-pills" id="cat-filter-group">
+        <button type="button" class="pill-btn active" data-cat="ALL">전체</button>
+        <button type="button" class="pill-btn" data-cat="도서">도서</button>
+        <button type="button" class="pill-btn" data-cat="음악">음악</button>
+        <button type="button" class="pill-btn" data-cat="영상">영상</button>
+        <button type="button" class="pill-btn" data-cat="기타">기타</button>
+      </div>
+
+      <div class="filter-controls">
+        <select id="filter-rating">
+          <option value="0">전체 별점</option>
+          <option value="5">★ 5점만 보기</option>
+          <option value="4">★ 4점 이상</option>
+          <option value="3">★ 3점 이상</option>
+        </select>
+        <input type="text" id="filter-keyword" placeholder="제목, 작가/아티스트, 한줄평 검색..." style="width: 230px;" />
+      </div>
+    </div>
+
+    <div class="archive-grid" id="archive-grid"></div>
+  </section>
+
+  <footer class="footer-note">
+    MY-ARCHIVE // Google Sheets &amp; Google Apps Script 기반 감상 아카이빙 대시보드
+  </footer>
+</div>
+
+<!-- ======================================================================= -->
+<!-- MODAL POPUP: 새 감상 기록 및 메타데이터 자동 검색                                -->
+<!-- ======================================================================= -->
+<div class="modal-backdrop" id="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-heading">
+  <div class="modal-window">
+    <div class="modal-head">
+      <h2 class="modal-title" id="modal-heading">새 감상 기록 등록</h2>
+      <button type="button" class="btn btn-pink btn-sm" id="btn-close-modal">닫기 ✕</button>
+    </div>
+
+    <!-- Step 1: Metadata Auto-Search -->
+    <div class="search-box-wrap">
+      <div class="form-row-2">
+        <div>
+          <label class="form-label" for="inp-category">매체 선택</label>
+          <select id="inp-category">
+            <option value="도서">도서</option>
+            <option value="음악">음악</option>
+            <option value="영상">영상</option>
+            <option value="기타">기타</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label" for="inp-date">감상일</label>
+          <input type="date" id="inp-date" />
+        </div>
+      </div>
+
+      <div style="margin-top: 12px;">
+        <label class="form-label" for="inp-search-query">작품 제목 또는 관련 링크(URL)로 자동 검색</label>
+        <div class="search-inline">
+          <input type="text" id="inp-search-query" placeholder="예: 아몬드, 밤양갱, 또는 유튜브/알라딘 URL 붙여넣기" />
+          <button type="button" class="btn btn-sky" id="btn-auto-search" style="white-space: nowrap;">
+            메타데이터 검색
+          </button>
+        </div>
+      </div>
+
+      <div id="modal-alert" class="modal-alert"></div>
+    </div>
+
+    <!-- Cover Thumbnail Preview -->
+    <div class="preview-strip">
+      <img id="preview-cover" alt="표지 미리보기" />
+      <div style="flex: 1;">
+        <label class="form-label" for="inp-cover-url">표지 / 썸네일 이미지 URL (자동 채움 또는 직접 입력)</label>
+        <input type="text" id="inp-cover-url" placeholder="https://..." style="width: 100%;" />
+      </div>
+    </div>
+
+    <!-- Step 2: Form Fields -->
+    <form id="archive-form">
+      <div class="form-row-2">
+        <div class="form-group">
+          <label class="form-label" for="inp-title">작품 제목 *</label>
+          <input type="text" id="inp-title" required placeholder="작품 제목 입력" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="inp-creator">저자 / 아티스트 / 감독 *</label>
+          <input type="text" id="inp-creator" required placeholder="제작자 이름 입력" />
+        </div>
+      </div>
+
+      <div class="form-row-2">
+        <div class="form-group">
+          <label class="form-label" for="inp-genre">장르 / 분류</label>
+          <input type="text" id="inp-genre" placeholder="예: 한국소설, 인디록, 다큐멘터리" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="inp-rating">평점 (1 ~ 5점) *</label>
+          <select id="inp-rating">
+            <option value="5">★★★★★ (5점 - 강력 추천)</option>
+            <option value="4" selected>★★★★☆ (4점 - 인상 깊음)</option>
+            <option value="3">★★★☆☆ (3점 - 무난함)</option>
+            <option value="2">★★☆☆☆ (2점 - 아쉬움)</option>
+            <option value="1">★☆☆☆☆ (1점 - 비추천)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="inp-source-url">원본 참고 링크 (선택)</label>
+        <input type="text" id="inp-source-url" placeholder="https://..." style="width: 100%;" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="inp-review">한줄평 및 감상 메모 *</label>
+        <textarea id="inp-review" rows="3" required placeholder="작품에서 인상 깊었던 구절, 사운드, 또는 핵심 감상을 기록하십시오." style="width: 100%;"></textarea>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px;">
+        <button type="button" class="btn" id="btn-cancel-modal">취소</button>
+        <button type="submit" class="btn btn-yellow" id="btn-submit-archive">아카이브에 등록하기</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwh2VWIKgH-kuL5bhHstlTmzF6Cp0tOuC33JWpuXIvJaD26LDt6UAhd0V4dbYE8V6TYLA/exec';
+
+  const FALLBACK_COVER = "data:image/svg+xml;utf8," + encodeURIComponent(`
+    <svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300">
+      <rect width="400" height="300" fill="#ffd83b"/>
+      <rect x="20" y="20" width="360" height="260" fill="#ffffff" stroke="#111111" stroke-width="6"/>
+      <text x="200" y="142" font-family="sans-serif" font-size="24" font-weight="900" fill="#111111" text-anchor="middle">MY-ARCHIVE</text>
+      <text x="200" y="176" font-family="sans-serif" font-size="14" font-weight="700" fill="#4a4a4a" text-anchor="middle">NO COVER IMAGE</text>
+    </svg>
+  `);
+
+  let archiveItems = [];
+  let selectedCategory = 'ALL';
+  let categoryChartInstance = null;
+  let monthlyChartInstance = null;
+
+  /* =========================================================================
+   * 1. INITIAL LOAD (백그라운드 자동 시트 동기화)
+   * ========================================================================= */
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('inp-date').value = new Date().toISOString().slice(0, 10);
+    document.getElementById('preview-cover').src = FALLBACK_COVER;
+    loadArchiveData();
+  });
+
+  async function loadArchiveData() {
+    try {
+      const res = await fetch(`${GAS_WEB_APP_URL}?action=list`);
+      const json = await res.json();
+      if (json.status === 'success' && Array.isArray(json.items)) {
+        archiveItems = json.items;
+      } else {
+        archiveItems = [];
+      }
+    } catch (err) {
+      console.error('백그라운드 시트 조회 오류:', err);
+      archiveItems = [];
+    }
+    refreshDashboard();
+  }
+
+  function refreshDashboard() {
+    updateKPIs();
+    renderCharts();
+    renderArchiveGrid();
+  }
+
+  /* =========================================================================
+   * 2. KPI & CHART.JS VISUALIZATION
+   * ========================================================================= */
+  function updateKPIs() {
+    const total = archiveItems.length;
+    document.getElementById('kpi-total').textContent = `${total}건`;
+
+    if (total === 0) {
+      document.getElementById('kpi-recent-sub').textContent = '첫 감상 기록을 추가해 보세요';
+      document.getElementById('kpi-avg-rating').textContent = '0.0점';
+      document.getElementById('kpi-top-cat').textContent = '-';
+      document.getElementById('kpi-top-cat-sub').textContent = '데이터 없음';
+      document.getElementById('kpi-top-genre').textContent = '-';
+      document.getElementById('kpi-top-genre-sub').textContent = '데이터 없음';
+      return;
+    }
+
+    const latest = archiveItems[0];
+    document.getElementById('kpi-recent-sub').textContent = `최근: 「${latest.title}」`;
+
+    const sumRating = archiveItems.reduce((acc, cur) => acc + (Number(cur.rating) || 0), 0);
+    document.getElementById('kpi-avg-rating').textContent = `${(sumRating / total).toFixed(1)}점`;
+
+    const catCount = {};
+    archiveItems.forEach(item => {
+      catCount[item.category] = (catCount[item.category] || 0) + 1;
+    });
+    const topCat = Object.entries(catCount).sort((a, b) => b[1] - a[1])[0];
+    document.getElementById('kpi-top-cat').textContent = topCat[0];
+    document.getElementById('kpi-top-cat-sub').textContent = `전체 중 ${topCat[1]}건 (${Math.round((topCat[1] / total) * 100)}%)`;
+
+    const genreCount = {};
+    archiveItems.forEach(item => {
+      const g = (item.genre || '일반').trim();
+      genreCount[g] = (genreCount[g] || 0) + 1;
+    });
+    const topGenre = Object.entries(genreCount).sort((a, b) => b[1] - a[1])[0];
+    document.getElementById('kpi-top-genre').textContent = topGenre[0];
+    document.getElementById('kpi-top-genre-sub').textContent = `누적 ${topGenre[1]}건 기록`;
+  }
+
+  function renderCharts() {
+    Chart.defaults.font.family = "'Pretendard Variable', Pretendard, sans-serif";
+    Chart.defaults.font.weight = 700;
+    Chart.defaults.color = '#111111';
+
+    const categories = ['도서', '음악', '영상', '기타'];
+    const catValues = categories.map(c => archiveItems.filter(i => i.category === c).length);
+
+    if (categoryChartInstance) categoryChartInstance.destroy();
+    const ctxCat = document.getElementById('chart-category').getContext('2d');
+    categoryChartInstance = new Chart(ctxCat, {
+      type: 'doughnut',
+      data: {
+        labels: categories,
+        datasets: [{
+          data: catValues,
+          backgroundColor: ['#ffd83b', '#48dbfb', '#ff4757', '#2ed573'],
+          borderColor: '#111111',
+          borderWidth: 3
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'right',
+            labels: { boxWidth: 16, padding: 14 }
+          }
+        }
+      }
+    });
+
+    const monthMap = {};
+    archiveItems.forEach(item => {
+      const ym = (item.watchDate || '').slice(0, 7);
+      if (ym) monthMap[ym] = (monthMap[ym] || 0) + 1;
+    });
+
+    const sortedMonths = Object.keys(monthMap).sort();
+    const monthCounts = sortedMonths.map(m => monthMap[m]);
+
+    if (monthlyChartInstance) monthlyChartInstance.destroy();
+    const ctxMon = document.getElementById('chart-monthly').getContext('2d');
+    monthlyChartInstance = new Chart(ctxMon, {
+      type: 'bar',
+      data: {
+        labels: sortedMonths.length ? sortedMonths : ['기록 없음'],
+        datasets: [{
+          label: '감상 건수',
+          data: monthCounts.length ? monthCounts : [0],
+          backgroundColor: '#2ed573',
+          borderColor: '#111111',
+          borderWidth: 3
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: { stepSize: 1 },
+            grid: { color: '#dfdcd3' }
+          },
+          x: {
+            grid: { display: false }
+          }
+        },
+        plugins: {
+          legend: { display: false }
+        }
+      }
+    });
+  }
+
+  /* =========================================================================
+   * 3. ARCHIVE FEED & FILTERING
+   * ========================================================================= */
+  document.querySelectorAll('#cat-filter-group .pill-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#cat-filter-group .pill-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      selectedCategory = btn.dataset.cat;
+      renderArchiveGrid();
+    });
+  });
+
+  document.getElementById('filter-rating').addEventListener('change', renderArchiveGrid);
+  document.getElementById('filter-keyword').addEventListener('input', renderArchiveGrid);
+
+  function renderArchiveGrid() {
+    const minRating = Number(document.getElementById('filter-rating').value) || 0;
+    const keyword = document.getElementById('filter-keyword').value.trim().toLowerCase();
+
+    const filtered = archiveItems.filter(item => {
+      if (selectedCategory !== 'ALL' && item.category !== selectedCategory) return false;
+      if (Number(item.rating) < minRating) return false;
+      if (keyword) {
+        const hay = `${item.title} ${item.creator} ${item.genre} ${item.review}`.toLowerCase();
+        if (!hay.includes(keyword)) return false;
+      }
+      return true;
+    });
+
+    document.getElementById('feed-count-badge').textContent = `총 ${filtered.length}건 표시`;
+    const grid = document.getElementById('archive-grid');
+    grid.innerHTML = '';
+
+    if (filtered.length === 0) {
+      grid.innerHTML = `
+        <div style="grid-column: 1 / -1; text-align: center; padding: 48px 20px; border: 3px dashed #111111; font-weight: 800;">
+          표시할 감상 기록이 없습니다. 우측 상단 [+ 새 감상 기록하기] 버튼으로 첫 작품을 등록해 보십시오.
+        </div>`;
+      return;
+    }
+
+    filtered.forEach(item => {
+      const catClass = item.category === '음악' ? 'music' : item.category === '영상' ? 'video' : item.category === '기타' ? 'etc' : '';
+      const stars = '★'.repeat(item.rating) + '☆'.repeat(5 - item.rating);
+      const coverSrc = item.coverUrl ? esc(item.coverUrl) : FALLBACK_COVER;
+
+      const card = document.createElement('article');
+      card.className = 'item-card';
+      card.innerHTML = `
+        <div class="item-thumb-wrap">
+          <img class="item-thumb" src="${coverSrc}" alt="${esc(item.title)}" onerror="this.onerror=null;this.src='${FALLBACK_COVER}';" />
+          <span class="item-cat-tag ${catClass}">${esc(item.category)}</span>
+          <span class="item-rating-tag">${stars}</span>
+        </div>
+        <div class="item-body">
+          <h3 class="item-title">${esc(item.title)}</h3>
+          <div class="item-meta">${esc(item.creator)} · ${esc(item.genre || '일반')}</div>
+          <p class="item-review">${esc(item.review)}</p>
+          <div class="item-foot">
+            <span>${esc(item.watchDate)}</span>
+            ${item.sourceUrl ? `<a class="item-link" href="${esc(item.sourceUrl)}" target="_blank" rel="noopener noreferrer">원본 링크 ↗</a>` : '<span>직접 기록</span>'}
+          </div>
+        </div>
+      `;
+      grid.appendChild(card);
+    });
+  }
+
+  /* =========================================================================
+   * 4. MODAL POPUP: METADATA SEARCH & SHEET SUBMISSION
+   * ========================================================================= */
+  const modalBackdrop = document.getElementById('modal-backdrop');
+  const modalAlert = document.getElementById('modal-alert');
+
+  document.getElementById('btn-open-modal').addEventListener('click', () => {
+    resetModalForm();
+    modalBackdrop.classList.add('open');
+    document.getElementById('inp-search-query').focus();
+  });
+
+  ['btn-close-modal', 'btn-cancel-modal'].forEach(id => {
+    document.getElementById(id).addEventListener('click', () => {
+      modalBackdrop.classList.remove('open');
+    });
+  });
+
+  modalBackdrop.addEventListener('click', e => {
+    if (e.target === modalBackdrop) modalBackdrop.classList.remove('open');
+  });
+
+  document.getElementById('inp-cover-url').addEventListener('input', e => {
+    const val = e.target.value.trim();
+    const img = document.getElementById('preview-cover');
+    img.src = val || FALLBACK_COVER;
+    img.onerror = () => { img.src = FALLBACK_COVER; };
+  });
+
+  function showModalAlert(msg, type = 'info') {
+    modalAlert.style.display = 'block';
+    modalAlert.className = 'modal-alert';
+    if (type === 'error') modalAlert.classList.add('error');
+    if (type === 'ok') modalAlert.classList.add('ok');
+    modalAlert.textContent = msg;
+  }
+
+  function resetModalForm() {
+    document.getElementById('archive-form').reset();
+    document.getElementById('inp-search-query').value = '';
+    document.getElementById('inp-cover-url').value = '';
+    document.getElementById('inp-date').value = new Date().toISOString().slice(0, 10);
+    document.getElementById('preview-cover').src = FALLBACK_COVER;
+    modalAlert.style.display = 'none';
+  }
+
+  document.getElementById('btn-auto-search').addEventListener('click', runAutoSearch);
+  document.getElementById('inp-search-query').addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      runAutoSearch();
+    }
+  });
+
+  async function runAutoSearch() {
+    const query = document.getElementById('inp-search-query').value.trim();
+    const category = document.getElementById('inp-category').value;
+
+    if (!query) {
+      showModalAlert('검색할 작품 제목이나 링크(URL)를 먼저 입력하십시오.', 'error');
+      return;
+    }
+
+    const btn = document.getElementById('btn-auto-search');
+    btn.disabled = true;
+    btn.textContent = '조회 중...';
+    showModalAlert('외부 API 및 링크에서 메타데이터를 추출하고 있습니다...');
+
+    try {
+      const url = `${GAS_WEB_APP_URL}?action=search&q=${encodeURIComponent(query)}&category=${encodeURIComponent(category)}`;
+      const res = await fetch(url);
+      const result = await res.json();
+
+      if (result.data) {
+        const d = result.data;
+        if (d.category) document.getElementById('inp-category').value = d.category;
+        if (d.title) document.getElementById('inp-title').value = d.title;
+        if (d.creator) document.getElementById('inp-creator').value = d.creator;
+        if (d.genre) document.getElementById('inp-genre').value = d.genre;
+        if (d.sourceUrl) document.getElementById('inp-source-url').value = d.sourceUrl;
+        if (d.coverUrl) {
+          document.getElementById('inp-cover-url').value = d.coverUrl;
+          const img = document.getElementById('preview-cover');
+          img.src = d.coverUrl;
+          img.onerror = () => { img.src = FALLBACK_COVER; };
+        }
+      }
+
+      const alertType = result.status === 'success' ? 'ok' : 'info';
+      showModalAlert(result.message || '메타데이터 조회가 완료되었습니다.', alertType);
+    } catch (err) {
+      showModalAlert('메타데이터 조회 중 오류가 발생했습니다. 아래 항목을 직접 입력해 주십시오.', 'error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '메타데이터 검색';
+    }
+  }
+
+  document.getElementById('archive-form').addEventListener('submit', async e => {
+    e.preventDefault();
+
+    const payload = {
+      category: document.getElementById('inp-category').value,
+      title: document.getElementById('inp-title').value.trim(),
+      creator: document.getElementById('inp-creator').value.trim(),
+      genre: document.getElementById('inp-genre').value.trim() || '일반',
+      rating: Number(document.getElementById('inp-rating').value) || 5,
+      watchDate: document.getElementById('inp-date').value,
+      review: document.getElementById('inp-review').value.trim(),
+      coverUrl: document.getElementById('inp-cover-url').value.trim(),
+      sourceUrl: document.getElementById('inp-source-url').value.trim()
+    };
+
+    if (!payload.title || !payload.creator || !payload.review) {
+      showModalAlert('작품 제목, 제작자, 한줄평을 모두 입력하십시오.', 'error');
+      return;
+    }
+
+    const submitBtn = document.getElementById('btn-submit-archive');
+    submitBtn.disabled = true;
+    submitBtn.textContent = '저장 중...';
+
+    try {
+      const res = await fetch(GAS_WEB_APP_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(payload)
+      });
+      const json = await res.json();
+
+      if (json.status === 'duplicate') {
+        showModalAlert(json.message, 'error');
+        return;
+      }
+
+      if (json.status === 'success' && json.item) {
+        archiveItems.unshift(json.item);
+        refreshDashboard();
+        modalBackdrop.classList.remove('open');
+      } else {
+        showModalAlert(json.message || '저장 중 오류가 발생했습니다.', 'error');
+      }
+    } catch (err) {
+      showModalAlert('서버 통신 중 오류가 발생했습니다. 네트워크 상태를 확인하십시오.', 'error');
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = '아카이브에 등록하기';
+    }
+  });
+
+  function esc(str) {
+    return String(str || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+</script>
+
+</body>
+</html>
