@@ -586,6 +586,19 @@ document.addEventListener('submit', async e => {
     return;
   }
 
+  // ★ 상세 창 수정 폼 내 자체 중복 체크 (자기 자신 ID 제외)
+  const newCategory = editForm.category.value;
+  const newTitle = editForm.title.value.trim();
+  const isDetailDup = archiveItems.some(x => {
+    if (x.id === item.id) return false;
+    return x.category === newCategory && String(x.title || '').trim().toLowerCase() === newTitle.toLowerCase();
+  });
+
+  if (isDetailDup) {
+    showWin95MessageBox('중복 기록 오류 — MY-ARCHIVE 95', `이미 '${newCategory}' 목록에 동일한 제목(「${newTitle}」)의 다른 기록이 존재합니다.`, 'boom');
+    return;
+  }
+
   const saveBtn = editForm.querySelector('.btn-save-edit');
   if (saveBtn) {
     saveBtn.disabled = true;
@@ -605,8 +618,8 @@ document.addEventListener('submit', async e => {
       body: JSON.stringify({
         action: 'update',
         id: item.id,
-        category: editForm.category.value,
-        title: editForm.title.value.trim(),
+        category: newCategory,
+        title: newTitle,
         creator: editForm.creator.value.trim(),
         genre: editForm.genre.value.trim() || '일반',
         rating: checkedRating ? Number(checkedRating.value) : 5,
@@ -759,7 +772,7 @@ function openRegisterModal() {
 
   const form = document.getElementById('archive-form');
   if (form) form.reset();
-  if (form) delete form.dataset.editId; // 신규 등록 시 편집 ID 초기화
+  if (form) delete form.dataset.editId;
 
   const searchInp = document.getElementById('inp-search-query');
   if (searchInp) searchInp.value = '';
