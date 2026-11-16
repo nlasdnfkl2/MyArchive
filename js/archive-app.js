@@ -875,19 +875,29 @@ async function handleRegisterSubmit(e) {
   const categoryVal = document.getElementById('inp-category').value;
   const titleVal = document.getElementById('inp-title').value.trim();
 
-  // 프론트엔드 즉시 중복 검사 (동일 매체 내 동일 제목 감지 시 Win95 메시지 박스 출력)
-  const isLocalDup = archiveItems.some(
-    item => item.category === categoryVal && String(item.title || '').trim().toLowerCase() === titleVal.toLowerCase()
-  );
+const categoryVal = document.getElementById('inp-category').value;
+  const titleVal = document.getElementById('inp-title').value.trim();
+
+  // ★ 현재 수정/등록 중인 폼에 편집 중인 ID가 있다면 가져옴 (신규 등록 시에는 빈 문자열)
+  const formEl = document.getElementById('archive-form');
+  const editingId = formEl ? (formEl.dataset.editId || '') : '';
+
+  // ★ 프론트엔드 즉시 중복 검사 (자기 자신의 ID는 제외하고 동일 매체·동일 제목 검사)
+  const isLocalDup = archiveItems.some(item => {
+    if (editingId && item.id === editingId) return false; // 본인 자신은 중복 검사에서 제외
+    return item.category === categoryVal && String(item.title || '').trim().toLowerCase() === titleVal.toLowerCase();
+  });
+
   if (isLocalDup) {
-    const dupMsg = `이미 ${categoryVal} 목록에 동일한 이름(「${titleVal}」)이 존재합니다.`;
+    const dupMsg = `이미 ${categoryVal} 목록에 동일한 이름(「${titleVal}」)의 다른 기록이 존재합니다.`;
     showRegAlert(dupMsg, 'err');
     showWin95MessageBox('중복 등록 오류 — MY-ARCHIVE 95', dupMsg, 'boom');
     return;
   }
 
   const payload = {
-    action: 'create',
+    action: editingId ? 'update' : 'create', // ID가 있으면 update, 없으면 create로 유연하게 대응 가능
+    id: editingId,
     category: categoryVal,
     title: titleVal,
     creator: document.getElementById('inp-creator').value.trim(),
@@ -898,23 +908,6 @@ async function handleRegisterSubmit(e) {
     coverUrl: document.getElementById('inp-cover-url').value.trim(),
     sourceUrl: document.getElementById('inp-source-url').value.trim()
   };
-
-  const btn = document.getElementById('btn-submit-reg');
-  btn.disabled = true; btn.textContent = '저장 중...'; setLoadingCursor(true);
-  try {
-    const res = await fetch(GAS_WEB_APP_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload) });
-    const json = await res.json();
-    if (json.status === 'duplicate') {
-      const dupMsg = json.message || `이미 ${categoryVal} 목록에 동일한 이름이 존재합니다.`;
-      showRegAlert(dupMsg, 'err');
-      showWin95MessageBox('중복 등록 오류 — MY-ARCHIVE 95', dupMsg, 'boom');
-      return;
-    }
-    if (json.status === 'success' && json.item) { playRetroTone('boot'); archiveItems.unshift(json.item); refreshAllViews(); closeWindow('win-register'); }
-    else showRegAlert(json.message || '저장 오류', 'err');
-  } catch { showRegAlert('서버 통신 중 오류가 발생했습니다.', 'err'); }
-  finally { btn.disabled = false; btn.textContent = '확인 및 시트 저장'; setLoadingCursor(false); }
-}
 
 // ==========================================
 // Desktop Quick Memo
