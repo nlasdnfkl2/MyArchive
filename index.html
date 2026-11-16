@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>MY-ARCHIVE 95 // 감상 아카이빙 &amp; 데이터 노드 OS</title>
+  <title>MY-ARCHIVE 95 // 감상 아카이빙 및 데이터 노드 OS</title>
 
   <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css" />
   <link rel="stylesheet" href="css/style.css" />
@@ -23,7 +23,7 @@
 <div id="win95-boot-screen">
   <div class="boot-box">
     <div style="font-size: 1.45rem; font-weight: 900; color: #ffffff; text-shadow: 2px 2px 0 #111111;">MY-ARCHIVE 95 OS</div>
-    <div style="font-size: 0.85rem; color: #ffd83b; font-weight: 700; margin-top: 6px;">Neo-Brutalism Desktop &amp; Data Node Engine</div>
+    <div style="font-size: 0.85rem; color: #ffd83b; font-weight: 700; margin-top: 6px;">Classic Desktop &amp; Data Node Engine</div>
     <div class="boot-progress" id="boot-progress"></div>
     <div style="font-size: 0.78rem; color: #ffffff; margin-top: 10px;">Google Sheets CRUD 커널 및 창 관리자 초기화 중...</div>
   </div>
@@ -46,20 +46,20 @@
 </div>
 
 <div class="desktop-workspace">
-  <!-- Left Desktop Icons -->
+  <!-- Left Desktop Icons (이모지 제거, Win95 단축 아이콘 스타일) -->
   <aside class="desktop-icons" aria-label="바탕화면 아이콘">
     <div class="desktop-icon" id="icon-main"><div class="icon-glyph">DB</div><span class="icon-label">내 감상함.exe</span></div>
     <div class="desktop-icon" id="icon-new"><div class="icon-glyph yellow">+</div><span class="icon-label">새 기록 등록</span></div>
-    <div class="desktop-icon" id="icon-visualizer"><div class="icon-glyph sky">🕸️</div><span class="icon-label">노드·워드클라우드</span></div>
-    <div class="desktop-icon" id="icon-memo"><div class="icon-glyph white">📝</div><span class="icon-label">아이디어 메모</span></div>
-    <div class="desktop-icon" id="icon-mine"><div class="icon-glyph dark">💣</div><span class="icon-label">지뢰찾기.exe</span></div>
+    <div class="desktop-icon" id="icon-visualizer"><div class="icon-glyph sky">NET</div><span class="icon-label">노드·워드클라우드</span></div>
+    <div class="desktop-icon" id="icon-memo"><div class="icon-glyph white">TXT</div><span class="icon-label">아이디어 메모</span></div>
+    <div class="desktop-icon" id="icon-mine"><div class="icon-glyph dark">*</div><span class="icon-label">지뢰찾기.exe</span></div>
     <div class="desktop-icon" id="icon-book"><div class="icon-glyph sky">BK</div><span class="icon-label">도서 서가</span></div>
     <div class="desktop-icon" id="icon-music"><div class="icon-glyph green">LP</div><span class="icon-label">음반 플레이어</span></div>
     <div class="desktop-icon" id="icon-video"><div class="icon-glyph pink">TV</div><span class="icon-label">영상 비디오</span></div>
   </aside>
 
   <!-- Center Main Window -->
-  <main class="win95-window focused" id="win-main" data-win-id="win-main" data-win-title="📁 MY-ARCHIVE.EXE">
+  <main class="win95-window focused" id="win-main" data-win-id="win-main" data-win-title="[DIR] MY-ARCHIVE.EXE" style="z-index: 10;">
     <div class="win-titlebar draggable">
       <div class="win-title-left">
         <span class="win-title-dot"></span>
@@ -68,7 +68,7 @@
       <div class="win-controls">
         <button type="button" class="win-ctrl-btn" data-action="minimize" data-target="win-main" title="최소화">_</button>
         <button type="button" class="win-ctrl-btn" data-action="reset-pos" data-target="win-main" title="위치 초기화">□</button>
-        <button type="button" class="win-ctrl-btn close" data-action="close" data-target="win-main" title="닫기">✕</button>
+        <button type="button" class="win-ctrl-btn close" data-action="close" data-target="win-main" title="닫기">X</button>
       </div>
     </div>
 
@@ -88,7 +88,7 @@
       <div class="menu-item-wrap">
         <button type="button" class="menu-root">보기(V) &amp; 시각화</button>
         <div class="menu-dropdown">
-          <button type="button" class="menu-opt" id="mnu-open-visualizer"><span>🕸️ 데이터 노드 &amp; 워드클라우드 생성</span></button>
+          <button type="button" class="menu-opt" id="mnu-open-visualizer"><span>[NET] 데이터 노드 &amp; 워드클라우드 생성</span></button>
           <div class="menu-sep"></div>
           <button type="button" class="menu-opt" data-cat-menu="ALL"><span>전체 매체 보기</span></button>
           <button type="button" class="menu-opt" data-cat-menu="도서"><span>도서 기록만 보기</span></button>
@@ -107,7 +107,7 @@
           <button type="button" class="menu-opt" id="mnu-toggle-crt"><span>CRT 브라운관 스캔라인 켜기/끄기</span></button>
           <button type="button" class="menu-opt" id="mnu-run-screensaver"><span>3D 별빛 화면 보호기 실행</span></button>
           <div class="menu-sep"></div>
-          <button type="button" class="menu-opt" id="mnu-bsod"><span>⚠️ 블루스크린(BSOD) 테스트</span></button>
+          <button type="button" class="menu-opt" id="mnu-bsod"><span>[!] 블루스크린(BSOD) 테스트</span></button>
         </div>
       </div>
 
@@ -127,7 +127,7 @@
           <p>작품 카드를 클릭하면 <strong>수정·삭제·연관 추천·유튜브 이동</strong>이 가능하며, 선택 시점에 데이터 노드와 워드클라우드를 생성할 수 있습니다.</p>
         </div>
         <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-          <button type="button" class="btn95 sky" id="btn-open-vis-hero">🕸️ 노드·워드클라우드</button>
+          <button type="button" class="btn95 sky" id="btn-open-vis-hero">[NET] 노드·워드클라우드</button>
           <button type="button" class="btn95 yellow" id="btn-open-register">+ 새 감상 기록하기</button>
         </div>
       </section>
@@ -185,7 +185,7 @@
         </div>
 
         <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-          <select id="filter-rating">
+          <select id="filter-rating" class="win95-select">
             <option value="0">전체 별점</option>
             <option value="5">★ 5점만</option>
             <option value="4">★ 4점 이상</option>
@@ -208,7 +208,7 @@
   <!-- Right Desktop Widgets -->
   <aside class="desktop-widgets-col" aria-label="바탕화면 레트로 위젯">
     <div class="desk-widget">
-      <div class="widget-head"><span>⚡ WINAMP 95 JUKEBOX</span><span>128kbps</span></div>
+      <div class="widget-head"><span>WINAMP 95 JUKEBOX</span><span>128kbps</span></div>
       <div class="widget-body">
         <div class="winamp-lcd">
           <div id="jukebox-track" style="font-size: 0.78rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">01. 아카이브 트랙 대기 중...</div>
@@ -220,17 +220,17 @@
           </div>
         </div>
         <div style="display: flex; gap: 4px; justify-content: space-between;">
-          <button type="button" class="btn95 sm" id="jb-prev">⏮</button>
-          <button type="button" class="btn95 green sm" id="jb-play">▶</button>
-          <button type="button" class="btn95 sm" id="jb-stop">⏹</button>
-          <button type="button" class="btn95 sm" id="jb-next">⏭</button>
+          <button type="button" class="btn95 sm" id="jb-prev">|&lt;&lt;</button>
+          <button type="button" class="btn95 green sm" id="jb-play">&gt;</button>
+          <button type="button" class="btn95 sm" id="jb-stop">[]</button>
+          <button type="button" class="btn95 sm" id="jb-next">&gt;&gt;|</button>
           <a class="btn95 pink sm" id="jb-yt" href="https://www.youtube.com" target="_blank" rel="noopener noreferrer">YT</a>
         </div>
       </div>
     </div>
 
     <div class="desk-widget">
-      <div class="widget-head"><span>🕒 CLOCK.EXE</span><span>KST</span></div>
+      <div class="widget-head"><span>CLOCK.EXE</span><span>KST</span></div>
       <div class="widget-body" style="text-align: center;">
         <div class="analog-clock-face">
           <div class="clock-hand hand-hour" id="clk-hour"></div>
@@ -243,32 +243,32 @@
     </div>
 
     <div class="desk-widget">
-      <div class="widget-head"><span>🧪 LAB_CONTROLS</span><span>WIN95</span></div>
+      <div class="widget-head"><span>LAB_CONTROLS</span><span>WIN95</span></div>
       <div class="widget-body" style="display: flex; flex-direction: column; gap: 6px;">
-        <button type="button" class="btn95 sm yellow" id="btn-widget-vis">🕸️ 데이터 노드 · 워드클라우드</button>
-        <button type="button" class="btn95 sm sky" id="btn-widget-wp">🎨 바탕화면 패턴 변경</button>
-        <button type="button" class="btn95 sm" id="btn-widget-crt">📺 CRT 스캔라인 토글</button>
-        <button type="button" class="btn95 sm green" id="btn-widget-ss">🌌 3D 별빛 화면 보호기</button>
+        <button type="button" class="btn95 sm yellow" id="btn-widget-vis">[NET] 데이터 노드 · 워드클라우드</button>
+        <button type="button" class="btn95 sm sky" id="btn-widget-wp">[BG] 바탕화면 패턴 변경</button>
+        <button type="button" class="btn95 sm" id="btn-widget-crt">[CRT] 스캔라인 토글</button>
+        <button type="button" class="btn95 sm green" id="btn-widget-ss">[3D] 별빛 화면 보호기</button>
       </div>
     </div>
   </aside>
 </div>
 
-<!-- FLOATING WINDOW 1: 새 감상 기록 마법사 -->
-<div class="floating-win" id="win-register" data-win-id="win-register" data-win-title="➕ 새 감상 기록 마법사" style="top: 56px; left: 160px; width: 690px;">
+<!-- FLOATING WINDOW 1: 새 감상 기록 마법사 (Win95 고전 날짜/라디오 평점 컨트롤 적용) -->
+<div class="floating-win" id="win-register" data-win-id="win-register" data-win-title="[+] 새 감상 기록 마법사" style="top: 56px; left: 160px; width: 690px; z-index: 300;">
   <div class="win-titlebar draggable yellow-bar">
     <div class="win-title-left"><span class="win-title-dot"></span><span>새 감상 기록 마법사 (MULTI-SOURCE SEARCH)</span></div>
     <div class="win-controls">
       <button type="button" class="win-ctrl-btn" data-action="minimize" data-target="win-register">_</button>
-      <button type="button" class="win-ctrl-btn close" data-action="close" data-target="win-register">✕</button>
+      <button type="button" class="win-ctrl-btn close" data-action="close" data-target="win-register">X</button>
     </div>
   </div>
   <div class="win-body">
     <div class="sunken-box" style="margin-bottom: 12px; background: var(--win-gray);">
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+      <div style="display: grid; grid-template-columns: 1fr 1.15fr; gap: 10px;">
         <div>
           <label style="display:block; font-size:0.8rem; font-weight:800; margin-bottom:4px;" for="inp-category">매체 구분</label>
-          <select id="inp-category" style="width: 100%;">
+          <select id="inp-category" class="win95-select" style="width: 100%;">
             <option value="도서">도서 (Google Books)</option>
             <option value="음악">음악 (Apple Music · Deezer · MusicBrainz · YouTube)</option>
             <option value="영상">영상 (Apple TV · YouTube)</option>
@@ -276,8 +276,12 @@
           </select>
         </div>
         <div>
-          <label style="display:block; font-size:0.8rem; font-weight:800; margin-bottom:4px;" for="inp-date">감상 일자</label>
-          <input type="date" id="inp-date" style="width: 100%;" />
+          <label style="display:block; font-size:0.8rem; font-weight:800; margin-bottom:4px;">감상 일자 (년 / 월 / 일)</label>
+          <div class="win95-date-group" id="reg-date-group">
+            <select id="inp-date-y" class="win95-select" aria-label="연도"></select>
+            <select id="inp-date-m" class="win95-select" aria-label="월"></select>
+            <select id="inp-date-d" class="win95-select" aria-label="일"></select>
+          </div>
         </div>
       </div>
       <div style="margin-top: 10px;">
@@ -310,20 +314,20 @@
           <input type="text" id="inp-creator" required placeholder="제작자 입력" style="width: 100%;" />
         </div>
       </div>
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+      <div style="display: grid; grid-template-columns: 1fr 1.25fr; gap: 10px; margin-bottom: 10px;">
         <div>
           <label style="display:block; font-size:0.8rem; font-weight:800; margin-bottom:4px;" for="inp-genre">장르 / 키워드</label>
           <input type="text" id="inp-genre" placeholder="예: 한국소설, 인디록, YouTube" style="width: 100%;" />
         </div>
         <div>
-          <label style="display:block; font-size:0.8rem; font-weight:800; margin-bottom:4px;" for="inp-rating">평점 (1~5점) *</label>
-          <select id="inp-rating" style="width: 100%;">
-            <option value="5">★★★★★ (5점)</option>
-            <option value="4" selected>★★★★☆ (4점)</option>
-            <option value="3">★★★☆☆ (3점)</option>
-            <option value="2">★★☆☆☆ (2점)</option>
-            <option value="1">★☆☆☆☆ (1점)</option>
-          </select>
+          <span style="display:block; font-size:0.8rem; font-weight:800; margin-bottom:4px;">평점 선택 (1~5점) *</span>
+          <div class="win95-radio-group" role="radiogroup" aria-label="평점 선택">
+            <label class="win95-radio"><input type="radio" name="reg-rating" value="1" /><span>1점</span></label>
+            <label class="win95-radio"><input type="radio" name="reg-rating" value="2" /><span>2점</span></label>
+            <label class="win95-radio"><input type="radio" name="reg-rating" value="3" /><span>3점</span></label>
+            <label class="win95-radio"><input type="radio" name="reg-rating" value="4" checked /><span>4점</span></label>
+            <label class="win95-radio"><input type="radio" name="reg-rating" value="5" /><span>5점</span></label>
+          </div>
         </div>
       </div>
       <div style="margin-bottom: 10px;">
@@ -343,28 +347,28 @@
 </div>
 
 <!-- FLOATING WINDOW 2: 선택형 데이터 노드 & 워드클라우드 -->
-<div class="floating-win" id="win-visualizer" data-win-id="win-visualizer" data-win-title="🕸️ 취향 노드·워드클라우드" style="top: 50px; left: 120px; width: 820px;">
+<div class="floating-win" id="win-visualizer" data-win-id="win-visualizer" data-win-title="[NET] 취향 노드·워드클라우드" style="top: 50px; left: 120px; width: 820px; z-index: 300;">
   <div class="win-titlebar draggable sky-bar">
     <div class="win-title-left"><span class="win-title-dot"></span><span>VISUALIZER95.EXE — 선택형 취향 데이터 노드 &amp; 워드클라우드</span></div>
     <div class="win-controls">
       <button type="button" class="win-ctrl-btn" data-action="minimize" data-target="win-visualizer">_</button>
-      <button type="button" class="win-ctrl-btn close" data-action="close" data-target="win-visualizer">✕</button>
+      <button type="button" class="win-ctrl-btn close" data-action="close" data-target="win-visualizer">X</button>
     </div>
   </div>
   <div class="win-body">
     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; background: var(--win-gray); padding: 8px 12px; border: 2px solid #111; box-shadow: var(--bevel-out);">
       <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-        <button type="button" class="btn95 yellow sm" id="vis-tab-node">🕸️ 데이터 관계 노드 맵</button>
-        <button type="button" class="btn95 sm" id="vis-tab-wc">☁️ 감상 키워드 워드클라우드</button>
+        <button type="button" class="btn95 yellow sm" id="vis-tab-node">[NET] 데이터 관계 노드 맵</button>
+        <button type="button" class="btn95 sm" id="vis-tab-wc">[TAG] 감상 키워드 워드클라우드</button>
       </div>
       <div style="display: flex; gap: 6px; align-items: center;">
-        <select id="vis-cat-scope" style="padding: 4px 8px; font-size: 0.8rem;">
+        <select id="vis-cat-scope" class="win95-select" style="padding: 4px 8px; font-size: 0.8rem;">
           <option value="ALL">전체 아카이브 대상</option>
           <option value="도서">도서만 분석</option>
           <option value="음악">음악만 분석</option>
           <option value="영상">영상만 분석</option>
         </select>
-        <button type="button" class="btn95 green sm" id="btn-rebuild-vis">🔄 그래프 재생성</button>
+        <button type="button" class="btn95 green sm" id="btn-rebuild-vis">그래프 재생성</button>
       </div>
     </div>
     <div id="vis-panel-node">
@@ -379,12 +383,12 @@
 </div>
 
 <!-- FLOATING WINDOW 3: 아이디어 메모장 -->
-<div class="floating-win" id="win-memo" data-win-id="win-memo" data-win-title="📝 MEMO95.EXE" style="top: 88px; left: 220px; width: 450px;">
+<div class="floating-win" id="win-memo" data-win-id="win-memo" data-win-title="[TXT] MEMO95.EXE" style="top: 88px; left: 220px; width: 450px; z-index: 300;">
   <div class="win-titlebar draggable green-bar">
     <div class="win-title-left"><span class="win-title-dot" style="background: var(--brutal-yellow);"></span><span>MEMO95.EXE — 바탕화면 아이디어 메모장</span></div>
     <div class="win-controls">
       <button type="button" class="win-ctrl-btn" data-action="minimize" data-target="win-memo">_</button>
-      <button type="button" class="win-ctrl-btn close" data-action="close" data-target="win-memo">✕</button>
+      <button type="button" class="win-ctrl-btn close" data-action="close" data-target="win-memo">X</button>
     </div>
   </div>
   <div class="win-body">
@@ -409,18 +413,18 @@
 </div>
 
 <!-- FLOATING WINDOW 4: 지뢰찾기 -->
-<div class="floating-win" id="win-mine" data-win-id="win-mine" data-win-title="💣 지뢰찾기.exe" style="top: 110px; left: 320px; width: 340px;">
+<div class="floating-win" id="win-mine" data-win-id="win-mine" data-win-title="[*] WINMINE.EXE" style="top: 110px; left: 320px; width: 340px; z-index: 300;">
   <div class="win-titlebar draggable">
     <div class="win-title-left"><span class="win-title-dot" style="background: var(--brutal-pink);"></span><span>WINMINE.EXE — 지뢰찾기</span></div>
     <div class="win-controls">
       <button type="button" class="win-ctrl-btn" data-action="minimize" data-target="win-mine">_</button>
-      <button type="button" class="win-ctrl-btn close" data-action="close" data-target="win-mine">✕</button>
+      <button type="button" class="win-ctrl-btn close" data-action="close" data-target="win-mine">X</button>
     </div>
   </div>
   <div class="win-body" style="text-align: center;">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; background: var(--win-gray); padding: 6px 10px; border: 2px solid #111; box-shadow: var(--bevel-in);">
       <span id="mine-left-lbl" style="font-family: monospace; font-size: 1.1rem; font-weight: 900; background: #111; color: #ff4757; padding: 2px 8px;">010</span>
-      <button type="button" class="btn95 yellow sm" id="btn-mine-reset">🙂 다시 시작</button>
+      <button type="button" class="btn95 yellow sm" id="btn-mine-reset">[:-)] 다시 시작</button>
       <span style="font-size: 0.75rem; font-weight: 800;">우클릭: 깃발</span>
     </div>
     <div class="mine-grid" id="mine-grid"></div>
@@ -433,18 +437,18 @@
 <div class="start-menu" id="start-menu">
   <div class="start-sidebar">MY-ARCHIVE 95</div>
   <div class="start-items">
-    <button type="button" class="start-item" id="sm-new">➕ 새 감상 기록 마법사</button>
-    <button type="button" class="start-item" id="sm-visualizer">🕸️ 데이터 노드 &amp; 워드클라우드</button>
-    <button type="button" class="start-item" id="sm-memo">📝 아이디어 메모장 (MEMO95)</button>
-    <button type="button" class="start-item" id="sm-mine">💣 지뢰찾기 (WINMINE.EXE)</button>
+    <button type="button" class="start-item" id="sm-new">[+] 새 감상 기록 마법사</button>
+    <button type="button" class="start-item" id="sm-visualizer">[NET] 데이터 노드 &amp; 워드클라우드</button>
+    <button type="button" class="start-item" id="sm-memo">[TXT] 아이디어 메모장 (MEMO95)</button>
+    <button type="button" class="start-item" id="sm-mine">[*] 지뢰찾기 (WINMINE.EXE)</button>
     <div class="start-divider"></div>
-    <button type="button" class="start-item" id="sm-all">📂 전체 아카이브 탐색기</button>
-    <button type="button" class="start-item" id="sm-book">📚 도서 서가만 보기</button>
-    <button type="button" class="start-item" id="sm-music">🎵 음악 음반만 보기</button>
-    <button type="button" class="start-item" id="sm-video">🎬 영상 비디오만 보기</button>
+    <button type="button" class="start-item" id="sm-all">[DIR] 전체 아카이브 탐색기</button>
+    <button type="button" class="start-item" id="sm-book">[BK] 도서 서가만 보기</button>
+    <button type="button" class="start-item" id="sm-music">[LP] 음악 음반만 보기</button>
+    <button type="button" class="start-item" id="sm-video">[TV] 영상 비디오만 보기</button>
     <div class="start-divider"></div>
-    <button type="button" class="start-item" id="sm-screensaver">🌌 3D 화면 보호기 가동</button>
-    <button type="button" class="start-item" id="sm-reload">🔄 구글 시트 데이터 새로고침</button>
+    <button type="button" class="start-item" id="sm-screensaver">[3D] 화면 보호기 가동</button>
+    <button type="button" class="start-item" id="sm-reload">[SYNC] 구글 시트 데이터 새로고침</button>
   </div>
 </div>
 
@@ -454,11 +458,11 @@
       <span class="win-flag"><span></span><span></span><span></span><span></span></span>
       <span>시작</span>
     </button>
-    <button type="button" class="task-tab active" data-win-target="win-main">📁 MY-ARCHIVE.EXE</button>
+    <button type="button" class="task-tab active" data-win-target="win-main">[DIR] MY-ARCHIVE.EXE</button>
   </div>
   <div class="system-tray">
-    <button type="button" id="btn-sound-toggle" style="background:none; border:none; font-size:0.85rem;" title="8비트 효과음 켜기/끄기">🔊</button>
-    <span title="Google Sheets 연결됨">🟢 DB</span>
+    <button type="button" id="btn-sound-toggle" style="background:none; border:none; font-size:0.78rem; font-weight:900;" title="8비트 효과음 켜기/끄기">SPK:ON</button>
+    <span title="Google Sheets 연결됨">[DB:OK]</span>
     <span id="tray-clock">오전 12:18</span>
   </div>
 </footer>
