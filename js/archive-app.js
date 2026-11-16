@@ -586,16 +586,18 @@ document.addEventListener('submit', async e => {
     return;
   }
 
-  // ★ 상세 창 수정 폼 내 자체 중복 체크 (자기 자신 ID 제외)
   const newCategory = editForm.category.value;
   const newTitle = editForm.title.value.trim();
+
+  // ★ 프론트엔드 레벨에서 자기 자신의 ID(item.id)를 제외하고 동일 매체·제목 중복 체크
   const isDetailDup = archiveItems.some(x => {
-    if (x.id === item.id) return false;
+    if (x.id === item.id) return false; // 본인 자신은 제외
     return x.category === newCategory && String(x.title || '').trim().toLowerCase() === newTitle.toLowerCase();
   });
 
   if (isDetailDup) {
-    showWin95MessageBox('중복 기록 오류 — MY-ARCHIVE 95', `이미 '${newCategory}' 목록에 동일한 제목(「${newTitle}」)의 다른 기록이 존재합니다.`, 'boom');
+    const dupMsg = `이미 '${newCategory}' 목록에 동일한 제목(「${newTitle}」)의 다른 기록이 존재합니다.`;
+    showWin95MessageBox('중복 등록 오류 — MY-ARCHIVE 95', dupMsg, 'boom');
     return;
   }
 
@@ -617,7 +619,7 @@ document.addEventListener('submit', async e => {
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify({
         action: 'update',
-        id: item.id,
+        id: item.id, // ★ 본인 고유 ID 전송 필수
         category: newCategory,
         title: newTitle,
         creator: editForm.creator.value.trim(),
