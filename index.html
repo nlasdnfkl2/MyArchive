@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>MY-ARCHIVE 95 // 감상 아카이빙 OS</title>
+  <title>MY-ARCHIVE 95 // 감상 아카이빙 &amp; 아이디어 OS</title>
 
   <!-- Pretendard Variable -->
   <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css" />
@@ -12,7 +12,6 @@
 
   <style>
     :root {
-      /* Neo-Brutalism + Windows 95 Hybrid Tokens */
       --desktop-bg: #008080;
       --win-gray: #c0c0c0;
       --win-light: #ffffff;
@@ -25,15 +24,15 @@
       --brutal-green: #2ed573;
       --brutal-paper: #dfdcd3;
 
-      /* Classic Win95 3D Bevels */
       --bevel-out: inset 2px 2px 0px #ffffff, inset -2px -2px 0px #808080, inset -3px -3px 0px #111111;
       --bevel-in: inset 2px 2px 0px #808080, inset -2px -2px 0px #ffffff, inset 3px 3px 0px #111111;
       --brutal-border: 3px solid #111111;
       --brutal-shadow: 6px 6px 0px #111111;
 
-      /* Custom Pixel Cursors */
+      /* Custom Windows 95 Pixel Cursors */
       --cursor-default: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'><path d='M2 2 L2 19 L6.5 14.5 L10 21 L12.5 19.5 L9 13 L15 13 Z' fill='white' stroke='%23111111' stroke-width='2'/></svg>") 2 2, auto;
       --cursor-pointer: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'><path d='M8 2 V11 H5 V15 L8 21 H17 L19 14 V9 H15 V8 H12 V2 Z' fill='%23ffd83b' stroke='%23111111' stroke-width='2'/></svg>") 8 2, pointer;
+      --cursor-move: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'><path d='M12 2 L15 5 H13 V11 H19 V9 L22 12 L19 15 V13 H13 V19 H15 L12 22 L9 19 H11 V13 H5 V15 L2 12 L5 9 V11 H11 V5 H9 Z' fill='%2348dbfb' stroke='%23111111' stroke-width='1.5'/></svg>") 12 12, move;
       --cursor-wait: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'><rect x='4' y='2' width='16' height='3' fill='%23111111'/><rect x='4' y='19' width='16' height='3' fill='%23111111'/><path d='M6 5 L12 12 L18 5 Z' fill='%2348dbfb' stroke='%23111111' stroke-width='1.5'/><path d='M6 19 L12 12 L18 19 Z' fill='%23ffd83b' stroke='%23111111' stroke-width='1.5'/></svg>") 12 12, wait;
     }
 
@@ -48,8 +47,12 @@
       cursor: var(--cursor-wait) !important;
     }
 
-    button, a, select, input[type="checkbox"], .desktop-icon, .item-card, .pill-btn, .win-ctrl-btn {
+    button, a, select, input[type="checkbox"], .desktop-icon, .item-card, .pill-btn, .win-ctrl-btn, .menu-root, .menu-opt, .rank-item {
       cursor: var(--cursor-pointer);
+    }
+
+    .win-titlebar.draggable {
+      cursor: var(--cursor-move);
     }
 
     input[type="text"], input[type="date"], textarea {
@@ -63,42 +66,35 @@
       color: var(--win-black);
       font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, sans-serif;
       min-height: 100vh;
-      padding: 18px 18px 68px;
+      padding: 16px 16px 68px;
       overflow-x: hidden;
       -webkit-font-smoothing: antialiased;
     }
 
-    /* Desktop Layout Grid */
+    /* Desktop Grid */
     .desktop-workspace {
-      max-width: 1280px;
+      max-width: 1320px;
       margin: 0 auto;
       display: grid;
       grid-template-columns: 96px 1fr;
-      gap: 20px;
+      gap: 18px;
       align-items: start;
     }
 
     @media (max-width: 820px) {
-      .desktop-workspace {
-        grid-template-columns: 1fr;
-      }
-      .desktop-icons {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 12px;
-      }
+      .desktop-workspace { grid-template-columns: 1fr; }
+      .desktop-icons { display: flex; flex-wrap: wrap; gap: 10px; }
     }
 
-    /* Desktop Shortcut Icons */
     .desktop-icons {
       display: flex;
       flex-direction: column;
-      gap: 18px;
+      gap: 16px;
       user-select: none;
     }
 
     .desktop-icon {
-      width: 88px;
+      width: 90px;
       text-align: center;
       padding: 6px 4px;
       border: 2px solid transparent;
@@ -119,26 +115,27 @@
       align-items: center;
       justify-content: center;
       font-weight: 900;
-      font-size: 1.15rem;
+      font-size: 1.05rem;
       background: var(--brutal-yellow);
     }
 
     .icon-glyph.sky { background: var(--brutal-sky); }
     .icon-glyph.green { background: var(--brutal-green); }
     .icon-glyph.pink { background: var(--brutal-pink); color: #ffffff; }
+    .icon-glyph.white { background: #ffffff; }
 
     .icon-label {
       display: inline-block;
       background: #000080;
       color: #ffffff;
-      font-size: 0.78rem;
+      font-size: 0.76rem;
       font-weight: 700;
       padding: 2px 5px;
       line-height: 1.25;
       word-break: keep-all;
     }
 
-    /* Windows 95 + Neo-Brutalism Window Frame */
+    /* Base Windows 95 Window Frame */
     .win95-window {
       background: var(--win-gray);
       border: var(--brutal-border);
@@ -146,13 +143,45 @@
       margin-bottom: 24px;
     }
 
-    .win95-window.minimized .win-body {
+    .win95-window.minimized .win-body,
+    .win95-window.minimized .win-menubar,
+    .win95-window.minimized .win-statusbar {
       display: none;
     }
 
+    /* Floating Multi-Window Popups */
+    .floating-win {
+      position: fixed;
+      top: 64px;
+      left: 140px;
+      width: 680px;
+      max-width: calc(100vw - 24px);
+      max-height: calc(100vh - 84px);
+      background: var(--win-gray);
+      border: 3px solid #111111;
+      box-shadow: var(--bevel-out), 8px 8px 0px #111111;
+      display: none;
+      flex-direction: column;
+      z-index: 100;
+    }
+
+    .floating-win.open {
+      display: flex;
+    }
+
+    .floating-win.minimized {
+      display: none !important;
+    }
+
+    .floating-win .win-body {
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    /* Titlebar */
     .win-titlebar {
-      background: linear-gradient(90deg, #000080 0%, #1084d0 100%);
-      color: #ffffff;
+      background: #808080;
+      color: #e0e0e0;
       padding: 6px 10px;
       display: flex;
       justify-content: space-between;
@@ -161,8 +190,19 @@
       user-select: none;
     }
 
-    .win-titlebar.brutal-accent {
+    .win95-window.focused .win-titlebar,
+    .floating-win.focused .win-titlebar {
+      background: linear-gradient(90deg, #000080 0%, #1084d0 100%);
+      color: #ffffff;
+    }
+
+    .floating-win.focused .win-titlebar.yellow-bar {
       background: var(--brutal-yellow);
+      color: #111111;
+    }
+
+    .floating-win.focused .win-titlebar.green-bar {
+      background: var(--brutal-green);
       color: #111111;
     }
 
@@ -171,8 +211,7 @@
       align-items: center;
       gap: 8px;
       font-weight: 900;
-      font-size: 0.92rem;
-      letter-spacing: -0.01em;
+      font-size: 0.9rem;
     }
 
     .win-title-dot {
@@ -197,7 +236,6 @@
       box-shadow: inset 1px 1px 0px #ffffff, inset -1px -1px 0px #808080;
       font-weight: 900;
       font-size: 0.78rem;
-      line-height: 1;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -213,20 +251,79 @@
       color: #ffffff;
     }
 
-    /* Classic Win95 Menu Strip */
+    /* Interactive Dropdown Menu Bar */
     .win-menubar {
       background: var(--win-gray);
-      border-bottom: 2px solid #808080;
-      padding: 4px 12px;
+      border-bottom: 2px solid #111111;
+      padding: 2px 8px;
       display: flex;
       flex-wrap: wrap;
-      gap: 16px;
-      font-size: 0.82rem;
-      font-weight: 700;
+      gap: 4px;
+      position: relative;
+      user-select: none;
     }
 
-    .win-menubar span u {
-      text-decoration: underline;
+    .menu-item-wrap {
+      position: relative;
+    }
+
+    .menu-root {
+      background: transparent;
+      border: 2px solid transparent;
+      padding: 4px 10px;
+      font-family: inherit;
+      font-size: 0.83rem;
+      font-weight: 800;
+      color: #111111;
+    }
+
+    .menu-root:hover, .menu-item-wrap.open .menu-root {
+      background: #000080;
+      color: #ffffff;
+    }
+
+    .menu-dropdown {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      min-width: 210px;
+      background: var(--win-gray);
+      border: 3px solid #111111;
+      box-shadow: var(--bevel-out), 4px 4px 0px #111111;
+      padding: 4px;
+      display: none;
+      flex-direction: column;
+      z-index: 900;
+    }
+
+    .menu-item-wrap.open .menu-dropdown {
+      display: flex;
+    }
+
+    .menu-opt {
+      background: transparent;
+      border: none;
+      padding: 7px 10px;
+      text-align: left;
+      font-family: inherit;
+      font-size: 0.82rem;
+      font-weight: 800;
+      color: #111111;
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .menu-opt:hover {
+      background: #000080;
+      color: #ffffff;
+    }
+
+    .menu-sep {
+      height: 2px;
+      background: #808080;
+      border-bottom: 1px solid #ffffff;
+      margin: 4px 0;
     }
 
     .win-body {
@@ -234,26 +331,21 @@
       background: var(--brutal-paper);
     }
 
-    /* Neo-Brutalist Win95 Buttons */
+    /* Buttons */
     .btn95 {
       display: inline-flex;
       align-items: center;
       justify-content: center;
       gap: 6px;
-      padding: 9px 16px;
+      padding: 9px 15px;
       background: var(--win-gray);
       color: #111111;
       border: 2px solid #111111;
       box-shadow: var(--bevel-out), 3px 3px 0px #111111;
       font-family: inherit;
-      font-size: 0.88rem;
+      font-size: 0.86rem;
       font-weight: 800;
       text-decoration: none;
-      transition: transform 0.06s ease;
-    }
-
-    .btn95:hover:not(:disabled) {
-      filter: brightness(1.03);
     }
 
     .btn95:active:not(:disabled) {
@@ -261,57 +353,49 @@
       transform: translate(2px, 2px);
     }
 
-    .btn95:disabled {
-      opacity: 0.6;
-    }
-
+    .btn95:disabled { opacity: 0.6; }
     .btn95.yellow { background: var(--brutal-yellow); }
     .btn95.sky { background: var(--brutal-sky); }
     .btn95.green { background: var(--brutal-green); }
     .btn95.pink { background: var(--brutal-pink); color: #ffffff; }
-    .btn95.sm { padding: 6px 11px; font-size: 0.8rem; }
+    .btn95.sm { padding: 6px 10px; font-size: 0.78rem; }
 
-    /* Hero Banner inside Main Window */
+    /* Hero & KPI */
     .os-hero {
       background: #ffffff;
       border: var(--brutal-border);
       box-shadow: 4px 4px 0px #111111;
-      padding: 20px 24px;
-      margin-bottom: 20px;
+      padding: 18px 22px;
+      margin-bottom: 18px;
       display: flex;
       justify-content: space-between;
       align-items: center;
       flex-wrap: wrap;
-      gap: 16px;
+      gap: 14px;
     }
 
     .os-hero h1 {
-      font-size: clamp(1.45rem, 2.6vw, 2rem);
+      font-size: clamp(1.35rem, 2.5vw, 1.9rem);
       font-weight: 900;
       letter-spacing: -0.03em;
       margin-bottom: 4px;
     }
 
     .os-hero p {
-      font-size: 0.9rem;
+      font-size: 0.88rem;
       font-weight: 600;
       color: #4a4a4a;
     }
 
-    /* KPI Sunken Win95 Panels */
     .kpi-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
       gap: 14px;
-      margin-bottom: 20px;
+      margin-bottom: 18px;
     }
 
-    @media (max-width: 920px) {
-      .kpi-grid { grid-template-columns: repeat(2, 1fr); }
-    }
-    @media (max-width: 520px) {
-      .kpi-grid { grid-template-columns: 1fr; }
-    }
+    @media (max-width: 920px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 520px) { .kpi-grid { grid-template-columns: 1fr; } }
 
     .kpi-panel {
       background: #ffffff;
@@ -324,86 +408,63 @@
     .kpi-panel.sky { background: var(--brutal-sky); }
     .kpi-panel.green { background: var(--brutal-green); }
 
-    .kpi-lbl {
-      font-size: 0.78rem;
-      font-weight: 800;
-      margin-bottom: 4px;
-    }
+    .kpi-lbl { font-size: 0.78rem; font-weight: 800; margin-bottom: 4px; }
+    .kpi-val { font-size: 1.7rem; font-weight: 900; line-height: 1.15; }
+    .kpi-sub { font-size: 0.78rem; font-weight: 700; margin-top: 5px; }
 
-    .kpi-val {
-      font-size: 1.75rem;
-      font-weight: 900;
-      line-height: 1.15;
-    }
-
-    .kpi-sub {
-      font-size: 0.78rem;
-      font-weight: 700;
-      margin-top: 5px;
-    }
-
-    /* Charts Grid */
+    /* Charts */
     .charts-grid {
       display: grid;
       grid-template-columns: 1fr 1.45fr;
-      gap: 18px;
-      margin-bottom: 22px;
+      gap: 16px;
+      margin-bottom: 20px;
     }
 
-    @media (max-width: 860px) {
-      .charts-grid { grid-template-columns: 1fr; }
-    }
+    @media (max-width: 860px) { .charts-grid { grid-template-columns: 1fr; } }
 
     .sunken-box {
       background: #ffffff;
       border: 2px solid #111111;
       box-shadow: var(--bevel-in);
-      padding: 16px;
+      padding: 14px 16px;
     }
 
     .box-head {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 12px;
+      margin-bottom: 10px;
       padding-bottom: 8px;
       border-bottom: 2px solid #111111;
       font-weight: 900;
-      font-size: 0.98rem;
+      font-size: 0.94rem;
     }
 
-    .chart-wrap {
-      height: 220px;
-      position: relative;
-    }
+    .chart-wrap { height: 210px; position: relative; }
 
-    /* Filter Toolbar */
+    /* Toolbar & Inputs */
     .toolbar-95 {
       background: var(--win-gray);
       border: 2px solid #111111;
       box-shadow: var(--bevel-out);
-      padding: 12px 14px;
-      margin-bottom: 18px;
+      padding: 10px 14px;
+      margin-bottom: 16px;
       display: flex;
       justify-content: space-between;
       align-items: center;
       flex-wrap: wrap;
-      gap: 12px;
+      gap: 10px;
     }
 
-    .pill-group {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-    }
+    .pill-group { display: flex; flex-wrap: wrap; gap: 6px; }
 
     .pill-btn {
-      padding: 6px 12px;
+      padding: 6px 11px;
       background: var(--win-gray);
       border: 2px solid #111111;
       box-shadow: var(--bevel-out);
       font-family: inherit;
-      font-size: 0.84rem;
+      font-size: 0.82rem;
       font-weight: 800;
     }
 
@@ -419,30 +480,21 @@
       border: 2px solid #111111;
       box-shadow: var(--bevel-in);
       font-family: inherit;
-      font-size: 0.88rem;
+      font-size: 0.86rem;
       font-weight: 600;
       color: #111111;
       border-radius: 0;
     }
 
-    input:focus, select:focus, textarea:focus {
-      outline: 2px dotted #111111;
-      outline-offset: -4px;
-    }
-
-    /* Archive Cards Grid */
+    /* Archive Cards */
     .archive-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 18px;
+      gap: 16px;
     }
 
-    @media (max-width: 980px) {
-      .archive-grid { grid-template-columns: repeat(2, 1fr); }
-    }
-    @media (max-width: 620px) {
-      .archive-grid { grid-template-columns: 1fr; }
-    }
+    @media (max-width: 980px) { .archive-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 620px) { .archive-grid { grid-template-columns: 1fr; } }
 
     .item-card {
       background: #ffffff;
@@ -450,7 +502,7 @@
       box-shadow: 5px 5px 0px #111111;
       display: flex;
       flex-direction: column;
-      transition: transform 0.1s ease, box-shadow 0.1s ease;
+      transition: transform 0.1s ease;
     }
 
     .item-card:hover {
@@ -463,35 +515,29 @@
       background: #111111;
       color: #ffffff;
       padding: 4px 10px;
-      font-size: 0.75rem;
+      font-size: 0.74rem;
       font-weight: 800;
       display: flex;
       justify-content: space-between;
-      align-items: center;
     }
 
     .item-thumb-box {
-      height: 175px;
+      height: 165px;
       border-bottom: 3px solid #111111;
       position: relative;
       background: #222222;
       overflow: hidden;
     }
 
-    .item-thumb {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
-    }
+    .item-thumb { width: 100%; height: 100%; object-fit: cover; display: block; }
 
     .cat-sticker {
       position: absolute;
       top: 8px;
       left: 8px;
-      padding: 3px 8px;
+      padding: 2px 8px;
       border: 2px solid #111111;
-      font-size: 0.76rem;
+      font-size: 0.75rem;
       font-weight: 900;
       background: var(--brutal-yellow);
       box-shadow: 2px 2px 0px #111111;
@@ -508,39 +554,21 @@
       padding: 2px 8px;
       border: 2px solid #111111;
       background: #ffffff;
-      font-size: 0.8rem;
+      font-size: 0.78rem;
       font-weight: 900;
       box-shadow: 2px 2px 0px #111111;
     }
 
-    .item-content {
-      padding: 14px 16px;
-      display: flex;
-      flex-direction: column;
-      flex: 1;
-    }
-
-    .item-title {
-      font-size: 1.08rem;
-      font-weight: 900;
-      margin-bottom: 4px;
-      line-height: 1.3;
-    }
-
-    .item-creator {
-      font-size: 0.82rem;
-      font-weight: 700;
-      color: #4a4a4a;
-      margin-bottom: 10px;
-    }
-
+    .item-content { padding: 14px; display: flex; flex-direction: column; flex: 1; }
+    .item-title { font-size: 1.05rem; font-weight: 900; margin-bottom: 4px; line-height: 1.3; }
+    .item-creator { font-size: 0.8rem; font-weight: 700; color: #4a4a4a; margin-bottom: 10px; }
     .item-memo {
       background: var(--brutal-paper);
       border: 2px solid #111111;
-      padding: 9px 11px;
-      font-size: 0.85rem;
+      padding: 8px 10px;
+      font-size: 0.84rem;
       font-weight: 600;
-      margin-bottom: 12px;
+      margin-bottom: 10px;
       flex: 1;
     }
 
@@ -548,7 +576,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      font-size: 0.78rem;
+      font-size: 0.76rem;
       font-weight: 800;
       padding-top: 8px;
       border-top: 2px dashed #111111;
@@ -557,18 +585,17 @@
     .inspect-hint {
       background: var(--brutal-sky);
       border: 1.5px solid #111111;
-      padding: 2px 7px;
+      padding: 2px 6px;
       font-weight: 900;
     }
 
-    /* Status Bar at Bottom of Window */
     .win-statusbar {
       background: var(--win-gray);
       border-top: 2px solid #111111;
-      padding: 5px 12px;
+      padding: 4px 10px;
       display: flex;
       justify-content: space-between;
-      font-size: 0.78rem;
+      font-size: 0.76rem;
       font-weight: 700;
     }
 
@@ -578,123 +605,94 @@
       background: var(--win-gray);
     }
 
-    /* =====================================================================
-     * WINDOWS 95 POPUP MODALS (등록 팝업 & 상세 탐색기/추천 팝업)
-     * ===================================================================== */
-    .win-modal-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.55);
+    /* Ranked Search Candidate Selector List */
+    .rank-list {
+      margin-top: 10px;
+      max-height: 210px;
+      overflow-y: auto;
+      border: 2px solid #111111;
+      background: #ffffff;
       display: none;
+    }
+
+    .rank-item {
+      display: flex;
       align-items: center;
-      justify-content: center;
-      padding: 16px;
-      z-index: 2000;
-      overflow-y: auto;
+      gap: 10px;
+      padding: 8px 10px;
+      border-bottom: 2px solid #111111;
+      transition: background 0.08s ease;
     }
 
-    .win-modal-overlay.open {
-      display: flex;
+    .rank-item:last-child { border-bottom: none; }
+    .rank-item:hover { background: var(--brutal-yellow); }
+
+    .rank-badge {
+      background: #111111;
+      color: #ffffff;
+      font-size: 0.72rem;
+      font-weight: 900;
+      padding: 2px 6px;
+      white-space: nowrap;
     }
 
-    .win-dialog {
-      width: 100%;
-      max-width: 680px;
-      background: var(--win-gray);
-      border: 3px solid #111111;
-      box-shadow: var(--bevel-out), 10px 10px 0px #111111;
-      max-height: 92vh;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .win-dialog-body {
-      padding: 18px;
-      background: var(--brutal-paper);
-      overflow-y: auto;
-    }
-
-    .form-grid-2 {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-    }
-
-    @media (max-width: 560px) {
-      .form-grid-2 { grid-template-columns: 1fr; }
-    }
-
-    .fld-group {
-      margin-bottom: 12px;
-    }
-
-    .fld-label {
-      display: block;
-      font-size: 0.82rem;
+    .rank-src {
+      background: var(--brutal-sky);
+      border: 1.5px solid #111111;
+      font-size: 0.72rem;
       font-weight: 800;
-      margin-bottom: 4px;
+      padding: 1px 5px;
+      white-space: nowrap;
+    }
+
+    .rank-thumb {
+      width: 40px;
+      height: 40px;
+      object-fit: cover;
+      border: 1.5px solid #111111;
+      flex-shrink: 0;
     }
 
     .dialog-banner {
-      margin-top: 10px;
-      padding: 8px 12px;
+      margin-top: 8px;
+      padding: 8px 10px;
       border: 2px solid #111111;
       background: var(--brutal-sky);
-      font-size: 0.83rem;
+      font-size: 0.82rem;
       font-weight: 800;
       display: none;
     }
+    .dialog-banner.err { background: var(--brutal-pink); color: #ffffff; }
+    .dialog-banner.ok { background: var(--brutal-green); }
 
-    .dialog-banner.err {
-      background: var(--brutal-pink);
-      color: #ffffff;
-    }
-
-    .dialog-banner.ok {
-      background: var(--brutal-green);
-    }
-
-    /* Detail & Recommendation Explorer Layout */
+    /* Detail & Recommendation Explorer */
     .detail-hero {
       display: grid;
-      grid-template-columns: 160px 1fr;
-      gap: 18px;
+      grid-template-columns: 150px 1fr;
+      gap: 16px;
       background: #ffffff;
       border: 3px solid #111111;
       box-shadow: 4px 4px 0px #111111;
-      padding: 16px;
-      margin-bottom: 18px;
+      padding: 14px;
+      margin-bottom: 16px;
     }
-
-    @media (max-width: 560px) {
-      .detail-hero { grid-template-columns: 1fr; }
-    }
+    @media (max-width: 560px) { .detail-hero { grid-template-columns: 1fr; } }
 
     .detail-cover {
       width: 100%;
-      height: 200px;
+      height: 190px;
       object-fit: cover;
       border: 2px solid #111111;
       background: #111111;
     }
 
-    .action-links-bar {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-top: 14px;
-    }
-
     .rec-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 12px;
+      gap: 10px;
       margin-top: 10px;
     }
-
-    @media (max-width: 640px) {
-      .rec-grid { grid-template-columns: 1fr; }
-    }
+    @media (max-width: 640px) { .rec-grid { grid-template-columns: 1fr; } }
 
     .rec-card {
       background: #ffffff;
@@ -708,30 +706,22 @@
 
     .rec-thumb {
       width: 100%;
-      height: 110px;
+      height: 100px;
       object-fit: cover;
       border: 2px solid #111111;
       margin-bottom: 8px;
-      background: #222222;
     }
 
-    .rec-title {
-      font-size: 0.88rem;
-      font-weight: 900;
-      line-height: 1.25;
-      margin-bottom: 3px;
+    /* Quick Idea Notepad (MEMO95.EXE) */
+    .note-card {
+      background: #fff9c4;
+      border: 2px solid #111111;
+      box-shadow: 3px 3px 0px #111111;
+      padding: 10px 12px;
+      margin-bottom: 10px;
     }
 
-    .rec-sub {
-      font-size: 0.78rem;
-      font-weight: 700;
-      color: #4a4a4a;
-      margin-bottom: 8px;
-    }
-
-    /* =====================================================================
-     * WINDOWS 95 TASKBAR & START MENU
-     * ===================================================================== */
+    /* Taskbar & Start Menu */
     .win95-taskbar {
       position: fixed;
       left: 0;
@@ -745,14 +735,14 @@
       justify-content: space-between;
       align-items: center;
       padding: 4px 8px;
-      z-index: 3000;
+      z-index: 9000;
       user-select: none;
     }
 
     .taskbar-left {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
       overflow-x: auto;
     }
 
@@ -767,7 +757,8 @@
       box-shadow: var(--bevel-out);
       font-family: inherit;
       font-weight: 900;
-      font-size: 0.9rem;
+      font-size: 0.88rem;
+      flex-shrink: 0;
     }
 
     .start-btn.pressed {
@@ -782,7 +773,6 @@
       width: 14px;
       height: 14px;
     }
-
     .win-flag span:nth-child(1) { background: #ff4757; }
     .win-flag span:nth-child(2) { background: #2ed573; }
     .win-flag span:nth-child(3) { background: #48dbfb; }
@@ -790,12 +780,12 @@
 
     .task-tab {
       height: 32px;
-      padding: 0 12px;
+      padding: 0 11px;
       background: var(--win-gray);
       border: 2px solid #111111;
-      box-shadow: var(--bevel-in);
+      box-shadow: var(--bevel-out);
       font-family: inherit;
-      font-size: 0.82rem;
+      font-size: 0.8rem;
       font-weight: 800;
       display: inline-flex;
       align-items: center;
@@ -803,8 +793,10 @@
       white-space: nowrap;
     }
 
-    .task-tab.inactive {
-      box-shadow: var(--bevel-out);
+    .task-tab.active {
+      background: #e8e6df;
+      box-shadow: var(--bevel-in);
+      font-weight: 900;
     }
 
     .system-tray {
@@ -816,26 +808,24 @@
       display: flex;
       align-items: center;
       gap: 10px;
-      font-size: 0.82rem;
+      font-size: 0.8rem;
       font-weight: 800;
-      font-variant-numeric: tabular-nums;
+      flex-shrink: 0;
     }
 
     .start-menu {
       position: fixed;
       left: 8px;
       bottom: 46px;
-      width: 260px;
+      width: 265px;
       background: var(--win-gray);
       border: 3px solid #111111;
       box-shadow: var(--bevel-out), 6px 6px 0px #111111;
       display: none;
-      z-index: 3100;
+      z-index: 9500;
     }
 
-    .start-menu.open {
-      display: flex;
-    }
+    .start-menu.open { display: flex; }
 
     .start-sidebar {
       width: 34px;
@@ -845,7 +835,7 @@
       transform: rotate(180deg);
       padding: 12px 6px;
       font-weight: 900;
-      font-size: 0.95rem;
+      font-size: 0.92rem;
       letter-spacing: 0.08em;
     }
 
@@ -854,12 +844,12 @@
       padding: 6px;
       display: flex;
       flex-direction: column;
-      gap: 4px;
+      gap: 3px;
     }
 
     .start-item {
-      padding: 9px 10px;
-      font-size: 0.88rem;
+      padding: 8px 10px;
+      font-size: 0.85rem;
       font-weight: 800;
       text-align: left;
       background: transparent;
@@ -869,82 +859,112 @@
       gap: 8px;
     }
 
-    .start-item:hover {
-      background: #000080;
-      color: #ffffff;
-    }
-
-    .start-divider {
-      height: 2px;
-      background: #808080;
-      border-bottom: 1px solid #ffffff;
-      margin: 4px 0;
-    }
+    .start-item:hover { background: #000080; color: #ffffff; }
+    .start-divider { height: 2px; background: #808080; border-bottom: 1px solid #ffffff; margin: 4px 0; }
   </style>
 </head>
 <body>
 
 <div class="desktop-workspace">
-  <!-- Left Desktop Icons -->
+  <!-- Desktop Shortcut Icons -->
   <aside class="desktop-icons" aria-label="바탕화면 아이콘">
-    <div class="desktop-icon" id="icon-open-main" title="MY-ARCHIVE 탐색기 열기">
+    <div class="desktop-icon" id="icon-main" title="내 감상함 열기">
       <div class="icon-glyph">DB</div>
       <span class="icon-label">내 감상함.exe</span>
     </div>
 
-    <div class="desktop-icon" id="icon-new-record" title="새 감상 기록 등록">
+    <div class="desktop-icon" id="icon-new" title="새 감상 기록 등록">
       <div class="icon-glyph yellow">+</div>
       <span class="icon-label">새 기록 등록</span>
     </div>
 
-    <div class="desktop-icon" id="icon-filter-book" title="도서 아카이브만 보기">
+    <div class="desktop-icon" id="icon-memo" title="바탕화면 아이디어 메모장">
+      <div class="icon-glyph white">📝</div>
+      <span class="icon-label">아이디어 메모</span>
+    </div>
+
+    <div class="desktop-icon" id="icon-book" title="도서 서가 필터">
       <div class="icon-glyph sky">BK</div>
       <span class="icon-label">도서 서가</span>
     </div>
 
-    <div class="desktop-icon" id="icon-filter-music" title="음악 아카이브만 보기">
+    <div class="desktop-icon" id="icon-music" title="음반 플레이어 필터">
       <div class="icon-glyph green">LP</div>
       <span class="icon-label">음반 플레이어</span>
     </div>
 
-    <div class="desktop-icon" id="icon-filter-video" title="영상 아카이브만 보기">
+    <div class="desktop-icon" id="icon-video" title="영상 비디오 필터">
       <div class="icon-glyph pink">TV</div>
       <span class="icon-label">영상 비디오</span>
     </div>
   </aside>
 
-  <!-- Main Windows 95 Explorer Window -->
-  <main class="win95-window" id="main-explorer-win">
+  <!-- Primary Explorer Window -->
+  <main class="win95-window focused" id="win-main" data-win-id="win-main" data-win-title="📁 MY-ARCHIVE.EXE">
     <div class="win-titlebar">
       <div class="win-title-left">
         <span class="win-title-dot"></span>
         <span>MY-ARCHIVE.EXE — 감상 아카이빙 및 취향 통계 탐색기</span>
       </div>
       <div class="win-controls">
-        <button type="button" class="win-ctrl-btn" id="btn-min-main" title="최소화">_</button>
-        <button type="button" class="win-ctrl-btn" id="btn-max-main" title="화면 정렬">□</button>
-        <button type="button" class="win-ctrl-btn close" id="btn-close-main" title="창 닫기">✕</button>
+        <button type="button" class="win-ctrl-btn" data-action="minimize" data-target="win-main" title="최소화">_</button>
+        <button type="button" class="win-ctrl-btn" data-action="restore" data-target="win-main" title="복원">□</button>
+        <button type="button" class="win-ctrl-btn close" data-action="close" data-target="win-main" title="닫기">✕</button>
       </div>
     </div>
 
-    <div class="win-menubar">
-      <span><u>F</u>ile(파일)</span>
-      <span><u>E</u>dit(편집)</span>
-      <span><u>V</u>iew(보기)</span>
-      <span><u>R</u>ecommend(추천엔진)</span>
-      <span><u>H</u>elp(도움말)</span>
+    <!-- Functional Windows 95 Menu Bar -->
+    <div class="win-menubar" id="main-menubar">
+      <div class="menu-item-wrap">
+        <button type="button" class="menu-root">파일(F)</button>
+        <div class="menu-dropdown">
+          <button type="button" class="menu-opt" id="mnu-new-archive"><span>새 감상 기록 등록...</span><span>Ctrl+N</span></button>
+          <button type="button" class="menu-opt" id="mnu-open-memo"><span>아이디어 메모장 열기</span><span>Ctrl+M</span></button>
+          <div class="menu-sep"></div>
+          <button type="button" class="menu-opt" id="mnu-export-csv"><span>아카이브 CSV 백업</span><span>Export</span></button>
+          <button type="button" class="menu-opt" id="mnu-sync-sheet"><span>구글 시트 새로고침</span><span>F5</span></button>
+        </div>
+      </div>
+
+      <div class="menu-item-wrap">
+        <button type="button" class="menu-root">보기(V)</button>
+        <div class="menu-dropdown">
+          <button type="button" class="menu-opt" data-cat-menu="ALL"><span>전체 매체 보기</span></button>
+          <button type="button" class="menu-opt" data-cat-menu="도서"><span>도서 기록만 보기</span></button>
+          <button type="button" class="menu-opt" data-cat-menu="음악"><span>음악 기록만 보기</span></button>
+          <button type="button" class="menu-opt" data-cat-menu="영상"><span>영상 기록만 보기</span></button>
+          <div class="menu-sep"></div>
+          <button type="button" class="menu-opt" id="mnu-toggle-charts"><span>통계 차트 접기/펼치기</span></button>
+        </div>
+      </div>
+
+      <div class="menu-item-wrap">
+        <button type="button" class="menu-root">창(W)</button>
+        <div class="menu-dropdown">
+          <button type="button" class="menu-opt" id="mnu-cascade"><span>열린 팝업 창 계단식 정렬</span></button>
+          <button type="button" class="menu-opt" id="mnu-close-all-popups"><span>모든 팝업 창 닫기</span></button>
+        </div>
+      </div>
+
+      <div class="menu-item-wrap">
+        <button type="button" class="menu-root">도움말(H)</button>
+        <div class="menu-dropdown">
+          <button type="button" class="menu-opt" id="mnu-about"><span>MY-ARCHIVE 95 정보...</span></button>
+        </div>
+      </div>
     </div>
 
     <div class="win-body">
-      <!-- Hero Banner -->
+      <!-- Hero -->
       <section class="os-hero">
         <div>
           <h1>감상 아카이빙 및 취향 통계 대시보드</h1>
-          <p>작품 카드를 클릭하면 <strong>비슷한 도서·음악·영상 추천</strong>과 <strong>유튜브 바로가기</strong> 창이 열립니다.</p>
+          <p>다중 창 띄우기, 다중 음원·영상 순위 검색, 바탕화면 아이디어 메모장을 지원하는 개인 아카이브 OS입니다.</p>
         </div>
-        <button type="button" class="btn95 yellow" id="btn-open-register">
-          + 새 감상 기록하기
-        </button>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <button type="button" class="btn95 sky" id="btn-open-memo-hero">📝 아이디어 메모</button>
+          <button type="button" class="btn95 yellow" id="btn-open-register">+ 새 감상 기록하기</button>
+        </div>
       </section>
 
       <!-- KPI Panels -->
@@ -954,19 +974,16 @@
           <div class="kpi-val" id="kpi-total">0건</div>
           <div class="kpi-sub" id="kpi-recent-sub">데이터 동기화 중...</div>
         </div>
-
         <div class="kpi-panel">
           <div class="kpi-lbl">평균 감상 평점</div>
           <div class="kpi-val" id="kpi-avg-rating">0.0점</div>
           <div class="kpi-sub">5.0점 만점 기준</div>
         </div>
-
         <div class="kpi-panel sky">
           <div class="kpi-lbl">최다 감상 매체</div>
           <div class="kpi-val" id="kpi-top-cat">-</div>
           <div class="kpi-sub" id="kpi-top-cat-sub">매체 분포 집계</div>
         </div>
-
         <div class="kpi-panel green">
           <div class="kpi-lbl">선호 장르 TOP 1</div>
           <div class="kpi-val" id="kpi-top-genre" style="font-size: 1.4rem;">-</div>
@@ -975,25 +992,21 @@
       </section>
 
       <!-- Charts -->
-      <section class="charts-grid">
+      <section class="charts-grid" id="charts-section">
         <div class="sunken-box">
           <div class="box-head">
             <span>매체별 비율 분석</span>
-            <span style="font-size: 0.75rem; background: var(--brutal-sky); padding: 2px 6px; border: 1.5px solid #111;">MEDIA</span>
+            <span style="font-size: 0.74rem; background: var(--brutal-sky); padding: 2px 6px; border: 1.5px solid #111;">MEDIA</span>
           </div>
-          <div class="chart-wrap">
-            <canvas id="chart-category"></canvas>
-          </div>
+          <div class="chart-wrap"><canvas id="chart-category"></canvas></div>
         </div>
 
         <div class="sunken-box">
           <div class="box-head">
             <span>월별 감상 기록 추이</span>
-            <span style="font-size: 0.75rem; background: var(--brutal-green); padding: 2px 6px; border: 1.5px solid #111;">TIMELINE</span>
+            <span style="font-size: 0.74rem; background: var(--brutal-green); padding: 2px 6px; border: 1.5px solid #111;">TIMELINE</span>
           </div>
-          <div class="chart-wrap">
-            <canvas id="chart-monthly"></canvas>
-          </div>
+          <div class="chart-wrap"><canvas id="chart-monthly"></canvas></div>
         </div>
       </section>
 
@@ -1018,168 +1031,193 @@
         </div>
       </div>
 
-      <!-- Archive Cards Grid -->
+      <!-- Archive Grid -->
       <section class="archive-grid" id="archive-grid"></section>
     </div>
 
     <div class="win-statusbar">
-      <div class="status-cell" id="status-left">준비 완료 — 카드를 클릭하여 관련 작품 및 유튜브 탐색</div>
+      <div class="status-cell" id="status-left">준비 완료 — 여러 팝업 창을 동시에 띄워 탐색할 수 있습니다</div>
       <div class="status-cell" id="status-right">0개 개체 표시됨</div>
     </div>
   </main>
 </div>
 
 <!-- ======================================================================= -->
-<!-- POPUP 1: 새 감상 기록 등록 창 (Windows 95 Dialog)                          -->
+<!-- FLOATING WINDOW 1: 새 감상 기록 마법사 (순위화 다중 소스 검색)                  -->
 <!-- ======================================================================= -->
-<div class="win-modal-overlay" id="register-modal" role="dialog" aria-modal="true">
-  <div class="win-dialog">
-    <div class="win-titlebar brutal-accent">
-      <div class="win-title-left">
-        <span class="win-title-dot"></span>
-        <span>새 감상 기록 마법사 (NEW_ARCHIVE.WIZ)</span>
-      </div>
-      <div class="win-controls">
-        <button type="button" class="win-ctrl-btn close" id="btn-close-reg">✕</button>
-      </div>
+<div class="floating-win" id="win-register" data-win-id="win-register" data-win-title="➕ 새 감상 기록 마법사" style="top: 56px; left: 160px; width: 690px;">
+  <div class="win-titlebar draggable yellow-bar">
+    <div class="win-title-left">
+      <span class="win-title-dot"></span>
+      <span>새 감상 기록 마법사 (MULTI-SOURCE SEARCH)</span>
     </div>
-
-    <div class="win-dialog-body">
-      <div class="sunken-box" style="margin-bottom: 14px; background: var(--win-gray);">
-        <div class="form-grid-2">
-          <div>
-            <label class="fld-label" for="inp-category">매체 구분</label>
-            <select id="inp-category" style="width: 100%;">
-              <option value="도서">도서</option>
-              <option value="음악">음악</option>
-              <option value="영상">영상</option>
-              <option value="기타">기타</option>
-            </select>
-          </div>
-          <div>
-            <label class="fld-label" for="inp-date">감상 일자</label>
-            <input type="date" id="inp-date" style="width: 100%;" />
-          </div>
-        </div>
-
-        <div style="margin-top: 10px;">
-          <label class="fld-label" for="inp-search-query">제목 또는 링크(URL)로 메타데이터 자동 추출</label>
-          <div style="display: flex; gap: 8px; margin-top: 4px;">
-            <input type="text" id="inp-search-query" placeholder="예: 아몬드, 밤양갱, 또는 유튜브/도서 링크" style="flex: 1;" />
-            <button type="button" class="btn95 sky" id="btn-auto-search" style="white-space: nowrap;">자동 검색</button>
-          </div>
-        </div>
-        <div id="reg-alert" class="dialog-banner"></div>
-      </div>
-
-      <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 14px; background: #ffffff; border: 2px solid #111; padding: 10px;">
-        <img id="preview-cover" alt="표지" style="width: 58px; height: 58px; object-fit: cover; border: 2px solid #111;" />
-        <div style="flex: 1;">
-          <label class="fld-label" for="inp-cover-url">표지 / 썸네일 URL</label>
-          <input type="text" id="inp-cover-url" placeholder="https://..." style="width: 100%;" />
-        </div>
-      </div>
-
-      <form id="archive-form">
-        <div class="form-grid-2">
-          <div class="fld-group">
-            <label class="fld-label" for="inp-title">작품 제목 *</label>
-            <input type="text" id="inp-title" required placeholder="작품명 입력" style="width: 100%;" />
-          </div>
-          <div class="fld-group">
-            <label class="fld-label" for="inp-creator">저자 / 아티스트 / 감독 *</label>
-            <input type="text" id="inp-creator" required placeholder="제작자 입력" style="width: 100%;" />
-          </div>
-        </div>
-
-        <div class="form-grid-2">
-          <div class="fld-group">
-            <label class="fld-label" for="inp-genre">장르 / 키워드</label>
-            <input type="text" id="inp-genre" placeholder="예: 한국소설, 인디록, 다큐멘터리" style="width: 100%;" />
-          </div>
-          <div class="fld-group">
-            <label class="fld-label" for="inp-rating">평점 (1~5점) *</label>
-            <select id="inp-rating" style="width: 100%;">
-              <option value="5">★★★★★ (5점)</option>
-              <option value="4" selected>★★★★☆ (4점)</option>
-              <option value="3">★★★☆☆ (3점)</option>
-              <option value="2">★★☆☆☆ (2점)</option>
-              <option value="1">★☆☆☆☆ (1점)</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="fld-group">
-          <label class="fld-label" for="inp-source-url">원본 참고 링크 (선택)</label>
-          <input type="text" id="inp-source-url" placeholder="https://..." style="width: 100%;" />
-        </div>
-
-        <div class="fld-group">
-          <label class="fld-label" for="inp-review">한줄평 및 감상 메모 *</label>
-          <textarea id="inp-review" rows="3" required placeholder="작품에 대한 핵심 감상을 기록하십시오." style="width: 100%;"></textarea>
-        </div>
-
-        <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px;">
-          <button type="button" class="btn95" id="btn-cancel-reg">취소</button>
-          <button type="submit" class="btn95 yellow" id="btn-submit-reg">확인 및 시트 저장</button>
-        </div>
-      </form>
+    <div class="win-controls">
+      <button type="button" class="win-ctrl-btn" data-action="minimize" data-target="win-register" title="최소화">_</button>
+      <button type="button" class="win-ctrl-btn close" data-action="close" data-target="win-register" title="닫기">✕</button>
     </div>
   </div>
-</div>
 
-<!-- ======================================================================= -->
-<!-- POPUP 2: 기록 상세 보기 + 관련 작품 추천 + 유튜브 연결 창                        -->
-<!-- ======================================================================= -->
-<div class="win-modal-overlay" id="detail-modal" role="dialog" aria-modal="true">
-  <div class="win-dialog" style="max-width: 740px;">
-    <div class="win-titlebar">
-      <div class="win-title-left">
-        <span class="win-title-dot" style="background: var(--brutal-green);"></span>
-        <span id="detail-win-title">작품 상세 정보 및 연관 탐색기</span>
-      </div>
-      <div class="win-controls">
-        <button type="button" class="win-ctrl-btn close" id="btn-close-detail">✕</button>
-      </div>
-    </div>
-
-    <div class="win-dialog-body">
-      <!-- Selected Item Info -->
-      <div class="detail-hero">
-        <img id="det-cover" class="detail-cover" alt="작품 표지" />
+  <div class="win-body">
+    <div class="sunken-box" style="margin-bottom: 14px; background: var(--win-gray);">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
         <div>
-          <div style="display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap;">
-            <span id="det-cat-badge" style="padding: 2px 8px; border: 2px solid #111; background: var(--brutal-yellow); font-size: 0.78rem; font-weight: 900;">도서</span>
-            <span id="det-rating-badge" style="padding: 2px 8px; border: 2px solid #111; background: #ffffff; font-size: 0.78rem; font-weight: 900;">★★★★★</span>
-            <span id="det-date-badge" style="padding: 2px 8px; border: 2px solid #111; background: var(--win-gray); font-size: 0.78rem; font-weight: 800;">2026-11-16</span>
-          </div>
-          <h2 id="det-title" style="font-size: 1.35rem; font-weight: 900; margin-bottom: 4px;">작품 제목</h2>
-          <div id="det-creator" style="font-size: 0.9rem; font-weight: 700; color: #4a4a4a; margin-bottom: 10px;">제작자 · 장르</div>
-          <p id="det-review" style="background: var(--brutal-paper); border: 2px solid #111; padding: 10px; font-size: 0.9rem; font-weight: 600;"></p>
-
-          <!-- External Links (YouTube + Original Source) -->
-          <div class="action-links-bar" id="det-links-bar"></div>
+          <label style="display:block; font-size:0.8rem; font-weight:800; margin-bottom:4px;" for="inp-category">매체 구분</label>
+          <select id="inp-category" style="width: 100%;">
+            <option value="도서">도서 (Google Books)</option>
+            <option value="음악">음악 (Apple Music · Deezer · MusicBrainz · YouTube)</option>
+            <option value="영상">영상 (Apple TV · YouTube)</option>
+            <option value="기타">기타</option>
+          </select>
+        </div>
+        <div>
+          <label style="display:block; font-size:0.8rem; font-weight:800; margin-bottom:4px;" for="inp-date">감상 일자</label>
+          <input type="date" id="inp-date" style="width: 100%;" />
         </div>
       </div>
 
-      <!-- Related Recommendations Section -->
-      <div class="sunken-box">
-        <div class="box-head">
-          <span id="rec-section-heading">비슷한 작품 실시간 추천</span>
-          <span style="font-size: 0.75rem; background: var(--brutal-yellow); padding: 2px 7px; border: 1.5px solid #111;">AUTO-DISCOVERY</span>
+      <div style="margin-top: 10px;">
+        <label style="display:block; font-size:0.8rem; font-weight:800; margin-bottom:4px;" for="inp-search-query">
+          작품 제목, 유사어, 또는 YouTube·음원·도서 링크(URL) 입력
+        </label>
+        <div style="display: flex; gap: 8px;">
+          <input type="text" id="inp-search-query" placeholder="동명곡/유사어 검색 지원 (예: 소나기, 밤양갱, 아몬드, 유튜브 URL)" style="flex: 1;" />
+          <button type="button" class="btn95 sky" id="btn-auto-search" style="white-space: nowrap;">순위 검색</button>
         </div>
-        <div id="rec-status" style="font-size: 0.85rem; font-weight: 700; color: #4a4a4a;">
-          연관 작품을 탐색하고 있습니다...
-        </div>
-        <div class="rec-grid" id="rec-grid"></div>
       </div>
 
-      <div style="display: flex; justify-content: flex-end; margin-top: 14px;">
-        <button type="button" class="btn95" id="btn-ok-detail">닫기</button>
+      <div id="reg-alert" class="dialog-banner"></div>
+
+      <!-- Ranked Candidate List (동명 음악/영상/도서 구분 선택기) -->
+      <div id="rank-list" class="rank-list"></div>
+    </div>
+
+    <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 12px; background: #ffffff; border: 2px solid #111; padding: 10px;">
+      <img id="preview-cover" alt="표지" style="width: 56px; height: 56px; object-fit: cover; border: 2px solid #111;" />
+      <div style="flex: 1;">
+        <label style="display:block; font-size:0.8rem; font-weight:800; margin-bottom:4px;" for="inp-cover-url">표지 / 썸네일 URL</label>
+        <input type="text" id="inp-cover-url" placeholder="https://..." style="width: 100%;" />
+      </div>
+    </div>
+
+    <form id="archive-form">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+        <div>
+          <label style="display:block; font-size:0.8rem; font-weight:800; margin-bottom:4px;" for="inp-title">작품 제목 *</label>
+          <input type="text" id="inp-title" required placeholder="작품명 입력" style="width: 100%;" />
+        </div>
+        <div>
+          <label style="display:block; font-size:0.8rem; font-weight:800; margin-bottom:4px;" for="inp-creator">저자 / 아티스트 / 채널 *</label>
+          <input type="text" id="inp-creator" required placeholder="제작자 입력" style="width: 100%;" />
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+        <div>
+          <label style="display:block; font-size:0.8rem; font-weight:800; margin-bottom:4px;" for="inp-genre">장르 / 키워드</label>
+          <input type="text" id="inp-genre" placeholder="예: 한국소설, 인디록, YouTube" style="width: 100%;" />
+        </div>
+        <div>
+          <label style="display:block; font-size:0.8rem; font-weight:800; margin-bottom:4px;" for="inp-rating">평점 (1~5점) *</label>
+          <select id="inp-rating" style="width: 100%;">
+            <option value="5">★★★★★ (5점)</option>
+            <option value="4" selected>★★★★☆ (4점)</option>
+            <option value="3">★★★☆☆ (3점)</option>
+            <option value="2">★★☆☆☆ (2점)</option>
+            <option value="1">★☆☆☆☆ (1점)</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="margin-bottom: 10px;">
+        <label style="display:block; font-size:0.8rem; font-weight:800; margin-bottom:4px;" for="inp-source-url">원본 / 음원 / 유튜브 링크</label>
+        <input type="text" id="inp-source-url" placeholder="https://..." style="width: 100%;" />
+      </div>
+
+      <div style="margin-bottom: 12px;">
+        <label style="display:block; font-size:0.8rem; font-weight:800; margin-bottom:4px;" for="inp-review">한줄평 및 감상 메모 *</label>
+        <textarea id="inp-review" rows="2" required placeholder="작품에 대한 감상을 기록하십시오." style="width: 100%;"></textarea>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 8px;">
+        <button type="button" class="btn95" data-action="close" data-target="win-register">취소</button>
+        <button type="submit" class="btn95 yellow" id="btn-submit-reg">확인 및 시트 저장</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ======================================================================= -->
+<!-- FLOATING WINDOW 2: 바탕화면 퀵 아이디어 메모장 (MEMO95.EXE)                    -->
+<!-- ======================================================================= -->
+<div class="floating-win" id="win-memo" data-win-id="win-memo" data-win-title="📝 MEMO95.EXE (아이디어 메모)" style="top: 90px; left: 220px; width: 460px;">
+  <div class="win-titlebar draggable green-bar">
+    <div class="win-title-left">
+      <span class="win-title-dot" style="background: var(--brutal-yellow);"></span>
+      <span>MEMO95.EXE — 바탕화면 아이디어 메모장</span>
+    </div>
+    <div class="win-controls">
+      <button type="button" class="win-ctrl-btn" data-action="minimize" data-target="win-memo" title="최소화">_</button>
+      <button type="button" class="win-ctrl-btn close" data-action="close" data-target="win-memo" title="닫기">✕</button>
+    </div>
+  </div>
+
+  <div class="win-body">
+    <form id="memo-form" class="sunken-box" style="margin-bottom: 14px; background: var(--win-gray);">
+      <div style="margin-bottom: 8px;">
+        <label style="display:block; font-size:0.8rem; font-weight:800; margin-bottom:3px;" for="memo-title">아이디어 제목</label>
+        <input type="text" id="memo-title" placeholder="예: 다음에 읽을 책 / 작업 아이디어" style="width: 100%;" />
+      </div>
+      <div style="margin-bottom: 10px;">
+        <label style="display:block; font-size:0.8rem; font-weight:800; margin-bottom:3px;" for="memo-content">짧은 메모 내용 *</label>
+        <textarea id="memo-content" rows="3" required placeholder="떠오른 아이디어를 바로 적어두십시오. 구글 시트(Notes 탭)에 즉시 저장됩니다." style="width: 100%;"></textarea>
+      </div>
+      <div style="display: flex; justify-content: flex-end;">
+        <button type="submit" class="btn95 green sm" id="btn-save-memo">메모 시트에 저장</button>
+      </div>
+    </form>
+
+    <div class="sunken-box" style="max-height: 250px; overflow-y: auto;">
+      <div class="box-head">
+        <span>저장된 아이디어 노트</span>
+        <span id="memo-count-badge" style="font-size: 0.74rem; background: var(--brutal-yellow); padding: 2px 6px; border: 1.5px solid #111;">0건</span>
+      </div>
+      <div id="memo-list-container">
+        <div style="font-size: 0.84rem; font-weight: 700; color: #4a4a4a;">메모를 불러오는 중...</div>
       </div>
     </div>
   </div>
 </div>
+
+<!-- ======================================================================= -->
+<!-- FLOATING WINDOW 3: 시스템 정보 창 (ABOUT.EXE)                              -->
+<!-- ======================================================================= -->
+<div class="floating-win" id="win-about" data-win-id="win-about" data-win-title="ℹ️ MY-ARCHIVE 95 정보" style="top: 140px; left: 280px; width: 420px;">
+  <div class="win-titlebar draggable">
+    <div class="win-title-left">
+      <span class="win-title-dot" style="background: var(--brutal-sky);"></span>
+      <span>시스템 정보 — MY-ARCHIVE 95 OS</span>
+    </div>
+    <div class="win-controls">
+      <button type="button" class="win-ctrl-btn close" data-action="close" data-target="win-about">✕</button>
+    </div>
+  </div>
+  <div class="win-body">
+    <div class="sunken-box" style="margin-bottom: 14px;">
+      <h3 style="font-weight: 900; margin-bottom: 6px;">MY-ARCHIVE 95 (Neo-Brutalism Edition)</h3>
+      <p style="font-size: 0.85rem; font-weight: 600; line-height: 1.6;">
+        • <strong>멀티 윈도우 매니저:</strong> 제목 표시줄 드래그 이동, 다중 팝업 동시 열기, 작업 표시줄 전환 지원<br/>
+        • <strong>다중 메타데이터 검색:</strong> Apple Music, Deezer, MusicBrainz, YouTube oEmbed, Google Books 유사도 순위화 지원<br/>
+        • <strong>실시간 DB:</strong> Google Sheets &amp; Apps Script 백그라운드 자동 연동
+      </p>
+    </div>
+    <div style="display: flex; justify-content: flex-end;">
+      <button type="button" class="btn95 yellow sm" data-action="close" data-target="win-about">확인</button>
+    </div>
+  </div>
+</div>
+
+<!-- 동적 상세 탐색기 창들이 생성되는 컨테이너 -->
+<div id="dynamic-windows-container"></div>
 
 <!-- ======================================================================= -->
 <!-- WINDOWS 95 START MENU & TASKBAR                                         -->
@@ -1187,35 +1225,35 @@
 <div class="start-menu" id="start-menu">
   <div class="start-sidebar">MY-ARCHIVE 95</div>
   <div class="start-items">
-    <button type="button" class="start-item" id="sm-new-record">➕ 새 감상 기록 등록...</button>
-    <button type="button" class="start-item" id="sm-show-all">📂 전체 아카이브 보기</button>
-    <button type="button" class="start-item" id="sm-show-book">📚 도서 서가 필터</button>
-    <button type="button" class="start-item" id="sm-show-music">🎵 음악 음반 필터</button>
-    <button type="button" class="start-item" id="sm-show-video">🎬 영상 비디오 필터</button>
+    <button type="button" class="start-item" id="sm-new">➕ 새 감상 기록 마법사</button>
+    <button type="button" class="start-item" id="sm-memo">📝 아이디어 메모장 (MEMO95)</button>
     <div class="start-divider"></div>
-    <button type="button" class="start-item" id="sm-reload">🔄 구글 시트 새로고침</button>
+    <button type="button" class="start-item" id="sm-all">📂 전체 아카이브 탐색기</button>
+    <button type="button" class="start-item" id="sm-book">📚 도서 서가만 보기</button>
+    <button type="button" class="start-item" id="sm-music">🎵 음악 음반만 보기</button>
+    <button type="button" class="start-item" id="sm-video">🎬 영상 비디오만 보기</button>
+    <div class="start-divider"></div>
+    <button type="button" class="start-item" id="sm-reload">🔄 구글 시트 데이터 새로고침</button>
   </div>
 </div>
 
 <footer class="win95-taskbar">
-  <div class="taskbar-left">
+  <div class="taskbar-left" id="taskbar-tasks">
     <button type="button" class="start-btn" id="btn-start">
       <span class="win-flag"><span></span><span></span><span></span><span></span></span>
       <span>시작</span>
     </button>
-    <button type="button" class="task-tab" id="taskbar-main-win">
-      <span>📁 MY-ARCHIVE.EXE</span>
-    </button>
+    <button type="button" class="task-tab active" data-win-target="win-main">📁 MY-ARCHIVE.EXE</button>
   </div>
 
   <div class="system-tray">
     <span title="Google Sheets 연결됨">🟢 DB</span>
-    <span id="tray-clock">오후 5:35</span>
+    <span id="tray-clock">오후 11:52</span>
   </div>
 </footer>
 
 <script>
-  const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwh2VWIKgH-kuL5bhHstlTmzF6Cp0tOuC33JWpuXIvJaD26LDt6UAhd0V4dbYE8V6TYLA/exec';
+  const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwH-hzWi2Z3_oTFt0PWBhzYMP10VEx4e-32E9EW7d5SMF2k_bwxQL0_3ONaQ8Ze3sdKUQ/exec';
 
   const FALLBACK_COVER = "data:image/svg+xml;utf8," + encodeURIComponent(`
     <svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300">
@@ -1227,151 +1265,287 @@
   `);
 
   let archiveItems = [];
+  let memoNotes = [];
   let selectedCategory = 'ALL';
   let categoryChart = null;
   let monthlyChart = null;
+  let topZIndex = 200;
+  let detailWindowCount = 0;
 
-  /* =========================================================================
-   * 0. WINDOWS 95 OS INTERACTIONS (시계, 시작 메뉴, 창 최소화/복원, 커서 상태)
-   * ========================================================================= */
-  function setLoadingCursor(isLoading) {
-    document.body.classList.toggle('is-loading', isLoading);
+  function setLoadingCursor(on) {
+    document.body.classList.toggle('is-loading', on);
   }
 
+  /* =========================================================================
+   * 0. MULTI-WINDOW MANAGER (창 포커스, 드래그 이동, 작업 표시줄 연동)
+   * ========================================================================= */
+  function focusWindow(winEl) {
+    if (!winEl) return;
+    document.querySelectorAll('.win95-window, .floating-win').forEach(w => w.classList.remove('focused'));
+    winEl.classList.add('focused');
+    if (winEl.classList.contains('floating-win')) {
+      topZIndex += 1;
+      winEl.style.zIndex = topZIndex;
+    }
+    syncTaskbar();
+  }
+
+  function openWindow(winId) {
+    const winEl = document.getElementById(winId);
+    if (!winEl) return;
+    winEl.style.display = winEl.classList.contains('floating-win') ? 'flex' : 'block';
+    winEl.classList.add('open');
+    winEl.classList.remove('minimized');
+    focusWindow(winEl);
+  }
+
+  function closeWindow(winId) {
+    const winEl = document.getElementById(winId);
+    if (!winEl) return;
+    if (winEl.dataset.dynamic === 'true') {
+      winEl.remove();
+    } else {
+      winEl.classList.remove('open');
+      winEl.style.display = 'none';
+    }
+    syncTaskbar();
+  }
+
+  function minimizeWindow(winId) {
+    const winEl = document.getElementById(winId);
+    if (!winEl) return;
+    winEl.classList.add('minimized');
+    winEl.classList.remove('focused');
+    syncTaskbar();
+  }
+
+  function syncTaskbar() {
+    const bar = document.getElementById('taskbar-tasks');
+    const startBtn = document.getElementById('btn-start');
+    bar.innerHTML = '';
+    bar.appendChild(startBtn);
+
+    const windows = [
+      document.getElementById('win-main'),
+      ...document.querySelectorAll('.floating-win.open')
+    ].filter(w => w && w.style.display !== 'none');
+
+    windows.forEach(w => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      const isFocused = w.classList.contains('focused') && !w.classList.contains('minimized');
+      btn.className = `task-tab ${isFocused ? 'active' : ''}`;
+      btn.textContent = w.dataset.winTitle || '창';
+      btn.addEventListener('click', () => {
+        if (w.classList.contains('minimized')) {
+          w.classList.remove('minimized');
+          focusWindow(w);
+        } else if (w.classList.contains('focused')) {
+          minimizeWindow(w.id);
+        } else {
+          focusWindow(w);
+        }
+      });
+      bar.appendChild(btn);
+    });
+  }
+
+  // 창 컨트롤 버튼 위임 (_, □, ✕)
+  document.addEventListener('click', e => {
+    const ctrl = e.target.closest('.win-ctrl-btn');
+    if (ctrl) {
+      e.stopPropagation();
+      const action = ctrl.dataset.action;
+      const targetId = ctrl.dataset.target;
+      if (action === 'minimize') minimizeWindow(targetId);
+      else if (action === 'close') closeWindow(targetId);
+      else if (action === 'restore') openWindow(targetId);
+      return;
+    }
+
+    const clickedWin = e.target.closest('.win95-window, .floating-win');
+    if (clickedWin) focusWindow(clickedWin);
+  });
+
+  // 드래그 이동 기능 (Windows 95 타이틀바 드래그)
+  function enableWindowDrag(winEl) {
+    const bar = winEl.querySelector('.win-titlebar.draggable');
+    if (!bar) return;
+    let isDragging = false, startX = 0, startY = 0, origLeft = 0, origTop = 0;
+
+    bar.addEventListener('mousedown', e => {
+      if (e.target.closest('.win-ctrl-btn')) return;
+      isDragging = true;
+      focusWindow(winEl);
+      startX = e.clientX;
+      startY = e.clientY;
+      const rect = winEl.getBoundingClientRect();
+      origLeft = rect.left;
+      origTop = rect.top;
+    });
+
+    document.addEventListener('mousemove', e => {
+      if (!isDragging) return;
+      const dx = e.clientX - startX;
+      const dy = e.clientY - startY;
+      const nextLeft = Math.max(0, Math.min(window.innerWidth - 120, origLeft + dx));
+      const nextTop = Math.max(0, Math.min(window.innerHeight - 80, origTop + dy));
+      winEl.style.left = `${nextLeft}px`;
+      winEl.style.top = `${nextTop}px`;
+    });
+
+    document.addEventListener('mouseup', () => { isDragging = false; });
+  }
+
+  document.querySelectorAll('.floating-win').forEach(enableWindowDrag);
+
+  /* =========================================================================
+   * 1. MENU BAR & START MENU & CLOCK
+   * ========================================================================= */
   function updateTrayClock() {
     const now = new Date();
-    const hours = now.getHours();
-    const mins = String(now.getMinutes()).padStart(2, '0');
-    const ampm = hours >= 12 ? '오후' : '오전';
-    const h12 = hours % 12 || 12;
-    document.getElementById('tray-clock').textContent = `${ampm} ${h12}:${mins}`;
+    const h = now.getHours();
+    const m = String(now.getMinutes()).padStart(2, '0');
+    document.getElementById('tray-clock').textContent = `${h >= 12 ? '오후' : '오전'} ${h % 12 || 12}:${m}`;
   }
   setInterval(updateTrayClock, 10000);
   updateTrayClock();
 
-  // Start Menu Toggle
+  // 상단 메뉴바 드롭다운
+  document.querySelectorAll('.menu-item-wrap').forEach(wrap => {
+    wrap.querySelector('.menu-root').addEventListener('click', e => {
+      e.stopPropagation();
+      const wasOpen = wrap.classList.contains('open');
+      document.querySelectorAll('.menu-item-wrap').forEach(w => w.classList.remove('open'));
+      if (!wasOpen) wrap.classList.add('open');
+    });
+  });
+
+  document.addEventListener('click', () => {
+    document.querySelectorAll('.menu-item-wrap').forEach(w => w.classList.remove('open'));
+    document.getElementById('start-menu').classList.remove('open');
+    document.getElementById('btn-start').classList.remove('pressed');
+  });
+
+  // 메뉴바 액션들
+  document.getElementById('mnu-new-archive').addEventListener('click', openRegisterModal);
+  document.getElementById('mnu-open-memo').addEventListener('click', openMemoWindow);
+  document.getElementById('mnu-sync-sheet').addEventListener('click', loadArchiveData);
+
+  document.getElementById('mnu-export-csv').addEventListener('click', () => {
+    if (!archiveItems.length) return alert('내보낼 데이터가 없습니다.');
+    const headers = ['ID', '매체', '제목', '제작자', '장르', '평점', '감상일', '한줄평', '원본링크'];
+    const rows = archiveItems.map(i => [
+      i.id, i.category, `"${i.title.replace(/"/g, '""')}"`, `"${i.creator.replace(/"/g, '""')}"`,
+      `"${i.genre}"`, i.rating, i.watchDate, `"${i.review.replace(/"/g, '""')}"`, i.sourceUrl
+    ]);
+    const csv = '\uFEFF' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `MyArchive_백업_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+
+  document.querySelectorAll('[data-cat-menu]').forEach(btn => {
+    btn.addEventListener('click', () => selectCategoryFilter(btn.dataset.catMenu));
+  });
+
+  document.getElementById('mnu-toggle-charts').addEventListener('click', () => {
+    const sec = document.getElementById('charts-section');
+    sec.style.display = sec.style.display === 'none' ? 'grid' : 'none';
+  });
+
+  document.getElementById('mnu-cascade').addEventListener('click', () => {
+    const openWins = document.querySelectorAll('.floating-win.open');
+    openWins.forEach((w, idx) => {
+      w.classList.remove('minimized');
+      w.style.top = `${56 + idx * 34}px`;
+      w.style.left = `${140 + idx * 34}px`;
+      focusWindow(w);
+    });
+  });
+
+  document.getElementById('mnu-close-all-popups').addEventListener('click', () => {
+    document.querySelectorAll('.floating-win.open').forEach(w => closeWindow(w.id));
+  });
+
+  document.getElementById('mnu-about').addEventListener('click', () => openWindow('win-about'));
+
+  // 시작 버튼
   const startBtn = document.getElementById('btn-start');
   const startMenu = document.getElementById('start-menu');
-
   startBtn.addEventListener('click', e => {
     e.stopPropagation();
     const isOpen = startMenu.classList.toggle('open');
     startBtn.classList.toggle('pressed', isOpen);
   });
 
-  document.addEventListener('click', e => {
-    if (!startMenu.contains(e.target) && e.target !== startBtn) {
-      startMenu.classList.remove('open');
-      startBtn.classList.remove('pressed');
-    }
-  });
+  // 아이콘 및 시작 메뉴 바인딩
+  document.getElementById('icon-main').addEventListener('click', () => selectCategoryFilter('ALL'));
+  document.getElementById('icon-new').addEventListener('click', openRegisterModal);
+  document.getElementById('icon-memo').addEventListener('click', openMemoWindow);
+  document.getElementById('icon-book').addEventListener('click', () => selectCategoryFilter('도서'));
+  document.getElementById('icon-music').addEventListener('click', () => selectCategoryFilter('음악'));
+  document.getElementById('icon-video').addEventListener('click', () => selectCategoryFilter('영상'));
 
-  // Main Window Minimize / Restore / Close
-  const mainWin = document.getElementById('main-explorer-win');
-  const taskMainBtn = document.getElementById('taskbar-main-win');
+  document.getElementById('sm-new').addEventListener('click', openRegisterModal);
+  document.getElementById('sm-memo').addEventListener('click', openMemoWindow);
+  document.getElementById('sm-all').addEventListener('click', () => selectCategoryFilter('ALL'));
+  document.getElementById('sm-book').addEventListener('click', () => selectCategoryFilter('도서'));
+  document.getElementById('sm-music').addEventListener('click', () => selectCategoryFilter('음악'));
+  document.getElementById('sm-video').addEventListener('click', () => selectCategoryFilter('영상'));
+  document.getElementById('sm-reload').addEventListener('click', loadArchiveData);
 
-  document.getElementById('btn-min-main').addEventListener('click', () => {
-    mainWin.classList.add('minimized');
-    taskMainBtn.classList.add('inactive');
-  });
+  document.getElementById('btn-open-memo-hero').addEventListener('click', openMemoWindow);
+  document.getElementById('btn-open-register').addEventListener('click', openRegisterModal);
 
-  document.getElementById('btn-max-main').addEventListener('click', () => {
-    mainWin.style.display = 'block';
-    mainWin.classList.remove('minimized');
-    taskMainBtn.classList.remove('inactive');
-  });
-
-  document.getElementById('btn-close-main').addEventListener('click', () => {
-    mainWin.style.display = 'none';
-    taskMainBtn.classList.add('inactive');
-  });
-
-  taskMainBtn.addEventListener('click', () => {
-    if (mainWin.style.display === 'none') {
-      mainWin.style.display = 'block';
-      mainWin.classList.remove('minimized');
-      taskMainBtn.classList.remove('inactive');
-    } else {
-      const isMin = mainWin.classList.toggle('minimized');
-      taskMainBtn.classList.toggle('inactive', isMin);
-    }
-  });
-
-  // Desktop Icons & Start Menu Shortcuts
   function selectCategoryFilter(cat) {
-    mainWin.style.display = 'block';
-    mainWin.classList.remove('minimized');
-    taskMainBtn.classList.remove('inactive');
+    openWindow('win-main');
     selectedCategory = cat;
     document.querySelectorAll('#cat-filter-group .pill-btn').forEach(b => {
       b.classList.toggle('active', b.dataset.cat === cat);
     });
     renderArchiveGrid();
-    startMenu.classList.remove('open');
-    startBtn.classList.remove('pressed');
   }
 
-  document.getElementById('icon-open-main').addEventListener('click', () => selectCategoryFilter('ALL'));
-  document.getElementById('icon-filter-book').addEventListener('click', () => selectCategoryFilter('도서'));
-  document.getElementById('icon-filter-music').addEventListener('click', () => selectCategoryFilter('음악'));
-  document.getElementById('icon-filter-video').addEventListener('click', () => selectCategoryFilter('영상'));
-  document.getElementById('icon-new-record').addEventListener('click', openRegisterModal);
-
-  document.getElementById('sm-new-record').addEventListener('click', () => {
-    startMenu.classList.remove('open');
-    startBtn.classList.remove('pressed');
-    openRegisterModal();
-  });
-  document.getElementById('sm-show-all').addEventListener('click', () => selectCategoryFilter('ALL'));
-  document.getElementById('sm-show-book').addEventListener('click', () => selectCategoryFilter('도서'));
-  document.getElementById('sm-show-music').addEventListener('click', () => selectCategoryFilter('음악'));
-  document.getElementById('sm-show-video').addEventListener('click', () => selectCategoryFilter('영상'));
-  document.getElementById('sm-reload').addEventListener('click', () => {
-    startMenu.classList.remove('open');
-    startBtn.classList.remove('pressed');
-    loadArchiveData();
-  });
-
   /* =========================================================================
-   * 1. INITIAL DATA LOAD FROM GOOGLE SHEETS
+   * 2. INITIAL LOAD (ARCHIVE & NOTES)
    * ========================================================================= */
   document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('inp-date').value = new Date().toISOString().slice(0, 10);
     document.getElementById('preview-cover').src = FALLBACK_COVER;
     loadArchiveData();
+    loadNotesData();
   });
 
   async function loadArchiveData() {
     setLoadingCursor(true);
-    document.getElementById('status-left').textContent = '구글 시트에서 아카이브 데이터를 불러오는 중...';
+    document.getElementById('status-left').textContent = '구글 시트 동기화 중...';
     try {
       const res = await fetch(`${GAS_WEB_APP_URL}?action=list`);
       const json = await res.json();
       archiveItems = (json.status === 'success' && Array.isArray(json.items)) ? json.items : [];
-    } catch (err) {
-      console.error(err);
+    } catch {
       archiveItems = [];
     } finally {
       setLoadingCursor(false);
-      document.getElementById('status-left').textContent = '준비 완료 — 카드를 클릭하여 관련 작품 및 유튜브 탐색';
+      document.getElementById('status-left').textContent = '준비 완료 — 카드를 클릭하면 새 팝업 창으로 연관 추천이 열립니다';
     }
-    refreshDashboard();
-  }
-
-  function refreshDashboard() {
     updateKPIs();
     renderCharts();
     renderArchiveGrid();
   }
 
   /* =========================================================================
-   * 2. KPI & CHARTS
+   * 3. KPI & CHARTS
    * ========================================================================= */
   function updateKPIs() {
     const total = archiveItems.length;
     document.getElementById('kpi-total').textContent = `${total}건`;
-
-    if (total === 0) {
+    if (!total) {
       document.getElementById('kpi-recent-sub').textContent = '첫 기록을 추가해 보세요';
       document.getElementById('kpi-avg-rating').textContent = '0.0점';
       document.getElementById('kpi-top-cat').textContent = '-';
@@ -1391,14 +1565,14 @@
     document.getElementById('kpi-top-cat').textContent = topCat[0];
     document.getElementById('kpi-top-cat-sub').textContent = `전체 중 ${topCat[1]}건 (${Math.round((topCat[1] / total) * 100)}%)`;
 
-    const genreMap = {};
+    const gMap = {};
     archiveItems.forEach(i => {
       const g = (i.genre || '일반').trim();
-      genreMap[g] = (genreMap[g] || 0) + 1;
+      gMap[g] = (gMap[g] || 0) + 1;
     });
-    const topGenre = Object.entries(genreMap).sort((a, b) => b[1] - a[1])[0];
-    document.getElementById('kpi-top-genre').textContent = topGenre[0];
-    document.getElementById('kpi-top-genre-sub').textContent = `누적 ${topGenre[1]}건 기록`;
+    const topG = Object.entries(gMap).sort((a, b) => b[1] - a[1])[0];
+    document.getElementById('kpi-top-genre').textContent = topG[0];
+    document.getElementById('kpi-top-genre-sub').textContent = `누적 ${topG[1]}건 기록`;
   }
 
   function renderCharts() {
@@ -1461,7 +1635,7 @@
   }
 
   /* =========================================================================
-   * 3. ARCHIVE FEED & CARD CLICK -> DETAIL EXPLORER POPUP
+   * 4. ARCHIVE GRID & MULTI-WINDOW DETAIL EXPLORER
    * ========================================================================= */
   document.querySelectorAll('#cat-filter-group .pill-btn').forEach(btn => {
     btn.addEventListener('click', () => selectCategoryFilter(btn.dataset.cat));
@@ -1505,7 +1679,7 @@
       card.innerHTML = `
         <div class="item-card-bar">
           <span>${esc(item.id || 'ARCHIVE.DAT')}</span>
-          <span>[클릭하여 탐색]</span>
+          <span>[새 창 열기]</span>
         </div>
         <div class="item-thumb-box">
           <img class="item-thumb" src="${coverSrc}" alt="${esc(item.title)}" onerror="this.onerror=null;this.src='${FALLBACK_COVER}';" />
@@ -1518,81 +1692,96 @@
           <p class="item-memo">${esc(item.review)}</p>
           <div class="item-footer">
             <span>${esc(item.watchDate)}</span>
-            <span class="inspect-hint">관련 작품 · YouTube ↗</span>
+            <span class="inspect-hint">연관 추천 · YouTube ↗</span>
           </div>
         </div>
       `;
-      card.addEventListener('click', () => openDetailExplorer(item));
+      card.addEventListener('click', () => spawnDetailWindow(item));
       grid.appendChild(card);
     });
   }
 
-  /* =========================================================================
-   * 4. DETAIL EXPLORER MODAL (관련 도서/음악/영상 추천 + 유튜브 연결)
-   * ========================================================================= */
-  const detailModal = document.getElementById('detail-modal');
+  // 카드를 누를 때마다 독립적인 Windows 95 탐색기 창을 여러 개 띄울 수 있음
+  async function spawnDetailWindow(item) {
+    const existing = document.getElementById(`win-detail-${item.id}`);
+    if (existing) {
+      openWindow(existing.id);
+      return;
+    }
 
-  document.getElementById('btn-close-detail').addEventListener('click', () => detailModal.classList.remove('open'));
-  document.getElementById('btn-ok-detail').addEventListener('click', () => detailModal.classList.remove('open'));
-  detailModal.addEventListener('click', e => {
-    if (e.target === detailModal) detailModal.classList.remove('open');
-  });
+    detailWindowCount += 1;
+    const offset = (detailWindowCount % 6) * 28;
+    const winId = `win-detail-${item.id || Date.now()}`;
 
-  async function openDetailExplorer(item) {
-    document.getElementById('detail-win-title').textContent = `${item.title} — 상세 정보 및 연관 추천 탐색기`;
-    document.getElementById('det-cover').src = item.coverUrl || FALLBACK_COVER;
-    document.getElementById('det-cover').onerror = function() { this.src = FALLBACK_COVER; };
-
-    document.getElementById('det-cat-badge').textContent = item.category;
-    document.getElementById('det-rating-badge').textContent = '★'.repeat(item.rating) + '☆'.repeat(5 - item.rating);
-    document.getElementById('det-date-badge').textContent = item.watchDate;
-    document.getElementById('det-title').textContent = item.title;
-    document.getElementById('det-creator').textContent = `${item.creator} · ${item.genre || '일반'}`;
-    document.getElementById('det-review').textContent = item.review;
-
-    // 유튜브 검색 URL 및 원본 링크 구성
     const ytQuery = item.category === '음악'
-      ? `${item.creator} ${item.title} official audio`
+      ? `${item.creator} ${item.title} official`
       : item.category === '도서'
       ? `${item.title} ${item.creator} 북트레일러 리뷰`
       : `${item.title} ${item.creator}`;
-    const ytSearchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(ytQuery)}`;
+    const ytUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(ytQuery)}`;
 
-    const linksBar = document.getElementById('det-links-bar');
-    linksBar.innerHTML = `
-      <a class="btn95 pink sm" href="${ytSearchUrl}" target="_blank" rel="noopener noreferrer">
-        ▶ YouTube에서 바로 듣기·보기
-      </a>
-      ${item.sourceUrl
-        ? `<a class="btn95 sky sm" href="${esc(item.sourceUrl)}" target="_blank" rel="noopener noreferrer">원본 등록 링크 열기 ↗</a>`
-        : ''}
+    const winEl = document.createElement('div');
+    winEl.className = 'floating-win open focused';
+    winEl.id = winId;
+    winEl.dataset.dynamic = 'true';
+    winEl.dataset.winTitle = `🔍 ${item.title}`;
+    winEl.style.top = `${70 + offset}px`;
+    winEl.style.left = `${160 + offset}px`;
+    winEl.style.width = '720px';
+
+    winEl.innerHTML = `
+      <div class="win-titlebar draggable">
+        <div class="win-title-left">
+          <span class="win-title-dot" style="background: var(--brutal-green);"></span>
+          <span>${esc(item.title)} — 연관 작품 및 YouTube 탐색기</span>
+        </div>
+        <div class="win-controls">
+          <button type="button" class="win-ctrl-btn" data-action="minimize" data-target="${winId}" title="최소화">_</button>
+          <button type="button" class="win-ctrl-btn close" data-action="close" data-target="${winId}" title="닫기">✕</button>
+        </div>
+      </div>
+      <div class="win-body">
+        <div class="detail-hero">
+          <img class="detail-cover" src="${esc(item.coverUrl || FALLBACK_COVER)}" alt="${esc(item.title)}" onerror="this.onerror=null;this.src='${FALLBACK_COVER}';" />
+          <div>
+            <div style="display:flex; gap:6px; margin-bottom:8px; flex-wrap:wrap;">
+              <span style="padding:2px 8px; border:2px solid #111; background:var(--brutal-yellow); font-size:0.76rem; font-weight:900;">${esc(item.category)}</span>
+              <span style="padding:2px 8px; border:2px solid #111; background:#fff; font-size:0.76rem; font-weight:900;">${'★'.repeat(item.rating)}${'☆'.repeat(5 - item.rating)}</span>
+              <span style="padding:2px 8px; border:2px solid #111; background:var(--win-gray); font-size:0.76rem; font-weight:800;">${esc(item.watchDate)}</span>
+            </div>
+            <h2 style="font-size:1.3rem; font-weight:900; margin-bottom:4px;">${esc(item.title)}</h2>
+            <div style="font-size:0.88rem; font-weight:700; color:#4a4a4a; margin-bottom:10px;">${esc(item.creator)} · ${esc(item.genre || '일반')}</div>
+            <p style="background:var(--brutal-paper); border:2px solid #111; padding:10px; font-size:0.88rem; font-weight:600;">${esc(item.review)}</p>
+            <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:12px;">
+              <a class="btn95 pink sm" href="${ytUrl}" target="_blank" rel="noopener noreferrer">▶ YouTube에서 바로 보기·듣기</a>
+              ${item.sourceUrl ? `<a class="btn95 sky sm" href="${esc(item.sourceUrl)}" target="_blank" rel="noopener noreferrer">원본 링크 열기 ↗</a>` : ''}
+            </div>
+          </div>
+        </div>
+
+        <div class="sunken-box">
+          <div class="box-head">
+            <span>「${esc(item.creator)} · ${esc(item.title)}」 연관 추천</span>
+            <span style="font-size:0.74rem; background:var(--brutal-yellow); padding:2px 6px; border:1.5px solid #111;">SIMILAR</span>
+          </div>
+          <div class="rec-status-msg" style="font-size:0.84rem; font-weight:700; color:#4a4a4a;">연관 작품을 검색하고 있습니다...</div>
+          <div class="rec-grid"></div>
+        </div>
+      </div>
     `;
 
-    // 관련 작품 제목 및 API 조회
-    const headingMap = {
-      '음악': `「${item.creator}」 및 유사 아티스트의 추천 트랙`,
-      '도서': `「${item.creator}」 및 관련 주제 추천 도서`,
-      '영상': `「${item.title}」 관련 추천 영상·영화`,
-      '기타': `「${item.title}」 연관 콘텐츠 추천`
-    };
-    document.getElementById('rec-section-heading').textContent = headingMap[item.category] || '관련 작품 추천';
-    document.getElementById('rec-status').textContent = '외부 데이터베이스에서 연관 작품을 검색 중입니다...';
-    document.getElementById('rec-grid').innerHTML = '';
+    document.getElementById('dynamic-windows-container').appendChild(winEl);
+    enableWindowDrag(winEl);
+    focusWindow(winEl);
 
-    detailModal.classList.add('open');
-    await fetchRelatedWorks(item);
-  }
-
-  async function fetchRelatedWorks(item) {
+    // 연관 추천 로드
+    const statusEl = winEl.querySelector('.rec-status-msg');
+    const recGrid = winEl.querySelector('.rec-grid');
     setLoadingCursor(true);
-    const recGrid = document.getElementById('rec-grid');
-    const recStatus = document.getElementById('rec-status');
 
     try {
       let recs = [];
-
       if (item.category === '음악') {
-        // iTunes Search API로 동일 아티스트 또는 장르 유사 곡 검색
         const q = encodeURIComponent(`${item.creator} ${item.genre !== '일반' ? item.genre : ''}`.trim());
         const res = await fetch(`https://itunes.apple.com/search?term=${q}&country=KR&media=music&limit=6`);
         const json = await res.json();
@@ -1603,8 +1792,8 @@
             title: r.trackName || r.collectionName,
             creator: r.artistName,
             thumb: r.artworkUrl100 ? r.artworkUrl100.replace('100x100bb', '300x300bb') : FALLBACK_COVER,
-            ytUrl: `https://www.youtube.com/results?search_query=${encodeURIComponent(`${r.artistName} ${r.trackName}`)}`,
-            infoUrl: r.trackViewUrl || ''
+            yt: `https://www.youtube.com/results?search_query=${encodeURIComponent(`${r.artistName} ${r.trackName}`)}`,
+            link: r.trackViewUrl || ''
           }));
       } else if (item.category === '영상') {
         const q = encodeURIComponent(`${item.genre !== '일반' ? item.genre : item.creator}`);
@@ -1617,15 +1806,12 @@
             title: r.trackName,
             creator: r.artistName || r.primaryGenreName,
             thumb: r.artworkUrl100 ? r.artworkUrl100.replace('100x100bb', '300x300bb') : FALLBACK_COVER,
-            ytUrl: `https://www.youtube.com/results?search_query=${encodeURIComponent(`${r.trackName} 예고편`)}`,
-            infoUrl: r.trackViewUrl || ''
+            yt: `https://www.youtube.com/results?search_query=${encodeURIComponent(`${r.trackName} 예고편`)}`,
+            link: r.trackViewUrl || ''
           }));
       } else {
-        // 도서 및 기타: Google Books API로 동일 저자 또는 장르 연관 도서 검색
-        const searchTerm = (item.creator && item.creator !== '미상')
-          ? `${item.creator} ${item.genre !== '일반' ? item.genre : ''}`.trim()
-          : item.title;
-        const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(searchTerm)}&maxResults=6`);
+        const q = encodeURIComponent(`${item.creator !== '미상' ? item.creator : item.title}`);
+        const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${q}&maxResults=6`);
         const json = await res.json();
         recs = (json.items || [])
           .map(v => v.volumeInfo)
@@ -1634,62 +1820,51 @@
           .map(info => ({
             title: info.title,
             creator: (info.authors || ['저자미상']).join(', '),
-            thumb: ((info.imageLinks && (info.imageLinks.thumbnail || info.imageLinks.smallThumbnail)) || FALLBACK_COVER).replace(/^http:\/\//i, 'https://'),
-            ytUrl: `https://www.youtube.com/results?search_query=${encodeURIComponent(`${info.title} 책 리뷰`)}`,
-            infoUrl: info.infoLink || ''
+            thumb: ((info.imageLinks && info.imageLinks.thumbnail) || FALLBACK_COVER).replace(/^http:\/\//i, 'https://'),
+            yt: `https://www.youtube.com/results?search_query=${encodeURIComponent(`${info.title} 책 리뷰`)}`,
+            link: info.infoLink || ''
           }));
       }
 
       if (!recs.length) {
-        recStatus.textContent = '자동 일치하는 연관 추천 항목이 없습니다. 상단 YouTube 버튼으로 직접 탐색해 보십시오.';
-        return;
+        statusEl.textContent = '일치하는 자동 추천 결과가 없습니다. 상단 YouTube 버튼으로 탐색하십시오.';
+      } else {
+        statusEl.textContent = `유사 작품 ${recs.length}건을 찾았습니다.`;
+        recGrid.innerHTML = recs.map(r => `
+          <div class="rec-card">
+            <div>
+              <img class="rec-thumb" src="${esc(r.thumb)}" alt="${esc(r.title)}" onerror="this.onerror=null;this.src='${FALLBACK_COVER}';" />
+              <div style="font-size:0.86rem; font-weight:900; margin-bottom:2px;">${esc(r.title)}</div>
+              <div style="font-size:0.76rem; font-weight:700; color:#4a4a4a; margin-bottom:8px;">${esc(r.creator)}</div>
+            </div>
+            <div style="display:flex; gap:5px;">
+              <a class="btn95 pink sm" style="flex:1;" href="${r.yt}" target="_blank" rel="noopener noreferrer">▶ YouTube</a>
+              ${r.link ? `<a class="btn95 sm" href="${esc(r.link)}" target="_blank" rel="noopener noreferrer">정보</a>` : ''}
+            </div>
+          </div>
+        `).join('');
       }
-
-      recStatus.textContent = `총 ${recs.length}건의 연관 추천 콘텐츠를 찾았습니다.`;
-      recGrid.innerHTML = recs.map(r => `
-        <div class="rec-card">
-          <div>
-            <img class="rec-thumb" src="${esc(r.thumb)}" alt="${esc(r.title)}" onerror="this.onerror=null;this.src='${FALLBACK_COVER}';" />
-            <div class="rec-title">${esc(r.title)}</div>
-            <div class="rec-sub">${esc(r.creator)}</div>
-          </div>
-          <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-            <a class="btn95 pink sm" style="flex:1;" href="${r.ytUrl}" target="_blank" rel="noopener noreferrer">▶ YouTube</a>
-            ${r.infoUrl ? `<a class="btn95 sm" href="${esc(r.infoUrl)}" target="_blank" rel="noopener noreferrer">정보</a>` : ''}
-          </div>
-        </div>
-      `).join('');
-    } catch (err) {
-      recStatus.textContent = '연관 작품 조회 중 네트워크 지연이 발생했습니다.';
+    } catch {
+      statusEl.textContent = '연관 작품 조회 중 오류가 발생했습니다.';
     } finally {
       setLoadingCursor(false);
     }
   }
 
   /* =========================================================================
-   * 5. REGISTER MODAL (새 감상 기록 등록)
+   * 5. REGISTER WIZARD (다중 소스 순위화 검색 & 동명 작품 선택)
    * ========================================================================= */
-  const regModal = document.getElementById('register-modal');
-  const regAlert = document.getElementById('reg-alert');
-
   function openRegisterModal() {
     document.getElementById('archive-form').reset();
     document.getElementById('inp-search-query').value = '';
     document.getElementById('inp-cover-url').value = '';
     document.getElementById('inp-date').value = new Date().toISOString().slice(0, 10);
     document.getElementById('preview-cover').src = FALLBACK_COVER;
-    regAlert.style.display = 'none';
-    regModal.classList.add('open');
+    document.getElementById('reg-alert').style.display = 'none';
+    document.getElementById('rank-list').style.display = 'none';
+    openWindow('win-register');
     document.getElementById('inp-search-query').focus();
   }
-
-  document.getElementById('btn-open-register').addEventListener('click', openRegisterModal);
-  ['btn-close-reg', 'btn-cancel-reg'].forEach(id => {
-    document.getElementById(id).addEventListener('click', () => regModal.classList.remove('open'));
-  });
-  regModal.addEventListener('click', e => {
-    if (e.target === regModal) regModal.classList.remove('open');
-  });
 
   document.getElementById('inp-cover-url').addEventListener('input', e => {
     const img = document.getElementById('preview-cover');
@@ -1698,64 +1873,108 @@
   });
 
   function showRegAlert(msg, type = 'info') {
-    regAlert.style.display = 'block';
-    regAlert.className = 'dialog-banner';
-    if (type === 'err') regAlert.classList.add('err');
-    if (type === 'ok') regAlert.classList.add('ok');
-    regAlert.textContent = msg;
+    const el = document.getElementById('reg-alert');
+    el.style.display = 'block';
+    el.className = 'dialog-banner';
+    if (type === 'err') el.classList.add('err');
+    if (type === 'ok') el.classList.add('ok');
+    el.textContent = msg;
   }
 
-  document.getElementById('btn-auto-search').addEventListener('click', runAutoSearch);
+  document.getElementById('btn-auto-search').addEventListener('click', runRankedSearch);
   document.getElementById('inp-search-query').addEventListener('keydown', e => {
-    if (e.key === 'Enter') { e.preventDefault(); runAutoSearch(); }
+    if (e.key === 'Enter') { e.preventDefault(); runRankedSearch(); }
   });
 
-  async function runAutoSearch() {
+  async function runRankedSearch() {
     const query = document.getElementById('inp-search-query').value.trim();
     const category = document.getElementById('inp-category').value;
     if (!query) {
-      showRegAlert('검색할 작품 제목이나 링크(URL)를 입력하십시오.', 'err');
+      showRegAlert('검색어, 유사어, 또는 링크(URL)를 입력하십시오.', 'err');
       return;
     }
 
     const btn = document.getElementById('btn-auto-search');
+    const rankBox = document.getElementById('rank-list');
     btn.disabled = true;
     btn.textContent = '검색 중...';
     setLoadingCursor(true);
-    showRegAlert('메타데이터를 조회하고 있습니다...');
+    rankBox.style.display = 'none';
+    showRegAlert('Apple Music · Deezer · MusicBrainz · YouTube · Google Books 통합 검색 중...');
 
     try {
       const url = `${GAS_WEB_APP_URL}?action=search&q=${encodeURIComponent(query)}&category=${encodeURIComponent(category)}`;
       const res = await fetch(url);
       const result = await res.json();
+      const list = result.candidates || [];
 
-      if (result.data) {
-        const d = result.data;
-        if (d.category) document.getElementById('inp-category').value = d.category;
-        if (d.title) document.getElementById('inp-title').value = d.title;
-        if (d.creator) document.getElementById('inp-creator').value = d.creator;
-        if (d.genre) document.getElementById('inp-genre').value = d.genre;
-        if (d.sourceUrl) document.getElementById('inp-source-url').value = d.sourceUrl;
-        if (d.coverUrl) {
-          document.getElementById('inp-cover-url').value = d.coverUrl;
-          const img = document.getElementById('preview-cover');
-          img.src = d.coverUrl;
-          img.onerror = () => { img.src = FALLBACK_COVER; };
-        }
+      if (!list.length) {
+        showRegAlert(result.message || '검색 결과가 없습니다. 아래에 직접 입력하십시오.', 'info');
+        return;
       }
-      showRegAlert(result.message || '조회 완료', result.status === 'success' ? 'ok' : 'info');
+
+      // 1위 후보를 기본 자동 채움
+      applyCandidateToForm(list[0]);
+      showRegAlert(
+        list.length > 1
+          ? `총 ${list.length}건의 동명·유사 후보를 찾았습니다. 1위 항목이 자동 입력되었으며, 다른 항목을 선택할 수 있습니다.`
+          : '메타데이터를 불러왔습니다.',
+        'ok'
+      );
+
+      // 여러 후보가 있으면 순위 선택 리스트 표시
+      if (list.length > 1) {
+        rankBox.innerHTML = '';
+        list.forEach((cand, idx) => {
+          const row = document.createElement('div');
+          row.className = 'rank-item';
+          row.innerHTML = `
+            <span class="rank-badge">#${idx + 1} (${cand.score}점)</span>
+            <img class="rank-thumb" src="${esc(cand.coverUrl || FALLBACK_COVER)}" alt="" onerror="this.onerror=null;this.src='${FALLBACK_COVER}';" />
+            <div style="flex:1; min-width:0;">
+              <div style="font-size:0.84rem; font-weight:900; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                ${esc(cand.title)} <span style="font-weight:700; color:#4a4a4a;">— ${esc(cand.creator)}</span>
+              </div>
+              <div style="font-size:0.74rem; font-weight:700; color:#4a4a4a;">
+                <span class="rank-src">${esc(cand.source)}</span>
+                ${cand.year ? ` · ${esc(cand.year)}년` : ''}
+                ${cand.extra ? ` · ${esc(cand.extra)}` : ''}
+              </div>
+            </div>
+          `;
+          row.addEventListener('click', () => {
+            applyCandidateToForm(cand);
+            showRegAlert(`선택됨: 「${cand.title}」 (${cand.creator} / ${cand.source})`, 'ok');
+          });
+          rankBox.appendChild(row);
+        });
+        rankBox.style.display = 'block';
+      }
     } catch {
-      showRegAlert('조회 중 오류가 발생했습니다. 아래 항목을 직접 입력하십시오.', 'err');
+      showRegAlert('검색 중 오류가 발생했습니다. 아래 항목에 직접 입력하십시오.', 'err');
     } finally {
       btn.disabled = false;
-      btn.textContent = '자동 검색';
+      btn.textContent = '순위 검색';
       setLoadingCursor(false);
     }
+  }
+
+  function applyCandidateToForm(c) {
+    if (c.category) document.getElementById('inp-category').value = c.category;
+    if (c.title) document.getElementById('inp-title').value = c.title;
+    if (c.creator) document.getElementById('inp-creator').value = c.creator;
+    if (c.genre) document.getElementById('inp-genre').value = c.genre;
+    if (c.sourceUrl) document.getElementById('inp-source-url').value = c.sourceUrl;
+    document.getElementById('inp-cover-url').value = c.coverUrl || '';
+    const img = document.getElementById('preview-cover');
+    img.src = c.coverUrl || FALLBACK_COVER;
+    img.onerror = () => { img.src = FALLBACK_COVER; };
   }
 
   document.getElementById('archive-form').addEventListener('submit', async e => {
     e.preventDefault();
     const payload = {
+      type: 'archive',
       category: document.getElementById('inp-category').value,
       title: document.getElementById('inp-title').value.trim(),
       creator: document.getElementById('inp-creator').value.trim(),
@@ -1767,9 +1986,9 @@
       sourceUrl: document.getElementById('inp-source-url').value.trim()
     };
 
-    const submitBtn = document.getElementById('btn-submit-reg');
-    submitBtn.disabled = true;
-    submitBtn.textContent = '저장 중...';
+    const btn = document.getElementById('btn-submit-reg');
+    btn.disabled = true;
+    btn.textContent = '저장 중...';
     setLoadingCursor(true);
 
     try {
@@ -1786,26 +2005,95 @@
       }
       if (json.status === 'success' && json.item) {
         archiveItems.unshift(json.item);
-        refreshDashboard();
-        regModal.classList.remove('open');
+        updateKPIs();
+        renderCharts();
+        renderArchiveGrid();
+        closeWindow('win-register');
       } else {
-        showRegAlert(json.message || '저장 오류가 발생했습니다.', 'err');
+        showRegAlert(json.message || '저장 오류', 'err');
       }
     } catch {
       showRegAlert('서버 통신 중 오류가 발생했습니다.', 'err');
     } finally {
-      submitBtn.disabled = false;
-      submitBtn.textContent = '확인 및 시트 저장';
+      btn.disabled = false;
+      btn.textContent = '확인 및 시트 저장';
+      setLoadingCursor(false);
+    }
+  });
+
+  /* =========================================================================
+   * 6. DESKTOP QUICK IDEA NOTEPAD (MEMO95.EXE)
+   * ========================================================================= */
+  function openMemoWindow() {
+    openWindow('win-memo');
+    loadNotesData();
+  }
+
+  async function loadNotesData() {
+    try {
+      const res = await fetch(`${GAS_WEB_APP_URL}?action=notes`);
+      const json = await res.json();
+      memoNotes = (json.status === 'success' && Array.isArray(json.notes)) ? json.notes : [];
+    } catch {
+      memoNotes = [];
+    }
+    renderNotesList();
+  }
+
+  function renderNotesList() {
+    const container = document.getElementById('memo-list-container');
+    document.getElementById('memo-count-badge').textContent = `${memoNotes.length}건`;
+
+    if (!memoNotes.length) {
+      container.innerHTML = `<div style="font-size:0.83rem; font-weight:700; color:#4a4a4a;">저장된 아이디어 메모가 없습니다. 위 입력란에 짧은 아이디어를 남겨보십시오.</div>`;
+      return;
+    }
+
+    container.innerHTML = memoNotes.map(n => `
+      <div class="note-card">
+        <div style="display:flex; justify-content:space-between; font-size:0.75rem; font-weight:800; color:#4a4a4a; margin-bottom:4px;">
+          <span>📌 ${esc(n.title || '무제 메모')}</span>
+          <span>${esc(n.createdAt)}</span>
+        </div>
+        <div style="font-size:0.86rem; font-weight:700; white-space:pre-wrap;">${esc(n.content)}</div>
+      </div>
+    `).join('');
+  }
+
+  document.getElementById('memo-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const title = document.getElementById('memo-title').value.trim() || '무제 아이디어';
+    const content = document.getElementById('memo-content').value.trim();
+    if (!content) return;
+
+    const btn = document.getElementById('btn-save-memo');
+    btn.disabled = true;
+    btn.textContent = '저장 중...';
+    setLoadingCursor(true);
+
+    try {
+      const res = await fetch(GAS_WEB_APP_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ type: 'note', title, content })
+      });
+      const json = await res.json();
+      if (json.status === 'success' && json.note) {
+        memoNotes.unshift(json.note);
+        renderNotesList();
+        document.getElementById('memo-form').reset();
+      }
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '메모 시트에 저장';
       setLoadingCursor(false);
     }
   });
 
   function esc(str) {
     return String(str || '')
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 </script>
 
