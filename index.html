@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>MY-ARCHIVE // 감상 아카이빙 및 취향 통계 대시보드</title>
+  <title>MY-ARCHIVE 95 // 감상 아카이빙 OS</title>
 
   <!-- Pretendard Variable -->
   <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css" />
@@ -12,328 +12,469 @@
 
   <style>
     :root {
-      --bg-main: #dfdcd3;
-      --bg-card: #ffffff;
-      --bg-subtle: #f4f2ec;
-      --ink: #111111;
-      --ink-muted: #4a4a4a;
-      --accent-yellow: #ffd83b;
-      --accent-pink: #ff4757;
-      --accent-sky: #48dbfb;
-      --accent-green: #2ed573;
-      --border-thick: 4px solid #111111;
-      --border-mid: 3px solid #111111;
-      --shadow-lg: 6px 6px 0px #111111;
-      --shadow-md: 4px 4px 0px #111111;
-      --shadow-sm: 2px 2px 0px #111111;
+      /* Neo-Brutalism + Windows 95 Hybrid Tokens */
+      --desktop-bg: #008080;
+      --win-gray: #c0c0c0;
+      --win-light: #ffffff;
+      --win-dark: #808080;
+      --win-black: #111111;
+      --win-blue: #000080;
+      --brutal-yellow: #ffd83b;
+      --brutal-pink: #ff4757;
+      --brutal-sky: #48dbfb;
+      --brutal-green: #2ed573;
+      --brutal-paper: #dfdcd3;
+
+      /* Classic Win95 3D Bevels */
+      --bevel-out: inset 2px 2px 0px #ffffff, inset -2px -2px 0px #808080, inset -3px -3px 0px #111111;
+      --bevel-in: inset 2px 2px 0px #808080, inset -2px -2px 0px #ffffff, inset 3px 3px 0px #111111;
+      --brutal-border: 3px solid #111111;
+      --brutal-shadow: 6px 6px 0px #111111;
+
+      /* Custom Pixel Cursors */
+      --cursor-default: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'><path d='M2 2 L2 19 L6.5 14.5 L10 21 L12.5 19.5 L9 13 L15 13 Z' fill='white' stroke='%23111111' stroke-width='2'/></svg>") 2 2, auto;
+      --cursor-pointer: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'><path d='M8 2 V11 H5 V15 L8 21 H17 L19 14 V9 H15 V8 H12 V2 Z' fill='%23ffd83b' stroke='%23111111' stroke-width='2'/></svg>") 8 2, pointer;
+      --cursor-wait: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'><rect x='4' y='2' width='16' height='3' fill='%23111111'/><rect x='4' y='19' width='16' height='3' fill='%23111111'/><path d='M6 5 L12 12 L18 5 Z' fill='%2348dbfb' stroke='%23111111' stroke-width='1.5'/><path d='M6 19 L12 12 L18 19 Z' fill='%23ffd83b' stroke='%23111111' stroke-width='1.5'/></svg>") 12 12, wait;
     }
 
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
+      cursor: var(--cursor-default);
+    }
+
+    body.is-loading, body.is-loading * {
+      cursor: var(--cursor-wait) !important;
+    }
+
+    button, a, select, input[type="checkbox"], .desktop-icon, .item-card, .pill-btn, .win-ctrl-btn {
+      cursor: var(--cursor-pointer);
+    }
+
+    input[type="text"], input[type="date"], textarea {
+      cursor: text;
     }
 
     body {
-      background-color: var(--bg-main);
-      color: var(--ink);
+      background-color: var(--desktop-bg);
+      background-image: radial-gradient(#006666 1px, transparent 1px);
+      background-size: 16px 16px;
+      color: var(--win-black);
       font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, sans-serif;
-      line-height: 1.55;
-      padding: 28px 16px 84px;
+      min-height: 100vh;
+      padding: 18px 18px 68px;
+      overflow-x: hidden;
       -webkit-font-smoothing: antialiased;
     }
 
-    .container {
-      max-width: 1140px;
+    /* Desktop Layout Grid */
+    .desktop-workspace {
+      max-width: 1280px;
       margin: 0 auto;
+      display: grid;
+      grid-template-columns: 96px 1fr;
+      gap: 20px;
+      align-items: start;
     }
 
-    /* Header */
-    .hero-header {
-      background: var(--bg-card);
-      border: var(--border-thick);
-      box-shadow: var(--shadow-lg);
-      padding: 28px 32px;
-      margin-bottom: 28px;
+    @media (max-width: 820px) {
+      .desktop-workspace {
+        grid-template-columns: 1fr;
+      }
+      .desktop-icons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+    }
+
+    /* Desktop Shortcut Icons */
+    .desktop-icons {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      user-select: none;
+    }
+
+    .desktop-icon {
+      width: 88px;
+      text-align: center;
+      padding: 6px 4px;
+      border: 2px solid transparent;
+    }
+
+    .desktop-icon:hover {
+      background: rgba(0, 0, 128, 0.35);
+      border: 2px dotted #ffd83b;
+    }
+
+    .icon-glyph {
+      width: 44px;
+      height: 44px;
+      margin: 0 auto 6px;
+      border: 3px solid #111111;
+      box-shadow: 3px 3px 0px #111111;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      font-size: 1.15rem;
+      background: var(--brutal-yellow);
+    }
+
+    .icon-glyph.sky { background: var(--brutal-sky); }
+    .icon-glyph.green { background: var(--brutal-green); }
+    .icon-glyph.pink { background: var(--brutal-pink); color: #ffffff; }
+
+    .icon-label {
+      display: inline-block;
+      background: #000080;
+      color: #ffffff;
+      font-size: 0.78rem;
+      font-weight: 700;
+      padding: 2px 5px;
+      line-height: 1.25;
+      word-break: keep-all;
+    }
+
+    /* Windows 95 + Neo-Brutalism Window Frame */
+    .win95-window {
+      background: var(--win-gray);
+      border: var(--brutal-border);
+      box-shadow: var(--bevel-out), var(--brutal-shadow);
+      margin-bottom: 24px;
+    }
+
+    .win95-window.minimized .win-body {
+      display: none;
+    }
+
+    .win-titlebar {
+      background: linear-gradient(90deg, #000080 0%, #1084d0 100%);
+      color: #ffffff;
+      padding: 6px 10px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      flex-wrap: wrap;
-      gap: 20px;
+      border-bottom: 3px solid #111111;
+      user-select: none;
     }
 
-    .hero-left {
-      max-width: 720px;
+    .win-titlebar.brutal-accent {
+      background: var(--brutal-yellow);
+      color: #111111;
     }
 
-    .badge-row {
+    .win-title-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 900;
+      font-size: 0.92rem;
+      letter-spacing: -0.01em;
+    }
+
+    .win-title-dot {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      background: var(--brutal-pink);
+      border: 2px solid #111111;
+    }
+
+    .win-controls {
+      display: flex;
+      gap: 4px;
+    }
+
+    .win-ctrl-btn {
+      width: 24px;
+      height: 22px;
+      background: var(--win-gray);
+      color: #111111;
+      border: 2px solid #111111;
+      box-shadow: inset 1px 1px 0px #ffffff, inset -1px -1px 0px #808080;
+      font-weight: 900;
+      font-size: 0.78rem;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .win-ctrl-btn:active {
+      box-shadow: inset 1px 1px 0px #808080, inset -1px -1px 0px #ffffff;
+      transform: translate(1px, 1px);
+    }
+
+    .win-ctrl-btn.close {
+      background: var(--brutal-pink);
+      color: #ffffff;
+    }
+
+    /* Classic Win95 Menu Strip */
+    .win-menubar {
+      background: var(--win-gray);
+      border-bottom: 2px solid #808080;
+      padding: 4px 12px;
       display: flex;
       flex-wrap: wrap;
-      gap: 8px;
-      margin-bottom: 12px;
+      gap: 16px;
+      font-size: 0.82rem;
+      font-weight: 700;
     }
 
-    .brutal-badge {
-      display: inline-block;
-      padding: 4px 10px;
-      font-size: 0.78rem;
-      font-weight: 800;
-      border: var(--border-mid);
-      background: var(--accent-yellow);
-      color: var(--ink);
+    .win-menubar span u {
+      text-decoration: underline;
     }
 
-    .brutal-badge.sky { background: var(--accent-sky); }
-    .brutal-badge.green { background: var(--accent-green); }
-    .brutal-badge.pink { background: var(--accent-pink); color: #ffffff; }
-
-    .hero-title {
-      font-size: clamp(1.7rem, 3.2vw, 2.35rem);
-      font-weight: 900;
-      letter-spacing: -0.03em;
-      line-height: 1.2;
-      margin-bottom: 6px;
+    .win-body {
+      padding: 18px;
+      background: var(--brutal-paper);
     }
 
-    .hero-desc {
-      font-size: 0.96rem;
-      font-weight: 600;
-      color: var(--ink-muted);
-    }
-
-    /* Buttons */
-    .btn {
+    /* Neo-Brutalist Win95 Buttons */
+    .btn95 {
       display: inline-flex;
       align-items: center;
       justify-content: center;
       gap: 6px;
-      padding: 12px 20px;
-      border: var(--border-mid);
-      box-shadow: var(--shadow-md);
-      background: var(--bg-card);
-      color: var(--ink);
+      padding: 9px 16px;
+      background: var(--win-gray);
+      color: #111111;
+      border: 2px solid #111111;
+      box-shadow: var(--bevel-out), 3px 3px 0px #111111;
       font-family: inherit;
-      font-size: 0.95rem;
+      font-size: 0.88rem;
       font-weight: 800;
-      cursor: pointer;
-      border-radius: 0;
-      transition: transform 0.08s ease, box-shadow 0.08s ease;
+      text-decoration: none;
+      transition: transform 0.06s ease;
     }
 
-    .btn:hover:not(:disabled) {
-      transform: translate(-1px, -1px);
-      box-shadow: 5px 5px 0px #111111;
+    .btn95:hover:not(:disabled) {
+      filter: brightness(1.03);
     }
 
-    .btn:active:not(:disabled) {
-      transform: translate(3px, 3px);
-      box-shadow: 1px 1px 0px #111111;
+    .btn95:active:not(:disabled) {
+      box-shadow: var(--bevel-in);
+      transform: translate(2px, 2px);
     }
 
-    .btn:disabled {
+    .btn95:disabled {
       opacity: 0.6;
-      cursor: not-allowed;
     }
 
-    .btn-yellow { background: var(--accent-yellow); }
-    .btn-sky { background: var(--accent-sky); }
-    .btn-green { background: var(--accent-green); }
-    .btn-pink { background: var(--accent-pink); color: #ffffff; }
+    .btn95.yellow { background: var(--brutal-yellow); }
+    .btn95.sky { background: var(--brutal-sky); }
+    .btn95.green { background: var(--brutal-green); }
+    .btn95.pink { background: var(--brutal-pink); color: #ffffff; }
+    .btn95.sm { padding: 6px 11px; font-size: 0.8rem; }
 
-    .btn-lg {
-      padding: 15px 24px;
-      font-size: 1.05rem;
+    /* Hero Banner inside Main Window */
+    .os-hero {
+      background: #ffffff;
+      border: var(--brutal-border);
+      box-shadow: 4px 4px 0px #111111;
+      padding: 20px 24px;
+      margin-bottom: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
     }
 
-    .btn-sm {
-      padding: 7px 12px;
-      font-size: 0.82rem;
-      box-shadow: var(--shadow-sm);
+    .os-hero h1 {
+      font-size: clamp(1.45rem, 2.6vw, 2rem);
+      font-weight: 900;
+      letter-spacing: -0.03em;
+      margin-bottom: 4px;
     }
 
-    /* KPI Grid */
+    .os-hero p {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #4a4a4a;
+    }
+
+    /* KPI Sunken Win95 Panels */
     .kpi-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      gap: 18px;
-      margin-bottom: 28px;
+      gap: 14px;
+      margin-bottom: 20px;
     }
 
-    @media (max-width: 900px) {
+    @media (max-width: 920px) {
       .kpi-grid { grid-template-columns: repeat(2, 1fr); }
     }
-
-    @media (max-width: 540px) {
+    @media (max-width: 520px) {
       .kpi-grid { grid-template-columns: 1fr; }
     }
 
-    .kpi-card {
-      background: var(--bg-card);
-      border: var(--border-thick);
-      box-shadow: var(--shadow-md);
-      padding: 20px;
+    .kpi-panel {
+      background: #ffffff;
+      border: 2px solid #111111;
+      box-shadow: var(--bevel-in), 3px 3px 0px #111111;
+      padding: 14px 16px;
     }
 
-    .kpi-card.bg-yellow { background: var(--accent-yellow); }
-    .kpi-card.bg-sky { background: var(--accent-sky); }
-    .kpi-card.bg-green { background: var(--accent-green); }
+    .kpi-panel.yellow { background: var(--brutal-yellow); }
+    .kpi-panel.sky { background: var(--brutal-sky); }
+    .kpi-panel.green { background: var(--brutal-green); }
 
-    .kpi-label {
-      font-size: 0.82rem;
+    .kpi-lbl {
+      font-size: 0.78rem;
       font-weight: 800;
-      margin-bottom: 6px;
+      margin-bottom: 4px;
     }
 
-    .kpi-value {
-      font-size: 2rem;
+    .kpi-val {
+      font-size: 1.75rem;
       font-weight: 900;
       line-height: 1.15;
-      font-variant-numeric: tabular-nums;
     }
 
     .kpi-sub {
-      font-size: 0.82rem;
+      font-size: 0.78rem;
       font-weight: 700;
-      margin-top: 6px;
-      color: var(--ink);
+      margin-top: 5px;
     }
 
-    /* Charts Section */
+    /* Charts Grid */
     .charts-grid {
       display: grid;
       grid-template-columns: 1fr 1.45fr;
-      gap: 24px;
-      margin-bottom: 28px;
+      gap: 18px;
+      margin-bottom: 22px;
     }
 
     @media (max-width: 860px) {
       .charts-grid { grid-template-columns: 1fr; }
     }
 
-    .brutal-card {
-      background: var(--bg-card);
-      border: var(--border-thick);
-      box-shadow: var(--shadow-lg);
-      padding: 24px 26px;
-      margin-bottom: 28px;
+    .sunken-box {
+      background: #ffffff;
+      border: 2px solid #111111;
+      box-shadow: var(--bevel-in);
+      padding: 16px;
     }
 
-    .card-header {
+    .box-head {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      flex-wrap: wrap;
-      gap: 10px;
-      padding-bottom: 14px;
-      margin-bottom: 18px;
-      border-bottom: var(--border-mid);
-    }
-
-    .card-title {
-      font-size: 1.18rem;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid #111111;
       font-weight: 900;
+      font-size: 0.98rem;
     }
 
-    .chart-canvas-wrap {
+    .chart-wrap {
+      height: 220px;
       position: relative;
-      height: 250px;
-      width: 100%;
     }
 
-    /* Filter Bar */
-    .filter-toolbar {
+    /* Filter Toolbar */
+    .toolbar-95 {
+      background: var(--win-gray);
+      border: 2px solid #111111;
+      box-shadow: var(--bevel-out);
+      padding: 12px 14px;
+      margin-bottom: 18px;
       display: flex;
       justify-content: space-between;
       align-items: center;
       flex-wrap: wrap;
       gap: 12px;
-      margin-bottom: 22px;
     }
 
-    .cat-pills {
+    .pill-group {
       display: flex;
       flex-wrap: wrap;
-      gap: 8px;
+      gap: 6px;
     }
 
     .pill-btn {
-      padding: 8px 14px;
-      border: var(--border-mid);
-      box-shadow: var(--shadow-sm);
-      background: var(--bg-subtle);
+      padding: 6px 12px;
+      background: var(--win-gray);
+      border: 2px solid #111111;
+      box-shadow: var(--bevel-out);
       font-family: inherit;
-      font-size: 0.88rem;
+      font-size: 0.84rem;
       font-weight: 800;
-      cursor: pointer;
     }
 
     .pill-btn.active {
-      background: var(--accent-yellow);
+      background: var(--brutal-yellow);
+      box-shadow: var(--bevel-in);
       transform: translate(1px, 1px);
     }
 
-    .filter-controls {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-
-    input[type="text"],
-    input[type="date"],
-    select,
-    textarea {
-      padding: 10px 13px;
-      border: var(--border-mid);
-      background: var(--bg-subtle);
-      color: var(--ink);
+    input[type="text"], input[type="date"], select, textarea {
+      padding: 8px 11px;
+      background: #ffffff;
+      border: 2px solid #111111;
+      box-shadow: var(--bevel-in);
       font-family: inherit;
-      font-size: 0.92rem;
+      font-size: 0.88rem;
       font-weight: 600;
+      color: #111111;
       border-radius: 0;
     }
 
     input:focus, select:focus, textarea:focus {
-      outline: none;
-      background: #ffffff;
-      box-shadow: var(--shadow-sm);
+      outline: 2px dotted #111111;
+      outline-offset: -4px;
     }
 
     /* Archive Cards Grid */
     .archive-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 22px;
+      gap: 18px;
     }
 
-    @media (max-width: 960px) {
+    @media (max-width: 980px) {
       .archive-grid { grid-template-columns: repeat(2, 1fr); }
     }
-
     @media (max-width: 620px) {
       .archive-grid { grid-template-columns: 1fr; }
     }
 
     .item-card {
-      background: var(--bg-subtle);
-      border: var(--border-thick);
-      box-shadow: var(--shadow-md);
+      background: #ffffff;
+      border: 3px solid #111111;
+      box-shadow: 5px 5px 0px #111111;
       display: flex;
       flex-direction: column;
-      overflow: hidden;
-      transition: transform 0.12s ease;
+      transition: transform 0.1s ease, box-shadow 0.1s ease;
     }
 
     .item-card:hover {
       transform: translate(-2px, -2px);
-      box-shadow: var(--shadow-lg);
+      box-shadow: 7px 7px 0px #111111;
+      background: #fffdf5;
     }
 
-    .item-thumb-wrap {
-      width: 100%;
-      height: 190px;
-      border-bottom: var(--border-mid);
+    .item-card-bar {
       background: #111111;
+      color: #ffffff;
+      padding: 4px 10px;
+      font-size: 0.75rem;
+      font-weight: 800;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .item-thumb-box {
+      height: 175px;
+      border-bottom: 3px solid #111111;
       position: relative;
+      background: #222222;
       overflow: hidden;
     }
 
@@ -344,416 +485,734 @@
       display: block;
     }
 
-    .item-cat-tag {
+    .cat-sticker {
       position: absolute;
-      top: 10px;
-      left: 10px;
-      padding: 3px 9px;
-      border: 2px solid var(--ink);
-      font-size: 0.78rem;
+      top: 8px;
+      left: 8px;
+      padding: 3px 8px;
+      border: 2px solid #111111;
+      font-size: 0.76rem;
       font-weight: 900;
-      background: var(--accent-yellow);
+      background: var(--brutal-yellow);
+      box-shadow: 2px 2px 0px #111111;
     }
 
-    .item-cat-tag.music { background: var(--accent-sky); }
-    .item-cat-tag.video { background: var(--accent-pink); color: #ffffff; }
-    .item-cat-tag.etc { background: var(--accent-green); }
+    .cat-sticker.music { background: var(--brutal-sky); }
+    .cat-sticker.video { background: var(--brutal-pink); color: #ffffff; }
+    .cat-sticker.etc { background: var(--brutal-green); }
 
-    .item-rating-tag {
+    .star-sticker {
       position: absolute;
-      bottom: 10px;
-      right: 10px;
-      padding: 3px 9px;
-      border: 2px solid var(--ink);
+      bottom: 8px;
+      right: 8px;
+      padding: 2px 8px;
+      border: 2px solid #111111;
       background: #ffffff;
-      font-size: 0.82rem;
+      font-size: 0.8rem;
       font-weight: 900;
+      box-shadow: 2px 2px 0px #111111;
     }
 
-    .item-body {
-      padding: 18px;
+    .item-content {
+      padding: 14px 16px;
       display: flex;
       flex-direction: column;
       flex: 1;
     }
 
     .item-title {
-      font-size: 1.12rem;
+      font-size: 1.08rem;
       font-weight: 900;
-      line-height: 1.3;
       margin-bottom: 4px;
-      word-break: keep-all;
+      line-height: 1.3;
     }
 
-    .item-meta {
-      font-size: 0.84rem;
+    .item-creator {
+      font-size: 0.82rem;
       font-weight: 700;
-      color: var(--ink-muted);
-      margin-bottom: 12px;
+      color: #4a4a4a;
+      margin-bottom: 10px;
     }
 
-    .item-review {
-      background: #ffffff;
-      border: 2px solid var(--ink);
-      padding: 10px 12px;
-      font-size: 0.88rem;
+    .item-memo {
+      background: var(--brutal-paper);
+      border: 2px solid #111111;
+      padding: 9px 11px;
+      font-size: 0.85rem;
       font-weight: 600;
-      margin-bottom: 14px;
+      margin-bottom: 12px;
       flex: 1;
-      word-break: keep-all;
     }
 
-    .item-foot {
+    .item-footer {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      font-size: 0.8rem;
+      font-size: 0.78rem;
       font-weight: 800;
-      color: var(--ink-muted);
+      padding-top: 8px;
+      border-top: 2px dashed #111111;
     }
 
-    .item-link {
-      color: var(--ink);
-      text-decoration: none;
-      border-bottom: 2px solid var(--ink);
+    .inspect-hint {
+      background: var(--brutal-sky);
+      border: 1.5px solid #111111;
+      padding: 2px 7px;
+      font-weight: 900;
     }
 
-    .item-link:hover {
-      background: var(--accent-yellow);
+    /* Status Bar at Bottom of Window */
+    .win-statusbar {
+      background: var(--win-gray);
+      border-top: 2px solid #111111;
+      padding: 5px 12px;
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.78rem;
+      font-weight: 700;
     }
 
-    /* Modal Popup */
-    .modal-backdrop {
+    .status-cell {
+      box-shadow: var(--bevel-in);
+      padding: 2px 10px;
+      background: var(--win-gray);
+    }
+
+    /* =====================================================================
+     * WINDOWS 95 POPUP MODALS (등록 팝업 & 상세 탐색기/추천 팝업)
+     * ===================================================================== */
+    .win-modal-overlay {
       position: fixed;
       inset: 0;
-      background: rgba(17, 17, 17, 0.72);
+      background: rgba(0, 0, 0, 0.55);
       display: none;
       align-items: center;
       justify-content: center;
       padding: 16px;
-      z-index: 1000;
+      z-index: 2000;
       overflow-y: auto;
     }
 
-    .modal-backdrop.open {
+    .win-modal-overlay.open {
       display: flex;
     }
 
-    .modal-window {
-      background: var(--bg-card);
-      border: var(--border-thick);
-      box-shadow: 10px 10px 0px #111111;
+    .win-dialog {
       width: 100%;
-      max-width: 640px;
+      max-width: 680px;
+      background: var(--win-gray);
+      border: 3px solid #111111;
+      box-shadow: var(--bevel-out), 10px 10px 0px #111111;
       max-height: 92vh;
-      overflow-y: auto;
-      padding: 28px;
-    }
-
-    .modal-head {
       display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding-bottom: 14px;
-      margin-bottom: 20px;
-      border-bottom: var(--border-mid);
+      flex-direction: column;
     }
 
-    .modal-title {
-      font-size: 1.3rem;
-      font-weight: 900;
+    .win-dialog-body {
+      padding: 18px;
+      background: var(--brutal-paper);
+      overflow-y: auto;
     }
 
-    .form-group {
-      margin-bottom: 14px;
-    }
-
-    .form-label {
-      display: block;
-      font-size: 0.85rem;
-      font-weight: 800;
-      margin-bottom: 5px;
-    }
-
-    .form-row-2 {
+    .form-grid-2 {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 14px;
+      gap: 12px;
     }
 
-    @media (max-width: 540px) {
-      .form-row-2 { grid-template-columns: 1fr; }
+    @media (max-width: 560px) {
+      .form-grid-2 { grid-template-columns: 1fr; }
     }
 
-    .search-box-wrap {
-      background: var(--bg-subtle);
-      border: var(--border-mid);
-      padding: 16px;
-      margin-bottom: 18px;
+    .fld-group {
+      margin-bottom: 12px;
     }
 
-    .search-inline {
-      display: flex;
-      gap: 10px;
-      margin-top: 8px;
+    .fld-label {
+      display: block;
+      font-size: 0.82rem;
+      font-weight: 800;
+      margin-bottom: 4px;
     }
 
-    .search-inline input {
-      flex: 1;
-      background: #ffffff;
-    }
-
-    .modal-alert {
+    .dialog-banner {
       margin-top: 10px;
-      padding: 10px 12px;
-      border: 2px solid var(--ink);
-      background: var(--accent-sky);
-      font-size: 0.85rem;
+      padding: 8px 12px;
+      border: 2px solid #111111;
+      background: var(--brutal-sky);
+      font-size: 0.83rem;
       font-weight: 800;
       display: none;
     }
 
-    .modal-alert.error {
-      background: var(--accent-pink);
+    .dialog-banner.err {
+      background: var(--brutal-pink);
       color: #ffffff;
     }
 
-    .modal-alert.ok {
-      background: var(--accent-green);
+    .dialog-banner.ok {
+      background: var(--brutal-green);
     }
 
-    .preview-strip {
-      display: flex;
-      gap: 14px;
-      align-items: center;
-      margin-bottom: 16px;
-      padding: 12px;
-      border: 2px solid var(--ink);
-      background: var(--bg-subtle);
+    /* Detail & Recommendation Explorer Layout */
+    .detail-hero {
+      display: grid;
+      grid-template-columns: 160px 1fr;
+      gap: 18px;
+      background: #ffffff;
+      border: 3px solid #111111;
+      box-shadow: 4px 4px 0px #111111;
+      padding: 16px;
+      margin-bottom: 18px;
     }
 
-    .preview-strip img {
-      width: 64px;
-      height: 64px;
+    @media (max-width: 560px) {
+      .detail-hero { grid-template-columns: 1fr; }
+    }
+
+    .detail-cover {
+      width: 100%;
+      height: 200px;
       object-fit: cover;
-      border: 2px solid var(--ink);
+      border: 2px solid #111111;
       background: #111111;
     }
 
-    .footer-note {
-      text-align: center;
-      font-size: 0.82rem;
+    .action-links-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .rec-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 10px;
+    }
+
+    @media (max-width: 640px) {
+      .rec-grid { grid-template-columns: 1fr; }
+    }
+
+    .rec-card {
+      background: #ffffff;
+      border: 2px solid #111111;
+      box-shadow: 3px 3px 0px #111111;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .rec-thumb {
+      width: 100%;
+      height: 110px;
+      object-fit: cover;
+      border: 2px solid #111111;
+      margin-bottom: 8px;
+      background: #222222;
+    }
+
+    .rec-title {
+      font-size: 0.88rem;
+      font-weight: 900;
+      line-height: 1.25;
+      margin-bottom: 3px;
+    }
+
+    .rec-sub {
+      font-size: 0.78rem;
       font-weight: 700;
-      color: var(--ink-muted);
-      margin-top: 20px;
+      color: #4a4a4a;
+      margin-bottom: 8px;
+    }
+
+    /* =====================================================================
+     * WINDOWS 95 TASKBAR & START MENU
+     * ===================================================================== */
+    .win95-taskbar {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 44px;
+      background: var(--win-gray);
+      border-top: 3px solid #111111;
+      box-shadow: inset 0 2px 0px #ffffff;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 4px 8px;
+      z-index: 3000;
+      user-select: none;
+    }
+
+    .taskbar-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      overflow-x: auto;
+    }
+
+    .start-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      height: 32px;
+      background: var(--brutal-yellow);
+      border: 2px solid #111111;
+      box-shadow: var(--bevel-out);
+      font-family: inherit;
+      font-weight: 900;
+      font-size: 0.9rem;
+    }
+
+    .start-btn.pressed {
+      box-shadow: var(--bevel-in);
+      transform: translate(1px, 1px);
+    }
+
+    .win-flag {
+      display: inline-grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5px;
+      width: 14px;
+      height: 14px;
+    }
+
+    .win-flag span:nth-child(1) { background: #ff4757; }
+    .win-flag span:nth-child(2) { background: #2ed573; }
+    .win-flag span:nth-child(3) { background: #48dbfb; }
+    .win-flag span:nth-child(4) { background: #ffd83b; }
+
+    .task-tab {
+      height: 32px;
+      padding: 0 12px;
+      background: var(--win-gray);
+      border: 2px solid #111111;
+      box-shadow: var(--bevel-in);
+      font-family: inherit;
+      font-size: 0.82rem;
+      font-weight: 800;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+
+    .task-tab.inactive {
+      box-shadow: var(--bevel-out);
+    }
+
+    .system-tray {
+      height: 32px;
+      padding: 0 12px;
+      background: var(--win-gray);
+      border: 2px solid #111111;
+      box-shadow: var(--bevel-in);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.82rem;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .start-menu {
+      position: fixed;
+      left: 8px;
+      bottom: 46px;
+      width: 260px;
+      background: var(--win-gray);
+      border: 3px solid #111111;
+      box-shadow: var(--bevel-out), 6px 6px 0px #111111;
+      display: none;
+      z-index: 3100;
+    }
+
+    .start-menu.open {
+      display: flex;
+    }
+
+    .start-sidebar {
+      width: 34px;
+      background: linear-gradient(180deg, #000080 0%, #1084d0 100%);
+      color: #ffffff;
+      writing-mode: vertical-rl;
+      transform: rotate(180deg);
+      padding: 12px 6px;
+      font-weight: 900;
+      font-size: 0.95rem;
+      letter-spacing: 0.08em;
+    }
+
+    .start-items {
+      flex: 1;
+      padding: 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .start-item {
+      padding: 9px 10px;
+      font-size: 0.88rem;
+      font-weight: 800;
+      text-align: left;
+      background: transparent;
+      border: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .start-item:hover {
+      background: #000080;
+      color: #ffffff;
+    }
+
+    .start-divider {
+      height: 2px;
+      background: #808080;
+      border-bottom: 1px solid #ffffff;
+      margin: 4px 0;
     }
   </style>
 </head>
 <body>
 
-<div class="container">
-  <!-- Header -->
-  <header class="hero-header">
-    <div class="hero-left">
-      <div class="badge-row">
-        <span class="brutal-badge">MY-ARCHIVE</span>
-        <span class="brutal-badge sky">METADATA AUTO-FETCH</span>
-        <span class="brutal-badge green">TASTE ANALYTICS</span>
+<div class="desktop-workspace">
+  <!-- Left Desktop Icons -->
+  <aside class="desktop-icons" aria-label="바탕화면 아이콘">
+    <div class="desktop-icon" id="icon-open-main" title="MY-ARCHIVE 탐색기 열기">
+      <div class="icon-glyph">DB</div>
+      <span class="icon-label">내 감상함.exe</span>
+    </div>
+
+    <div class="desktop-icon" id="icon-new-record" title="새 감상 기록 등록">
+      <div class="icon-glyph yellow">+</div>
+      <span class="icon-label">새 기록 등록</span>
+    </div>
+
+    <div class="desktop-icon" id="icon-filter-book" title="도서 아카이브만 보기">
+      <div class="icon-glyph sky">BK</div>
+      <span class="icon-label">도서 서가</span>
+    </div>
+
+    <div class="desktop-icon" id="icon-filter-music" title="음악 아카이브만 보기">
+      <div class="icon-glyph green">LP</div>
+      <span class="icon-label">음반 플레이어</span>
+    </div>
+
+    <div class="desktop-icon" id="icon-filter-video" title="영상 아카이브만 보기">
+      <div class="icon-glyph pink">TV</div>
+      <span class="icon-label">영상 비디오</span>
+    </div>
+  </aside>
+
+  <!-- Main Windows 95 Explorer Window -->
+  <main class="win95-window" id="main-explorer-win">
+    <div class="win-titlebar">
+      <div class="win-title-left">
+        <span class="win-title-dot"></span>
+        <span>MY-ARCHIVE.EXE — 감상 아카이빙 및 취향 통계 탐색기</span>
       </div>
-      <h1 class="hero-title">감상 아카이빙 및 취향 통계 대시보드</h1>
-      <p class="hero-desc">
-        도서·음악·영상의 제목이나 링크만으로 서지·음원 메타데이터를 자동 수집해 기록하고, 누적된 취향 데이터를 시각화합니다.
-      </p>
-    </div>
-    <div>
-      <button type="button" class="btn btn-yellow btn-lg" id="btn-open-modal">
-        + 새 감상 기록하기
-      </button>
-    </div>
-  </header>
-
-  <!-- KPI Summary Strip -->
-  <section class="kpi-grid">
-    <div class="kpi-card bg-yellow">
-      <div class="kpi-label">총 누적 감상 기록</div>
-      <div class="kpi-value" id="kpi-total">0건</div>
-      <div class="kpi-sub" id="kpi-recent-sub">데이터 불러오는 중...</div>
-    </div>
-
-    <div class="kpi-card">
-      <div class="kpi-label">전체 평균 별점</div>
-      <div class="kpi-value" id="kpi-avg-rating">0.0점</div>
-      <div class="kpi-sub">5.0점 만점 기준</div>
-    </div>
-
-    <div class="kpi-card bg-sky">
-      <div class="kpi-label">최다 감상 매체</div>
-      <div class="kpi-value" id="kpi-top-cat">-</div>
-      <div class="kpi-sub" id="kpi-top-cat-sub">매체 비중 분석</div>
-    </div>
-
-    <div class="kpi-card bg-green">
-      <div class="kpi-label">선호 장르 TOP 1</div>
-      <div class="kpi-value" id="kpi-top-genre" style="font-size: 1.55rem;">-</div>
-      <div class="kpi-sub" id="kpi-top-genre-sub">장르 키워드 집계</div>
-    </div>
-  </section>
-
-  <!-- Charts Section -->
-  <section class="charts-grid">
-    <div class="brutal-card" style="margin-bottom: 0;">
-      <div class="card-header">
-        <h2 class="card-title">매체별 아카이브 비율</h2>
-        <span class="brutal-badge sky">CATEGORY</span>
-      </div>
-      <div class="chart-canvas-wrap">
-        <canvas id="chart-category"></canvas>
+      <div class="win-controls">
+        <button type="button" class="win-ctrl-btn" id="btn-min-main" title="최소화">_</button>
+        <button type="button" class="win-ctrl-btn" id="btn-max-main" title="화면 정렬">□</button>
+        <button type="button" class="win-ctrl-btn close" id="btn-close-main" title="창 닫기">✕</button>
       </div>
     </div>
 
-    <div class="brutal-card" style="margin-bottom: 0;">
-      <div class="card-header">
-        <h2 class="card-title">월별 감상 기록 추이</h2>
-        <span class="brutal-badge green">MONTHLY</span>
-      </div>
-      <div class="chart-canvas-wrap">
-        <canvas id="chart-monthly"></canvas>
-      </div>
-    </div>
-  </section>
-
-  <!-- Archive Feed Section -->
-  <section class="brutal-card" style="margin-top: 28px;">
-    <div class="card-header">
-      <h2 class="card-title">감상 아카이브 피드</h2>
-      <span class="brutal-badge" id="feed-count-badge">총 0건 표시</span>
+    <div class="win-menubar">
+      <span><u>F</u>ile(파일)</span>
+      <span><u>E</u>dit(편집)</span>
+      <span><u>V</u>iew(보기)</span>
+      <span><u>R</u>ecommend(추천엔진)</span>
+      <span><u>H</u>elp(도움말)</span>
     </div>
 
-    <div class="filter-toolbar">
-      <div class="cat-pills" id="cat-filter-group">
-        <button type="button" class="pill-btn active" data-cat="ALL">전체</button>
-        <button type="button" class="pill-btn" data-cat="도서">도서</button>
-        <button type="button" class="pill-btn" data-cat="음악">음악</button>
-        <button type="button" class="pill-btn" data-cat="영상">영상</button>
-        <button type="button" class="pill-btn" data-cat="기타">기타</button>
+    <div class="win-body">
+      <!-- Hero Banner -->
+      <section class="os-hero">
+        <div>
+          <h1>감상 아카이빙 및 취향 통계 대시보드</h1>
+          <p>작품 카드를 클릭하면 <strong>비슷한 도서·음악·영상 추천</strong>과 <strong>유튜브 바로가기</strong> 창이 열립니다.</p>
+        </div>
+        <button type="button" class="btn95 yellow" id="btn-open-register">
+          + 새 감상 기록하기
+        </button>
+      </section>
+
+      <!-- KPI Panels -->
+      <section class="kpi-grid">
+        <div class="kpi-panel yellow">
+          <div class="kpi-lbl">총 누적 아카이브</div>
+          <div class="kpi-val" id="kpi-total">0건</div>
+          <div class="kpi-sub" id="kpi-recent-sub">데이터 동기화 중...</div>
+        </div>
+
+        <div class="kpi-panel">
+          <div class="kpi-lbl">평균 감상 평점</div>
+          <div class="kpi-val" id="kpi-avg-rating">0.0점</div>
+          <div class="kpi-sub">5.0점 만점 기준</div>
+        </div>
+
+        <div class="kpi-panel sky">
+          <div class="kpi-lbl">최다 감상 매체</div>
+          <div class="kpi-val" id="kpi-top-cat">-</div>
+          <div class="kpi-sub" id="kpi-top-cat-sub">매체 분포 집계</div>
+        </div>
+
+        <div class="kpi-panel green">
+          <div class="kpi-lbl">선호 장르 TOP 1</div>
+          <div class="kpi-val" id="kpi-top-genre" style="font-size: 1.4rem;">-</div>
+          <div class="kpi-sub" id="kpi-top-genre-sub">장르 키워드 통계</div>
+        </div>
+      </section>
+
+      <!-- Charts -->
+      <section class="charts-grid">
+        <div class="sunken-box">
+          <div class="box-head">
+            <span>매체별 비율 분석</span>
+            <span style="font-size: 0.75rem; background: var(--brutal-sky); padding: 2px 6px; border: 1.5px solid #111;">MEDIA</span>
+          </div>
+          <div class="chart-wrap">
+            <canvas id="chart-category"></canvas>
+          </div>
+        </div>
+
+        <div class="sunken-box">
+          <div class="box-head">
+            <span>월별 감상 기록 추이</span>
+            <span style="font-size: 0.75rem; background: var(--brutal-green); padding: 2px 6px; border: 1.5px solid #111;">TIMELINE</span>
+          </div>
+          <div class="chart-wrap">
+            <canvas id="chart-monthly"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <!-- Filter Toolbar -->
+      <div class="toolbar-95">
+        <div class="pill-group" id="cat-filter-group">
+          <button type="button" class="pill-btn active" data-cat="ALL">전체 보기</button>
+          <button type="button" class="pill-btn" data-cat="도서">도서</button>
+          <button type="button" class="pill-btn" data-cat="음악">음악</button>
+          <button type="button" class="pill-btn" data-cat="영상">영상</button>
+          <button type="button" class="pill-btn" data-cat="기타">기타</button>
+        </div>
+
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <select id="filter-rating">
+            <option value="0">전체 별점</option>
+            <option value="5">★ 5점만</option>
+            <option value="4">★ 4점 이상</option>
+            <option value="3">★ 3점 이상</option>
+          </select>
+          <input type="text" id="filter-keyword" placeholder="제목·제작자·메모 검색..." style="width: 210px;" />
+        </div>
       </div>
 
-      <div class="filter-controls">
-        <select id="filter-rating">
-          <option value="0">전체 별점</option>
-          <option value="5">★ 5점만 보기</option>
-          <option value="4">★ 4점 이상</option>
-          <option value="3">★ 3점 이상</option>
-        </select>
-        <input type="text" id="filter-keyword" placeholder="제목, 작가/아티스트, 한줄평 검색..." style="width: 230px;" />
-      </div>
+      <!-- Archive Cards Grid -->
+      <section class="archive-grid" id="archive-grid"></section>
     </div>
 
-    <div class="archive-grid" id="archive-grid"></div>
-  </section>
-
-  <footer class="footer-note">
-    MY-ARCHIVE // Google Sheets &amp; Google Apps Script 기반 감상 아카이빙 대시보드
-  </footer>
+    <div class="win-statusbar">
+      <div class="status-cell" id="status-left">준비 완료 — 카드를 클릭하여 관련 작품 및 유튜브 탐색</div>
+      <div class="status-cell" id="status-right">0개 개체 표시됨</div>
+    </div>
+  </main>
 </div>
 
 <!-- ======================================================================= -->
-<!-- MODAL POPUP: 새 감상 기록 및 메타데이터 자동 검색                                -->
+<!-- POPUP 1: 새 감상 기록 등록 창 (Windows 95 Dialog)                          -->
 <!-- ======================================================================= -->
-<div class="modal-backdrop" id="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-heading">
-  <div class="modal-window">
-    <div class="modal-head">
-      <h2 class="modal-title" id="modal-heading">새 감상 기록 등록</h2>
-      <button type="button" class="btn btn-pink btn-sm" id="btn-close-modal">닫기 ✕</button>
-    </div>
-
-    <!-- Step 1: Metadata Auto-Search -->
-    <div class="search-box-wrap">
-      <div class="form-row-2">
-        <div>
-          <label class="form-label" for="inp-category">매체 선택</label>
-          <select id="inp-category">
-            <option value="도서">도서</option>
-            <option value="음악">음악</option>
-            <option value="영상">영상</option>
-            <option value="기타">기타</option>
-          </select>
-        </div>
-        <div>
-          <label class="form-label" for="inp-date">감상일</label>
-          <input type="date" id="inp-date" />
-        </div>
+<div class="win-modal-overlay" id="register-modal" role="dialog" aria-modal="true">
+  <div class="win-dialog">
+    <div class="win-titlebar brutal-accent">
+      <div class="win-title-left">
+        <span class="win-title-dot"></span>
+        <span>새 감상 기록 마법사 (NEW_ARCHIVE.WIZ)</span>
       </div>
-
-      <div style="margin-top: 12px;">
-        <label class="form-label" for="inp-search-query">작품 제목 또는 관련 링크(URL)로 자동 검색</label>
-        <div class="search-inline">
-          <input type="text" id="inp-search-query" placeholder="예: 아몬드, 밤양갱, 또는 유튜브/알라딘 URL 붙여넣기" />
-          <button type="button" class="btn btn-sky" id="btn-auto-search" style="white-space: nowrap;">
-            메타데이터 검색
-          </button>
-        </div>
-      </div>
-
-      <div id="modal-alert" class="modal-alert"></div>
-    </div>
-
-    <!-- Cover Thumbnail Preview -->
-    <div class="preview-strip">
-      <img id="preview-cover" alt="표지 미리보기" />
-      <div style="flex: 1;">
-        <label class="form-label" for="inp-cover-url">표지 / 썸네일 이미지 URL (자동 채움 또는 직접 입력)</label>
-        <input type="text" id="inp-cover-url" placeholder="https://..." style="width: 100%;" />
+      <div class="win-controls">
+        <button type="button" class="win-ctrl-btn close" id="btn-close-reg">✕</button>
       </div>
     </div>
 
-    <!-- Step 2: Form Fields -->
-    <form id="archive-form">
-      <div class="form-row-2">
-        <div class="form-group">
-          <label class="form-label" for="inp-title">작품 제목 *</label>
-          <input type="text" id="inp-title" required placeholder="작품 제목 입력" />
+    <div class="win-dialog-body">
+      <div class="sunken-box" style="margin-bottom: 14px; background: var(--win-gray);">
+        <div class="form-grid-2">
+          <div>
+            <label class="fld-label" for="inp-category">매체 구분</label>
+            <select id="inp-category" style="width: 100%;">
+              <option value="도서">도서</option>
+              <option value="음악">음악</option>
+              <option value="영상">영상</option>
+              <option value="기타">기타</option>
+            </select>
+          </div>
+          <div>
+            <label class="fld-label" for="inp-date">감상 일자</label>
+            <input type="date" id="inp-date" style="width: 100%;" />
+          </div>
         </div>
-        <div class="form-group">
-          <label class="form-label" for="inp-creator">저자 / 아티스트 / 감독 *</label>
-          <input type="text" id="inp-creator" required placeholder="제작자 이름 입력" />
+
+        <div style="margin-top: 10px;">
+          <label class="fld-label" for="inp-search-query">제목 또는 링크(URL)로 메타데이터 자동 추출</label>
+          <div style="display: flex; gap: 8px; margin-top: 4px;">
+            <input type="text" id="inp-search-query" placeholder="예: 아몬드, 밤양갱, 또는 유튜브/도서 링크" style="flex: 1;" />
+            <button type="button" class="btn95 sky" id="btn-auto-search" style="white-space: nowrap;">자동 검색</button>
+          </div>
+        </div>
+        <div id="reg-alert" class="dialog-banner"></div>
+      </div>
+
+      <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 14px; background: #ffffff; border: 2px solid #111; padding: 10px;">
+        <img id="preview-cover" alt="표지" style="width: 58px; height: 58px; object-fit: cover; border: 2px solid #111;" />
+        <div style="flex: 1;">
+          <label class="fld-label" for="inp-cover-url">표지 / 썸네일 URL</label>
+          <input type="text" id="inp-cover-url" placeholder="https://..." style="width: 100%;" />
         </div>
       </div>
 
-      <div class="form-row-2">
-        <div class="form-group">
-          <label class="form-label" for="inp-genre">장르 / 분류</label>
-          <input type="text" id="inp-genre" placeholder="예: 한국소설, 인디록, 다큐멘터리" />
+      <form id="archive-form">
+        <div class="form-grid-2">
+          <div class="fld-group">
+            <label class="fld-label" for="inp-title">작품 제목 *</label>
+            <input type="text" id="inp-title" required placeholder="작품명 입력" style="width: 100%;" />
+          </div>
+          <div class="fld-group">
+            <label class="fld-label" for="inp-creator">저자 / 아티스트 / 감독 *</label>
+            <input type="text" id="inp-creator" required placeholder="제작자 입력" style="width: 100%;" />
+          </div>
         </div>
-        <div class="form-group">
-          <label class="form-label" for="inp-rating">평점 (1 ~ 5점) *</label>
-          <select id="inp-rating">
-            <option value="5">★★★★★ (5점 - 강력 추천)</option>
-            <option value="4" selected>★★★★☆ (4점 - 인상 깊음)</option>
-            <option value="3">★★★☆☆ (3점 - 무난함)</option>
-            <option value="2">★★☆☆☆ (2점 - 아쉬움)</option>
-            <option value="1">★☆☆☆☆ (1점 - 비추천)</option>
-          </select>
+
+        <div class="form-grid-2">
+          <div class="fld-group">
+            <label class="fld-label" for="inp-genre">장르 / 키워드</label>
+            <input type="text" id="inp-genre" placeholder="예: 한국소설, 인디록, 다큐멘터리" style="width: 100%;" />
+          </div>
+          <div class="fld-group">
+            <label class="fld-label" for="inp-rating">평점 (1~5점) *</label>
+            <select id="inp-rating" style="width: 100%;">
+              <option value="5">★★★★★ (5점)</option>
+              <option value="4" selected>★★★★☆ (4점)</option>
+              <option value="3">★★★☆☆ (3점)</option>
+              <option value="2">★★☆☆☆ (2점)</option>
+              <option value="1">★☆☆☆☆ (1점)</option>
+            </select>
+          </div>
         </div>
-      </div>
 
-      <div class="form-group">
-        <label class="form-label" for="inp-source-url">원본 참고 링크 (선택)</label>
-        <input type="text" id="inp-source-url" placeholder="https://..." style="width: 100%;" />
-      </div>
+        <div class="fld-group">
+          <label class="fld-label" for="inp-source-url">원본 참고 링크 (선택)</label>
+          <input type="text" id="inp-source-url" placeholder="https://..." style="width: 100%;" />
+        </div>
 
-      <div class="form-group">
-        <label class="form-label" for="inp-review">한줄평 및 감상 메모 *</label>
-        <textarea id="inp-review" rows="3" required placeholder="작품에서 인상 깊었던 구절, 사운드, 또는 핵심 감상을 기록하십시오." style="width: 100%;"></textarea>
-      </div>
+        <div class="fld-group">
+          <label class="fld-label" for="inp-review">한줄평 및 감상 메모 *</label>
+          <textarea id="inp-review" rows="3" required placeholder="작품에 대한 핵심 감상을 기록하십시오." style="width: 100%;"></textarea>
+        </div>
 
-      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px;">
-        <button type="button" class="btn" id="btn-cancel-modal">취소</button>
-        <button type="submit" class="btn btn-yellow" id="btn-submit-archive">아카이브에 등록하기</button>
-      </div>
-    </form>
+        <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px;">
+          <button type="button" class="btn95" id="btn-cancel-reg">취소</button>
+          <button type="submit" class="btn95 yellow" id="btn-submit-reg">확인 및 시트 저장</button>
+        </div>
+      </form>
+    </div>
   </div>
 </div>
+
+<!-- ======================================================================= -->
+<!-- POPUP 2: 기록 상세 보기 + 관련 작품 추천 + 유튜브 연결 창                        -->
+<!-- ======================================================================= -->
+<div class="win-modal-overlay" id="detail-modal" role="dialog" aria-modal="true">
+  <div class="win-dialog" style="max-width: 740px;">
+    <div class="win-titlebar">
+      <div class="win-title-left">
+        <span class="win-title-dot" style="background: var(--brutal-green);"></span>
+        <span id="detail-win-title">작품 상세 정보 및 연관 탐색기</span>
+      </div>
+      <div class="win-controls">
+        <button type="button" class="win-ctrl-btn close" id="btn-close-detail">✕</button>
+      </div>
+    </div>
+
+    <div class="win-dialog-body">
+      <!-- Selected Item Info -->
+      <div class="detail-hero">
+        <img id="det-cover" class="detail-cover" alt="작품 표지" />
+        <div>
+          <div style="display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap;">
+            <span id="det-cat-badge" style="padding: 2px 8px; border: 2px solid #111; background: var(--brutal-yellow); font-size: 0.78rem; font-weight: 900;">도서</span>
+            <span id="det-rating-badge" style="padding: 2px 8px; border: 2px solid #111; background: #ffffff; font-size: 0.78rem; font-weight: 900;">★★★★★</span>
+            <span id="det-date-badge" style="padding: 2px 8px; border: 2px solid #111; background: var(--win-gray); font-size: 0.78rem; font-weight: 800;">2026-11-16</span>
+          </div>
+          <h2 id="det-title" style="font-size: 1.35rem; font-weight: 900; margin-bottom: 4px;">작품 제목</h2>
+          <div id="det-creator" style="font-size: 0.9rem; font-weight: 700; color: #4a4a4a; margin-bottom: 10px;">제작자 · 장르</div>
+          <p id="det-review" style="background: var(--brutal-paper); border: 2px solid #111; padding: 10px; font-size: 0.9rem; font-weight: 600;"></p>
+
+          <!-- External Links (YouTube + Original Source) -->
+          <div class="action-links-bar" id="det-links-bar"></div>
+        </div>
+      </div>
+
+      <!-- Related Recommendations Section -->
+      <div class="sunken-box">
+        <div class="box-head">
+          <span id="rec-section-heading">비슷한 작품 실시간 추천</span>
+          <span style="font-size: 0.75rem; background: var(--brutal-yellow); padding: 2px 7px; border: 1.5px solid #111;">AUTO-DISCOVERY</span>
+        </div>
+        <div id="rec-status" style="font-size: 0.85rem; font-weight: 700; color: #4a4a4a;">
+          연관 작품을 탐색하고 있습니다...
+        </div>
+        <div class="rec-grid" id="rec-grid"></div>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; margin-top: 14px;">
+        <button type="button" class="btn95" id="btn-ok-detail">닫기</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ======================================================================= -->
+<!-- WINDOWS 95 START MENU & TASKBAR                                         -->
+<!-- ======================================================================= -->
+<div class="start-menu" id="start-menu">
+  <div class="start-sidebar">MY-ARCHIVE 95</div>
+  <div class="start-items">
+    <button type="button" class="start-item" id="sm-new-record">➕ 새 감상 기록 등록...</button>
+    <button type="button" class="start-item" id="sm-show-all">📂 전체 아카이브 보기</button>
+    <button type="button" class="start-item" id="sm-show-book">📚 도서 서가 필터</button>
+    <button type="button" class="start-item" id="sm-show-music">🎵 음악 음반 필터</button>
+    <button type="button" class="start-item" id="sm-show-video">🎬 영상 비디오 필터</button>
+    <div class="start-divider"></div>
+    <button type="button" class="start-item" id="sm-reload">🔄 구글 시트 새로고침</button>
+  </div>
+</div>
+
+<footer class="win95-taskbar">
+  <div class="taskbar-left">
+    <button type="button" class="start-btn" id="btn-start">
+      <span class="win-flag"><span></span><span></span><span></span><span></span></span>
+      <span>시작</span>
+    </button>
+    <button type="button" class="task-tab" id="taskbar-main-win">
+      <span>📁 MY-ARCHIVE.EXE</span>
+    </button>
+  </div>
+
+  <div class="system-tray">
+    <span title="Google Sheets 연결됨">🟢 DB</span>
+    <span id="tray-clock">오후 5:35</span>
+  </div>
+</footer>
 
 <script>
   const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwh2VWIKgH-kuL5bhHstlTmzF6Cp0tOuC33JWpuXIvJaD26LDt6UAhd0V4dbYE8V6TYLA/exec';
@@ -762,18 +1221,119 @@
     <svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300">
       <rect width="400" height="300" fill="#ffd83b"/>
       <rect x="20" y="20" width="360" height="260" fill="#ffffff" stroke="#111111" stroke-width="6"/>
-      <text x="200" y="142" font-family="sans-serif" font-size="24" font-weight="900" fill="#111111" text-anchor="middle">MY-ARCHIVE</text>
+      <text x="200" y="142" font-family="sans-serif" font-size="24" font-weight="900" fill="#111111" text-anchor="middle">MY-ARCHIVE 95</text>
       <text x="200" y="176" font-family="sans-serif" font-size="14" font-weight="700" fill="#4a4a4a" text-anchor="middle">NO COVER IMAGE</text>
     </svg>
   `);
 
   let archiveItems = [];
   let selectedCategory = 'ALL';
-  let categoryChartInstance = null;
-  let monthlyChartInstance = null;
+  let categoryChart = null;
+  let monthlyChart = null;
 
   /* =========================================================================
-   * 1. INITIAL LOAD (백그라운드 자동 시트 동기화)
+   * 0. WINDOWS 95 OS INTERACTIONS (시계, 시작 메뉴, 창 최소화/복원, 커서 상태)
+   * ========================================================================= */
+  function setLoadingCursor(isLoading) {
+    document.body.classList.toggle('is-loading', isLoading);
+  }
+
+  function updateTrayClock() {
+    const now = new Date();
+    const hours = now.getHours();
+    const mins = String(now.getMinutes()).padStart(2, '0');
+    const ampm = hours >= 12 ? '오후' : '오전';
+    const h12 = hours % 12 || 12;
+    document.getElementById('tray-clock').textContent = `${ampm} ${h12}:${mins}`;
+  }
+  setInterval(updateTrayClock, 10000);
+  updateTrayClock();
+
+  // Start Menu Toggle
+  const startBtn = document.getElementById('btn-start');
+  const startMenu = document.getElementById('start-menu');
+
+  startBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    const isOpen = startMenu.classList.toggle('open');
+    startBtn.classList.toggle('pressed', isOpen);
+  });
+
+  document.addEventListener('click', e => {
+    if (!startMenu.contains(e.target) && e.target !== startBtn) {
+      startMenu.classList.remove('open');
+      startBtn.classList.remove('pressed');
+    }
+  });
+
+  // Main Window Minimize / Restore / Close
+  const mainWin = document.getElementById('main-explorer-win');
+  const taskMainBtn = document.getElementById('taskbar-main-win');
+
+  document.getElementById('btn-min-main').addEventListener('click', () => {
+    mainWin.classList.add('minimized');
+    taskMainBtn.classList.add('inactive');
+  });
+
+  document.getElementById('btn-max-main').addEventListener('click', () => {
+    mainWin.style.display = 'block';
+    mainWin.classList.remove('minimized');
+    taskMainBtn.classList.remove('inactive');
+  });
+
+  document.getElementById('btn-close-main').addEventListener('click', () => {
+    mainWin.style.display = 'none';
+    taskMainBtn.classList.add('inactive');
+  });
+
+  taskMainBtn.addEventListener('click', () => {
+    if (mainWin.style.display === 'none') {
+      mainWin.style.display = 'block';
+      mainWin.classList.remove('minimized');
+      taskMainBtn.classList.remove('inactive');
+    } else {
+      const isMin = mainWin.classList.toggle('minimized');
+      taskMainBtn.classList.toggle('inactive', isMin);
+    }
+  });
+
+  // Desktop Icons & Start Menu Shortcuts
+  function selectCategoryFilter(cat) {
+    mainWin.style.display = 'block';
+    mainWin.classList.remove('minimized');
+    taskMainBtn.classList.remove('inactive');
+    selectedCategory = cat;
+    document.querySelectorAll('#cat-filter-group .pill-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.cat === cat);
+    });
+    renderArchiveGrid();
+    startMenu.classList.remove('open');
+    startBtn.classList.remove('pressed');
+  }
+
+  document.getElementById('icon-open-main').addEventListener('click', () => selectCategoryFilter('ALL'));
+  document.getElementById('icon-filter-book').addEventListener('click', () => selectCategoryFilter('도서'));
+  document.getElementById('icon-filter-music').addEventListener('click', () => selectCategoryFilter('음악'));
+  document.getElementById('icon-filter-video').addEventListener('click', () => selectCategoryFilter('영상'));
+  document.getElementById('icon-new-record').addEventListener('click', openRegisterModal);
+
+  document.getElementById('sm-new-record').addEventListener('click', () => {
+    startMenu.classList.remove('open');
+    startBtn.classList.remove('pressed');
+    openRegisterModal();
+  });
+  document.getElementById('sm-show-all').addEventListener('click', () => selectCategoryFilter('ALL'));
+  document.getElementById('sm-show-book').addEventListener('click', () => selectCategoryFilter('도서'));
+  document.getElementById('sm-show-music').addEventListener('click', () => selectCategoryFilter('음악'));
+  document.getElementById('sm-show-video').addEventListener('click', () => selectCategoryFilter('영상'));
+  document.getElementById('sm-reload').addEventListener('click', () => {
+    startMenu.classList.remove('open');
+    startBtn.classList.remove('pressed');
+    loadArchiveData();
+  });
+
+  /* =========================================================================
+   * 1. INITIAL DATA LOAD FROM GOOGLE SHEETS
    * ========================================================================= */
   document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('inp-date').value = new Date().toISOString().slice(0, 10);
@@ -782,17 +1342,18 @@
   });
 
   async function loadArchiveData() {
+    setLoadingCursor(true);
+    document.getElementById('status-left').textContent = '구글 시트에서 아카이브 데이터를 불러오는 중...';
     try {
       const res = await fetch(`${GAS_WEB_APP_URL}?action=list`);
       const json = await res.json();
-      if (json.status === 'success' && Array.isArray(json.items)) {
-        archiveItems = json.items;
-      } else {
-        archiveItems = [];
-      }
+      archiveItems = (json.status === 'success' && Array.isArray(json.items)) ? json.items : [];
     } catch (err) {
-      console.error('백그라운드 시트 조회 오류:', err);
+      console.error(err);
       archiveItems = [];
+    } finally {
+      setLoadingCursor(false);
+      document.getElementById('status-left').textContent = '준비 완료 — 카드를 클릭하여 관련 작품 및 유튜브 탐색';
     }
     refreshDashboard();
   }
@@ -804,14 +1365,14 @@
   }
 
   /* =========================================================================
-   * 2. KPI & CHART.JS VISUALIZATION
+   * 2. KPI & CHARTS
    * ========================================================================= */
   function updateKPIs() {
     const total = archiveItems.length;
     document.getElementById('kpi-total').textContent = `${total}건`;
 
     if (total === 0) {
-      document.getElementById('kpi-recent-sub').textContent = '첫 감상 기록을 추가해 보세요';
+      document.getElementById('kpi-recent-sub').textContent = '첫 기록을 추가해 보세요';
       document.getElementById('kpi-avg-rating').textContent = '0.0점';
       document.getElementById('kpi-top-cat').textContent = '-';
       document.getElementById('kpi-top-cat-sub').textContent = '데이터 없음';
@@ -820,46 +1381,41 @@
       return;
     }
 
-    const latest = archiveItems[0];
-    document.getElementById('kpi-recent-sub').textContent = `최근: 「${latest.title}」`;
+    document.getElementById('kpi-recent-sub').textContent = `최근: 「${archiveItems[0].title}」`;
+    const avg = archiveItems.reduce((s, c) => s + (Number(c.rating) || 0), 0) / total;
+    document.getElementById('kpi-avg-rating').textContent = `${avg.toFixed(1)}점`;
 
-    const sumRating = archiveItems.reduce((acc, cur) => acc + (Number(cur.rating) || 0), 0);
-    document.getElementById('kpi-avg-rating').textContent = `${(sumRating / total).toFixed(1)}점`;
-
-    const catCount = {};
-    archiveItems.forEach(item => {
-      catCount[item.category] = (catCount[item.category] || 0) + 1;
-    });
-    const topCat = Object.entries(catCount).sort((a, b) => b[1] - a[1])[0];
+    const catMap = {};
+    archiveItems.forEach(i => { catMap[i.category] = (catMap[i.category] || 0) + 1; });
+    const topCat = Object.entries(catMap).sort((a, b) => b[1] - a[1])[0];
     document.getElementById('kpi-top-cat').textContent = topCat[0];
     document.getElementById('kpi-top-cat-sub').textContent = `전체 중 ${topCat[1]}건 (${Math.round((topCat[1] / total) * 100)}%)`;
 
-    const genreCount = {};
-    archiveItems.forEach(item => {
-      const g = (item.genre || '일반').trim();
-      genreCount[g] = (genreCount[g] || 0) + 1;
+    const genreMap = {};
+    archiveItems.forEach(i => {
+      const g = (i.genre || '일반').trim();
+      genreMap[g] = (genreMap[g] || 0) + 1;
     });
-    const topGenre = Object.entries(genreCount).sort((a, b) => b[1] - a[1])[0];
+    const topGenre = Object.entries(genreMap).sort((a, b) => b[1] - a[1])[0];
     document.getElementById('kpi-top-genre').textContent = topGenre[0];
     document.getElementById('kpi-top-genre-sub').textContent = `누적 ${topGenre[1]}건 기록`;
   }
 
   function renderCharts() {
     Chart.defaults.font.family = "'Pretendard Variable', Pretendard, sans-serif";
-    Chart.defaults.font.weight = 700;
+    Chart.defaults.font.weight = 800;
     Chart.defaults.color = '#111111';
 
-    const categories = ['도서', '음악', '영상', '기타'];
-    const catValues = categories.map(c => archiveItems.filter(i => i.category === c).length);
+    const cats = ['도서', '음악', '영상', '기타'];
+    const catVals = cats.map(c => archiveItems.filter(i => i.category === c).length);
 
-    if (categoryChartInstance) categoryChartInstance.destroy();
-    const ctxCat = document.getElementById('chart-category').getContext('2d');
-    categoryChartInstance = new Chart(ctxCat, {
+    if (categoryChart) categoryChart.destroy();
+    categoryChart = new Chart(document.getElementById('chart-category').getContext('2d'), {
       type: 'doughnut',
       data: {
-        labels: categories,
+        labels: cats,
         datasets: [{
-          data: catValues,
+          data: catVals,
           backgroundColor: ['#ffd83b', '#48dbfb', '#ff4757', '#2ed573'],
           borderColor: '#111111',
           borderWidth: 3
@@ -868,33 +1424,25 @@
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            position: 'right',
-            labels: { boxWidth: 16, padding: 14 }
-          }
-        }
+        plugins: { legend: { position: 'right', labels: { boxWidth: 14, padding: 12 } } }
       }
     });
 
-    const monthMap = {};
-    archiveItems.forEach(item => {
-      const ym = (item.watchDate || '').slice(0, 7);
-      if (ym) monthMap[ym] = (monthMap[ym] || 0) + 1;
+    const mMap = {};
+    archiveItems.forEach(i => {
+      const ym = (i.watchDate || '').slice(0, 7);
+      if (ym) mMap[ym] = (mMap[ym] || 0) + 1;
     });
+    const months = Object.keys(mMap).sort();
+    const mVals = months.map(m => mMap[m]);
 
-    const sortedMonths = Object.keys(monthMap).sort();
-    const monthCounts = sortedMonths.map(m => monthMap[m]);
-
-    if (monthlyChartInstance) monthlyChartInstance.destroy();
-    const ctxMon = document.getElementById('chart-monthly').getContext('2d');
-    monthlyChartInstance = new Chart(ctxMon, {
+    if (monthlyChart) monthlyChart.destroy();
+    monthlyChart = new Chart(document.getElementById('chart-monthly').getContext('2d'), {
       type: 'bar',
       data: {
-        labels: sortedMonths.length ? sortedMonths : ['기록 없음'],
+        labels: months.length ? months : ['기록 없음'],
         datasets: [{
-          label: '감상 건수',
-          data: monthCounts.length ? monthCounts : [0],
+          data: mVals.length ? mVals : [0],
           backgroundColor: '#2ed573',
           borderColor: '#111111',
           borderWidth: 3
@@ -904,157 +1452,277 @@
         responsive: true,
         maintainAspectRatio: false,
         scales: {
-          y: {
-            beginAtZero: true,
-            ticks: { stepSize: 1 },
-            grid: { color: '#dfdcd3' }
-          },
-          x: {
-            grid: { display: false }
-          }
+          y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: '#dfdcd3' } },
+          x: { grid: { display: false } }
         },
-        plugins: {
-          legend: { display: false }
-        }
+        plugins: { legend: { display: false } }
       }
     });
   }
 
   /* =========================================================================
-   * 3. ARCHIVE FEED & FILTERING
+   * 3. ARCHIVE FEED & CARD CLICK -> DETAIL EXPLORER POPUP
    * ========================================================================= */
   document.querySelectorAll('#cat-filter-group .pill-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('#cat-filter-group .pill-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      selectedCategory = btn.dataset.cat;
-      renderArchiveGrid();
-    });
+    btn.addEventListener('click', () => selectCategoryFilter(btn.dataset.cat));
   });
-
   document.getElementById('filter-rating').addEventListener('change', renderArchiveGrid);
   document.getElementById('filter-keyword').addEventListener('input', renderArchiveGrid);
 
   function renderArchiveGrid() {
     const minRating = Number(document.getElementById('filter-rating').value) || 0;
-    const keyword = document.getElementById('filter-keyword').value.trim().toLowerCase();
+    const kw = document.getElementById('filter-keyword').value.trim().toLowerCase();
 
     const filtered = archiveItems.filter(item => {
       if (selectedCategory !== 'ALL' && item.category !== selectedCategory) return false;
       if (Number(item.rating) < minRating) return false;
-      if (keyword) {
+      if (kw) {
         const hay = `${item.title} ${item.creator} ${item.genre} ${item.review}`.toLowerCase();
-        if (!hay.includes(keyword)) return false;
+        if (!hay.includes(kw)) return false;
       }
       return true;
     });
 
-    document.getElementById('feed-count-badge').textContent = `총 ${filtered.length}건 표시`;
+    document.getElementById('status-right').textContent = `${filtered.length}개 개체 표시됨`;
     const grid = document.getElementById('archive-grid');
     grid.innerHTML = '';
 
-    if (filtered.length === 0) {
+    if (!filtered.length) {
       grid.innerHTML = `
-        <div style="grid-column: 1 / -1; text-align: center; padding: 48px 20px; border: 3px dashed #111111; font-weight: 800;">
-          표시할 감상 기록이 없습니다. 우측 상단 [+ 새 감상 기록하기] 버튼으로 첫 작품을 등록해 보십시오.
+        <div style="grid-column: 1 / -1; text-align: center; padding: 44px 16px; background: #ffffff; border: 3px dashed #111111; font-weight: 800;">
+          표시할 감상 기록이 없습니다. [+ 새 감상 기록하기] 버튼을 눌러 첫 기록을 등록하십시오.
         </div>`;
       return;
     }
 
     filtered.forEach(item => {
-      const catClass = item.category === '음악' ? 'music' : item.category === '영상' ? 'video' : item.category === '기타' ? 'etc' : '';
+      const catCls = item.category === '음악' ? 'music' : item.category === '영상' ? 'video' : item.category === '기타' ? 'etc' : '';
       const stars = '★'.repeat(item.rating) + '☆'.repeat(5 - item.rating);
       const coverSrc = item.coverUrl ? esc(item.coverUrl) : FALLBACK_COVER;
 
       const card = document.createElement('article');
       card.className = 'item-card';
       card.innerHTML = `
-        <div class="item-thumb-wrap">
-          <img class="item-thumb" src="${coverSrc}" alt="${esc(item.title)}" onerror="this.onerror=null;this.src='${FALLBACK_COVER}';" />
-          <span class="item-cat-tag ${catClass}">${esc(item.category)}</span>
-          <span class="item-rating-tag">${stars}</span>
+        <div class="item-card-bar">
+          <span>${esc(item.id || 'ARCHIVE.DAT')}</span>
+          <span>[클릭하여 탐색]</span>
         </div>
-        <div class="item-body">
+        <div class="item-thumb-box">
+          <img class="item-thumb" src="${coverSrc}" alt="${esc(item.title)}" onerror="this.onerror=null;this.src='${FALLBACK_COVER}';" />
+          <span class="cat-sticker ${catCls}">${esc(item.category)}</span>
+          <span class="star-sticker">${stars}</span>
+        </div>
+        <div class="item-content">
           <h3 class="item-title">${esc(item.title)}</h3>
-          <div class="item-meta">${esc(item.creator)} · ${esc(item.genre || '일반')}</div>
-          <p class="item-review">${esc(item.review)}</p>
-          <div class="item-foot">
+          <div class="item-creator">${esc(item.creator)} · ${esc(item.genre || '일반')}</div>
+          <p class="item-memo">${esc(item.review)}</p>
+          <div class="item-footer">
             <span>${esc(item.watchDate)}</span>
-            ${item.sourceUrl ? `<a class="item-link" href="${esc(item.sourceUrl)}" target="_blank" rel="noopener noreferrer">원본 링크 ↗</a>` : '<span>직접 기록</span>'}
+            <span class="inspect-hint">관련 작품 · YouTube ↗</span>
           </div>
         </div>
       `;
+      card.addEventListener('click', () => openDetailExplorer(item));
       grid.appendChild(card);
     });
   }
 
   /* =========================================================================
-   * 4. MODAL POPUP: METADATA SEARCH & SHEET SUBMISSION
+   * 4. DETAIL EXPLORER MODAL (관련 도서/음악/영상 추천 + 유튜브 연결)
    * ========================================================================= */
-  const modalBackdrop = document.getElementById('modal-backdrop');
-  const modalAlert = document.getElementById('modal-alert');
+  const detailModal = document.getElementById('detail-modal');
 
-  document.getElementById('btn-open-modal').addEventListener('click', () => {
-    resetModalForm();
-    modalBackdrop.classList.add('open');
-    document.getElementById('inp-search-query').focus();
+  document.getElementById('btn-close-detail').addEventListener('click', () => detailModal.classList.remove('open'));
+  document.getElementById('btn-ok-detail').addEventListener('click', () => detailModal.classList.remove('open'));
+  detailModal.addEventListener('click', e => {
+    if (e.target === detailModal) detailModal.classList.remove('open');
   });
 
-  ['btn-close-modal', 'btn-cancel-modal'].forEach(id => {
-    document.getElementById(id).addEventListener('click', () => {
-      modalBackdrop.classList.remove('open');
-    });
-  });
+  async function openDetailExplorer(item) {
+    document.getElementById('detail-win-title').textContent = `${item.title} — 상세 정보 및 연관 추천 탐색기`;
+    document.getElementById('det-cover').src = item.coverUrl || FALLBACK_COVER;
+    document.getElementById('det-cover').onerror = function() { this.src = FALLBACK_COVER; };
 
-  modalBackdrop.addEventListener('click', e => {
-    if (e.target === modalBackdrop) modalBackdrop.classList.remove('open');
-  });
+    document.getElementById('det-cat-badge').textContent = item.category;
+    document.getElementById('det-rating-badge').textContent = '★'.repeat(item.rating) + '☆'.repeat(5 - item.rating);
+    document.getElementById('det-date-badge').textContent = item.watchDate;
+    document.getElementById('det-title').textContent = item.title;
+    document.getElementById('det-creator').textContent = `${item.creator} · ${item.genre || '일반'}`;
+    document.getElementById('det-review').textContent = item.review;
 
-  document.getElementById('inp-cover-url').addEventListener('input', e => {
-    const val = e.target.value.trim();
-    const img = document.getElementById('preview-cover');
-    img.src = val || FALLBACK_COVER;
-    img.onerror = () => { img.src = FALLBACK_COVER; };
-  });
+    // 유튜브 검색 URL 및 원본 링크 구성
+    const ytQuery = item.category === '음악'
+      ? `${item.creator} ${item.title} official audio`
+      : item.category === '도서'
+      ? `${item.title} ${item.creator} 북트레일러 리뷰`
+      : `${item.title} ${item.creator}`;
+    const ytSearchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(ytQuery)}`;
 
-  function showModalAlert(msg, type = 'info') {
-    modalAlert.style.display = 'block';
-    modalAlert.className = 'modal-alert';
-    if (type === 'error') modalAlert.classList.add('error');
-    if (type === 'ok') modalAlert.classList.add('ok');
-    modalAlert.textContent = msg;
+    const linksBar = document.getElementById('det-links-bar');
+    linksBar.innerHTML = `
+      <a class="btn95 pink sm" href="${ytSearchUrl}" target="_blank" rel="noopener noreferrer">
+        ▶ YouTube에서 바로 듣기·보기
+      </a>
+      ${item.sourceUrl
+        ? `<a class="btn95 sky sm" href="${esc(item.sourceUrl)}" target="_blank" rel="noopener noreferrer">원본 등록 링크 열기 ↗</a>`
+        : ''}
+    `;
+
+    // 관련 작품 제목 및 API 조회
+    const headingMap = {
+      '음악': `「${item.creator}」 및 유사 아티스트의 추천 트랙`,
+      '도서': `「${item.creator}」 및 관련 주제 추천 도서`,
+      '영상': `「${item.title}」 관련 추천 영상·영화`,
+      '기타': `「${item.title}」 연관 콘텐츠 추천`
+    };
+    document.getElementById('rec-section-heading').textContent = headingMap[item.category] || '관련 작품 추천';
+    document.getElementById('rec-status').textContent = '외부 데이터베이스에서 연관 작품을 검색 중입니다...';
+    document.getElementById('rec-grid').innerHTML = '';
+
+    detailModal.classList.add('open');
+    await fetchRelatedWorks(item);
   }
 
-  function resetModalForm() {
+  async function fetchRelatedWorks(item) {
+    setLoadingCursor(true);
+    const recGrid = document.getElementById('rec-grid');
+    const recStatus = document.getElementById('rec-status');
+
+    try {
+      let recs = [];
+
+      if (item.category === '음악') {
+        // iTunes Search API로 동일 아티스트 또는 장르 유사 곡 검색
+        const q = encodeURIComponent(`${item.creator} ${item.genre !== '일반' ? item.genre : ''}`.trim());
+        const res = await fetch(`https://itunes.apple.com/search?term=${q}&country=KR&media=music&limit=6`);
+        const json = await res.json();
+        recs = (json.results || [])
+          .filter(r => (r.trackName || '').toLowerCase() !== item.title.toLowerCase())
+          .slice(0, 3)
+          .map(r => ({
+            title: r.trackName || r.collectionName,
+            creator: r.artistName,
+            thumb: r.artworkUrl100 ? r.artworkUrl100.replace('100x100bb', '300x300bb') : FALLBACK_COVER,
+            ytUrl: `https://www.youtube.com/results?search_query=${encodeURIComponent(`${r.artistName} ${r.trackName}`)}`,
+            infoUrl: r.trackViewUrl || ''
+          }));
+      } else if (item.category === '영상') {
+        const q = encodeURIComponent(`${item.genre !== '일반' ? item.genre : item.creator}`);
+        const res = await fetch(`https://itunes.apple.com/search?term=${q}&country=KR&media=movie&limit=6`);
+        const json = await res.json();
+        recs = (json.results || [])
+          .filter(r => (r.trackName || '').toLowerCase() !== item.title.toLowerCase())
+          .slice(0, 3)
+          .map(r => ({
+            title: r.trackName,
+            creator: r.artistName || r.primaryGenreName,
+            thumb: r.artworkUrl100 ? r.artworkUrl100.replace('100x100bb', '300x300bb') : FALLBACK_COVER,
+            ytUrl: `https://www.youtube.com/results?search_query=${encodeURIComponent(`${r.trackName} 예고편`)}`,
+            infoUrl: r.trackViewUrl || ''
+          }));
+      } else {
+        // 도서 및 기타: Google Books API로 동일 저자 또는 장르 연관 도서 검색
+        const searchTerm = (item.creator && item.creator !== '미상')
+          ? `${item.creator} ${item.genre !== '일반' ? item.genre : ''}`.trim()
+          : item.title;
+        const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(searchTerm)}&maxResults=6`);
+        const json = await res.json();
+        recs = (json.items || [])
+          .map(v => v.volumeInfo)
+          .filter(info => (info.title || '').toLowerCase() !== item.title.toLowerCase())
+          .slice(0, 3)
+          .map(info => ({
+            title: info.title,
+            creator: (info.authors || ['저자미상']).join(', '),
+            thumb: ((info.imageLinks && (info.imageLinks.thumbnail || info.imageLinks.smallThumbnail)) || FALLBACK_COVER).replace(/^http:\/\//i, 'https://'),
+            ytUrl: `https://www.youtube.com/results?search_query=${encodeURIComponent(`${info.title} 책 리뷰`)}`,
+            infoUrl: info.infoLink || ''
+          }));
+      }
+
+      if (!recs.length) {
+        recStatus.textContent = '자동 일치하는 연관 추천 항목이 없습니다. 상단 YouTube 버튼으로 직접 탐색해 보십시오.';
+        return;
+      }
+
+      recStatus.textContent = `총 ${recs.length}건의 연관 추천 콘텐츠를 찾았습니다.`;
+      recGrid.innerHTML = recs.map(r => `
+        <div class="rec-card">
+          <div>
+            <img class="rec-thumb" src="${esc(r.thumb)}" alt="${esc(r.title)}" onerror="this.onerror=null;this.src='${FALLBACK_COVER}';" />
+            <div class="rec-title">${esc(r.title)}</div>
+            <div class="rec-sub">${esc(r.creator)}</div>
+          </div>
+          <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+            <a class="btn95 pink sm" style="flex:1;" href="${r.ytUrl}" target="_blank" rel="noopener noreferrer">▶ YouTube</a>
+            ${r.infoUrl ? `<a class="btn95 sm" href="${esc(r.infoUrl)}" target="_blank" rel="noopener noreferrer">정보</a>` : ''}
+          </div>
+        </div>
+      `).join('');
+    } catch (err) {
+      recStatus.textContent = '연관 작품 조회 중 네트워크 지연이 발생했습니다.';
+    } finally {
+      setLoadingCursor(false);
+    }
+  }
+
+  /* =========================================================================
+   * 5. REGISTER MODAL (새 감상 기록 등록)
+   * ========================================================================= */
+  const regModal = document.getElementById('register-modal');
+  const regAlert = document.getElementById('reg-alert');
+
+  function openRegisterModal() {
     document.getElementById('archive-form').reset();
     document.getElementById('inp-search-query').value = '';
     document.getElementById('inp-cover-url').value = '';
     document.getElementById('inp-date').value = new Date().toISOString().slice(0, 10);
     document.getElementById('preview-cover').src = FALLBACK_COVER;
-    modalAlert.style.display = 'none';
+    regAlert.style.display = 'none';
+    regModal.classList.add('open');
+    document.getElementById('inp-search-query').focus();
+  }
+
+  document.getElementById('btn-open-register').addEventListener('click', openRegisterModal);
+  ['btn-close-reg', 'btn-cancel-reg'].forEach(id => {
+    document.getElementById(id).addEventListener('click', () => regModal.classList.remove('open'));
+  });
+  regModal.addEventListener('click', e => {
+    if (e.target === regModal) regModal.classList.remove('open');
+  });
+
+  document.getElementById('inp-cover-url').addEventListener('input', e => {
+    const img = document.getElementById('preview-cover');
+    img.src = e.target.value.trim() || FALLBACK_COVER;
+    img.onerror = () => { img.src = FALLBACK_COVER; };
+  });
+
+  function showRegAlert(msg, type = 'info') {
+    regAlert.style.display = 'block';
+    regAlert.className = 'dialog-banner';
+    if (type === 'err') regAlert.classList.add('err');
+    if (type === 'ok') regAlert.classList.add('ok');
+    regAlert.textContent = msg;
   }
 
   document.getElementById('btn-auto-search').addEventListener('click', runAutoSearch);
   document.getElementById('inp-search-query').addEventListener('keydown', e => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      runAutoSearch();
-    }
+    if (e.key === 'Enter') { e.preventDefault(); runAutoSearch(); }
   });
 
   async function runAutoSearch() {
     const query = document.getElementById('inp-search-query').value.trim();
     const category = document.getElementById('inp-category').value;
-
     if (!query) {
-      showModalAlert('검색할 작품 제목이나 링크(URL)를 먼저 입력하십시오.', 'error');
+      showRegAlert('검색할 작품 제목이나 링크(URL)를 입력하십시오.', 'err');
       return;
     }
 
     const btn = document.getElementById('btn-auto-search');
     btn.disabled = true;
-    btn.textContent = '조회 중...';
-    showModalAlert('외부 API 및 링크에서 메타데이터를 추출하고 있습니다...');
+    btn.textContent = '검색 중...';
+    setLoadingCursor(true);
+    showRegAlert('메타데이터를 조회하고 있습니다...');
 
     try {
       const url = `${GAS_WEB_APP_URL}?action=search&q=${encodeURIComponent(query)}&category=${encodeURIComponent(category)}`;
@@ -1075,20 +1743,18 @@
           img.onerror = () => { img.src = FALLBACK_COVER; };
         }
       }
-
-      const alertType = result.status === 'success' ? 'ok' : 'info';
-      showModalAlert(result.message || '메타데이터 조회가 완료되었습니다.', alertType);
-    } catch (err) {
-      showModalAlert('메타데이터 조회 중 오류가 발생했습니다. 아래 항목을 직접 입력해 주십시오.', 'error');
+      showRegAlert(result.message || '조회 완료', result.status === 'success' ? 'ok' : 'info');
+    } catch {
+      showRegAlert('조회 중 오류가 발생했습니다. 아래 항목을 직접 입력하십시오.', 'err');
     } finally {
       btn.disabled = false;
-      btn.textContent = '메타데이터 검색';
+      btn.textContent = '자동 검색';
+      setLoadingCursor(false);
     }
   }
 
   document.getElementById('archive-form').addEventListener('submit', async e => {
     e.preventDefault();
-
     const payload = {
       category: document.getElementById('inp-category').value,
       title: document.getElementById('inp-title').value.trim(),
@@ -1101,14 +1767,10 @@
       sourceUrl: document.getElementById('inp-source-url').value.trim()
     };
 
-    if (!payload.title || !payload.creator || !payload.review) {
-      showModalAlert('작품 제목, 제작자, 한줄평을 모두 입력하십시오.', 'error');
-      return;
-    }
-
-    const submitBtn = document.getElementById('btn-submit-archive');
+    const submitBtn = document.getElementById('btn-submit-reg');
     submitBtn.disabled = true;
     submitBtn.textContent = '저장 중...';
+    setLoadingCursor(true);
 
     try {
       const res = await fetch(GAS_WEB_APP_URL, {
@@ -1119,22 +1781,22 @@
       const json = await res.json();
 
       if (json.status === 'duplicate') {
-        showModalAlert(json.message, 'error');
+        showRegAlert(json.message, 'err');
         return;
       }
-
       if (json.status === 'success' && json.item) {
         archiveItems.unshift(json.item);
         refreshDashboard();
-        modalBackdrop.classList.remove('open');
+        regModal.classList.remove('open');
       } else {
-        showModalAlert(json.message || '저장 중 오류가 발생했습니다.', 'error');
+        showRegAlert(json.message || '저장 오류가 발생했습니다.', 'err');
       }
-    } catch (err) {
-      showModalAlert('서버 통신 중 오류가 발생했습니다. 네트워크 상태를 확인하십시오.', 'error');
+    } catch {
+      showRegAlert('서버 통신 중 오류가 발생했습니다.', 'err');
     } finally {
       submitBtn.disabled = false;
-      submitBtn.textContent = '아카이브에 등록하기';
+      submitBtn.textContent = '확인 및 시트 저장';
+      setLoadingCursor(false);
     }
   });
 
