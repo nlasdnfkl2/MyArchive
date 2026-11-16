@@ -428,7 +428,7 @@ document.getElementById('jb-next')?.addEventListener('click', () => {
   playRetroTone('click');
   updateJukebox(true);
 });
-// GAME PACK 95: 지뢰찾기 + 아카이브 카드 게임 2종
+// GAME PACK 95: 지뢰찾기 + 아카이브 카드 2종 + 윈도우 클래식 솔리테어 & 스파이더 카드놀이
 function openGamePackWindow() {
   const winId = 'win-gamepack';
   if (document.getElementById(winId)) {
@@ -440,26 +440,54 @@ function openGamePackWindow() {
   winEl.className = 'floating-win open focused';
   winEl.id = winId;
   winEl.dataset.winTitle = '[*] GAMEPACK95.EXE';
-  winEl.style.top = '72px';
-  winEl.style.left = '240px';
-  winEl.style.width = '540px';
+  winEl.style.top = '48px';
+  winEl.style.left = '150px';
+  winEl.style.width = '740px';
 
   winEl.innerHTML = `
     <div class="win-titlebar draggable">
-      <div class="win-title-left"><span class="win-title-dot" style="background: var(--brutal-yellow);"></span><span>GAMEPACK95.EXE — 레트로 &amp; 아카이브 카드 게임</span></div>
+      <div class="win-title-left"><span class="win-title-dot" style="background: var(--brutal-yellow);"></span><span>GAMEPACK95.EXE — 윈도우 클래식 카드놀이 &amp; 아카이브 게임</span></div>
       <div class="win-controls">
         <button type="button" class="win-ctrl-btn" data-action="minimize" data-target="${winId}">_</button>
         <button type="button" class="win-ctrl-btn close" data-action="close" data-target="${winId}">X</button>
       </div>
     </div>
     <div class="win-body">
-      <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px; background:var(--win-gray); padding:6px 8px; border:2px solid #111; box-shadow:var(--bevel-out);">
-        <button type="button" class="btn95 yellow sm" id="gp-tab-mine">[1] 지뢰찾기 (WINMINE)</button>
-        <button type="button" class="btn95 sm" id="gp-tab-mem">[2] 아카이브 짝맞추기 카드</button>
-        <button type="button" class="btn95 sm" id="gp-tab-hl">[3] 별점·연도 하이로우 카드</button>
+      <div style="display:flex; gap:5px; flex-wrap:wrap; margin-bottom:12px; background:var(--win-gray); padding:6px 8px; border:2px solid #111; box-shadow:var(--bevel-out);">
+        <button type="button" class="btn95 yellow sm" id="gp-tab-sol">[1] 카드놀이 (SOL.EXE)</button>
+        <button type="button" class="btn95 sm" id="gp-tab-spider">[2] 스파이더 카드놀이</button>
+        <button type="button" class="btn95 sm" id="gp-tab-mine">[3] 지뢰찾기</button>
+        <button type="button" class="btn95 sm" id="gp-tab-mem">[4] 아카이브 짝맞추기</button>
+        <button type="button" class="btn95 sm" id="gp-tab-hl">[5] 별점 하이로우</button>
       </div>
 
-      <div id="gp-panel-mine" style="text-align:center;">
+      <!-- 1. 클론다이크 카드놀이 (SOL.EXE) -->
+      <div id="gp-panel-sol">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; background:var(--win-gray); padding:6px 10px; border:2px solid #111; box-shadow:var(--bevel-in);">
+          <span id="sol-status" style="font-size:0.8rem; font-weight:900;">클릭: 선택 후 대상 클릭 / 더블클릭: 완성 홈 자동 이동</span>
+          <button type="button" class="btn95 yellow sm" id="sol-reset">[NEW] 새 게임</button>
+        </div>
+        <div class="sol-board" id="sol-board"></div>
+      </div>
+
+      <!-- 2. 스파이더 카드놀이 (SPIDER.EXE) -->
+      <div id="gp-panel-spider" style="display:none;">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px; margin-bottom:8px; background:var(--win-gray); padding:6px 10px; border:2px solid #111; box-shadow:var(--bevel-in);">
+          <span id="spider-status" style="font-size:0.8rem; font-weight:900;">완성된 세트: 0 / 8</span>
+          <div style="display:flex; gap:5px; align-items:center;">
+            <select id="spider-suits" class="win95-select" style="padding:3px 24px 3px 6px; font-size:0.76rem;">
+              <option value="1">초급 (1무늬 ♠)</option>
+              <option value="2">중급 (2무늬 ♠♥)</option>
+            </select>
+            <button type="button" class="btn95 green sm" id="spider-deal">카드 배분 (5회)</button>
+            <button type="button" class="btn95 yellow sm" id="spider-reset">[NEW] 새 게임</button>
+          </div>
+        </div>
+        <div class="sol-board" id="spider-board"></div>
+      </div>
+
+      <!-- 3. 지뢰찾기 -->
+      <div id="gp-panel-mine" style="display:none; text-align:center;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; background:var(--win-gray); padding:6px 10px; border:2px solid #111; box-shadow:var(--bevel-in);">
           <span id="gp-mine-left" style="font-family:monospace; font-size:1.1rem; font-weight:900; background:#111; color:#ff4757; padding:2px 8px;">010</span>
           <button type="button" class="btn95 yellow sm" id="gp-mine-reset">[:-)] 다시 시작</button>
@@ -468,6 +496,7 @@ function openGamePackWindow() {
         <div class="mine-grid" id="gp-mine-grid"></div>
       </div>
 
+      <!-- 4. 아카이브 짝맞추기 카드 -->
       <div id="gp-panel-mem" style="display:none;">
         <div style="display:flex; justify-content:space-between; align-items:center; background:var(--win-gray); padding:6px 10px; border:2px solid #111; box-shadow:var(--bevel-in);">
           <span id="gp-mem-stat" style="font-size:0.8rem; font-weight:900;">시도: 0회 | 매칭: 0 / 6쌍</span>
@@ -477,6 +506,7 @@ function openGamePackWindow() {
         <div class="mem-grid" id="gp-mem-grid"></div>
       </div>
 
+      <!-- 5. 별점 하이로우 카드 -->
       <div id="gp-panel-hl" style="display:none;">
         <div style="display:flex; justify-content:space-between; align-items:center; background:var(--win-gray); padding:6px 10px; border:2px solid #111; box-shadow:var(--bevel-in);">
           <span id="gp-hl-score" style="font-size:0.82rem; font-weight:900;">연승 기록: 0연승</span>
@@ -494,6 +524,8 @@ function openGamePackWindow() {
   playRetroTone('open');
 
   const tabs = [
+    { btn: 'gp-tab-sol', panel: 'gp-panel-sol', init: () => initKlondike() },
+    { btn: 'gp-tab-spider', panel: 'gp-panel-spider', init: () => initSpider() },
     { btn: 'gp-tab-mine', panel: 'gp-panel-mine', init: () => initGpMine() },
     { btn: 'gp-tab-mem', panel: 'gp-panel-mem', init: () => initGpMemory() },
     { btn: 'gp-tab-hl', panel: 'gp-panel-hl', init: () => initGpHighLow() }
@@ -512,12 +544,689 @@ function openGamePackWindow() {
     });
   });
 
+  document.getElementById('sol-reset').addEventListener('click', initKlondike);
+  document.getElementById('spider-reset').addEventListener('click', initSpider);
+  document.getElementById('spider-suits').addEventListener('change', initSpider);
+  document.getElementById('spider-deal').addEventListener('click', dealSpiderRow);
   document.getElementById('gp-mine-reset').addEventListener('click', initGpMine);
   document.getElementById('gp-mem-reset').addEventListener('click', initGpMemory);
   document.getElementById('gp-hl-reset').addEventListener('click', () => { hlStreak = 0; initGpHighLow(); });
 
-  initGpMine();
+  initKlondike();
 }
+
+// 공통 트럼프 카드 유틸리티
+const CARD_SUITS = ['♠', '♥', '♦', '♣'];
+const CARD_RANKS = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+
+function isRedSuit(suit) {
+  return suit === '♥' || suit === '♦';
+}
+
+function renderCardHTML(card, extraCls = '') {
+  if (!card.faceUp) {
+    return `<div class="p-card back ${extraCls}"></div>`;
+  }
+  const colorCls = isRedSuit(card.suit) ? 'red' : 'black';
+  const lbl = `${CARD_RANKS[card.rank - 1]}${card.suit}`;
+  return `
+    <div class="p-card ${colorCls} ${extraCls}">
+      <div style="line-height:1;">${lbl}</div>
+      <div class="p-card-center">${card.suit}</div>
+      <div style="line-height:1; text-align:right;">${lbl}</div>
+    </div>
+  `;
+}
+
+// ==========================================
+// 1. 클론다이크 카드놀이 (Windows Solitaire)
+// ==========================================
+let solState = null;
+
+function initKlondike() {
+  const deck = [];
+  for (const suit of CARD_SUITS) {
+    for (let rank = 1; rank <= 13; rank++) {
+      deck.push({ suit, rank, faceUp: false });
+    }
+  }
+  deck.sort(() => Math.random() - 0.5);
+
+  const tableau = Array.from({ length: 7 }, () => []);
+  for (let col = 0; col < 7; col++) {
+    for (let row = 0; row <= col; row++) {
+      const c = deck.pop();
+      c.faceUp = (row === col);
+      tableau[col].push(c);
+    }
+  }
+
+  solState = {
+    stock: deck,
+    waste: [],
+    foundations: [[], [], [], []],
+    tableau,
+    selected: null // { from: 'waste' | 'tab', col?: number, idx?: number }
+  };
+  renderKlondike();
+}
+
+function drawSolStock() {
+  if (!solState) return;
+  solState.selected = null;
+  if (solState.stock.length > 0) {
+    const c = solState.stock.pop();
+    c.faceUp = true;
+    solState.waste.push(c);
+  } else {
+    while (solState.waste.length > 0) {
+      const c = solState.waste.pop();
+      c.faceUp = false;
+      solState.stock.push(c);
+    }
+  }
+  playRetroTone('click');
+  renderKlondike();
+}
+
+function tryAutoMoveToFoundation(card, removeFn) {
+  const fIdx = CARD_SUITS.indexOf(card.suit);
+  const fPile = solState.foundations[fIdx];
+  if (fPile.length + 1 === card.rank) {
+    removeFn();
+    fPile.push(card);
+    solState.selected = null;
+    playRetroTone('open');
+    checkSolWin();
+    renderKlondike();
+    return true;
+  }
+  return false;
+}
+
+function checkSolWin() {
+  const total = solState.foundations.reduce((s, p) => s + p.length, 0);
+  if (total === 52) {
+    playRetroTone('boot');
+    document.getElementById('sol-status').textContent = '[CLEAR] 축하합니다! 52장 카드놀이를 완성했습니다!';
+  }
+}
+
+function renderKlondike() {
+  const board = document.getElementById('sol-board');
+  if (!board || !solState) return;
+
+  const sel = solState.selected;
+  const wasteTop = solState.waste[solState.waste.length - 1];
+  const wasteSel = sel && sel.from === 'waste' ? 'selected' : '';
+
+  let topHTML = `<div class="sol-top-row">`;
+  // Stock
+  topHTML += solState.stock.length
+    ? `<div id="sol-stock" class="p-card back" title="카드 뽑기 (${solState.stock.length}장)"></div>`
+    : `<div id="sol-stock" class="card-slot" style="cursor:pointer;">다시</div>`;
+  // Waste
+  topHTML += wasteTop
+    ? `<div id="sol-waste">${renderCardHTML(wasteTop, wasteSel)}</div>`
+    : `<div class="card-slot">버림</div>`;
+  // Spacer
+  topHTML += `<div></div>`;
+  // 4 Foundations
+  for (let f = 0; f < 4; f++) {
+    const pile = solState.foundations[f];
+    const top = pile[pile.length - 1];
+    topHTML += top
+      ? `<div class="sol-found" data-f="${f}">${renderCardHTML(top)}</div>`
+      : `<div class="card-slot sol-found" data-f="${f}">${CARD_SUITS[f]}</div>`;
+  }
+  topHTML += `</div>`;
+
+  // 7 Tableau columns
+  let colsHTML = `<div class="sol-cols">`;
+  for (let c = 0; c < 7; c++) {
+    const colCards = solState.tableau[c];
+    colsHTML += `<div class="card-stack sol-col" data-c="${c}">`;
+    if (!colCards.length) {
+      colsHTML += `<div class="card-slot">K</div>`;
+    } else {
+      colCards.forEach((card, idx) => {
+        const isSel = sel && sel.from === 'tab' && sel.col === c && idx >= sel.idx ? 'selected' : '';
+        colsHTML += `<div class="sol-card-node" data-c="${c}" data-idx="${idx}">${renderCardHTML(card, isSel)}</div>`;
+      });
+    }
+    colsHTML += `</div>`;
+  }
+  colsHTML += `</div>`;
+
+  board.innerHTML = topHTML + colsHTML;
+
+  // Bind events
+  document.getElementById('sol-stock')?.addEventListener('click', drawSolStock);
+
+  const wasteEl = document.getElementById('sol-waste');
+  if (wasteEl && wasteTop) {
+    wasteEl.addEventListener('click', () => {
+      if (sel && sel.from === 'waste') solState.selected = null;
+      else solState.selected = { from: 'waste' };
+      playRetroTone('click');
+      renderKlondike();
+    });
+    wasteEl.addEventListener('dblclick', () => {
+      tryAutoMoveToFoundation(wasteTop, () => solState.waste.pop());
+    });
+  }
+
+  board.querySelectorAll('.sol-found').forEach(el => {
+    el.addEventListener('click', () => {
+      if (!solState.selected) return;
+      const fIdx = Number(el.dataset.f);
+      const targetSuit = CARD_SUITS[fIdx];
+      const fPile = solState.foundations[fIdx];
+
+      let movingCard = null;
+      if (solState.selected.from === 'waste') {
+        movingCard = solState.waste[solState.waste.length - 1];
+      } else if (solState.selected.from === 'tab') {
+        const colArr = solState.tableau[solState.selected.col];
+        if (solState.selected.idx === colArr.length - 1) movingCard = colArr[colArr.length - 1];
+      }
+
+      if (movingCard && movingCard.suit === targetSuit && fPile.length + 1 === movingCard.rank) {
+        if (solState.selected.from === 'waste') solState.waste.pop();
+        else {
+          const colArr = solState.tableau[solState.selected.col];
+          colArr.pop();
+          if (colArr.length) colArr[colArr.length - 1].faceUp = true;
+        }
+        fPile.push(movingCard);
+        solState.selected = null;
+        playRetroTone('open');
+        checkSolWin();
+        renderKlondike();
+      }
+    });
+  });
+
+  board.querySelectorAll('.sol-col').forEach(colEl => {
+    const targetCol = Number(colEl.dataset.c);
+
+    colEl.querySelectorAll('.sol-card-node').forEach(node => {
+      const idx = Number(node.dataset.idx);
+      const card = solState.tableau[targetCol][idx];
+
+      node.addEventListener('dblclick', e => {
+        e.stopPropagation();
+        if (!card.faceUp || idx !== solState.tableau[targetCol].length - 1) return;
+        tryAutoMoveToFoundation(card, () => {
+          const colArr = solState.tableau[targetCol];
+          colArr.pop();
+          if (colArr.length) colArr[colArr.length - 1].faceUp = true;
+        });
+      });
+
+      node.addEventListener('click', e => {
+        e.stopPropagation();
+        if (!card.faceUp) return;
+
+        // 이미 다른 카드가 선택되어 있다면 현재 열로 이동 시도
+        if (solState.selected) {
+          if (solState.selected.from === 'tab' && solState.selected.col === targetCol && solState.selected.idx === idx) {
+            solState.selected = null;
+            renderKlondike();
+            return;
+          }
+          if (attemptMoveToTableau(targetCol)) return;
+        }
+        solState.selected = { from: 'tab', col: targetCol, idx };
+        playRetroTone('click');
+        renderKlondike();
+      });
+    });
+
+    // 빈 열(K 슬롯) 클릭 시 이동
+    colEl.addEventListener('click', () => {
+      if (solState.selected && solState.tableau[targetCol].length === 0) {
+        attemptMoveToTableau(targetCol);
+      }
+    });
+  });
+}
+
+function attemptMoveToTableau(targetCol) {
+  const sel = solState.selected;
+  if (!sel) return false;
+
+  let movingCards = [];
+  if (sel.from === 'waste') {
+    movingCards = [solState.waste[solState.waste.length - 1]];
+  } else if (sel.from === 'tab') {
+    if (sel.col === targetCol) return false;
+    movingCards = solState.tableau[sel.col].slice(sel.idx);
+  }
+  if (!movingCards.length) return false;
+
+  const lead = movingCards[0];
+  const destCol = solState.tableau[targetCol];
+  const destTop = destCol[destCol.length - 1];
+
+  const canPlace = !destTop
+    ? (lead.rank === 13)
+    : (destTop.faceUp && isRedSuit(destTop.suit) !== isRedSuit(lead.suit) && destTop.rank === lead.rank + 1);
+
+  if (!canPlace) return false;
+
+  if (sel.from === 'waste') {
+    solState.waste.pop();
+  } else {
+    const srcCol = solState.tableau[sel.col];
+    srcCol.splice(sel.idx);
+    if (srcCol.length) srcCol[srcCol.length - 1].faceUp = true;
+  }
+
+  destCol.push(...movingCards);
+  solState.selected = null;
+  playRetroTone('click');
+  renderKlondike();
+  return true;
+}
+
+// ==========================================
+// 2. 스파이더 카드놀이 (Windows Spider Solitaire)
+// ==========================================
+let spiderState = null;
+
+function initSpider() {
+  const suitCount = Number(document.getElementById('spider-suits')?.value) || 1;
+  const suitsPool = suitCount === 1 ? ['♠'] : ['♠', '♥'];
+  const deck = [];
+
+  // 총 8세트(104장) 구성
+  for (let set = 0; set < 8; set++) {
+    const suit = suitsPool[set % suitsPool.length];
+    for (let rank = 1; rank <= 13; rank++) {
+      deck.push({ suit, rank, faceUp: false });
+    }
+  }
+  deck.sort(() => Math.random() - 0.5);
+
+  const cols = Array.from({ length: 10 }, () => []);
+  // 초기 54장 배분 (앞 4열 6장, 뒤 6열 5장)
+  for (let i = 0; i < 54; i++) {
+    const c = deck.pop();
+    cols[i % 10].push(c);
+  }
+  cols.forEach(col => {
+    if (col.length) col[col.length - 1].faceUp = true;
+  });
+
+  spiderState = {
+    stock: deck, // 50장 (10장씩 5회 배분)
+    cols,
+    completed: 0,
+    selected: null // { col, idx }
+  };
+  updateSpiderHeader();
+  renderSpider();
+}
+
+function updateSpiderHeader() {
+  if (!spiderState) return;
+  const dealsLeft = Math.floor(spiderState.stock.length / 10);
+  const dealBtn = document.getElementById('spider-deal');
+  if (dealBtn) {
+    dealBtn.textContent = `카드 배분 (${dealsLeft}회)`;
+    dealBtn.disabled = dealsLeft === 0;
+  }
+  const st = document.getElementById('spider-status');
+  if (st) {
+    st.textContent = spiderState.completed === 8
+      ? '[CLEAR] 축하합니다! 스파이더 카드놀이 8세트를 모두 완성했습니다!'
+      : `완성된 세트: ${spiderState.completed} / 8`;
+  }
+}
+
+function dealSpiderRow() {
+  if (!spiderState || spiderState.stock.length < 10) return;
+  if (spiderState.cols.some(c => c.length === 0)) {
+    alert('빈 열이 있을 때는 새 카드를 배분할 수 없습니다. 모든 열에 최소 1장의 카드를 놓으십시오.');
+    return;
+  }
+  for (let c = 0; c < 10; c++) {
+    const card = spiderState.stock.pop();
+    card.faceUp = true;
+    spiderState.cols[c].push(card);
+    checkSpiderRunComplete(c);
+  }
+  spiderState.selected = null;
+  playRetroTone('open');
+  updateSpiderHeader();
+  renderSpider();
+}
+
+function isMovableSpiderSequence(colArr, startIdx) {
+  if (!colArr[startIdx] || !colArr[startIdx].faceUp) return false;
+  for (let i = startIdx; i < colArr.length - 1; i++) {
+    if (colArr[i].suit !== colArr[i + 1].suit || colArr[i].rank !== colArr[i + 1].rank + 1) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function checkSpiderRunComplete(colIdx) {
+  const colArr = spiderState.cols[colIdx];
+  if (colArr.length < 13) return;
+  const tail = colArr.slice(-13);
+  if (tail[0].rank !== 13) return;
+  const suit = tail[0].suit;
+  for (let i = 0; i < 13; i++) {
+    if (!tail[i].faceUp || tail[i].suit !== suit || tail[i].rank !== 13 - i) return;
+  }
+  colArr.splice(-13);
+  if (colArr.length) colArr[colArr.length - 1].faceUp = true;
+  spiderState.completed += 1;
+  playRetroTone('boot');
+  updateSpiderHeader();
+}
+
+function renderSpider() {
+  const board = document.getElementById('spider-board');
+  if (!board || !spiderState) return;
+
+  const sel = spiderState.selected;
+  let html = `<div class="spider-cols">`;
+  for (let c = 0; c < 10; c++) {
+    const colArr = spiderState.cols[c];
+    html += `<div class="card-stack sp-col" data-c="${c}">`;
+    if (!colArr.length) {
+      html += `<div class="card-slot" style="height:64px;">빈칸</div>`;
+    } else {
+      colArr.forEach((card, idx) => {
+        const isSel = sel && sel.col === c && idx >= sel.idx ? 'selected' : '';
+        html += `<div class="sp-card-node" data-c="${c}" data-idx="${idx}">${renderCardHTML(card, isSel)}</div>`;
+      });
+    }
+    html += `</div>`;
+  }
+  html += `</div>`;
+  board.innerHTML = html;
+
+  board.querySelectorAll('.sp-col').forEach(colEl => {
+    const targetCol = Number(colEl.dataset.c);
+
+    colEl.querySelectorAll('.sp-card-node').forEach(node => {
+      const idx = Number(node.dataset.idx);
+      node.addEventListener('click', e => {
+        e.stopPropagation();
+        if (spiderState.selected) {
+          if (spiderState.selected.col === targetCol && spiderState.selected.idx === idx) {
+            spiderState.selected = null;
+            renderSpider();
+            return;
+          }
+          if (attemptMoveSpider(targetCol)) return;
+        }
+        if (isMovableSpiderSequence(spiderState.cols[targetCol], idx)) {
+          spiderState.selected = { col: targetCol, idx };
+          playRetroTone('click');
+          renderSpider();
+        }
+      });
+    });
+
+    colEl.addEventListener('click', () => {
+      if (spiderState.selected && spiderState.cols[targetCol].length === 0) {
+        attemptMoveSpider(targetCol);
+      }
+    });
+  });
+}
+
+function attemptMoveSpider(targetCol) {
+  const sel = spiderState.selected;
+  if (!sel || sel.col === targetCol) return false;
+
+  const srcCol = spiderState.cols[sel.col];
+  const moving = srcCol.slice(sel.idx);
+  if (!moving.length) return false;
+
+  const destCol = spiderState.cols[targetCol];
+  const destTop = destCol[destCol.length - 1];
+  const canPlace = !destTop || (destTop.faceUp && destTop.rank === moving[0].rank + 1);
+  if (!canPlace) return false;
+
+  srcCol.splice(sel.idx);
+  if (srcCol.length) srcCol[srcCol.length - 1].faceUp = true;
+  destCol.push(...moving);
+
+  spiderState.selected = null;
+  playRetroTone('click');
+  checkSpiderRunComplete(targetCol);
+  renderSpider();
+  return true;
+}
+
+// ==========================================
+// 3. 지뢰찾기 (Minesweeper)
+// ==========================================
+const MINE_SIZE = 8, MINE_TOTAL = 10;
+let mineBoard = [], mineGameOver = false;
+
+function initGpMine() {
+  mineGameOver = false;
+  const resetBtn = document.getElementById('gp-mine-reset');
+  if (resetBtn) resetBtn.textContent = '[:-)] 다시 시작';
+  mineBoard = Array.from({ length: MINE_SIZE * MINE_SIZE }, (_, idx) => ({ idx, mine: false, revealed: false, flagged: false, count: 0 }));
+  let placed = 0;
+  while (placed < MINE_TOTAL) {
+    const r = Math.floor(Math.random() * mineBoard.length);
+    if (!mineBoard[r].mine) { mineBoard[r].mine = true; placed++; }
+  }
+  mineBoard.forEach(cell => {
+    if (!cell.mine) cell.count = getMineNeighbors(cell.idx).filter(n => mineBoard[n].mine).length;
+  });
+  renderGpMine();
+}
+
+function getMineNeighbors(idx) {
+  const r = Math.floor(idx / MINE_SIZE), c = idx % MINE_SIZE, res = [];
+  for (let dr = -1; dr <= 1; dr++) {
+    for (let dc = -1; dc <= 1; dc++) {
+      if (dr === 0 && dc === 0) continue;
+      const nr = r + dr, nc = c + dc;
+      if (nr >= 0 && nr < MINE_SIZE && nc >= 0 && nc < MINE_SIZE) res.push(nr * MINE_SIZE + nc);
+    }
+  }
+  return res;
+}
+
+function revealGpMine(idx) {
+  const cell = mineBoard[idx];
+  if (mineGameOver || cell.revealed || cell.flagged) return;
+  cell.revealed = true;
+  if (cell.mine) {
+    mineGameOver = true;
+    playRetroTone('boom');
+    document.getElementById('gp-mine-reset').textContent = '[X-(] 게임 오버';
+    mineBoard.forEach(c => { if (c.mine) c.revealed = true; });
+    renderGpMine();
+    return;
+  }
+  playRetroTone('click');
+  if (cell.count === 0) getMineNeighbors(idx).forEach(n => revealGpMine(n));
+  if (mineBoard.filter(c => !c.mine && !c.revealed).length === 0) {
+    mineGameOver = true;
+    playRetroTone('boot');
+    document.getElementById('gp-mine-reset').textContent = '[B-)] 클리어!';
+  }
+  renderGpMine();
+}
+
+function renderGpMine() {
+  const grid = document.getElementById('gp-mine-grid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  const flagged = mineBoard.filter(c => c.flagged).length;
+  document.getElementById('gp-mine-left').textContent = String(Math.max(0, MINE_TOTAL - flagged)).padStart(3, '0');
+  mineBoard.forEach(cell => {
+    const div = document.createElement('div');
+    div.className = 'mine-cell' + (cell.revealed ? ' revealed' : '') + (cell.revealed && cell.mine ? ' boom' : '');
+    if (cell.revealed) {
+      div.textContent = cell.mine ? '[*]' : (cell.count > 0 ? cell.count : '');
+      if (cell.count === 1) div.style.color = '#000080';
+      if (cell.count === 2) div.style.color = '#008000';
+      if (cell.count >= 3) div.style.color = '#ff4757';
+    } else if (cell.flagged) {
+      div.textContent = '[F]';
+      div.style.color = '#ff4757';
+    }
+    div.addEventListener('click', () => revealGpMine(cell.idx));
+    div.addEventListener('contextmenu', e => {
+      e.preventDefault();
+      if (mineGameOver || cell.revealed) return;
+      cell.flagged = !cell.flagged;
+      playRetroTone('click');
+      renderGpMine();
+    });
+    grid.appendChild(div);
+  });
+}
+
+// ==========================================
+// 4 & 5. 아카이브 짝맞추기 & 별점 하이로우 카드
+// ==========================================
+function getGameDeckPool() {
+  if (archiveItems.length >= 6) return [...archiveItems];
+  const fallbackPool = [
+    { id: 'S1', title: '소나기', creator: '황순원', category: '도서', rating: 5, watchDate: '2026-09-10', coverUrl: FALLBACK_COVER },
+    { id: 'S2', title: '아몬드', creator: '손원평', category: '도서', rating: 4, watchDate: '2026-08-22', coverUrl: FALLBACK_COVER },
+    { id: 'S3', title: '밤양갱', creator: '비비', category: '음악', rating: 5, watchDate: '2026-10-05', coverUrl: FALLBACK_COVER },
+    { id: 'S4', title: '인셉션', creator: '크리스토퍼 놀란', category: '영상', rating: 5, watchDate: '2026-07-14', coverUrl: FALLBACK_COVER },
+    { id: 'S5', title: '어린 왕자', creator: '생텍쥐페리', category: '도서', rating: 5, watchDate: '2026-06-01', coverUrl: FALLBACK_COVER },
+    { id: 'S6', title: 'Hype Boy', creator: 'NewJeans', category: '음악', rating: 4, watchDate: '2026-10-18', coverUrl: FALLBACK_COVER }
+  ];
+  return [...archiveItems, ...fallbackPool];
+}
+
+function initGpMemory() {
+  const pool = getGameDeckPool().sort(() => Math.random() - 0.5).slice(0, 6);
+  const deck = [...pool, ...pool]
+    .map((item, idx) => ({ uid: idx, key: item.id || item.title, item, flipped: false, matched: false }))
+    .sort(() => Math.random() - 0.5);
+
+  let flippedCards = [], lockBoard = false, attempts = 0, matchedPairs = 0;
+  const statEl = document.getElementById('gp-mem-stat');
+  const grid = document.getElementById('gp-mem-grid');
+
+  function renderMem() {
+    statEl.textContent = `시도: ${attempts}회 | 매칭: ${matchedPairs} / 6쌍`;
+    grid.innerHTML = '';
+    deck.forEach(card => {
+      const el = document.createElement('div');
+      el.className = 'mem-card' + (card.flipped ? ' flipped' : '') + (card.matched ? ' matched' : '');
+      if (card.flipped || card.matched) {
+        el.innerHTML = `
+          <img src="${esc(card.item.coverUrl || FALLBACK_COVER)}" alt="" onerror="this.onerror=null;this.src='${FALLBACK_COVER}';" />
+          <div style="width:100%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${esc(card.item.title)}</div>
+        `;
+      } else {
+        el.innerHTML = `<div>[ARCHIVE]</div><div style="font-size:0.65rem; color:#ffffff; margin-top:2px;">CARD</div>`;
+      }
+
+      el.addEventListener('click', () => {
+        if (lockBoard || card.flipped || card.matched) return;
+        card.flipped = true;
+        flippedCards.push(card);
+        playRetroTone('click');
+        renderMem();
+
+        if (flippedCards.length === 2) {
+          attempts++;
+          lockBoard = true;
+          const [c1, c2] = flippedCards;
+          if (c1.key === c2.key) {
+            c1.matched = true; c2.matched = true; matchedPairs++;
+            flippedCards = []; lockBoard = false;
+            playRetroTone('open');
+            renderMem();
+            if (matchedPairs === 6) {
+              playRetroTone('boot');
+              statEl.textContent = `[CLEAR] 총 ${attempts}회 만에 6쌍 모두 매칭 완료!`;
+            }
+          } else {
+            setTimeout(() => {
+              c1.flipped = false; c2.flipped = false;
+              flippedCards = []; lockBoard = false;
+              renderMem();
+            }, 650);
+          }
+        }
+      });
+      grid.appendChild(el);
+    });
+  }
+  renderMem();
+}
+
+let hlStreak = 0;
+function initGpHighLow() {
+  const pool = getGameDeckPool().sort(() => Math.random() - 0.5);
+  const leftItem = pool[0], rightItem = pool[1];
+  const arena = document.getElementById('gp-hl-arena');
+  const scoreEl = document.getElementById('gp-hl-score');
+  scoreEl.textContent = `연승 기록: ${hlStreak}연승`;
+
+  arena.innerHTML = `
+    <div class="hl-card">
+      <img src="${esc(leftItem.coverUrl || FALLBACK_COVER)}" alt="" onerror="this.onerror=null;this.src='${FALLBACK_COVER}';" />
+      <div style="font-size:0.74rem; font-weight:800; color:#4a4a4a;">[${esc(leftItem.category)}] ${esc(leftItem.creator)}</div>
+      <div style="font-size:0.95rem; font-weight:900; margin:3px 0 8px;">${esc(leftItem.title)}</div>
+      <div style="background:var(--brutal-yellow); border:2px solid #111; padding:5px; font-weight:900; font-size:0.86rem;">
+        평점: ${Number(leftItem.rating)}점 (${esc(leftItem.watchDate)})
+      </div>
+    </div>
+    <div class="hl-card">
+      <img src="${esc(rightItem.coverUrl || FALLBACK_COVER)}" alt="" onerror="this.onerror=null;this.src='${FALLBACK_COVER}';" />
+      <div style="font-size:0.74rem; font-weight:800; color:#4a4a4a;">[${esc(rightItem.category)}] ${esc(rightItem.creator)}</div>
+      <div style="font-size:0.95rem; font-weight:900; margin:3px 0 8px;">${esc(rightItem.title)}</div>
+      <div id="hl-right-reveal" style="background:var(--win-gray); border:2px solid #111; padding:5px; font-weight:900; font-size:0.86rem;">
+        평점: [ ??? ]
+      </div>
+      <div id="hl-btn-box" style="display:flex; gap:6px; margin-top:8px;">
+        <button type="button" class="btn95 green sm" style="flex:1;" id="btn-hl-up">높거나 같음 (UP)</button>
+        <button type="button" class="btn95 pink sm" style="flex:1;" id="btn-hl-down">낮음 (DOWN)</button>
+      </div>
+    </div>
+  `;
+
+  function judge(guessUp) {
+    const lVal = Number(leftItem.rating) || 4;
+    const rVal = Number(rightItem.rating) || 4;
+    const win = guessUp ? (rVal >= lVal) : (rVal < lVal);
+    const rev = document.getElementById('hl-right-reveal');
+    rev.textContent = `평점: ${rVal}점 (${rightItem.watchDate})`;
+    if (win) {
+      hlStreak++;
+      playRetroTone('open');
+      rev.style.background = 'var(--brutal-green)';
+      scoreEl.textContent = `[정답] 연승 기록: ${hlStreak}연승!`;
+    } else {
+      hlStreak = 0;
+      playRetroTone('boom');
+      rev.style.background = 'var(--brutal-pink)';
+      rev.style.color = '#ffffff';
+      scoreEl.textContent = `[실패] 연승 초기화 (0연승)`;
+    }
+    document.getElementById('hl-btn-box').innerHTML = `<button type="button" class="btn95 yellow sm" style="width:100%;" id="btn-hl-next">다음 카드 대결 &gt;&gt;</button>`;
+    document.getElementById('btn-hl-next').addEventListener('click', initGpHighLow);
+  }
+
+  document.getElementById('btn-hl-up').addEventListener('click', () => judge(true));
+  document.getElementById('btn-hl-down').addEventListener('click', () => judge(false));
+}
+
+document.getElementById('icon-mine')?.addEventListener('click', openGamePackWindow);
+document.getElementById('sm-mine')?.addEventListener('click', openGamePackWindow);
 
 const MINE_SIZE = 8, MINE_TOTAL = 10;
 let mineBoard = [], mineGameOver = false;
