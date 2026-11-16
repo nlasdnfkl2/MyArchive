@@ -164,28 +164,30 @@ body.crt-on .crt-overlay { display: block; }
 .btn95.sm { padding: 5px 9px; font-size: 0.77rem; }
 
 /* Win95 Classic ComboBox, Date Selects & Radio Buttons */
+select,
 .win95-select {
   appearance: none;
   -webkit-appearance: none;
+  -moz-appearance: none;
   background-color: #ffffff;
-  background-image:
-    linear-gradient(45deg, transparent 50%, #111111 50%),
-    linear-gradient(135deg, #111111 50%, transparent 50%),
-    linear-gradient(to right, #c0c0c0, #c0c0c0);
-  background-position:
-    calc(100% - 13px) 52%,
-    calc(100% - 8px) 52%,
-    calc(100% - 24px) 0;
-  background-size: 5px 5px, 5px 5px, 24px 100%;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 22 22'><rect x='0' y='0' width='22' height='22' fill='%23c0c0c0'/><line x1='0' y1='0' x2='0' y2='22' stroke='%23111111' stroke-width='2'/><line x1='1.5' y1='1' x2='21' y2='1' stroke='%23ffffff' stroke-width='1.5'/><line x1='1.5' y1='1' x2='1.5' y2='21' stroke='%23ffffff' stroke-width='1.5'/><line x1='21' y1='1' x2='21' y2='21' stroke='%23808080' stroke-width='1.5'/><line x1='1.5' y1='21' x2='21' y2='21' stroke='%23808080' stroke-width='1.5'/><polygon points='7,9 15,9 11,14' fill='%23111111'/></svg>");
+  background-position: right 0 top 0;
+  background-size: 22px 100%;
   background-repeat: no-repeat;
   border: 2px solid #111111;
   box-shadow: var(--bevel-in);
-  padding: 6px 30px 6px 9px;
+  padding: 6px 28px 6px 9px;
   font-family: inherit;
   font-size: 0.83rem;
   font-weight: 700;
   color: #111111;
   border-radius: 0;
+}
+
+select:focus,
+.win95-select:focus {
+  outline: 1px dotted #111111;
+  outline-offset: -4px;
 }
 
 .win95-date-group {
