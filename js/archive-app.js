@@ -1,5 +1,5 @@
 window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-window.__MOD_VERSIONS.archiveApp = typeof APP_BUILD_VERSION !== 'undefined' ? APP_BUILD_VERSION : 'v2026.11.17-02';
+window.__MOD_VERSIONS.archiveApp = typeof APP_BUILD_VERSION !== 'undefined' ? APP_BUILD_VERSION : 'v2026.11.17-03';
 
 // Menu & Start Menu Events
 document.querySelectorAll('.menu-item-wrap').forEach(wrap => {
@@ -21,7 +21,10 @@ document.getElementById('mnu-open-memo')?.addEventListener('click', openMemoWind
 document.getElementById('mnu-sync-sheet')?.addEventListener('click', loadArchiveData);
 
 document.getElementById('mnu-export-csv')?.addEventListener('click', () => {
-  if (!archiveItems.length) return alert('내보낼 데이터가 없습니다.');
+  if (!archiveItems.length) {
+    showWin95MessageBox('데이터 백업 오류 — MY-ARCHIVE 95', '내보낼 감상 기록 데이터가 없습니다.', 'boom');
+    return;
+  }
   const headers = ['ID', '매체', '제목', '제작자', '장르', '평점', '감상일', '한줄평', '원본링크'];
   const rows = archiveItems.map(i => [
     i.id,
@@ -246,6 +249,58 @@ function renderArchiveGrid() {
     card.addEventListener('click', () => spawnDetailWindow(item));
     grid.appendChild(card);
   });
+}
+
+// ==========================================
+// Windows 95 System Message Box Dialog
+// ==========================================
+function showWin95MessageBox(title, message, tone = 'boom') {
+  const existing = document.getElementById('win-sys-msgbox');
+  if (existing) existing.remove();
+
+  playRetroTone(tone);
+
+  const box = document.createElement('div');
+  box.className = 'floating-win open focused';
+  box.id = 'win-sys-msgbox';
+  box.dataset.dynamic = 'true';
+  box.dataset.winTitle = `[!] ${title}`;
+  box.style.width = '410px';
+  box.style.top = '50%';
+  box.style.left = '50%';
+  box.style.transform = 'translate(-50%, -50%)';
+  box.style.zIndex = String(++topZIndex + 150);
+
+  box.innerHTML = `
+    <div class="win-titlebar draggable" style="background: var(--brutal-pink); color: #ffffff;">
+      <div class="win-title-left"><span class="win-title-dot" style="background: var(--brutal-yellow);"></span><span>${esc(title)}</span></div>
+      <div class="win-controls">
+        <button type="button" class="win-ctrl-btn close" id="btn-msgbox-x">X</button>
+      </div>
+    </div>
+    <div class="win-body" style="background: var(--win-gray); padding: 18px 16px;">
+      <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 18px;">
+        <div style="width: 38px; height: 38px; flex-shrink: 0; background: var(--brutal-yellow); border: 3px solid #111111; box-shadow: 3px 3px 0px #111111; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 1.3rem; color: #111111;">!</div>
+        <div style="font-size: 0.86rem; font-weight: 800; line-height: 1.5; color: #111111; word-break: keep-all;">${esc(message)}</div>
+      </div>
+      <div style="display: flex; justify-content: center;">
+        <button type="button" class="btn95 yellow sm" id="btn-msgbox-ok" style="min-width: 100px;">확인 (OK)</button>
+      </div>
+    </div>
+  `;
+
+  (document.getElementById('dynamic-windows-container') || document.body).appendChild(box);
+  enableWindowDrag(box);
+
+  const closeMsgBox = () => {
+    playRetroTone('close');
+    if (typeof closeWindow === 'function') closeWindow('win-sys-msgbox');
+    else box.remove();
+  };
+
+  document.getElementById('btn-msgbox-ok')?.addEventListener('click', closeMsgBox);
+  document.getElementById('btn-msgbox-x')?.addEventListener('click', closeMsgBox);
+  document.getElementById('btn-msgbox-ok')?.focus();
 }
 
 // ==========================================
@@ -483,7 +538,7 @@ document.addEventListener('click', async e => {
     e.preventDefault();
     e.stopPropagation();
     if (!item || !item.id) {
-      alert('이 기록에는 고유 ID가 없어 시트에서 삭제할 수 없습니다.');
+      showWin95MessageBox('삭제 불가 — MY-ARCHIVE 95', '이 기록에는 고유 ID가 없어 시트에서 삭제할 수 없습니다.', 'boom');
       return;
     }
     const delBtn = e.target.closest('.btn-delete-confirm');
@@ -504,10 +559,10 @@ document.addEventListener('click', async e => {
         refreshAllViews();
         closeWindow(winEl.id);
       } else {
-        alert(json.message || '삭제 중 오류가 발생했습니다.');
+        showWin95MessageBox('삭제 오류 — MY-ARCHIVE 95', json.message || '삭제 중 오류가 발생했습니다.', 'boom');
       }
     } catch {
-      alert('서버 통신 중 오류가 발생했습니다. GAS 새 버전 배포 상태를 확인하십시오.');
+      showWin95MessageBox('통신 오류 — MY-ARCHIVE 95', '서버 통신 중 오류가 발생했습니다. GAS 새 버전 배포 상태를 확인하십시오.', 'boom');
     } finally {
       delBtn.disabled = false;
       delBtn.textContent = '예, 영구 삭제';
@@ -527,7 +582,7 @@ document.addEventListener('submit', async e => {
   const itemKey = winEl ? winEl.dataset.itemKey : '';
   const item = detailItemRegistry[itemKey];
   if (!item || !item.id) {
-    alert('이 기록에는 고유 ID가 없어 수정할 수 없습니다.');
+    showWin95MessageBox('수정 불가 — MY-ARCHIVE 95', '이 기록에는 고유 ID가 없어 수정할 수 없습니다.', 'boom');
     return;
   }
 
@@ -570,10 +625,10 @@ document.addEventListener('submit', async e => {
       closeWindow(winEl.id);
       spawnDetailWindow(json.item);
     } else {
-      alert(json.message || '수정 중 오류가 발생했습니다.');
+      showWin95MessageBox('수정 오류 — MY-ARCHIVE 95', json.message || '수정 중 오류가 발생했습니다.', 'boom');
     }
   } catch {
-    alert('네트워크 오류가 발생했습니다. GAS 새 버전 배포 상태를 확인하십시오.');
+    showWin95MessageBox('통신 오류 — MY-ARCHIVE 95', '네트워크 오류가 발생했습니다. GAS 새 버전 배포 상태를 확인하십시오.', 'boom');
   } finally {
     if (saveBtn) {
       saveBtn.disabled = false;
@@ -668,7 +723,7 @@ function ensureRegisterWindowExists() {
             <textarea id="inp-review" rows="3" required style="width:100%;" placeholder="감상한 소감을 기록하십시오..."></textarea>
           </div>
           <div style="display:flex; justify-content:flex-end; gap:8px;">
-            <button type="button" class="btn95 sm" data-action="close" data-target="win-register">취소</button>
+            <button type="button" class="btn95 sm" id="btn-cancel-reg" data-action="close" data-target="win-register">취소</button>
             <button type="submit" class="btn95 yellow sm" id="btn-submit-reg">확인 및 시트 저장</button>
           </div>
         </form>
@@ -689,6 +744,11 @@ function ensureRegisterWindowExists() {
       if (!img) return;
       img.src = e.target.value.trim() || FALLBACK_COVER;
       img.onerror = () => { img.src = FALLBACK_COVER; };
+    });
+    document.getElementById('btn-cancel-reg')?.addEventListener('click', e => {
+      e.preventDefault();
+      e.stopPropagation();
+      closeWindow('win-register');
     });
     document.getElementById('archive-form')?.addEventListener('submit', handleRegisterSubmit);
   }
@@ -812,10 +872,24 @@ async function handleRegisterSubmit(e) {
     ? getWin95DateValue(ySel, mSel, dSel)
     : (singleDate ? singleDate.value : new Date().toISOString().slice(0, 10));
 
+  const categoryVal = document.getElementById('inp-category').value;
+  const titleVal = document.getElementById('inp-title').value.trim();
+
+  // 프론트엔드 즉시 중복 검사 (동일 매체 내 동일 제목 감지 시 Win95 메시지 박스 출력)
+  const isLocalDup = archiveItems.some(
+    item => item.category === categoryVal && String(item.title || '').trim().toLowerCase() === titleVal.toLowerCase()
+  );
+  if (isLocalDup) {
+    const dupMsg = `이미 ${categoryVal} 목록에 동일한 이름(「${titleVal}」)이 존재합니다.`;
+    showRegAlert(dupMsg, 'err');
+    showWin95MessageBox('중복 등록 오류 — MY-ARCHIVE 95', dupMsg, 'boom');
+    return;
+  }
+
   const payload = {
     action: 'create',
-    category: document.getElementById('inp-category').value,
-    title: document.getElementById('inp-title').value.trim(),
+    category: categoryVal,
+    title: titleVal,
     creator: document.getElementById('inp-creator').value.trim(),
     genre: document.getElementById('inp-genre').value.trim() || '일반',
     rating: ratingVal || 5,
@@ -830,7 +904,12 @@ async function handleRegisterSubmit(e) {
   try {
     const res = await fetch(GAS_WEB_APP_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload) });
     const json = await res.json();
-    if (json.status === 'duplicate') { playRetroTone('boom'); showRegAlert(json.message, 'err'); return; }
+    if (json.status === 'duplicate') {
+      const dupMsg = json.message || `이미 ${categoryVal} 목록에 동일한 이름이 존재합니다.`;
+      showRegAlert(dupMsg, 'err');
+      showWin95MessageBox('중복 등록 오류 — MY-ARCHIVE 95', dupMsg, 'boom');
+      return;
+    }
     if (json.status === 'success' && json.item) { playRetroTone('boot'); archiveItems.unshift(json.item); refreshAllViews(); closeWindow('win-register'); }
     else showRegAlert(json.message || '저장 오류', 'err');
   } catch { showRegAlert('서버 통신 중 오류가 발생했습니다.', 'err'); }
