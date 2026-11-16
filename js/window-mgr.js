@@ -1,5 +1,5 @@
 window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-window.__MOD_VERSIONS.windowMgr = typeof APP_BUILD_VERSION !== 'undefined' ? APP_BUILD_VERSION : 'v2026.11.17-01';
+window.__MOD_VERSIONS.windowMgr = typeof APP_BUILD_VERSION !== 'undefined' ? APP_BUILD_VERSION : 'v2026.11.17-03';
 
 function focusWindow(winEl) {
   if (!winEl) return;
@@ -93,7 +93,9 @@ document.addEventListener('click', e => {
     return;
   }
   const clickedWin = e.target.closest('.win95-window, .floating-win');
-  if (clickedWin) focusWindow(clickedWin);
+  if (clickedWin && !clickedWin.classList.contains('focused')) {
+    focusWindow(clickedWin);
+  }
 });
 
 const ghostBox = document.getElementById('drag-ghost-box');
@@ -206,7 +208,9 @@ function updateClocks() {
 setInterval(updateClocks, 1000);
 updateClocks();
 
-// Winamp Jukebox (YouTube Music / YouTube Background Player — No Account Required)
+// ==========================================
+// Winamp Jukebox (YouTube Music / YouTube Background Player)
+// ==========================================
 let jbIndex = 0;
 let eqTimer = null;
 let ytPlayer = null;
@@ -214,7 +218,6 @@ let ytApiReady = false;
 let pendingVideoId = null;
 const jbVideoCache = {};
 
-// YouTube IFrame Player API 비동기 로드 및 숨김 백그라운드 컨테이너 생성
 (function initYouTubeBackgroundAPI() {
   if (!document.getElementById('yt-bg-player-host')) {
     const host = document.createElement('div');
@@ -257,14 +260,12 @@ window.onYouTubeIframeAPIReady = function () {
         } else if (e.data === YT.PlayerState.PAUSED || e.data === YT.PlayerState.BUFFERING) {
           setEqualizer(false);
         } else if (e.data === YT.PlayerState.ENDED) {
-          // 곡 종료 시 다음 트랙 자동 재생
           setEqualizer(false);
           jbIndex++;
           updateJukebox(true);
         }
       },
       onError: () => {
-        // 임베드 제한 영상일 경우 다음 트랙으로 자동 스킵
         const tracks = archiveItems.filter(i => i.category === '음악');
         if (tracks.length > 1) {
           jbIndex++;
@@ -288,19 +289,16 @@ function normalizeMatchText(str) {
   return String(str || '').toLowerCase().replace(/[\s\(\)\[\]\-\_\.\,\!\?\'\"·]/g, '');
 }
 
-// 저작자·제목이 일치하는 YouTube 영상 ID 자동 해석
 async function resolveTrackYouTubeId(track) {
   const cacheKey = track.id || `${track.creator}::${track.title}`;
   if (jbVideoCache[cacheKey]) return jbVideoCache[cacheKey];
 
-  // 1) 원본 소스가 유튜브 / 유튜브 뮤직 링크인 경우 즉시 ID 추출
   const directId = extractYouTubeVideoId(track.sourceUrl);
   if (directId) {
     jbVideoCache[cacheKey] = directId;
     return directId;
   }
 
-  // 2) 원본 소스가 유튜브가 아닌 경우 GAS 통합 검색으로 저작자·제목 일치 유튜브 트랙 탐색
   try {
     const q = `${track.creator} ${track.title}`.trim();
     const res = await fetch(`${GAS_WEB_APP_URL}?action=search&q=${encodeURIComponent(q)}&category=${encodeURIComponent('음악')}`);
@@ -401,7 +399,6 @@ document.getElementById('jb-play')?.addEventListener('click', async () => {
     setEqualizer(true);
     return;
   }
-  // 일시정지 상태라면 이어서 재생, 아니면 현재 트랙 로드 후 재생
   if (ytApiReady && ytPlayer && typeof ytPlayer.getPlayerState === 'function' && ytPlayer.getPlayerState() === YT.PlayerState.PAUSED) {
     ytPlayer.playVideo();
     return;
@@ -428,7 +425,10 @@ document.getElementById('jb-next')?.addEventListener('click', () => {
   playRetroTone('click');
   updateJukebox(true);
 });
-// GAME PACK 95: 지뢰찾기 + 아카이브 카드 2종 + 윈도우 클래식 솔리테어 & 스파이더 카드놀이
+
+// ==========================================
+// GAME PACK 95: 클래식 카드놀이 + 스파이더 + 지뢰찾기 + 아카이브 게임
+// ==========================================
 function openGamePackWindow() {
   const winId = 'win-gamepack';
   if (document.getElementById(winId)) {
@@ -555,7 +555,6 @@ function openGamePackWindow() {
   initKlondike();
 }
 
-// 공통 트럼프 카드 유틸리티
 const CARD_SUITS = ['♠', '♥', '♦', '♣'];
 const CARD_RANKS = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
 
@@ -578,9 +577,7 @@ function renderCardHTML(card, extraCls = '') {
   `;
 }
 
-// ==========================================
-// 1. 클론다이크 카드놀이 (Windows Solitaire)
-// ==========================================
+// 1. 클론다이크 카드놀이
 let solState = null;
 
 function initKlondike() {
@@ -606,7 +603,7 @@ function initKlondike() {
     waste: [],
     foundations: [[], [], [], []],
     tableau,
-    selected: null // { from: 'waste' | 'tab', col?: number, idx?: number }
+    selected: null
   };
   renderKlondike();
 }
@@ -661,17 +658,13 @@ function renderKlondike() {
   const wasteSel = sel && sel.from === 'waste' ? 'selected' : '';
 
   let topHTML = `<div class="sol-top-row">`;
-  // Stock
   topHTML += solState.stock.length
     ? `<div id="sol-stock" class="p-card back" title="카드 뽑기 (${solState.stock.length}장)"></div>`
     : `<div id="sol-stock" class="card-slot" style="cursor:pointer;">다시</div>`;
-  // Waste
   topHTML += wasteTop
     ? `<div id="sol-waste">${renderCardHTML(wasteTop, wasteSel)}</div>`
     : `<div class="card-slot">버림</div>`;
-  // Spacer
   topHTML += `<div></div>`;
-  // 4 Foundations
   for (let f = 0; f < 4; f++) {
     const pile = solState.foundations[f];
     const top = pile[pile.length - 1];
@@ -681,7 +674,6 @@ function renderKlondike() {
   }
   topHTML += `</div>`;
 
-  // 7 Tableau columns
   let colsHTML = `<div class="sol-cols">`;
   for (let c = 0; c < 7; c++) {
     const colCards = solState.tableau[c];
@@ -700,7 +692,6 @@ function renderKlondike() {
 
   board.innerHTML = topHTML + colsHTML;
 
-  // Bind events
   document.getElementById('sol-stock')?.addEventListener('click', drawSolStock);
 
   const wasteEl = document.getElementById('sol-waste');
@@ -768,7 +759,6 @@ function renderKlondike() {
         e.stopPropagation();
         if (!card.faceUp) return;
 
-        // 이미 다른 카드가 선택되어 있다면 현재 열로 이동 시도
         if (solState.selected) {
           if (solState.selected.from === 'tab' && solState.selected.col === targetCol && solState.selected.idx === idx) {
             solState.selected = null;
@@ -783,7 +773,6 @@ function renderKlondike() {
       });
     });
 
-    // 빈 열(K 슬롯) 클릭 시 이동
     colEl.addEventListener('click', () => {
       if (solState.selected && solState.tableau[targetCol].length === 0) {
         attemptMoveToTableau(targetCol);
@@ -830,9 +819,7 @@ function attemptMoveToTableau(targetCol) {
   return true;
 }
 
-// ==========================================
-// 2. 스파이더 카드놀이 (Windows Spider Solitaire)
-// ==========================================
+// 2. 스파이더 카드놀이
 let spiderState = null;
 
 function initSpider() {
@@ -840,7 +827,6 @@ function initSpider() {
   const suitsPool = suitCount === 1 ? ['♠'] : ['♠', '♥'];
   const deck = [];
 
-  // 총 8세트(104장) 구성
   for (let set = 0; set < 8; set++) {
     const suit = suitsPool[set % suitsPool.length];
     for (let rank = 1; rank <= 13; rank++) {
@@ -850,7 +836,6 @@ function initSpider() {
   deck.sort(() => Math.random() - 0.5);
 
   const cols = Array.from({ length: 10 }, () => []);
-  // 초기 54장 배분 (앞 4열 6장, 뒤 6열 5장)
   for (let i = 0; i < 54; i++) {
     const c = deck.pop();
     cols[i % 10].push(c);
@@ -860,10 +845,10 @@ function initSpider() {
   });
 
   spiderState = {
-    stock: deck, // 50장 (10장씩 5회 배분)
+    stock: deck,
     cols,
     completed: 0,
-    selected: null // { col, idx }
+    selected: null
   };
   updateSpiderHeader();
   renderSpider();
@@ -1006,9 +991,7 @@ function attemptMoveSpider(targetCol) {
   return true;
 }
 
-// ==========================================
-// 3. 지뢰찾기 (Minesweeper)
-// ==========================================
+// 3. 지뢰찾기
 const MINE_SIZE = 8, MINE_TOTAL = 10;
 let mineBoard = [], mineGameOver = false;
 
@@ -1092,225 +1075,7 @@ function renderGpMine() {
   });
 }
 
-// ==========================================
 // 4 & 5. 아카이브 짝맞추기 & 별점 하이로우 카드
-// ==========================================
-function getGameDeckPool() {
-  if (archiveItems.length >= 6) return [...archiveItems];
-  const fallbackPool = [
-    { id: 'S1', title: '소나기', creator: '황순원', category: '도서', rating: 5, watchDate: '2026-09-10', coverUrl: FALLBACK_COVER },
-    { id: 'S2', title: '아몬드', creator: '손원평', category: '도서', rating: 4, watchDate: '2026-08-22', coverUrl: FALLBACK_COVER },
-    { id: 'S3', title: '밤양갱', creator: '비비', category: '음악', rating: 5, watchDate: '2026-10-05', coverUrl: FALLBACK_COVER },
-    { id: 'S4', title: '인셉션', creator: '크리스토퍼 놀란', category: '영상', rating: 5, watchDate: '2026-07-14', coverUrl: FALLBACK_COVER },
-    { id: 'S5', title: '어린 왕자', creator: '생텍쥐페리', category: '도서', rating: 5, watchDate: '2026-06-01', coverUrl: FALLBACK_COVER },
-    { id: 'S6', title: 'Hype Boy', creator: 'NewJeans', category: '음악', rating: 4, watchDate: '2026-10-18', coverUrl: FALLBACK_COVER }
-  ];
-  return [...archiveItems, ...fallbackPool];
-}
-
-function initGpMemory() {
-  const pool = getGameDeckPool().sort(() => Math.random() - 0.5).slice(0, 6);
-  const deck = [...pool, ...pool]
-    .map((item, idx) => ({ uid: idx, key: item.id || item.title, item, flipped: false, matched: false }))
-    .sort(() => Math.random() - 0.5);
-
-  let flippedCards = [], lockBoard = false, attempts = 0, matchedPairs = 0;
-  const statEl = document.getElementById('gp-mem-stat');
-  const grid = document.getElementById('gp-mem-grid');
-
-  function renderMem() {
-    statEl.textContent = `시도: ${attempts}회 | 매칭: ${matchedPairs} / 6쌍`;
-    grid.innerHTML = '';
-    deck.forEach(card => {
-      const el = document.createElement('div');
-      el.className = 'mem-card' + (card.flipped ? ' flipped' : '') + (card.matched ? ' matched' : '');
-      if (card.flipped || card.matched) {
-        el.innerHTML = `
-          <img src="${esc(card.item.coverUrl || FALLBACK_COVER)}" alt="" onerror="this.onerror=null;this.src='${FALLBACK_COVER}';" />
-          <div style="width:100%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${esc(card.item.title)}</div>
-        `;
-      } else {
-        el.innerHTML = `<div>[ARCHIVE]</div><div style="font-size:0.65rem; color:#ffffff; margin-top:2px;">CARD</div>`;
-      }
-
-      el.addEventListener('click', () => {
-        if (lockBoard || card.flipped || card.matched) return;
-        card.flipped = true;
-        flippedCards.push(card);
-        playRetroTone('click');
-        renderMem();
-
-        if (flippedCards.length === 2) {
-          attempts++;
-          lockBoard = true;
-          const [c1, c2] = flippedCards;
-          if (c1.key === c2.key) {
-            c1.matched = true; c2.matched = true; matchedPairs++;
-            flippedCards = []; lockBoard = false;
-            playRetroTone('open');
-            renderMem();
-            if (matchedPairs === 6) {
-              playRetroTone('boot');
-              statEl.textContent = `[CLEAR] 총 ${attempts}회 만에 6쌍 모두 매칭 완료!`;
-            }
-          } else {
-            setTimeout(() => {
-              c1.flipped = false; c2.flipped = false;
-              flippedCards = []; lockBoard = false;
-              renderMem();
-            }, 650);
-          }
-        }
-      });
-      grid.appendChild(el);
-    });
-  }
-  renderMem();
-}
-
-let hlStreak = 0;
-function initGpHighLow() {
-  const pool = getGameDeckPool().sort(() => Math.random() - 0.5);
-  const leftItem = pool[0], rightItem = pool[1];
-  const arena = document.getElementById('gp-hl-arena');
-  const scoreEl = document.getElementById('gp-hl-score');
-  scoreEl.textContent = `연승 기록: ${hlStreak}연승`;
-
-  arena.innerHTML = `
-    <div class="hl-card">
-      <img src="${esc(leftItem.coverUrl || FALLBACK_COVER)}" alt="" onerror="this.onerror=null;this.src='${FALLBACK_COVER}';" />
-      <div style="font-size:0.74rem; font-weight:800; color:#4a4a4a;">[${esc(leftItem.category)}] ${esc(leftItem.creator)}</div>
-      <div style="font-size:0.95rem; font-weight:900; margin:3px 0 8px;">${esc(leftItem.title)}</div>
-      <div style="background:var(--brutal-yellow); border:2px solid #111; padding:5px; font-weight:900; font-size:0.86rem;">
-        평점: ${Number(leftItem.rating)}점 (${esc(leftItem.watchDate)})
-      </div>
-    </div>
-    <div class="hl-card">
-      <img src="${esc(rightItem.coverUrl || FALLBACK_COVER)}" alt="" onerror="this.onerror=null;this.src='${FALLBACK_COVER}';" />
-      <div style="font-size:0.74rem; font-weight:800; color:#4a4a4a;">[${esc(rightItem.category)}] ${esc(rightItem.creator)}</div>
-      <div style="font-size:0.95rem; font-weight:900; margin:3px 0 8px;">${esc(rightItem.title)}</div>
-      <div id="hl-right-reveal" style="background:var(--win-gray); border:2px solid #111; padding:5px; font-weight:900; font-size:0.86rem;">
-        평점: [ ??? ]
-      </div>
-      <div id="hl-btn-box" style="display:flex; gap:6px; margin-top:8px;">
-        <button type="button" class="btn95 green sm" style="flex:1;" id="btn-hl-up">높거나 같음 (UP)</button>
-        <button type="button" class="btn95 pink sm" style="flex:1;" id="btn-hl-down">낮음 (DOWN)</button>
-      </div>
-    </div>
-  `;
-
-  function judge(guessUp) {
-    const lVal = Number(leftItem.rating) || 4;
-    const rVal = Number(rightItem.rating) || 4;
-    const win = guessUp ? (rVal >= lVal) : (rVal < lVal);
-    const rev = document.getElementById('hl-right-reveal');
-    rev.textContent = `평점: ${rVal}점 (${rightItem.watchDate})`;
-    if (win) {
-      hlStreak++;
-      playRetroTone('open');
-      rev.style.background = 'var(--brutal-green)';
-      scoreEl.textContent = `[정답] 연승 기록: ${hlStreak}연승!`;
-    } else {
-      hlStreak = 0;
-      playRetroTone('boom');
-      rev.style.background = 'var(--brutal-pink)';
-      rev.style.color = '#ffffff';
-      scoreEl.textContent = `[실패] 연승 초기화 (0연승)`;
-    }
-    document.getElementById('hl-btn-box').innerHTML = `<button type="button" class="btn95 yellow sm" style="width:100%;" id="btn-hl-next">다음 카드 대결 &gt;&gt;</button>`;
-    document.getElementById('btn-hl-next').addEventListener('click', initGpHighLow);
-  }
-
-  document.getElementById('btn-hl-up').addEventListener('click', () => judge(true));
-  document.getElementById('btn-hl-down').addEventListener('click', () => judge(false));
-}
-
-document.getElementById('icon-mine')?.addEventListener('click', openGamePackWindow);
-document.getElementById('sm-mine')?.addEventListener('click', openGamePackWindow);
-
-const MINE_SIZE = 8, MINE_TOTAL = 10;
-let mineBoard = [], mineGameOver = false;
-
-function initGpMine() {
-  mineGameOver = false;
-  const resetBtn = document.getElementById('gp-mine-reset');
-  if (resetBtn) resetBtn.textContent = '[:-)] 다시 시작';
-  mineBoard = Array.from({ length: MINE_SIZE * MINE_SIZE }, (_, idx) => ({ idx, mine: false, revealed: false, flagged: false, count: 0 }));
-  let placed = 0;
-  while (placed < MINE_TOTAL) {
-    const r = Math.floor(Math.random() * mineBoard.length);
-    if (!mineBoard[r].mine) { mineBoard[r].mine = true; placed++; }
-  }
-  mineBoard.forEach(cell => {
-    if (!cell.mine) cell.count = getMineNeighbors(cell.idx).filter(n => mineBoard[n].mine).length;
-  });
-  renderGpMine();
-}
-
-function getMineNeighbors(idx) {
-  const r = Math.floor(idx / MINE_SIZE), c = idx % MINE_SIZE, res = [];
-  for (let dr = -1; dr <= 1; dr++) {
-    for (let dc = -1; dc <= 1; dc++) {
-      if (dr === 0 && dc === 0) continue;
-      const nr = r + dr, nc = c + dc;
-      if (nr >= 0 && nr < MINE_SIZE && nc >= 0 && nc < MINE_SIZE) res.push(nr * MINE_SIZE + nc);
-    }
-  }
-  return res;
-}
-
-function revealGpMine(idx) {
-  const cell = mineBoard[idx];
-  if (mineGameOver || cell.revealed || cell.flagged) return;
-  cell.revealed = true;
-  if (cell.mine) {
-    mineGameOver = true;
-    playRetroTone('boom');
-    document.getElementById('gp-mine-reset').textContent = '[X-(] 게임 오버';
-    mineBoard.forEach(c => { if (c.mine) c.revealed = true; });
-    renderGpMine();
-    return;
-  }
-  playRetroTone('click');
-  if (cell.count === 0) getMineNeighbors(idx).forEach(n => revealGpMine(n));
-  if (mineBoard.filter(c => !c.mine && !c.revealed).length === 0) {
-    mineGameOver = true;
-    playRetroTone('boot');
-    document.getElementById('gp-mine-reset').textContent = '[B-)] 클리어!';
-  }
-  renderGpMine();
-}
-
-function renderGpMine() {
-  const grid = document.getElementById('gp-mine-grid');
-  if (!grid) return;
-  grid.innerHTML = '';
-  const flagged = mineBoard.filter(c => c.flagged).length;
-  document.getElementById('gp-mine-left').textContent = String(Math.max(0, MINE_TOTAL - flagged)).padStart(3, '0');
-  mineBoard.forEach(cell => {
-    const div = document.createElement('div');
-    div.className = 'mine-cell' + (cell.revealed ? ' revealed' : '') + (cell.revealed && cell.mine ? ' boom' : '');
-    if (cell.revealed) {
-      div.textContent = cell.mine ? '[*]' : (cell.count > 0 ? cell.count : '');
-      if (cell.count === 1) div.style.color = '#000080';
-      if (cell.count === 2) div.style.color = '#008000';
-      if (cell.count >= 3) div.style.color = '#ff4757';
-    } else if (cell.flagged) {
-      div.textContent = '[F]';
-      div.style.color = '#ff4757';
-    }
-    div.addEventListener('click', () => revealGpMine(cell.idx));
-    div.addEventListener('contextmenu', e => {
-      e.preventDefault();
-      if (mineGameOver || cell.revealed) return;
-      cell.flagged = !cell.flagged;
-      playRetroTone('click');
-      renderGpMine();
-    });
-    grid.appendChild(div);
-  });
-}
-
 function getGameDeckPool() {
   if (archiveItems.length >= 6) return [...archiveItems];
   const fallbackPool = [
