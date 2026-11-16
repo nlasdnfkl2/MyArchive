@@ -79,7 +79,7 @@ function syncTaskbar() {
 }
 
 document.addEventListener('click', e => {
-  const ctrl = e.target.closest('.win-ctrl-btn');
+  const ctrl = e.target.closest('.win-ctrl-btn, [data-action][data-target]');
   if (ctrl) {
     e.stopPropagation();
     const action = ctrl.dataset.action;
