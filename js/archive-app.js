@@ -1,5 +1,5 @@
 window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-window.__MOD_VERSIONS.archiveApp = typeof APP_BUILD_VERSION !== 'undefined' ? APP_BUILD_VERSION : 'v2026.11.17-01';
+window.__MOD_VERSIONS.archiveApp = typeof APP_BUILD_VERSION !== 'undefined' ? APP_BUILD_VERSION : 'v2026.11.17-02';
 
 // Menu & Start Menu Events
 document.querySelectorAll('.menu-item-wrap').forEach(wrap => {
@@ -17,7 +17,6 @@ document.addEventListener('click', () => {
   document.getElementById('btn-start')?.classList.remove('pressed');
 });
 
-document.getElementById('mnu-new-archive')?.addEventListener('click', openRegisterModal);
 document.getElementById('mnu-open-memo')?.addEventListener('click', openMemoWindow);
 document.getElementById('mnu-sync-sheet')?.addEventListener('click', loadArchiveData);
 
@@ -25,8 +24,15 @@ document.getElementById('mnu-export-csv')?.addEventListener('click', () => {
   if (!archiveItems.length) return alert('내보낼 데이터가 없습니다.');
   const headers = ['ID', '매체', '제목', '제작자', '장르', '평점', '감상일', '한줄평', '원본링크'];
   const rows = archiveItems.map(i => [
-    i.id, i.category, `"${i.title.replace(/"/g, '""')}"`, `"${i.creator.replace(/"/g, '""')}"`,
-    `"${i.genre}"`, i.rating, i.watchDate, `"${i.review.replace(/"/g, '""')}"`, i.sourceUrl
+    i.id,
+    i.category,
+    `"${String(i.title || '').replace(/"/g, '""')}"`,
+    `"${String(i.creator || '').replace(/"/g, '""')}"`,
+    `"${String(i.genre || '').replace(/"/g, '""')}"`,
+    i.rating,
+    i.watchDate,
+    `"${String(i.review || '').replace(/"/g, '""')}"`,
+    i.sourceUrl || ''
   ]);
   const csv = '\uFEFF' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -71,7 +77,7 @@ if (startBtn && startMenu) {
   });
 }
 
-// 위임 이벤트(Event Delegation) 포함하여 버튼/아이콘 클릭 무반응 원천 차단
+// 새 기록 등록 트리거 전역 위임
 document.addEventListener('click', e => {
   const trigger = e.target.closest('#icon-new, #sm-new, #btn-open-register, #mnu-new-archive');
   if (trigger) {
@@ -242,20 +248,36 @@ function renderArchiveGrid() {
   });
 }
 
-// Detail Window
+// ==========================================
+// Detail Window (View + Edit + Delete + Recommendations)
+// ==========================================
+const detailItemRegistry = {};
+
 async function spawnDetailWindow(item) {
-  const winId = `win-detail-${item.id || Date.now()}`;
-  if (document.getElementById(winId)) { openWindow(winId); return; }
+  const itemKey = String(item.id || `tmp-${Date.now()}`);
+  detailItemRegistry[itemKey] = item;
+
+  const winId = `win-detail-${itemKey}`;
+  const existing = document.getElementById(winId);
+  if (existing) {
+    openWindow(winId);
+    return;
+  }
 
   detailWindowCount += 1;
   const offset = (detailWindowCount % 6) * 26;
-  const ytQuery = item.category === '음악' ? `${item.creator} ${item.title} official` : item.category === '도서' ? `${item.title} ${item.creator} 북트레일러 리뷰` : `${item.title} ${item.creator}`;
+  const ytQuery = item.category === '음악'
+    ? `${item.creator} ${item.title} official`
+    : item.category === '도서'
+      ? `${item.title} ${item.creator} 북트레일러 리뷰`
+      : `${item.title} ${item.creator}`;
   const ytUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(ytQuery)}`;
 
   const winEl = document.createElement('div');
   winEl.className = 'floating-win open focused';
   winEl.id = winId;
   winEl.dataset.dynamic = 'true';
+  winEl.dataset.itemKey = itemKey;
   winEl.dataset.winTitle = `[INFO] ${item.title}`;
   winEl.style.top = `${66 + offset}px`;
   winEl.style.left = `${145 + offset}px`;
@@ -282,11 +304,18 @@ async function spawnDetailWindow(item) {
             <h2 style="font-size:1.25rem; font-weight:900; margin-bottom:4px;">${esc(item.title)}</h2>
             <div style="font-size:0.86rem; font-weight:700; color:#4a4a4a; margin-bottom:10px;">${esc(item.creator)} · ${esc(item.genre || '일반')}</div>
             <p style="background:var(--brutal-paper); border:2px solid #111; padding:10px; font-size:0.86rem; font-weight:600;">${esc(item.review)}</p>
-            <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:12px;">
+            <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:12px; align-items:center;">
               <a class="btn95 pink sm" href="${ytUrl}" target="_blank" rel="noopener noreferrer">[PLAY] YouTube 이동</a>
               ${item.sourceUrl ? `<a class="btn95 sky sm" href="${esc(item.sourceUrl)}" target="_blank" rel="noopener noreferrer">원본 링크 &gt;&gt;</a>` : ''}
               <button type="button" class="btn95 yellow sm btn-toggle-edit">[EDIT] 기록 수정</button>
               <button type="button" class="btn95 sm btn-delete-item" style="background:#111; color:#fff;">[DEL] 기록 삭제</button>
+            </div>
+            <div class="del-confirm-bar" style="display:none; margin-top:10px; padding:8px 10px; background:var(--brutal-pink); color:#fff; border:2px solid #111; font-size:0.8rem; font-weight:900; align-items:center; justify-content:space-between; gap:8px;">
+              <span>구글 시트에서 이 기록을 영구 삭제할까요?</span>
+              <div style="display:flex; gap:6px;">
+                <button type="button" class="btn95 sm btn-delete-cancel">취소</button>
+                <button type="button" class="btn95 yellow sm btn-delete-confirm">예, 영구 삭제</button>
+              </div>
             </div>
           </div>
         </div>
@@ -298,7 +327,7 @@ async function spawnDetailWindow(item) {
       </div>
 
       <form class="det-edit-form sunken-box" style="display:none; background: var(--win-gray);">
-        <div class="box-head"><span>[EDIT] 감상 기록 수정 (${esc(item.id)})</span><span style="font-size:0.72rem; background:var(--brutal-green); padding:2px 6px; border:1.5px solid #111;">EDIT MODE</span></div>
+        <div class="box-head"><span>[EDIT] 감상 기록 수정 (${esc(item.id || 'NO-ID')})</span><span style="font-size:0.72rem; background:var(--brutal-green); padding:2px 6px; border:1.5px solid #111;">EDIT MODE</span></div>
         <div style="display:grid; grid-template-columns:1fr 1.15fr; gap:10px; margin-bottom:10px;">
           <div><label style="display:block; font-size:0.78rem; font-weight:800; margin-bottom:3px;">매체</label>
             <select name="category" class="win95-select" style="width:100%;">
@@ -349,64 +378,12 @@ async function spawnDetailWindow(item) {
   focusWindow(winEl);
   playRetroTone('open');
 
-  const viewBox = winEl.querySelector('.det-view-mode');
   const editForm = winEl.querySelector('.det-edit-form');
-  populateWin95DateSelects(editForm.dateY, editForm.dateM, editForm.dateD, item.watchDate);
+  if (typeof populateWin95DateSelects === 'function') {
+    populateWin95DateSelects(editForm.dateY, editForm.dateM, editForm.dateD, item.watchDate);
+  }
 
-  winEl.querySelector('.btn-toggle-edit').addEventListener('click', () => { playRetroTone('click'); viewBox.style.display = 'none'; editForm.style.display = 'block'; });
-  winEl.querySelector('.btn-cancel-edit').addEventListener('click', () => { playRetroTone('click'); editForm.style.display = 'none'; viewBox.style.display = 'block'; });
-
-  editForm.addEventListener('submit', async e => {
-    e.preventDefault();
-    const saveBtn = editForm.querySelector('.btn-save-edit');
-    saveBtn.disabled = true;
-    saveBtn.textContent = '시트 반영 중...';
-    setLoadingCursor(true);
-    const checkedRating = editForm.querySelector('input[name="editRating"]:checked');
-    try {
-      const res = await fetch(GAS_WEB_APP_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({
-          action: 'update', id: item.id, category: editForm.category.value, title: editForm.title.value.trim(),
-          creator: editForm.creator.value.trim(), genre: editForm.genre.value.trim() || '일반',
-          rating: checkedRating ? Number(checkedRating.value) : 5,
-          watchDate: getWin95DateValue(editForm.dateY, editForm.dateM, editForm.dateD),
-          coverUrl: editForm.coverUrl.value.trim(), sourceUrl: editForm.sourceUrl.value.trim(), review: editForm.review.value.trim()
-        })
-      });
-      const json = await res.json();
-      if (json.status === 'success' && json.item) {
-        playRetroTone('boot');
-        const idx = archiveItems.findIndex(x => x.id === item.id);
-        if (idx !== -1) archiveItems[idx] = json.item;
-        refreshAllViews();
-        closeWindow(winId);
-        spawnDetailWindow(json.item);
-      } else alert(json.message || '수정 중 오류가 발생했습니다.');
-    } catch { alert('네트워크 오류가 발생했습니다.'); }
-    finally { saveBtn.disabled = false; saveBtn.textContent = '수정 내용 시트 반영'; setLoadingCursor(false); }
-  });
-
-  winEl.querySelector('.btn-delete-item').addEventListener('click', async () => {
-    if (!confirm(`「${item.title}」 기록을 구글 시트에서 영구 삭제하시겠습니까?`)) return;
-    setLoadingCursor(true);
-    try {
-      const res = await fetch(GAS_WEB_APP_URL, {
-        method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action: 'delete', id: item.id })
-      });
-      const json = await res.json();
-      if (json.status === 'success') {
-        playRetroTone('boom');
-        archiveItems = archiveItems.filter(x => x.id !== item.id);
-        refreshAllViews();
-        closeWindow(winId);
-      } else alert(json.message || '삭제 중 오류가 발생했습니다.');
-    } catch { alert('서버 통신 중 오류가 발생했습니다.'); }
-    finally { setLoadingCursor(false); }
-  });
-
+  // 연관 작품 조회
   const statusEl = winEl.querySelector('.rec-status-msg');
   const recGrid = winEl.querySelector('.rec-grid');
   try {
@@ -457,7 +434,158 @@ async function spawnDetailWindow(item) {
   } catch { statusEl.textContent = '연관 작품 조회 중 오류가 발생했습니다.'; }
 }
 
-// Register Modal — index.html에 창이 없어도 스스로 DOM을 생성하여 무조건 열림
+// 상세 창 수정/삭제 버튼 전역 위임 처리
+document.addEventListener('click', async e => {
+  const winEl = e.target.closest('.floating-win[data-item-key]');
+  if (!winEl) return;
+
+  const itemKey = winEl.dataset.itemKey;
+  const item = detailItemRegistry[itemKey];
+  const viewBox = winEl.querySelector('.det-view-mode');
+  const editForm = winEl.querySelector('.det-edit-form');
+  const confirmBar = winEl.querySelector('.del-confirm-bar');
+
+  if (e.target.closest('.btn-toggle-edit')) {
+    e.preventDefault();
+    e.stopPropagation();
+    playRetroTone('click');
+    if (viewBox) viewBox.style.display = 'none';
+    if (editForm) editForm.style.display = 'block';
+    return;
+  }
+
+  if (e.target.closest('.btn-cancel-edit')) {
+    e.preventDefault();
+    e.stopPropagation();
+    playRetroTone('click');
+    if (editForm) editForm.style.display = 'none';
+    if (viewBox) viewBox.style.display = 'block';
+    return;
+  }
+
+  if (e.target.closest('.btn-delete-item')) {
+    e.preventDefault();
+    e.stopPropagation();
+    playRetroTone('click');
+    if (confirmBar) confirmBar.style.display = 'flex';
+    return;
+  }
+
+  if (e.target.closest('.btn-delete-cancel')) {
+    e.preventDefault();
+    e.stopPropagation();
+    playRetroTone('click');
+    if (confirmBar) confirmBar.style.display = 'none';
+    return;
+  }
+
+  if (e.target.closest('.btn-delete-confirm')) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!item || !item.id) {
+      alert('이 기록에는 고유 ID가 없어 시트에서 삭제할 수 없습니다.');
+      return;
+    }
+    const delBtn = e.target.closest('.btn-delete-confirm');
+    delBtn.disabled = true;
+    delBtn.textContent = '삭제 중...';
+    setLoadingCursor(true);
+    try {
+      const res = await fetch(GAS_WEB_APP_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: 'delete', id: item.id })
+      });
+      const json = await res.json();
+      if (json.status === 'success') {
+        playRetroTone('boom');
+        archiveItems = archiveItems.filter(x => x.id !== item.id);
+        delete detailItemRegistry[itemKey];
+        refreshAllViews();
+        closeWindow(winEl.id);
+      } else {
+        alert(json.message || '삭제 중 오류가 발생했습니다.');
+      }
+    } catch {
+      alert('서버 통신 중 오류가 발생했습니다. GAS 새 버전 배포 상태를 확인하십시오.');
+    } finally {
+      delBtn.disabled = false;
+      delBtn.textContent = '예, 영구 삭제';
+      setLoadingCursor(false);
+    }
+  }
+});
+
+// 상세 창 수정 폼 제출 전역 위임 처리
+document.addEventListener('submit', async e => {
+  const editForm = e.target.closest('.det-edit-form');
+  if (!editForm) return;
+  e.preventDefault();
+  e.stopPropagation();
+
+  const winEl = editForm.closest('.floating-win[data-item-key]');
+  const itemKey = winEl ? winEl.dataset.itemKey : '';
+  const item = detailItemRegistry[itemKey];
+  if (!item || !item.id) {
+    alert('이 기록에는 고유 ID가 없어 수정할 수 없습니다.');
+    return;
+  }
+
+  const saveBtn = editForm.querySelector('.btn-save-edit');
+  if (saveBtn) {
+    saveBtn.disabled = true;
+    saveBtn.textContent = '시트 반영 중...';
+  }
+  setLoadingCursor(true);
+
+  const checkedRating = editForm.querySelector('input[name="editRating"]:checked');
+  const watchDateStr = (typeof getWin95DateValue === 'function' && editForm.dateY)
+    ? getWin95DateValue(editForm.dateY, editForm.dateM, editForm.dateD)
+    : item.watchDate;
+
+  try {
+    const res = await fetch(GAS_WEB_APP_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({
+        action: 'update',
+        id: item.id,
+        category: editForm.category.value,
+        title: editForm.title.value.trim(),
+        creator: editForm.creator.value.trim(),
+        genre: editForm.genre.value.trim() || '일반',
+        rating: checkedRating ? Number(checkedRating.value) : 5,
+        watchDate: watchDateStr,
+        coverUrl: editForm.coverUrl.value.trim(),
+        sourceUrl: editForm.sourceUrl.value.trim(),
+        review: editForm.review.value.trim()
+      })
+    });
+    const json = await res.json();
+    if (json.status === 'success' && json.item) {
+      playRetroTone('boot');
+      const idx = archiveItems.findIndex(x => x.id === item.id);
+      if (idx !== -1) archiveItems[idx] = json.item;
+      refreshAllViews();
+      closeWindow(winEl.id);
+      spawnDetailWindow(json.item);
+    } else {
+      alert(json.message || '수정 중 오류가 발생했습니다.');
+    }
+  } catch {
+    alert('네트워크 오류가 발생했습니다. GAS 새 버전 배포 상태를 확인하십시오.');
+  } finally {
+    if (saveBtn) {
+      saveBtn.disabled = false;
+      saveBtn.textContent = '수정 내용 시트 반영';
+    }
+    setLoadingCursor(false);
+  }
+});
+
+// ==========================================
+// Register Modal
+// ==========================================
 let regEventsBound = false;
 
 function ensureRegisterWindowExists() {
@@ -472,7 +600,7 @@ function ensureRegisterWindowExists() {
     regWin.style.width = '680px';
     regWin.innerHTML = `
       <div class="win-titlebar draggable yellow-bar">
-        <div class="win-title-left"><span class="win-title-dot"></span><span>새 감상 기록하기 — 메타데이터 통합 검색 및 등록</span></div>
+        <div class="win-title-left"><span class="win-title-dot"></span><span>새 감상 기록하기 — 메타데이터 검색 및 등록</span></div>
         <div class="win-controls">
           <button type="button" class="win-ctrl-btn" data-action="minimize" data-target="win-register">_</button>
           <button type="button" class="win-ctrl-btn close" data-action="close" data-target="win-register">X</button>
@@ -583,7 +711,7 @@ function openRegisterModal() {
   const dSel = document.getElementById('inp-date-d');
   const singleDate = document.getElementById('inp-date');
 
-  if (ySel && mSel && dSel) {
+  if (ySel && mSel && dSel && typeof populateWin95DateSelects === 'function') {
     populateWin95DateSelects(ySel, mSel, dSel);
   } else if (singleDate) {
     singleDate.value = new Date().toISOString().slice(0, 10);
@@ -615,13 +743,13 @@ function showRegAlert(msg, type = 'info') {
 async function runRankedSearch() {
   const query = document.getElementById('inp-search-query').value.trim();
   const category = document.getElementById('inp-category').value;
-  if (!query) { showRegAlert('검색어, 유사어, 또는 링크(URL)를 입력하십시오.', 'err'); return; }
+  if (!query) { showRegAlert('검색어 또는 링크(URL)를 입력하십시오.', 'err'); return; }
 
   const btn = document.getElementById('btn-auto-search');
   const rankBox = document.getElementById('rank-list');
   btn.disabled = true; btn.textContent = '검색 중...'; setLoadingCursor(true);
   if (rankBox) rankBox.style.display = 'none';
-  showRegAlert('Apple Music · Deezer · MusicBrainz · YouTube · Google Books 통합 검색 중...');
+  showRegAlert('메타데이터를 검색하고 있습니다...');
 
   try {
     const res = await fetch(`${GAS_WEB_APP_URL}?action=search&q=${encodeURIComponent(query)}&category=${encodeURIComponent(category)}`);
@@ -680,7 +808,7 @@ async function handleRegisterSubmit(e) {
   const mSel = document.getElementById('inp-date-m');
   const dSel = document.getElementById('inp-date-d');
   const singleDate = document.getElementById('inp-date');
-  const watchDateVal = (ySel && mSel && dSel)
+  const watchDateVal = (ySel && mSel && dSel && typeof getWin95DateValue === 'function')
     ? getWin95DateValue(ySel, mSel, dSel)
     : (singleDate ? singleDate.value : new Date().toISOString().slice(0, 10));
 
@@ -709,7 +837,9 @@ async function handleRegisterSubmit(e) {
   finally { btn.disabled = false; btn.textContent = '확인 및 시트 저장'; setLoadingCursor(false); }
 }
 
+// ==========================================
 // Desktop Quick Memo
+// ==========================================
 function openMemoWindow() { openWindow('win-memo'); loadNotesData(); }
 
 async function loadNotesData() {
