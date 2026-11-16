@@ -14,7 +14,7 @@ let memoNotes = [];
 let selectedCategory = 'ALL';
 let categoryChart = null;
 let monthlyChart = null;
-let topZIndex = 200;
+let topZIndex = 400;
 let detailWindowCount = 0;
 let soundEnabled = true;
 let useGhostDrag = true;
@@ -23,6 +23,44 @@ function esc(str) {
   return String(str || '')
     .replace(/&/g, '&amp;').replace(/</g, '&lt;')
     .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+// Win95 고전 년/월/일 콤보박스 채우기 및 값 읽기/설정
+function populateWin95DateSelects(ySel, mSel, dSel, isoDateStr) {
+  const curYear = new Date().getFullYear();
+  ySel.innerHTML = '';
+  for (let y = curYear + 1; y >= 1980; y--) {
+    const opt = document.createElement('option');
+    opt.value = String(y);
+    opt.textContent = `${y}년`;
+    ySel.appendChild(opt);
+  }
+  mSel.innerHTML = '';
+  for (let m = 1; m <= 12; m++) {
+    const val = String(m).padStart(2, '0');
+    const opt = document.createElement('option');
+    opt.value = val;
+    opt.textContent = `${m}월`;
+    mSel.appendChild(opt);
+  }
+  dSel.innerHTML = '';
+  for (let d = 1; d <= 31; d++) {
+    const val = String(d).padStart(2, '0');
+    const opt = document.createElement('option');
+    opt.value = val;
+    opt.textContent = `${d}일`;
+    dSel.appendChild(opt);
+  }
+  const parts = (isoDateStr || new Date().toISOString().slice(0, 10)).split('-');
+  if (parts.length === 3) {
+    ySel.value = parts[0];
+    mSel.value = parts[1].padStart(2, '0');
+    dSel.value = parts[2].padStart(2, '0');
+  }
+}
+
+function getWin95DateValue(ySel, mSel, dSel) {
+  return `${ySel.value}-${mSel.value}-${dSel.value}`;
 }
 
 function playRetroTone(type = 'click') {
@@ -99,7 +137,7 @@ function runBootAnimation() {
 // BSOD & Screensaver & Sound Toggle
 document.getElementById('btn-sound-toggle').addEventListener('click', e => {
   soundEnabled = !soundEnabled;
-  e.target.textContent = soundEnabled ? '🔊' : '🔇';
+  e.target.textContent = soundEnabled ? 'SPK:ON' : 'SPK:OFF';
   if (soundEnabled) playRetroTone('click');
 });
 
