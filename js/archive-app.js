@@ -1,7 +1,13 @@
-window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-window.__MOD_VERSIONS.archiveApp = typeof APP_BUILD_VERSION !== 'undefined' ? APP_BUILD_VERSION : 'v2026.11.17-03';
+// ============================================================
+// MY-ARCHIVE 95 OS — Main CRUD Controller & Extension Apps
+// ============================================================
 
-// Menu & Start Menu Events
+window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
+window.__MOD_VERSIONS.archiveApp = typeof APP_BUILD_VERSION !== 'undefined' ? APP_BUILD_VERSION : 'v2026.11.17-04';
+
+// ============================================================
+// 1. 상단 메뉴바 & 바탕화면·시작 메뉴 이벤트 바인딩
+// ============================================================
 document.querySelectorAll('.menu-item-wrap').forEach(wrap => {
   wrap.querySelector('.menu-root')?.addEventListener('click', e => {
     e.stopPropagation();
@@ -18,7 +24,7 @@ document.addEventListener('click', () => {
 });
 
 document.getElementById('mnu-open-memo')?.addEventListener('click', openMemoWindow);
-document.getElementById('mnu-sync-sheet')?.addEventListener('click', loadArchiveData);
+document.getElementById('mnu-sync-sheet')?.addEventListener('click', () => loadArchiveData(true));
 
 document.getElementById('mnu-export-csv')?.addEventListener('click', () => {
   if (!archiveItems.length) {
@@ -59,14 +65,16 @@ document.getElementById('mnu-toggle-charts')?.addEventListener('click', () => {
 document.getElementById('mnu-cascade')?.addEventListener('click', () => {
   document.querySelectorAll('.floating-win.open').forEach((w, idx) => {
     w.classList.remove('minimized');
-    w.style.top = `${56 + idx * 34}px`;
-    w.style.left = `${140 + idx * 34}px`;
+    w.style.top = `${48 + idx * 30}px`;
+    w.style.left = `${130 + idx * 30}px`;
     focusWindow(w);
   });
 });
 
 document.getElementById('mnu-close-all-popups')?.addEventListener('click', () => {
-  document.querySelectorAll('.floating-win.open').forEach(w => closeWindow(w.id));
+  document.querySelectorAll('.floating-win.open').forEach(w => {
+    if (w.id !== 'win-main') closeWindow(w.id);
+  });
 });
 
 const startBtn = document.getElementById('btn-start');
@@ -92,16 +100,12 @@ document.addEventListener('click', e => {
 
 document.getElementById('icon-main')?.addEventListener('click', () => selectCategoryFilter('ALL'));
 document.getElementById('icon-memo')?.addEventListener('click', openMemoWindow);
-document.getElementById('icon-book')?.addEventListener('click', () => selectCategoryFilter('도서'));
-document.getElementById('icon-music')?.addEventListener('click', () => selectCategoryFilter('음악'));
-document.getElementById('icon-video')?.addEventListener('click', () => selectCategoryFilter('영상'));
-
 document.getElementById('sm-memo')?.addEventListener('click', openMemoWindow);
 document.getElementById('sm-all')?.addEventListener('click', () => selectCategoryFilter('ALL'));
 document.getElementById('sm-book')?.addEventListener('click', () => selectCategoryFilter('도서'));
 document.getElementById('sm-music')?.addEventListener('click', () => selectCategoryFilter('음악'));
 document.getElementById('sm-video')?.addEventListener('click', () => selectCategoryFilter('영상'));
-document.getElementById('sm-reload')?.addEventListener('click', loadArchiveData);
+document.getElementById('sm-reload')?.addEventListener('click', () => loadArchiveData(true));
 
 function selectCategoryFilter(cat) {
   openWindow('win-main');
@@ -110,27 +114,57 @@ function selectCategoryFilter(cat) {
   renderArchiveGrid();
 }
 
-// Initial Boot & Data Fetch
+// ============================================================
+// 2. 초기 부팅 & Google Sheets + LocalStorage 하이브리드 동기화
+// ============================================================
 document.addEventListener('DOMContentLoaded', () => {
   runBootAnimation();
   ensureRegisterWindowExists();
-  loadArchiveData();
+
+  // 캐시 우선 즉시 렌더링 후 백그라운드 시트 동기화
+  const cachedItems = loadLocalCache(STORAGE_KEYS.ARCHIVE, null);
+  if (Array.isArray(cachedItems) && cachedItems.length > 0) {
+    archiveItems = cachedItems;
+    updateCacheBadge(true, 'CACHE: LOADED');
+    refreshAllViews();
+  }
+
+  loadArchiveData(false);
   loadNotesData();
+  initExtensionApps();
 });
 
-async function loadArchiveData() {
+function updateCacheBadge(isOnline, labelText) {
+  const badge = document.getElementById('cache-status-badge');
+  if (!badge) return;
+  badge.textContent = labelText;
+  badge.classList.toggle('offline', !isOnline);
+}
+
+async function loadArchiveData(showFeedback = false) {
   setLoadingCursor(true);
   const statusLeft = document.getElementById('status-left');
   if (statusLeft) statusLeft.textContent = `구글 시트 동기화 중... (${APP_BUILD_VERSION})`;
+
   try {
     const res = await fetch(`${GAS_WEB_APP_URL}?action=list`);
     const json = await res.json();
-    archiveItems = (json.status === 'success' && Array.isArray(json.items)) ? json.items : [];
+    if (json.status === 'success' && Array.isArray(json.items)) {
+      archiveItems = json.items;
+      saveLocalCache(STORAGE_KEYS.ARCHIVE, archiveItems);
+      updateCacheBadge(true, 'SHEET + CACHE: SYNCED');
+      if (statusLeft) statusLeft.textContent = `동기화 완료 [${APP_BUILD_VERSION}] — 모든 창 제목 표시줄을 드래그하여 이동할 수 있습니다`;
+      if (showFeedback) playRetroTone('open');
+    } else {
+      throw new Error('Invalid response');
+    }
   } catch {
-    archiveItems = [];
+    const fallback = loadLocalCache(STORAGE_KEYS.ARCHIVE, []);
+    archiveItems = Array.isArray(fallback) ? fallback : [];
+    updateCacheBadge(false, 'OFFLINE CACHE MODE');
+    if (statusLeft) statusLeft.textContent = `오프라인 로컬 캐시 모드 [${APP_BUILD_VERSION}] — 시트 연결 대기 중`;
   } finally {
     setLoadingCursor(false);
-    if (statusLeft) statusLeft.textContent = `준비 완료 [${APP_BUILD_VERSION}] — 모든 창 제목 표시줄을 드래그하여 이동할 수 있습니다`;
   }
   refreshAllViews();
 }
@@ -139,13 +173,22 @@ function refreshAllViews() {
   updateKPIs();
   renderCharts();
   renderArchiveGrid();
-  updateJukebox();
+  if (typeof updateJukebox === 'function') updateJukebox();
+
   const visWin = document.getElementById('win-visualizer');
-  if (visWin && visWin.classList.contains('open') && typeof buildVisualizerData === 'function') {
-    buildVisualizerData();
+  if (visWin && visWin.classList.contains('open') && typeof renderVisualizerWorkspace === 'function') {
+    renderVisualizerWorkspace();
   }
+  const calWin = document.getElementById('win-calendar');
+  if (calWin && calWin.classList.contains('open')) renderCalendarApp();
+
+  const tlWin = document.getElementById('win-timeline');
+  if (tlWin && tlWin.classList.contains('open')) renderTimelineAndRadarApp();
 }
 
+// ============================================================
+// 3. KPI 요약 카드 & 기본 통계 차트 & 메인 카드 그리드
+// ============================================================
 function updateKPIs() {
   const total = archiveItems.length;
   document.getElementById('kpi-total').textContent = `${total}건`;
@@ -177,28 +220,63 @@ function updateKPIs() {
 }
 
 function renderCharts() {
+  if (typeof Chart === 'undefined') return;
   Chart.defaults.font.family = "'Pretendard Variable', Pretendard, sans-serif";
   Chart.defaults.font.weight = 800;
   Chart.defaults.color = '#111111';
 
   const cats = ['도서', '음악', '영상', '기타'];
   const catVals = cats.map(c => archiveItems.filter(i => i.category === c).length);
-  if (categoryChart) categoryChart.destroy();
-  categoryChart = new Chart(document.getElementById('chart-category').getContext('2d'), {
-    type: 'doughnut',
-    data: { labels: cats, datasets: [{ data: catVals, backgroundColor: ['#ffd83b', '#48dbfb', '#ff4757', '#2ed573'], borderColor: '#111111', borderWidth: 3 }] },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { boxWidth: 13, padding: 10 } } } }
-  });
+  const catCanvas = document.getElementById('chart-category');
+  if (catCanvas) {
+    if (categoryChart) categoryChart.destroy();
+    categoryChart = new Chart(catCanvas.getContext('2d'), {
+      type: 'doughnut',
+      data: {
+        labels: cats,
+        datasets: [{
+          data: catVals,
+          backgroundColor: ['#ffd83b', '#48dbfb', '#ff4757', '#2ed573'],
+          borderColor: '#111111',
+          borderWidth: 2.5
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { position: 'right', labels: { boxWidth: 12, padding: 8 } } }
+      }
+    });
+  }
 
   const mMap = {};
   archiveItems.forEach(i => { const ym = (i.watchDate || '').slice(0, 7); if (ym) mMap[ym] = (mMap[ym] || 0) + 1; });
   const months = Object.keys(mMap).sort();
-  if (monthlyChart) monthlyChart.destroy();
-  monthlyChart = new Chart(document.getElementById('chart-monthly').getContext('2d'), {
-    type: 'bar',
-    data: { labels: months.length ? months : ['기록 없음'], datasets: [{ data: months.length ? months.map(m => mMap[m]) : [0], backgroundColor: '#2ed573', borderColor: '#111111', borderWidth: 3 }] },
-    options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: '#dfdcd3' } }, x: { grid: { display: false } } }, plugins: { legend: { display: false } } }
-  });
+  const monCanvas = document.getElementById('chart-monthly');
+  if (monCanvas) {
+    if (monthlyChart) monthlyChart.destroy();
+    monthlyChart = new Chart(monCanvas.getContext('2d'), {
+      type: 'bar',
+      data: {
+        labels: months.length ? months : ['기록 없음'],
+        datasets: [{
+          data: months.length ? months.map(m => mMap[m]) : [0],
+          backgroundColor: '#2ed573',
+          borderColor: '#111111',
+          borderWidth: 2.5
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: '#dfdcd3' } },
+          x: { grid: { display: false } }
+        },
+        plugins: { legend: { display: false } }
+      }
+    });
+  }
 }
 
 document.querySelectorAll('#cat-filter-group .pill-btn').forEach(btn => btn.addEventListener('click', () => selectCategoryFilter(btn.dataset.cat)));
@@ -218,6 +296,7 @@ function renderArchiveGrid() {
   const statusRight = document.getElementById('status-right');
   if (statusRight) statusRight.textContent = `${filtered.length}개 개체 표시됨`;
   const grid = document.getElementById('archive-grid');
+  if (!grid) return;
   grid.innerHTML = '';
 
   if (!filtered.length) {
@@ -251,9 +330,9 @@ function renderArchiveGrid() {
   });
 }
 
-// ==========================================
-// Windows 95 System Message Box Dialog
-// ==========================================
+// ============================================================
+// 4. Windows 95 시스템 메시지 박스 다이얼로그
+// ============================================================
 function showWin95MessageBox(title, message, tone = 'boom') {
   const existing = document.getElementById('win-sys-msgbox');
   if (existing) existing.remove();
@@ -294,8 +373,7 @@ function showWin95MessageBox(title, message, tone = 'boom') {
 
   const closeMsgBox = () => {
     playRetroTone('close');
-    if (typeof closeWindow === 'function') closeWindow('win-sys-msgbox');
-    else box.remove();
+    closeWindow('win-sys-msgbox');
   };
 
   document.getElementById('btn-msgbox-ok')?.addEventListener('click', closeMsgBox);
@@ -303,9 +381,9 @@ function showWin95MessageBox(title, message, tone = 'boom') {
   document.getElementById('btn-msgbox-ok')?.focus();
 }
 
-// ==========================================
-// Detail Window (View + Edit + Delete + Recommendations)
-// ==========================================
+// ============================================================
+// 5. 상세 탐색기 창 (조회 + 수정 + 삭제 + 연관 추천)
+// ============================================================
 const detailItemRegistry = {};
 
 async function spawnDetailWindow(item) {
@@ -555,6 +633,7 @@ document.addEventListener('click', async e => {
       if (json.status === 'success') {
         playRetroTone('boom');
         archiveItems = archiveItems.filter(x => x.id !== item.id);
+        saveLocalCache(STORAGE_KEYS.ARCHIVE, archiveItems);
         delete detailItemRegistry[itemKey];
         refreshAllViews();
         closeWindow(winEl.id);
@@ -571,7 +650,7 @@ document.addEventListener('click', async e => {
   }
 });
 
-// 상세 창 수정 폼 제출 전역 위임 처리
+// 상세 창 수정 폼 제출 전역 위임 처리 (자기 자신 ID 제외 중복 검증)
 document.addEventListener('submit', async e => {
   const editForm = e.target.closest('.det-edit-form');
   if (!editForm) return;
@@ -589,15 +668,14 @@ document.addEventListener('submit', async e => {
   const newCategory = editForm.category.value;
   const newTitle = editForm.title.value.trim();
 
-  // ★ 프론트엔드 레벨에서 자기 자신의 ID(item.id)를 제외하고 동일 매체·제목 중복 체크
+  // 자기 자신의 ID(item.id)는 제외하고 동일 매체·제목 중복 체크
   const isDetailDup = archiveItems.some(x => {
-    if (x.id === item.id) return false; // 본인 자신은 제외
+    if (String(x.id).trim() === String(item.id).trim()) return false;
     return x.category === newCategory && String(x.title || '').trim().toLowerCase() === newTitle.toLowerCase();
   });
 
   if (isDetailDup) {
-    const dupMsg = `이미 '${newCategory}' 목록에 동일한 제목(「${newTitle}」)의 다른 기록이 존재합니다.`;
-    showWin95MessageBox('중복 등록 오류 — MY-ARCHIVE 95', dupMsg, 'boom');
+    showWin95MessageBox('중복 기록 오류 — MY-ARCHIVE 95', `이미 '${newCategory}' 목록에 동일한 제목(「${newTitle}」)의 다른 기록이 존재합니다.`, 'boom');
     return;
   }
 
@@ -619,7 +697,7 @@ document.addEventListener('submit', async e => {
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify({
         action: 'update',
-        id: item.id, // ★ 본인 고유 ID 전송 필수
+        id: item.id,
         category: newCategory,
         title: newTitle,
         creator: editForm.creator.value.trim(),
@@ -636,6 +714,7 @@ document.addEventListener('submit', async e => {
       playRetroTone('boot');
       const idx = archiveItems.findIndex(x => x.id === item.id);
       if (idx !== -1) archiveItems[idx] = json.item;
+      saveLocalCache(STORAGE_KEYS.ARCHIVE, archiveItems);
       refreshAllViews();
       closeWindow(winEl.id);
       spawnDetailWindow(json.item);
@@ -653,9 +732,9 @@ document.addEventListener('submit', async e => {
   }
 });
 
-// ==========================================
-// Register Modal
-// ==========================================
+// ============================================================
+// 6. 새 감상 기록 등록 모달 (메타데이터 검색 + 1MB 이미지 압축)
+// ============================================================
 let regEventsBound = false;
 
 function ensureRegisterWindowExists() {
@@ -689,7 +768,11 @@ function ensureRegisterWindowExists() {
         <form id="archive-form" class="sunken-box">
           <div style="display:grid; grid-template-columns:130px 1fr; gap:12px; margin-bottom:10px;">
             <div>
-              <img id="preview-cover" src="${FALLBACK_COVER}" alt="표지" style="width:100%; height:165px; object-fit:cover; border:2px solid #111; background:#111;" />
+              <img id="preview-cover" src="${FALLBACK_COVER}" alt="표지" style="width:100%; height:155px; object-fit:cover; border:2px solid #111; background:#111; margin-bottom:4px;" />
+              <label class="btn95 sm" style="width:100%; font-size:0.7rem; padding:4px 6px;">
+                📷 사진 압축 첨부
+                <input type="file" id="inp-cover-file" accept="image/*" style="display:none;" />
+              </label>
             </div>
             <div style="display:flex; flex-direction:column; gap:8px;">
               <div style="display:grid; grid-template-columns:1fr 1.25fr; gap:8px;">
@@ -760,6 +843,21 @@ function ensureRegisterWindowExists() {
       img.src = e.target.value.trim() || FALLBACK_COVER;
       img.onerror = () => { img.src = FALLBACK_COVER; };
     });
+    // 직접 업로드한 표지·인증샷 1MB 이하 클라이언트 압축 적용
+    document.getElementById('inp-cover-file')?.addEventListener('change', async e => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      try {
+        showRegAlert('이미지를 1MB 이하로 압축하고 있습니다...');
+        const compressedDataUrl = await compressImageFile(file, 640, 380 * 1024);
+        document.getElementById('inp-cover-url').value = compressedDataUrl;
+        const img = document.getElementById('preview-cover');
+        if (img) img.src = compressedDataUrl;
+        showRegAlert('로컬 이미지 압축 및 표지 적용 완료!', 'ok');
+      } catch (err) {
+        showRegAlert(err.message || '이미지 압축 오류', 'err');
+      }
+    });
     document.getElementById('btn-cancel-reg')?.addEventListener('click', e => {
       e.preventDefault();
       e.stopPropagation();
@@ -773,8 +871,10 @@ function openRegisterModal() {
   ensureRegisterWindowExists();
 
   const form = document.getElementById('archive-form');
-  if (form) form.reset();
-  if (form) delete form.dataset.editId;
+  if (form) {
+    form.reset();
+    delete form.dataset.editId;
+  }
 
   const searchInp = document.getElementById('inp-search-query');
   if (searchInp) searchInp.value = '';
@@ -785,12 +885,8 @@ function openRegisterModal() {
   const ySel = document.getElementById('inp-date-y');
   const mSel = document.getElementById('inp-date-m');
   const dSel = document.getElementById('inp-date-d');
-  const singleDate = document.getElementById('inp-date');
-
   if (ySel && mSel && dSel && typeof populateWin95DateSelects === 'function') {
     populateWin95DateSelects(ySel, mSel, dSel);
-  } else if (singleDate) {
-    singleDate.value = new Date().toISOString().slice(0, 10);
   }
 
   const prevImg = document.getElementById('preview-cover');
@@ -875,29 +971,23 @@ function applyCandidateToForm(c) {
 async function handleRegisterSubmit(e) {
   e.preventDefault();
   const checkedRating = document.querySelector('input[name="reg-rating"]:checked');
-  const selectRating = document.getElementById('inp-rating');
-  const ratingVal = checkedRating
-    ? Number(checkedRating.value)
-    : (selectRating ? Number(selectRating.value) : 5);
+  const ratingVal = checkedRating ? Number(checkedRating.value) : 5;
 
   const ySel = document.getElementById('inp-date-y');
   const mSel = document.getElementById('inp-date-m');
   const dSel = document.getElementById('inp-date-d');
-  const singleDate = document.getElementById('inp-date');
   const watchDateVal = (ySel && mSel && dSel && typeof getWin95DateValue === 'function')
     ? getWin95DateValue(ySel, mSel, dSel)
-    : (singleDate ? singleDate.value : new Date().toISOString().slice(0, 10));
+    : normalizeDateString('');
 
   const categoryVal = document.getElementById('inp-category').value;
   const titleVal = document.getElementById('inp-title').value.trim();
 
-  // ★ 현재 수정/등록 중인 폼에 편집 중인 ID가 있다면 가져옴 (신규 등록 시에는 빈 문자열)
   const formEl = document.getElementById('archive-form');
   const editingId = formEl ? (formEl.dataset.editId || '') : '';
 
-  // ★ 프론트엔드 즉시 중복 검사 (자기 자신의 ID는 제외하고 동일 매체·동일 제목 검사)
   const isLocalDup = archiveItems.some(item => {
-    if (editingId && item.id === editingId) return false; // 본인 자신은 중복 검사에서 제외
+    if (editingId && String(item.id).trim() === String(editingId).trim()) return false;
     return item.category === categoryVal && String(item.title || '').trim().toLowerCase() === titleVal.toLowerCase();
   });
 
@@ -933,14 +1023,15 @@ async function handleRegisterSubmit(e) {
       showWin95MessageBox('중복 등록 오류 — MY-ARCHIVE 95', dupMsg, 'boom');
       return;
     }
-    if (json.status === 'success' && (json.item || json.note)) {
+    if (json.status === 'success' && json.item) {
       playRetroTone('boot');
       if (editingId) {
         const idx = archiveItems.findIndex(x => x.id === editingId);
-        if (idx !== -1 && json.item) archiveItems[idx] = json.item;
-      } else if (json.item) {
+        if (idx !== -1) archiveItems[idx] = json.item;
+      } else {
         archiveItems.unshift(json.item);
       }
+      saveLocalCache(STORAGE_KEYS.ARCHIVE, archiveItems);
       refreshAllViews();
       closeWindow('win-register');
     } else {
@@ -955,16 +1046,19 @@ async function handleRegisterSubmit(e) {
   }
 }
 
-// ==========================================
-// Desktop Quick Memo
-// ==========================================
+// ============================================================
+// 7. 퀵 메모장 (MEMOPAD.EXE)
+// ============================================================
 function openMemoWindow() { openWindow('win-memo'); loadNotesData(); }
 
 async function loadNotesData() {
   try {
     const json = await (await fetch(`${GAS_WEB_APP_URL}?action=notes`)).json();
     memoNotes = (json.status === 'success' && Array.isArray(json.notes)) ? json.notes : [];
-  } catch { memoNotes = []; }
+    saveLocalCache(STORAGE_KEYS.NOTES, memoNotes);
+  } catch {
+    memoNotes = loadLocalCache(STORAGE_KEYS.NOTES, []);
+  }
   renderNotesList();
 }
 
@@ -973,7 +1067,10 @@ function renderNotesList() {
   const countBadge = document.getElementById('memo-count-badge');
   if (countBadge) countBadge.textContent = `${memoNotes.length}건`;
   if (!container) return;
-  if (!memoNotes.length) { container.innerHTML = `<div style="font-size:0.82rem; font-weight:700; color:#4a4a4a;">저장된 아이디어 메모가 없습니다.</div>`; return; }
+  if (!memoNotes.length) {
+    container.innerHTML = `<div style="font-size:0.82rem; font-weight:700; color:#4a4a4a;">저장된 아이디어 메모가 없습니다.</div>`;
+    return;
+  }
   container.innerHTML = memoNotes.map(n => `
     <div class="note-card">
       <div style="display:flex; justify-content:space-between; font-size:0.74rem; font-weight:800; color:#4a4a4a; margin-bottom:4px;"><span>[NOTE] ${esc(n.title || '무제 메모')}</span><span>${esc(n.createdAt)}</span></div>
@@ -992,6 +1089,729 @@ document.getElementById('memo-form')?.addEventListener('submit', async e => {
   try {
     const res = await fetch(GAS_WEB_APP_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: 'note', title, content }) });
     const json = await res.json();
-    if (json.status === 'success' && json.note) { playRetroTone('open'); memoNotes.unshift(json.note); renderNotesList(); document.getElementById('memo-form').reset(); }
+    if (json.status === 'success' && json.note) {
+      playRetroTone('open');
+      memoNotes.unshift(json.note);
+      saveLocalCache(STORAGE_KEYS.NOTES, memoNotes);
+      renderNotesList();
+      document.getElementById('memo-form').reset();
+    }
   } finally { btn.disabled = false; btn.textContent = '메모 시트에 저장'; setLoadingCursor(false); }
 });
+
+// ============================================================
+// 8. 확장 미니 앱 초기화 브리지 (9~13주차 강의 실습 통합 모듈)
+// ============================================================
+function initExtensionApps() {
+  window.addEventListener('window:opened', ev => {
+    const id = ev.detail && ev.detail.id;
+    if (id === 'win-calendar') renderCalendarApp();
+    if (id === 'win-mood') renderMoodRecommenderApp();
+    if (id === 'win-quiz') renderArchiveQuizApp();
+    if (id === 'win-timeline') renderTimelineAndRadarApp();
+    if (id === 'win-stamp') renderStampAndReceiptApp();
+    if (id === 'win-mailbox') renderMailboxAndQrApp();
+  });
+}
+
+// ------------------------------------------------------------
+// 8-1. 월별 감상 달력 & 목표 D-Day (CALENDAR95.EXE)
+// ------------------------------------------------------------
+let calCurrentYear = new Date().getFullYear();
+let calCurrentMonth = new Date().getMonth() + 1;
+
+function renderCalendarApp() {
+  const body = document.getElementById('calendar-app-body');
+  if (!body) return;
+
+  const ymPrefix = `${calCurrentYear}-${String(calCurrentMonth).padStart(2, '0')}`;
+  const firstDayOfWeek = new Date(calCurrentYear, calCurrentMonth - 1, 1).getDay();
+  const daysInMonth = new Date(calCurrentYear, calCurrentMonth, 0).getDate();
+
+  const itemsByDate = {};
+  archiveItems.forEach(item => {
+    const dStr = String(item.watchDate || '').slice(0, 10);
+    if (dStr.startsWith(ymPrefix)) {
+      itemsByDate[dStr] = itemsByDate[dStr] || [];
+      itemsByDate[dStr].push(item);
+    }
+  });
+
+  const ddays = loadLocalCache(STORAGE_KEYS.DDAYS, [
+    { id: 'dd-1', title: '올해 필독서 10권 완독 목표', date: `${calCurrentYear}-12-31` }
+  ]);
+  const todayZero = new Date(normalizeDateString('') + 'T00:00:00');
+  const sortedDdays = [...ddays].map(d => {
+    const targetZero = new Date(normalizeDateString(d.date) + 'T00:00:00');
+    const diff = Math.round((targetZero - todayZero) / 86400000);
+    return { ...d, diff };
+  }).sort((a, b) => a.diff - b.diff);
+
+  let cellsHtml = '';
+  for (let i = 0; i < firstDayOfWeek; i++) {
+    cellsHtml += `<div class="cal-cell empty"></div>`;
+  }
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateKey = `${ymPrefix}-${String(d).padStart(2, '0')}`;
+    const list = itemsByDate[dateKey] || [];
+    cellsHtml += `
+      <div class="cal-cell ${list.length ? 'has-record' : ''}" data-cal-date="${dateKey}">
+        <div>${d}일</div>
+        <div class="cal-dot-list">
+          ${list.slice(0, 2).map(it => `<span class="cal-badge">${esc(it.title)}</span>`).join('')}
+          ${list.length > 2 ? `<span class="cal-badge">+${list.length - 2}</span>` : ''}
+        </div>
+      </div>
+    `;
+  }
+
+  body.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
+      <div style="display:flex;align-items:center;gap:6px;">
+        <button type="button" class="btn95 sm" id="cal-prev-m">◀ 이전 달</button>
+        <span style="font-size:1.05rem;font-weight:900;padding:0 8px;">${calCurrentYear}년 ${calCurrentMonth}월</span>
+        <button type="button" class="btn95 sm" id="cal-next-m">다음 달 ▶</button>
+      </div>
+      <span class="tag-mini">이번 달 감상: ${Object.values(itemsByDate).reduce((s, a) => s + a.length, 0)}건</span>
+    </div>
+
+    <div class="cal-grid">
+      ${['일', '월', '화', '수', '목', '금', '토'].map(w => `<div class="cal-head-cell">${w}</div>`).join('')}
+      ${cellsHtml}
+    </div>
+    <div id="cal-day-detail" class="sunken-box" style="margin-top:10px;font-size:0.82rem;font-weight:800;">
+      날짜 칸을 클릭하면 해당 날짜에 감상한 작품 목록이 표시됩니다.
+    </div>
+
+    <div class="sunken-box" style="margin-top:12px;background:var(--win-gray);">
+      <div class="box-head"><span>다가오는 감상 목표 · 기념일 D-Day</span><span class="tag-mini">D-DAY</span></div>
+      <form id="dday-add-form" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
+        <input type="text" id="dday-title-inp" placeholder="목표 제목 (예: 전시회 관람일)" required style="flex:1;min-width:160px;" />
+        <input type="date" id="dday-date-inp" required />
+        <button type="submit" class="btn95 yellow sm">일정 추가</button>
+      </form>
+      <div style="display:flex;flex-direction:column;gap:5px;">
+        ${sortedDdays.map(dd => {
+          const badge = dd.diff === 0 ? 'D-DAY (오늘)' : dd.diff > 0 ? `D-${dd.diff}` : `D+${Math.abs(dd.diff)}`;
+          return `
+            <div style="display:flex;justify-content:space-between;align-items:center;background:#fff;border:1.5px solid #111;padding:5px 8px;font-size:0.8rem;font-weight:800;">
+              <span><b style="background:#ffd83b;padding:1px 6px;border:1px solid #111;margin-right:6px;">${badge}</b>${esc(dd.title)} (${esc(dd.date)})</span>
+              <button type="button" class="btn95 sm" data-del-dday="${esc(dd.id)}" style="padding:2px 7px;">삭제</button>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    </div>
+  `;
+
+  document.getElementById('cal-prev-m')?.addEventListener('click', () => {
+    calCurrentMonth--;
+    if (calCurrentMonth < 1) { calCurrentMonth = 12; calCurrentYear--; }
+    playRetroTone('click');
+    renderCalendarApp();
+  });
+
+  document.getElementById('cal-next-m')?.addEventListener('click', () => {
+    calCurrentMonth++;
+    if (calCurrentMonth > 12) { calCurrentMonth = 1; calCurrentYear++; }
+    playRetroTone('click');
+    renderCalendarApp();
+  });
+
+  body.querySelectorAll('[data-cal-date]').forEach(cell => {
+    cell.addEventListener('click', () => {
+      const dKey = cell.dataset.calDate;
+      const list = itemsByDate[dKey] || [];
+      const box = document.getElementById('cal-day-detail');
+      if (!box) return;
+      playRetroTone('click');
+      if (!list.length) {
+        box.textContent = `${dKey}에는 등록된 감상 기록이 없습니다.`;
+      } else {
+        box.innerHTML = `<b>[${dKey} 감상 기록 ${list.length}건]</b><br/>` +
+          list.map(it => `• [${esc(it.category)}] ${esc(it.title)} — ${esc(it.creator)} (★${it.rating}점)`).join('<br/>');
+      }
+    });
+  });
+
+  document.getElementById('dday-add-form')?.addEventListener('submit', e => {
+    e.preventDefault();
+    const title = document.getElementById('dday-title-inp').value.trim();
+    const date = document.getElementById('dday-date-inp').value;
+    if (!title || !date) return;
+    const next = [...ddays, { id: `dd-${Date.now()}`, title, date }];
+    saveLocalCache(STORAGE_KEYS.DDAYS, next);
+    playRetroTone('open');
+    renderCalendarApp();
+  });
+
+  body.querySelectorAll('[data-del-dday]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const targetId = btn.dataset.delDday;
+      const next = ddays.filter(x => x.id !== targetId);
+      saveLocalCache(STORAGE_KEYS.DDAYS, next);
+      playRetroTone('close');
+      renderCalendarApp();
+    });
+  });
+}
+
+// ------------------------------------------------------------
+// 8-2. 감정 상태별 아카이브 랜덤 추천기 (MOODPICK.EXE, 연속 출현 방지)
+// ------------------------------------------------------------
+let lastMoodPickedKey = '';
+let currentMoodType = 'happy';
+
+function renderMoodRecommenderApp() {
+  const body = document.getElementById('mood-app-body');
+  if (!body) return;
+
+  const moods = [
+    { key: 'happy', label: '😊 기쁘고 행복함', color: 'yellow', keywords: ['행복', '사랑', '설렘', '유쾌', '즐거', '희망', '밝은', '코미디'] },
+    { key: 'sad', label: '🌧️ 슬프고 우울함', color: 'sky', keywords: ['위로', '눈물', '슬픔', '그리움', '감동', '치유', '잔잔', '드라마'] },
+    { key: 'burnout', label: '🔋 지치고 번아웃', color: 'green', keywords: ['휴식', '힐링', '여유', '산책', '자유', '인디', '에세이', '자연'] },
+    { key: 'stress', label: '⚡ 불안하고 스트레스', color: 'pink', keywords: ['몰입', '액션', '스릴', '에너지', '도전', '록', '판타지', '추리'] }
+  ];
+
+  const fallbackQuotes = [
+    { title: '작은 습관의 힘', creator: '제임스 클리어', category: '도서', review: '매일 1%씩 나아지는 루틴이 결국 거대한 변화를 만든다.' },
+    { title: 'Wicked Game', creator: 'Chris Isaak', category: '음악', review: '새벽 공기와 어울리는 몽환적이고 깊은 울림의 선율.' },
+    { title: '월터의 상상은 현실이 된다', creator: '벤 스틸러', category: '영상', review: '망설임을 멈추고 세상 밖으로 한 걸음 내딛게 만드는 영화.' }
+  ];
+
+  const activeMood = moods.find(m => m.key === currentMoodType) || moods[0];
+  const poolSource = archiveItems.length > 0 ? archiveItems : fallbackQuotes;
+
+  // 키워드 일치 후보 우선 추출, 없으면 전체 풀 사용
+  let matchedPool = poolSource.filter(item =>
+    activeMood.keywords.some(kw => `${item.title} ${item.genre} ${item.review}`.toLowerCase().includes(kw))
+  );
+  if (!matchedPool.length) matchedPool = poolSource;
+
+  // 직전 추천 항목과 연속 출현 방지
+  let candidates = matchedPool.filter(it => (it.id || it.title) !== lastMoodPickedKey);
+  if (!candidates.length) candidates = matchedPool;
+
+  const picked = candidates[Math.floor(Math.random() * candidates.length)];
+  lastMoodPickedKey = picked.id || picked.title;
+
+  body.innerHTML = `
+    <p style="font-size:0.84rem;font-weight:800;margin-bottom:10px;">지금 느끼는 감정 상태를 선택하면 내 아카이브에서 어울리는 작품과 한줄평을 건네드립니다.</p>
+    <div class="mood-btn-grid">
+      ${moods.map(m => `
+        <button type="button" class="btn95 ${m.key === currentMoodType ? m.color : ''}" data-mood-key="${m.key}">
+          ${m.label}
+        </button>
+      `).join('')}
+    </div>
+
+    <div class="mood-result-box">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <span class="tag-mini">${esc(picked.category || '추천')}</span>
+        <span style="font-size:0.75rem;font-weight:800;color:#555;">감정 처방: ${esc(activeMood.label)}</span>
+      </div>
+      <h3 style="font-size:1.15rem;font-weight:900;margin-bottom:4px;">「${esc(picked.title)}」</h3>
+      <div style="font-size:0.82rem;font-weight:700;color:#4a4a4a;margin-bottom:10px;">${esc(picked.creator)}</div>
+      <blockquote style="background:var(--brutal-paper);border-left:4px solid var(--brutal-pink);padding:10px;font-size:0.86rem;font-weight:700;margin-bottom:12px;">
+        “${esc(picked.review)}”
+      </blockquote>
+      <div style="display:flex;justify-content:flex-end;gap:8px;">
+        <button type="button" class="btn95 yellow sm" id="btn-mood-reroll">🔄 다른 추천 작품 보기</button>
+      </div>
+    </div>
+  `;
+
+  body.querySelectorAll('[data-mood-key]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      currentMoodType = btn.dataset.moodKey;
+      playRetroTone('open');
+      renderMoodRecommenderApp();
+    });
+  });
+
+  document.getElementById('btn-mood-reroll')?.addEventListener('click', () => {
+    playRetroTone('click');
+    renderMoodRecommenderApp();
+  });
+}
+
+// ------------------------------------------------------------
+// 8-3. 아카이브 복습 퀴즈 & 초성 힌트 챌린지 (QUIZ95.EXE)
+// ------------------------------------------------------------
+let quizScore = 0;
+let quizCount = 0;
+let quizHintUsed = false;
+
+function renderArchiveQuizApp() {
+  const body = document.getElementById('quiz-app-body');
+  if (!body) return;
+
+  if (archiveItems.length < 4) {
+    body.innerHTML = `
+      <div class="sunken-box" style="text-align:center;padding:24px;">
+        <p style="font-weight:900;margin-bottom:8px;">4지선다 복습 퀴즈를 생성하려면 최소 4건 이상의 감상 기록이 필요합니다.</p>
+        <p style="font-size:0.8rem;color:#555;">현재 등록된 기록: ${archiveItems.length}건</p>
+      </div>
+    `;
+    return;
+  }
+
+  quizHintUsed = false;
+  const shuffled = [...archiveItems].sort(() => Math.random() - 0.5);
+  const answerItem = shuffled[0];
+  const distractors = shuffled.slice(1, 4);
+  const options = [answerItem, ...distractors].sort(() => Math.random() - 0.5);
+
+  const chosungHint = extractKoreanChosung(answerItem.title);
+
+  body.innerHTML = `
+    <div class="box-head">
+      <span>내 감상 기록 4지선다 복습 퀴즈</span>
+      <span class="tag-mini">점수: ${quizScore}점 (${quizCount}문제 풀이)</span>
+    </div>
+
+    <div class="sunken-box" style="background:#fff6bf;margin-bottom:12px;">
+      <div style="font-size:0.78rem;font-weight:800;color:#444;margin-bottom:4px;">Q. 다음 설명에 해당하는 작품 제목은 무엇일까요?</div>
+      <div style="font-size:0.95rem;font-weight:900;margin-bottom:6px;">
+        • 매체/장르: [${esc(answerItem.category)}] ${esc(answerItem.genre || '일반')}<br/>
+        • 제작자(저자/아티스트): ${esc(answerItem.creator)}<br/>
+        • 나의 한줄평: “${esc(answerItem.review)}”
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:8px;">
+        <button type="button" class="btn95 sky sm" id="btn-quiz-hint">💡 초성 힌트 보기</button>
+        <span id="quiz-hint-text" style="font-family:var(--font-mono);font-size:0.88rem;font-weight:900;color:#000080;"></span>
+      </div>
+    </div>
+
+    <div id="quiz-options-wrap">
+      ${options.map((opt, idx) => `
+        <button type="button" class="quiz-option-btn" data-opt-id="${esc(opt.id)}">
+          ${idx + 1}. ${esc(opt.title)}
+        </button>
+      `).join('')}
+    </div>
+
+    <div id="quiz-feedback-box" style="display:none;margin-top:10px;padding:10px;border:2px solid #111;font-weight:900;font-size:0.86rem;"></div>
+  `;
+
+  document.getElementById('btn-quiz-hint')?.addEventListener('click', () => {
+    if (quizHintUsed) return;
+    quizHintUsed = true;
+    playRetroTone('click');
+    const hintEl = document.getElementById('quiz-hint-text');
+    if (hintEl) hintEl.textContent = `초성 힌트: [ ${chosungHint} ]`;
+  });
+
+  body.querySelectorAll('.quiz-option-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const pickedId = btn.dataset.optId;
+      const fb = document.getElementById('quiz-feedback-box');
+      if (!fb) return;
+
+      if (pickedId === answerItem.id) {
+        quizScore += quizHintUsed ? 5 : 10;
+        quizCount++;
+        playRetroTone('fanfare');
+        fb.style.display = 'block';
+        fb.style.background = 'var(--brutal-green)';
+        fb.innerHTML = `🎉 정답입니다! 「${esc(answerItem.title)}」 (+${quizHintUsed ? 5 : 10}점) <button type="button" class="btn95 yellow sm" id="btn-quiz-next" style="margin-left:8px;">다음 문제 &gt;&gt;</button>`;
+        body.querySelectorAll('.quiz-option-btn').forEach(b => (b.disabled = true));
+        document.getElementById('btn-quiz-next')?.addEventListener('click', renderArchiveQuizApp);
+      } else {
+        playRetroTone('boom');
+        fb.style.display = 'block';
+        fb.style.background = 'var(--brutal-pink)';
+        fb.style.color = '#ffffff';
+        fb.textContent = '❌ 다시 생각해 보세요! 다른 보기를 선택할 수 있습니다.';
+        btn.disabled = true;
+        btn.style.opacity = '0.5';
+      }
+    });
+  });
+}
+
+// ------------------------------------------------------------
+// 8-4. 인터랙티브 가로 연표 & 상·하반기 레이더 차트 비교 (TIMELINE95.EXE)
+// ------------------------------------------------------------
+let radarComparisonChart = null;
+
+function renderTimelineAndRadarApp() {
+  const body = document.getElementById('timeline-app-body');
+  if (!body) return;
+
+  const sortedByDate = [...archiveItems].sort((a, b) => String(a.watchDate).localeCompare(String(b.watchDate)));
+  const cats = ['도서', '음악', '영상', '기타'];
+
+  // 상반기(01~06월) vs 하반기(07~12월) 건수 집계
+  const h1Data = cats.map(c => sortedByDate.filter(i => i.category === c && Number(String(i.watchDate).slice(5, 7)) <= 6).length);
+  const h2Data = cats.map(c => sortedByDate.filter(i => i.category === c && Number(String(i.watchDate).slice(5, 7)) >= 7).length);
+
+  body.innerHTML = `
+    <div class="box-head">
+      <span>시간순 인터랙티브 가로 감상 연표 (클릭 시 상세 보기)</span>
+      <span class="tag-mini">총 ${sortedByDate.length}개 노드</span>
+    </div>
+    <div class="timeline-scroll-wrap">
+      <div class="timeline-track">
+        ${sortedByDate.length ? sortedByDate.map(it => `
+          <div class="timeline-node" data-tl-id="${esc(it.id)}">
+            <div style="font-family:var(--font-mono);font-size:0.72rem;font-weight:900;color:#000080;">${esc(it.watchDate)}</div>
+            <div style="font-size:0.84rem;font-weight:900;margin:3px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(it.title)}</div>
+            <div style="font-size:0.74rem;color:#555;">[${esc(it.category)}] ★${it.rating}</div>
+          </div>
+        `).join('') : '<div style="padding:12px;font-weight:800;">표시할 연표 데이터가 없습니다.</div>'}
+      </div>
+    </div>
+
+    <div class="sunken-box">
+      <div class="box-head">
+        <span>상반기(사전) vs 하반기(사후) 매체 활동 레이더 비교</span>
+        <button type="button" class="btn95 yellow sm" id="btn-save-radar-png">🖼️ 레이더 차트 PNG 저장</button>
+      </div>
+      <div style="height:230px;position:relative;">
+        <canvas id="chart-radar-compare"></canvas>
+      </div>
+    </div>
+  `;
+
+  body.querySelectorAll('[data-tl-id]').forEach(node => {
+    node.addEventListener('click', () => {
+      const target = archiveItems.find(x => x.id === node.dataset.tlId);
+      if (target) spawnDetailWindow(target);
+    });
+  });
+
+  const radarCanvas = document.getElementById('chart-radar-compare');
+  if (radarCanvas && typeof Chart !== 'undefined') {
+    if (radarComparisonChart) radarComparisonChart.destroy();
+    radarComparisonChart = new Chart(radarCanvas.getContext('2d'), {
+      type: 'radar',
+      data: {
+        labels: cats,
+        datasets: [
+          {
+            label: '상반기 (1~6월)',
+            data: h1Data,
+            borderColor: '#0055ff',
+            backgroundColor: 'rgba(0, 85, 255, 0.2)',
+            borderWidth: 2.5
+          },
+          {
+            label: '하반기 (7~12월)',
+            data: h2Data,
+            borderColor: '#ff2e55',
+            backgroundColor: 'rgba(255, 46, 85, 0.2)',
+            borderWidth: 2.5
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: { r: { beginAtZero: true, ticks: { stepSize: 1 } } }
+      }
+    });
+  }
+
+  document.getElementById('btn-save-radar-png')?.addEventListener('click', () => {
+    if (!radarCanvas) return;
+    const a = document.createElement('a');
+    a.href = radarCanvas.toDataURL('image/png');
+    a.download = `MyArchive_레이더비교_${normalizeDateString('')}.png`;
+    a.click();
+    playRetroTone('open');
+  });
+}
+
+// ------------------------------------------------------------
+// 8-5. 디지털 도장 생성기 & 문화생활 예산·구매 회고 영수증 (STAMP95.EXE)
+// ------------------------------------------------------------
+function renderStampAndReceiptApp() {
+  const body = document.getElementById('stamp-app-body');
+  if (!body) return;
+
+  const budgetState = loadLocalCache(STORAGE_KEYS.BUDGET, {
+    limit: 100000,
+    expenses: []
+  });
+
+  const totalSpent = (budgetState.expenses || []).reduce((s, e) => s + (Number(e.price) || 0), 0);
+  const remain = Number(budgetState.limit || 0) - totalSpent;
+  const isOverBudget = remain < 0;
+
+  body.innerHTML = `
+    <div class="charts-grid" style="grid-template-columns:1fr 1.15fr;">
+      <!-- 좌측: 투명 배경 PNG 디지털 도장 생성기 (9주차 실습 4 확장) -->
+      <div class="sunken-box">
+        <div class="box-head"><span>감상 완료 디지털 도장 생성기</span><span class="tag-mini">PNG</span></div>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px;">
+          <input type="text" id="stamp-name-inp" value="문태양" maxlength="4" placeholder="이름 (최대 4자)" />
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+            <select id="stamp-shape-sel" class="win95-select">
+              <option value="circle">원형 도장</option>
+              <option value="square">사각형 도장</option>
+            </select>
+            <select id="stamp-font-sel" class="win95-select">
+              <option value="serif">명조체 (Serif)</option>
+              <option value="sans-serif">고딕체 (Sans)</option>
+              <option value="cursive">손글씨풍 (Cursive)</option>
+            </select>
+          </div>
+        </div>
+        <div style="text-align:center;padding:10px;background:#f7f5ee;border:1.5px dashed #111;margin-bottom:10px;">
+          <canvas id="stamp-preview-canvas" width="140" height="140"></canvas>
+        </div>
+        <button type="button" class="btn95 pink sm" id="btn-download-stamp" style="width:100%;">⬇️ 투명 배경 PNG 도장 다운로드</button>
+      </div>
+
+      <!-- 우측: 월간 문화생활 예산 & 구매 이유 영수증 (12주차 실습 24) -->
+      <div class="sunken-box">
+        <div class="box-head"><span>문화생활 예산 &amp; 구매 이유 영수증</span><span class="tag-mini">예산 ${formatCommaNumber(budgetState.limit)}원</span></div>
+        <div style="display:flex;gap:6px;margin-bottom:8px;">
+          <input type="number" id="budget-limit-inp" value="${budgetState.limit}" step="5000" style="width:130px;" />
+          <button type="button" class="btn95 sm" id="btn-set-budget">한도 설정</button>
+        </div>
+
+        <form id="expense-add-form" style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px;">
+          <div style="display:grid;grid-template-columns:1.3fr 1fr;gap:6px;">
+            <input type="text" id="exp-title-inp" placeholder="도서·음반·티켓명" required />
+            <input type="number" id="exp-price-inp" placeholder="금액 (원)" required />
+          </div>
+          <input type="text" id="exp-reason-inp" placeholder="이 작품을 선택·구매한 합리적 이유 서술..." required />
+          <button type="submit" class="btn95 yellow sm" ${isOverBudget ? 'disabled' : ''}>
+            ${isOverBudget ? '🚫 예산 초과 락 (한도 조정 필요)' : '+ 지출 및 구매 이유 추가'}
+          </button>
+        </form>
+
+        <div id="printable-receipt-area" class="receipt-paper">
+          <div style="text-align:center;font-weight:900;border-bottom:1px dashed #111;padding-bottom:6px;margin-bottom:6px;">
+            *** MY-ARCHIVE 95 문화생활 영수증 ***<br/>
+            발행일: ${normalizeDateString('')}
+          </div>
+          ${(budgetState.expenses || []).map(ex => `
+            <div style="margin-bottom:6px;border-bottom:1px dotted #ccc;padding-bottom:4px;">
+              <div style="display:flex;justify-content:space-between;font-weight:900;">
+                <span>${esc(ex.title)}</span>
+                <span>${formatCommaNumber(ex.price)}원</span>
+              </div>
+              <div style="font-size:0.74rem;color:#333;">사유: ${esc(ex.reason)}</div>
+            </div>
+          `).join('') || '<div style="color:#666;">등록된 지출 내역이 없습니다.</div>'}
+          <div style="border-top:1px dashed #111;padding-top:6px;margin-top:6px;font-weight:900;">
+            <div>총 지출 금액: ${formatCommaNumber(totalSpent)}원</div>
+            <div style="color:${isOverBudget ? '#d63031' : '#000080'};">남은 예산 잔액: ${formatCommaNumber(remain)}원</div>
+          </div>
+        </div>
+        <button type="button" class="btn95 sm" id="btn-print-receipt" style="width:100%;margin-top:8px;">🖨️ 영수증 인쇄 / PDF 저장</button>
+      </div>
+    </div>
+  `;
+
+  // 디지털 도장 실시간 렌더링
+  const drawStamp = () => {
+    const canvas = document.getElementById('stamp-preview-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const name = (document.getElementById('stamp-name-inp')?.value || '완독').trim() + '인';
+    const shape = document.getElementById('stamp-shape-sel')?.value || 'circle';
+    const font = document.getElementById('stamp-font-sel')?.value || 'serif';
+
+    ctx.clearRect(0, 0, 140, 140);
+    ctx.strokeStyle = '#d63031';
+    ctx.fillStyle = '#d63031';
+    ctx.lineWidth = 5;
+
+    if (shape === 'circle') {
+      ctx.beginPath();
+      ctx.arc(70, 70, 56, 0, Math.PI * 2);
+      ctx.stroke();
+    } else {
+      ctx.strokeRect(18, 18, 104, 104);
+    }
+
+    ctx.font = `900 28px ${font}`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    if (name.length === 4) {
+      ctx.fillText(name.slice(0, 2), 70, 52);
+      ctx.fillText(name.slice(2, 4), 70, 88);
+    } else {
+      ctx.fillText(name, 70, 70);
+    }
+  };
+
+  drawStamp();
+  document.getElementById('stamp-name-inp')?.addEventListener('input', drawStamp);
+  document.getElementById('stamp-shape-sel')?.addEventListener('change', drawStamp);
+  document.getElementById('stamp-font-sel')?.addEventListener('change', drawStamp);
+
+  document.getElementById('btn-download-stamp')?.addEventListener('click', () => {
+    const canvas = document.getElementById('stamp-preview-canvas');
+    if (!canvas) return;
+    const a = document.createElement('a');
+    a.href = canvas.toDataURL('image/png');
+    a.download = `감상완료도장_${Date.now()}.png`;
+    a.click();
+    playRetroTone('open');
+  });
+
+  // 예산 설정 및 지출 추가
+  document.getElementById('btn-set-budget')?.addEventListener('click', () => {
+    const newLimit = Number(document.getElementById('budget-limit-inp')?.value) || 0;
+    budgetState.limit = Math.max(0, newLimit);
+    saveLocalCache(STORAGE_KEYS.BUDGET, budgetState);
+    playRetroTone('click');
+    renderStampAndReceiptApp();
+  });
+
+  document.getElementById('expense-add-form')?.addEventListener('submit', e => {
+    e.preventDefault();
+    const title = document.getElementById('exp-title-inp').value.trim();
+    const price = Number(document.getElementById('exp-price-inp').value) || 0;
+    const reason = document.getElementById('exp-reason-inp').value.trim();
+    if (!title || price <= 0) return;
+
+    if (totalSpent + price > budgetState.limit) {
+      showWin95MessageBox('예산 초과 경고 — MY-ARCHIVE 95', `설정된 예산(${formatCommaNumber(budgetState.limit)}원)을 초과하여 지출을 등록할 수 없습니다.`, 'boom');
+      return;
+    }
+
+    budgetState.expenses.push({ id: `ex-${Date.now()}`, title, price, reason });
+    saveLocalCache(STORAGE_KEYS.BUDGET, budgetState);
+    playRetroTone('open');
+    renderStampAndReceiptApp();
+  });
+
+  document.getElementById('btn-print-receipt')?.addEventListener('click', () => window.print());
+}
+
+// ------------------------------------------------------------
+// 8-6. 비밀 추천 우체통 & 모바일 QR 코드 공유 (MAILBOX95.EXE)
+// ------------------------------------------------------------
+async function renderMailboxAndQrApp() {
+  const body = document.getElementById('mailbox-app-body');
+  if (!body) return;
+
+  const currentUrl = window.location.href;
+
+  body.innerHTML = `
+    <div class="charts-grid" style="grid-template-columns:1.35fr 1fr;">
+      <!-- 좌측: 비밀 추천 우체통 (시트 저장 + GmailApp 알림) -->
+      <div class="sunken-box">
+        <div class="box-head"><span>방문자 작품 추천 · 비밀 우체통</span><span class="tag-mini">MAILBOX</span></div>
+        <form id="mailbox-send-form" style="display:flex;flex-direction:column;gap:7px;margin-bottom:12px;">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+            <input type="text" id="mb-sender" placeholder="보내는 사람 (익명 가능)" />
+            <select id="mb-category" class="win95-select">
+              <option value="도서 추천">도서 추천</option>
+              <option value="음악 추천">음악 추천</option>
+              <option value="영상 추천">영상 추천</option>
+              <option value="응원·방명록">응원·방명록</option>
+            </select>
+          </div>
+          <textarea id="mb-content" rows="3" required placeholder="추천하고 싶은 작품 제목과 이유, 또는 방명록 메시지를 남겨주세요..."></textarea>
+          <button type="submit" class="btn95 green sm" id="btn-send-mailbox">📮 우체통 전송 (시트 저장 + 메일 알림)</button>
+        </form>
+
+        <div class="box-head"><span>도착한 추천 메시지함</span><span id="mb-count-tag" class="tag-mini">불러오는 중...</span></div>
+        <div id="mailbox-list-box" style="max-height:175px;overflow-y:auto;"></div>
+      </div>
+
+      <!-- 우측: 스마트폰 접속용 QR 코드 공유 (12주차 실습 22) -->
+      <div class="sunken-box" style="text-align:center;">
+        <div class="box-head"><span>스마트폰 QR 공유</span><span class="tag-mini">PWA</span></div>
+        <p style="font-size:0.78rem;font-weight:800;margin-bottom:10px;word-break:keep-all;">
+          스마트폰 카메라로 아래 QR 코드를 스캔하면 모바일에서도 아카이브를 열람하고 홈 화면에 앱으로 설치할 수 있습니다.
+        </p>
+        <div id="qr-code-container" class="qr-box"></div>
+        <div style="margin-top:10px;">
+          <button type="button" class="btn95 yellow sm" id="btn-copy-app-url">🔗 접속 주소 복사하기</button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  // QR 코드 렌더링
+  const qrContainer = document.getElementById('qr-code-container');
+  if (qrContainer && typeof QRCode !== 'undefined') {
+    qrContainer.innerHTML = '';
+    new QRCode(qrContainer, {
+      text: currentUrl,
+      width: 148,
+      height: 148,
+      colorDark: '#111111',
+      colorLight: '#ffffff'
+    });
+  }
+
+  document.getElementById('btn-copy-app-url')?.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(currentUrl);
+      showWin95MessageBox('주소 복사 완료 — MY-ARCHIVE 95', '현재 아카이브 접속 URL이 클립보드에 복사되었습니다.', 'open');
+    } catch {
+      showWin95MessageBox('주소 안내 — MY-ARCHIVE 95', currentUrl, 'click');
+    }
+  });
+
+  // 도착 메시지함 불러오기
+  const loadMailbox = async () => {
+    const listBox = document.getElementById('mailbox-list-box');
+    const countTag = document.getElementById('mb-count-tag');
+    try {
+      const json = await (await fetch(`${GAS_WEB_APP_URL}?action=mailbox`)).json();
+      mailboxItems = (json.status === 'success' && Array.isArray(json.mails)) ? json.mails : [];
+      saveLocalCache(STORAGE_KEYS.MAILBOX, mailboxItems);
+    } catch {
+      mailboxItems = loadLocalCache(STORAGE_KEYS.MAILBOX, []);
+    }
+    if (countTag) countTag.textContent = `${mailboxItems.length}건`;
+    if (listBox) {
+      listBox.innerHTML = mailboxItems.length ? mailboxItems.map(m => `
+        <div class="note-card">
+          <div style="display:flex;justify-content:space-between;font-size:0.72rem;font-weight:800;color:#000080;">
+            <span>[${esc(m.category)}] ${esc(m.sender)}</span>
+            <span>${esc(m.createdAt)}</span>
+          </div>
+          <div style="font-size:0.8rem;font-weight:700;margin-top:3px;white-space:pre-wrap;">${esc(m.content)}</div>
+        </div>
+      `).join('') : '<div style="font-size:0.78rem;color:#666;">도착한 추천 메시지가 없습니다.</div>';
+    }
+  };
+
+  loadMailbox();
+
+  document.getElementById('mailbox-send-form')?.addEventListener('submit', async e => {
+    e.preventDefault();
+    const sender = document.getElementById('mb-sender').value.trim() || '익명 방문자';
+    const category = document.getElementById('mb-category').value;
+    const content = document.getElementById('mb-content').value.trim();
+    if (!content) return;
+
+    const btn = document.getElementById('btn-send-mailbox');
+    btn.disabled = true; btn.textContent = '전송 중...'; setLoadingCursor(true);
+    try {
+      const res = await fetch(GAS_WEB_APP_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: 'send_mail', sender, category, content })
+      });
+      const json = await res.json();
+      if (json.status === 'success' && json.mail) {
+        playRetroTone('fanfare');
+        document.getElementById('mailbox-send-form').reset();
+        await loadMailbox();
+        showWin95MessageBox(
+          '우체통 전송 완료 — MY-ARCHIVE 95',
+          json.emailSent ? '구글 시트 저장 및 관리자 이메일 알림 발송이 완료되었습니다!' : '구글 시트 우체통에 안전하게 저장되었습니다.',
+          'open'
+        );
+      }
+    } catch {
+      showWin95MessageBox('전송 오류 — MY-ARCHIVE 95', '우체통 전송 중 네트워크 오류가 발생했습니다.', 'boom');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '📮 우체통 전송 (시트 저장 + 메일 알림)';
+      setLoadingCursor(false);
+    }
+  });
+}
