@@ -3,7 +3,7 @@
 // ============================================================
 
 window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-window.__MOD_VERSIONS.archiveApp = typeof APP_BUILD_VERSION !== 'undefined' ? APP_BUILD_VERSION : 'v2026.11.17-04';
+window.__MOD_VERSIONS.archiveApp = typeof APP_BUILD_VERSION !== 'undefined' ? APP_BUILD_VERSION : 'v2026.11.17-06';
 
 // ============================================================
 // 1. 상단 메뉴바 & 바탕화면·시작 메뉴 이벤트 바인딩
@@ -733,9 +733,47 @@ document.addEventListener('submit', async e => {
 });
 
 // ============================================================
-// 6. 새 감상 기록 등록 모달 (메타데이터 검색 + 1MB 이미지 압축)
+// 6. 새 감상 기록 등록 모달 (카테고리 선선택 + 타임아웃 검색 + 1MB 압축)
 // ============================================================
 let regEventsBound = false;
+let regSearchAbortCtrl = null;
+
+const REG_CAT_PLACEHOLDERS = {
+  '도서': '책 제목, 저자명 또는 서점(알라딘/교보/예스24) URL 입력...',
+  '음악': '곡명, 아티스트명 또는 YouTube 링크 입력...',
+  '영상': '영화·드라마·애니메이션 제목 또는 링크 입력...',
+  '기타': '작품명, 제작자 또는 웹페이지 URL 입력...'
+};
+
+function syncRegisterCategoryState(cat) {
+  const cleanCat = ['도서', '음악', '영상', '기타'].includes(cat) ? cat : '';
+  const catSelect = document.getElementById('inp-category');
+  const statusBadge = document.getElementById('reg-cat-badge');
+  const searchInp = document.getElementById('inp-search-query');
+  const searchBtn = document.getElementById('btn-auto-search');
+
+  if (catSelect) catSelect.value = cleanCat;
+
+  document.querySelectorAll('[data-reg-cat-pill]').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.regCatPill === cleanCat);
+  });
+
+  if (statusBadge) {
+    statusBadge.textContent = cleanCat ? `선택됨: ${cleanCat}` : '미선택 (필수)';
+  }
+
+  if (searchInp && searchBtn) {
+    if (cleanCat) {
+      searchInp.disabled = false;
+      searchBtn.disabled = false;
+      searchInp.placeholder = REG_CAT_PLACEHOLDERS[cleanCat] || '검색어 또는 링크(URL) 입력...';
+    } else {
+      searchInp.disabled = true;
+      searchBtn.disabled = true;
+      searchInp.placeholder = '먼저 위에서 매체(도서/음악/영상/기타)를 선택하세요...';
+    }
+  }
+}
 
 function ensureRegisterWindowExists() {
   let regWin = document.getElementById('win-register');
@@ -749,22 +787,39 @@ function ensureRegisterWindowExists() {
     regWin.style.width = '680px';
     regWin.innerHTML = `
       <div class="win-titlebar draggable yellow-bar">
-        <div class="win-title-left"><span class="win-title-dot"></span><span>새 감상 기록하기 — 메타데이터 검색 및 등록</span></div>
+        <div class="win-title-left"><span class="win-title-dot"></span><span>새 감상 기록하기 — 매체 선택 및 메타데이터 검색</span></div>
         <div class="win-controls">
           <button type="button" class="win-ctrl-btn" data-action="minimize" data-target="win-register">_</button>
           <button type="button" class="win-ctrl-btn close" data-action="close" data-target="win-register">X</button>
         </div>
       </div>
       <div class="win-body">
+        <!-- STEP 1: 매체(카테고리) 선선택 -->
+        <div class="sunken-box" style="margin-bottom:10px; background:#fffdf2;">
+          <div class="box-head">
+            <span>STEP 1. 매체(카테고리) 먼저 선택 *</span>
+            <span class="tag-mini" id="reg-cat-badge">미선택 (필수)</span>
+          </div>
+          <div class="pill-group" style="display:flex; gap:6px; flex-wrap:wrap;">
+            <button type="button" class="pill-btn" data-reg-cat-pill="도서" style="flex:1; min-width:72px; font-weight:900;">도서</button>
+            <button type="button" class="pill-btn" data-reg-cat-pill="음악" style="flex:1; min-width:72px; font-weight:900;">음악</button>
+            <button type="button" class="pill-btn" data-reg-cat-pill="영상" style="flex:1; min-width:72px; font-weight:900;">영상</button>
+            <button type="button" class="pill-btn" data-reg-cat-pill="기타" style="flex:1; min-width:72px; font-weight:900;">기타</button>
+          </div>
+        </div>
+
+        <!-- STEP 2: 카테고리 선택 후 활성화되는 자동 검색 -->
         <div class="sunken-box" style="margin-bottom:12px; background:var(--win-gray);">
-          <label style="display:block; font-size:0.8rem; font-weight:900; margin-bottom:5px;">[SEARCH] 작품명 · 아티스트 · URL 자동 검색</label>
+          <label style="display:block; font-size:0.8rem; font-weight:900; margin-bottom:5px;">STEP 2. 작품명 · 아티스트 · URL 자동 검색</label>
           <div style="display:flex; gap:6px;">
-            <input type="text" id="inp-search-query" placeholder="예: 소나기, 뉴진스 Hype Boy, 인셉션 또는 링크..." style="flex:1;" />
-            <button type="button" class="btn95 yellow sm" id="btn-auto-search">검색</button>
+            <input type="text" id="inp-search-query" placeholder="먼저 위에서 매체(도서/음악/영상/기타)를 선택하세요..." disabled style="flex:1;" />
+            <button type="button" class="btn95 yellow sm" id="btn-auto-search" disabled>검색</button>
           </div>
           <div id="reg-alert" class="dialog-banner"></div>
           <div id="rank-list" class="rank-list"></div>
         </div>
+
+        <!-- STEP 3: 상세 정보 입력 및 저장 -->
         <form id="archive-form" class="sunken-box">
           <div style="display:grid; grid-template-columns:130px 1fr; gap:12px; margin-bottom:10px;">
             <div>
@@ -778,7 +833,8 @@ function ensureRegisterWindowExists() {
               <div style="display:grid; grid-template-columns:1fr 1.25fr; gap:8px;">
                 <div>
                   <label style="display:block; font-size:0.78rem; font-weight:800; margin-bottom:2px;">매체 *</label>
-                  <select id="inp-category" class="win95-select" style="width:100%;">
+                  <select id="inp-category" class="win95-select" required style="width:100%;">
+                    <option value="">-- 매체 선택 --</option>
                     <option value="도서">도서</option>
                     <option value="음악">음악</option>
                     <option value="영상">영상</option>
@@ -833,6 +889,25 @@ function ensureRegisterWindowExists() {
 
   if (!regEventsBound) {
     regEventsBound = true;
+
+    // STEP 1 카테고리 필 버튼 클릭
+    document.querySelectorAll('[data-reg-cat-pill]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        playRetroTone('click');
+        const chosen = btn.dataset.regCatPill;
+        syncRegisterCategoryState(chosen);
+        const rankBox = document.getElementById('rank-list');
+        if (rankBox) rankBox.style.display = 'none';
+        showRegAlert(`「${chosen}」 매체가 선택되었습니다. 검색어를 입력해 주세요.`, 'info');
+        document.getElementById('inp-search-query')?.focus();
+      });
+    });
+
+    // 하단 폼의 매체 select 변경 시에도 상단 필/검색창 동기화
+    document.getElementById('inp-category')?.addEventListener('change', e => {
+      syncRegisterCategoryState(e.target.value);
+    });
+
     document.getElementById('btn-auto-search')?.addEventListener('click', runRankedSearch);
     document.getElementById('inp-search-query')?.addEventListener('keydown', e => {
       if (e.key === 'Enter') { e.preventDefault(); runRankedSearch(); }
@@ -861,6 +936,7 @@ function ensureRegisterWindowExists() {
     document.getElementById('btn-cancel-reg')?.addEventListener('click', e => {
       e.preventDefault();
       e.stopPropagation();
+      if (regSearchAbortCtrl) regSearchAbortCtrl.abort();
       closeWindow('win-register');
     });
     document.getElementById('archive-form')?.addEventListener('submit', handleRegisterSubmit);
@@ -870,11 +946,19 @@ function ensureRegisterWindowExists() {
 function openRegisterModal() {
   ensureRegisterWindowExists();
 
+  if (regSearchAbortCtrl) {
+    regSearchAbortCtrl.abort();
+    regSearchAbortCtrl = null;
+  }
+
   const form = document.getElementById('archive-form');
   if (form) {
     form.reset();
     delete form.dataset.editId;
   }
+
+  // 열릴 때마다 카테고리 미선택 상태로 초기화하여 STEP 1 선선택 유도
+  syncRegisterCategoryState('');
 
   const searchInp = document.getElementById('inp-search-query');
   if (searchInp) searchInp.value = '';
@@ -892,14 +976,11 @@ function openRegisterModal() {
   const prevImg = document.getElementById('preview-cover');
   if (prevImg) prevImg.src = FALLBACK_COVER;
 
-  const regAlert = document.getElementById('reg-alert');
-  if (regAlert) regAlert.style.display = 'none';
-
   const rankList = document.getElementById('rank-list');
   if (rankList) rankList.style.display = 'none';
 
+  showRegAlert('먼저 STEP 1에서 매체(도서 / 음악 / 영상 / 기타)를 선택해 주세요.', 'info');
   openWindow('win-register');
-  if (searchInp) searchInp.focus();
 }
 
 function showRegAlert(msg, type = 'info') {
@@ -913,24 +994,68 @@ function showRegAlert(msg, type = 'info') {
 }
 
 async function runRankedSearch() {
+  const category = (document.getElementById('inp-category')?.value || '').trim();
+  if (!category) {
+    showRegAlert('먼저 STEP 1에서 매체(도서 / 음악 / 영상 / 기타)를 선택해 주세요.', 'err');
+    return;
+  }
+
   const query = document.getElementById('inp-search-query').value.trim();
-  const category = document.getElementById('inp-category').value;
-  if (!query) { showRegAlert('검색어 또는 링크(URL)를 입력하십시오.', 'err'); return; }
+  if (!query) {
+    showRegAlert('검색어 또는 링크(URL)를 입력하십시오.', 'err');
+    document.getElementById('inp-search-query')?.focus();
+    return;
+  }
+
+  // 이전 미완료 검색 요청이 있다면 즉시 중단
+  if (regSearchAbortCtrl) {
+    regSearchAbortCtrl.abort();
+  }
+  const controller = new AbortController();
+  regSearchAbortCtrl = controller;
+  const timeoutId = setTimeout(() => controller.abort(), 12000);
 
   const btn = document.getElementById('btn-auto-search');
   const rankBox = document.getElementById('rank-list');
-  btn.disabled = true; btn.textContent = '검색 중...'; setLoadingCursor(true);
+  btn.disabled = true;
+  btn.textContent = '검색 중...';
+  setLoadingCursor(true);
   if (rankBox) rankBox.style.display = 'none';
-  showRegAlert('메타데이터를 검색하고 있습니다...');
+  showRegAlert(`[${category}] 「${query}」 메타데이터를 검색하고 있습니다...`);
 
   try {
-    const res = await fetch(`${GAS_WEB_APP_URL}?action=search&q=${encodeURIComponent(query)}&category=${encodeURIComponent(category)}`);
-    const result = await res.json();
-    const list = result.candidates || [];
-    if (!list.length) { showRegAlert(result.message || '검색 결과가 없습니다. 아래에 직접 입력하십시오.', 'info'); return; }
+    const url = `${GAS_WEB_APP_URL}?action=search&q=${encodeURIComponent(query)}&title=${encodeURIComponent(query)}&category=${encodeURIComponent(category)}`;
+    const res = await fetch(url, { signal: controller.signal });
+    if (!res.ok) {
+      throw new Error(`HTTP 응답 오류 (${res.status})`);
+    }
+
+    const rawText = await res.text();
+    let result;
+    try {
+      result = JSON.parse(rawText);
+    } catch {
+      throw new Error('서버 응답이 JSON 형식이 아닙니다. Apps Script 새 배포 상태를 확인하십시오.');
+    }
+
+    if (result.status === 'error') {
+      showRegAlert(result.message || '검색 중 백엔드 오류가 발생했습니다.', 'err');
+      return;
+    }
+
+    const list = Array.isArray(result.candidates) ? result.candidates : [];
+    if (!list.length) {
+      showRegAlert(result.message || '검색 결과가 없습니다. 아래에 직접 입력하십시오.', 'info');
+      return;
+    }
 
     applyCandidateToForm(list[0]);
-    showRegAlert(list.length > 1 ? `총 ${list.length}건의 후보를 찾았습니다. 아래 목록에서 다른 항목을 고를 수 있습니다.` : '메타데이터를 불러왔습니다.', 'ok');
+    showRegAlert(
+      list.length > 1
+        ? `총 ${list.length}건의 후보를 찾았습니다. 아래 목록에서 다른 항목을 고를 수 있습니다.`
+        : '메타데이터를 불러왔습니다.',
+      'ok'
+    );
 
     if (list.length > 1 && rankBox) {
       rankBox.innerHTML = '';
@@ -945,17 +1070,32 @@ async function runRankedSearch() {
             <div style="font-size:0.72rem; font-weight:700; color:#4a4a4a;"><span class="rank-src">${esc(cand.source)}</span>${cand.year ? ` · ${esc(cand.year)}년` : ''}${cand.extra ? ` · ${esc(cand.extra)}` : ''}</div>
           </div>
         `;
-        row.addEventListener('click', () => { applyCandidateToForm(cand); playRetroTone('click'); showRegAlert(`선택됨: 「${cand.title}」 (${cand.creator})`, 'ok'); });
+        row.addEventListener('click', () => {
+          applyCandidateToForm(cand);
+          playRetroTone('click');
+          showRegAlert(`선택됨: 「${cand.title}」 (${cand.creator})`, 'ok');
+        });
         rankBox.appendChild(row);
       });
       rankBox.style.display = 'block';
     }
-  } catch { showRegAlert('검색 중 오류가 발생했습니다.', 'err'); }
-  finally { btn.disabled = false; btn.textContent = '검색'; setLoadingCursor(false); }
+  } catch (err) {
+    if (err && err.name === 'AbortError') {
+      showRegAlert('검색 요청 시간이 초과(12초)되었습니다. 다시 시도하거나 아래에 직접 입력하십시오.', 'err');
+    } else {
+      showRegAlert(`검색 오류: ${(err && err.message) || '네트워크 상태를 확인하십시오.'}`, 'err');
+    }
+  } finally {
+    clearTimeout(timeoutId);
+    if (regSearchAbortCtrl === controller) regSearchAbortCtrl = null;
+    btn.disabled = false;
+    btn.textContent = '검색';
+    setLoadingCursor(false);
+  }
 }
 
 function applyCandidateToForm(c) {
-  if (c.category) document.getElementById('inp-category').value = c.category;
+  if (c.category) syncRegisterCategoryState(c.category);
   if (c.title) document.getElementById('inp-title').value = c.title;
   if (c.creator) document.getElementById('inp-creator').value = c.creator;
   if (c.genre) document.getElementById('inp-genre').value = c.genre;
@@ -970,6 +1110,12 @@ function applyCandidateToForm(c) {
 
 async function handleRegisterSubmit(e) {
   e.preventDefault();
+  const categoryVal = (document.getElementById('inp-category')?.value || '').trim();
+  if (!categoryVal) {
+    showRegAlert('매체(도서 / 음악 / 영상 / 기타)를 먼저 선택해 주세요.', 'err');
+    return;
+  }
+
   const checkedRating = document.querySelector('input[name="reg-rating"]:checked');
   const ratingVal = checkedRating ? Number(checkedRating.value) : 5;
 
@@ -980,7 +1126,6 @@ async function handleRegisterSubmit(e) {
     ? getWin95DateValue(ySel, mSel, dSel)
     : normalizeDateString('');
 
-  const categoryVal = document.getElementById('inp-category').value;
   const titleVal = document.getElementById('inp-title').value.trim();
 
   const formEl = document.getElementById('archive-form');
@@ -1282,13 +1427,11 @@ function renderMoodRecommenderApp() {
   const activeMood = moods.find(m => m.key === currentMoodType) || moods[0];
   const poolSource = archiveItems.length > 0 ? archiveItems : fallbackQuotes;
 
-  // 키워드 일치 후보 우선 추출, 없으면 전체 풀 사용
   let matchedPool = poolSource.filter(item =>
     activeMood.keywords.some(kw => `${item.title} ${item.genre} ${item.review}`.toLowerCase().includes(kw))
   );
   if (!matchedPool.length) matchedPool = poolSource;
 
-  // 직전 추천 항목과 연속 출현 방지
   let candidates = matchedPool.filter(it => (it.id || it.title) !== lastMoodPickedKey);
   if (!candidates.length) candidates = matchedPool;
 
@@ -1442,7 +1585,6 @@ function renderTimelineAndRadarApp() {
   const sortedByDate = [...archiveItems].sort((a, b) => String(a.watchDate).localeCompare(String(b.watchDate)));
   const cats = ['도서', '음악', '영상', '기타'];
 
-  // 상반기(01~06월) vs 하반기(07~12월) 건수 집계
   const h1Data = cats.map(c => sortedByDate.filter(i => i.category === c && Number(String(i.watchDate).slice(5, 7)) <= 6).length);
   const h2Data = cats.map(c => sortedByDate.filter(i => i.category === c && Number(String(i.watchDate).slice(5, 7)) >= 7).length);
 
@@ -1541,7 +1683,7 @@ function renderStampAndReceiptApp() {
 
   body.innerHTML = `
     <div class="charts-grid" style="grid-template-columns:1fr 1.15fr;">
-      <!-- 좌측: 투명 배경 PNG 디지털 도장 생성기 (9주차 실습 4 확장) -->
+      <!-- 좌측: 투명 배경 PNG 디지털 도장 생성기 -->
       <div class="sunken-box">
         <div class="box-head"><span>감상 완료 디지털 도장 생성기</span><span class="tag-mini">PNG</span></div>
         <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px;">
@@ -1564,7 +1706,7 @@ function renderStampAndReceiptApp() {
         <button type="button" class="btn95 pink sm" id="btn-download-stamp" style="width:100%;">⬇️ 투명 배경 PNG 도장 다운로드</button>
       </div>
 
-      <!-- 우측: 월간 문화생활 예산 & 구매 이유 영수증 (12주차 실습 24) -->
+      <!-- 우측: 월간 문화생활 예산 & 구매 이유 영수증 -->
       <div class="sunken-box">
         <div class="box-head"><span>문화생활 예산 &amp; 구매 이유 영수증</span><span class="tag-mini">예산 ${formatCommaNumber(budgetState.limit)}원</span></div>
         <div style="display:flex;gap:6px;margin-bottom:8px;">
@@ -1717,7 +1859,7 @@ async function renderMailboxAndQrApp() {
         <div id="mailbox-list-box" style="max-height:175px;overflow-y:auto;"></div>
       </div>
 
-      <!-- 우측: 스마트폰 접속용 QR 코드 공유 (12주차 실습 22) -->
+      <!-- 우측: 스마트폰 접속용 QR 코드 공유 -->
       <div class="sunken-box" style="text-align:center;">
         <div class="box-head"><span>스마트폰 QR 공유</span><span class="tag-mini">PWA</span></div>
         <p style="font-size:0.78rem;font-weight:800;margin-bottom:10px;word-break:keep-all;">
