@@ -2,470 +2,464 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>MY-ARCHIVE 95 // 감상 아카이빙 및 데이터 노드 OS</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+  <meta name="theme-color" content="#008080" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="MY-ARCHIVE 95" />
+  <title>MY-ARCHIVE 95 OS — 개인 문화 감상 아카이브</title>
 
-  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css" />
+  <!-- 단일 파일 기반 PWA 인라인 매니페스트 (스마트폰 홈 화면 설치 지원) -->
+  <link rel="manifest" href='data:application/manifest+json,{"name":"MY-ARCHIVE 95 OS","short_name":"ARCHIVE95","start_url":"./index.html","display":"standalone","background_color":"#008080","theme_color":"#000080","description":"Windows 95 + Neo-Brutalism 개인 문화 감상 아카이빙 OS"}' />
+
+  <!-- Pretendard 웹폰트 -->
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
   <link rel="stylesheet" href="css/style.css" />
-
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
-  <script src="js/config.js" defer></script>
-  <script src="js/window-mgr.js" defer></script>
-  <script src="js/visualizer.js" defer></script>
-  <script src="js/archive-app.js" defer></script>
 </head>
-<body>
+<body class="theme-teal">
 
-<div class="crt-overlay" id="crt-overlay"></div>
-<div id="drag-ghost-box"></div>
-
-<!-- Boot Splash -->
-<div id="win95-boot-screen">
-  <div class="boot-box">
-    <div style="font-size: 1.45rem; font-weight: 900; color: #ffffff; text-shadow: 2px 2px 0 #111111;">MY-ARCHIVE 95 OS</div>
-    <div style="font-size: 0.85rem; color: #ffd83b; font-weight: 700; margin-top: 6px;">Classic Desktop &amp; Data Node Engine</div>
-    <div class="boot-progress" id="boot-progress"></div>
-    <div style="font-size: 0.78rem; color: #ffffff; margin-top: 10px;">Google Sheets CRUD 커널 및 창 관리자 초기화 중...</div>
+  <!-- Windows 95 부팅 스플래시 화면 -->
+  <div id="boot-screen" aria-hidden="true">
+    <div class="boot-box">
+      <div class="boot-logo">MY-ARCHIVE <span>95</span></div>
+      <div class="boot-sub">Personal Culture Archive &amp; Data Node OS [Build 2026.11]</div>
+      <div class="boot-bar"><div class="boot-bar-fill"></div></div>
+      <div class="boot-hint">Google Sheets &amp; LocalStorage 하이브리드 엔진 초기화 중...</div>
+    </div>
   </div>
-</div>
 
-<!-- BSOD Panic Overlay -->
-<div id="win95-bsod">
-  <div style="background: #c0c0c0; color: #0000aa; font-weight: 900; padding: 2px 12px; margin-bottom: 20px;">MY-ARCHIVE 95</div>
-  <div style="max-width: 620px; font-size: 0.95rem;">
-    치명적인 감상 과부하 예외(0E)가 0028:C0011E36에서 발생했습니다.<br/>
-    현재 실행 중인 감상 프로세스가 일시 중지되었습니다.<br/><br/>
-    * 아무 키나 누르거나 화면을 클릭하면 바탕화면으로 복귀합니다.<br/>
-    * 저장되지 않은 여운은 자동으로 뇌리에 백업됩니다.
-  </div>
-</div>
+  <!-- CRT 스캔라인 오버레이 (선택형 토글) -->
+  <div id="crt-overlay" class="crt-overlay" style="display:none;" aria-hidden="true"></div>
 
-<!-- 3D Starfield Screensaver -->
-<div id="screensaver-overlay" title="클릭하거나 키를 누르면 바탕화면으로 복귀합니다">
-  <canvas id="screensaver-canvas"></canvas>
-</div>
+  <!-- 상단 OS 시스템 메뉴바 (<header> + <nav> 시맨틱 구조) -->
+  <header class="os-menubar">
+    <nav class="menu-bar-left" aria-label="시스템 주 메뉴">
+      <div class="os-brand-badge">ARCHIVE95.OS</div>
 
-<div class="desktop-workspace">
-  <!-- Left Desktop Icons (이모지 제거, Win95 단축 아이콘 스타일) -->
-  <aside class="desktop-icons" aria-label="바탕화면 아이콘">
-    <div class="desktop-icon" id="icon-main"><div class="icon-glyph">DB</div><span class="icon-label">내 감상함.exe</span></div>
-    <div class="desktop-icon" id="icon-new"><div class="icon-glyph yellow">+</div><span class="icon-label">새 기록 등록</span></div>
-    <div class="desktop-icon" id="icon-visualizer"><div class="icon-glyph sky">NET</div><span class="icon-label">노드·워드클라우드</span></div>
-    <div class="desktop-icon" id="icon-memo"><div class="icon-glyph white">TXT</div><span class="icon-label">아이디어 메모</span></div>
-    <div class="desktop-icon" id="icon-mine"><div class="icon-glyph dark">*</div><span class="icon-label">지뢰찾기.exe</span></div>
-    <div class="desktop-icon" id="icon-book"><div class="icon-glyph sky">BK</div><span class="icon-label">도서 서가</span></div>
-    <div class="desktop-icon" id="icon-music"><div class="icon-glyph green">LP</div><span class="icon-label">음반 플레이어</span></div>
-    <div class="desktop-icon" id="icon-video"><div class="icon-glyph pink">TV</div><span class="icon-label">영상 비디오</span></div>
-  </aside>
-
-  <!-- Center Main Window -->
-  <main class="win95-window focused" id="win-main" data-win-id="win-main" data-win-title="[DIR] MY-ARCHIVE.EXE" style="z-index: 10;">
-    <div class="win-titlebar draggable">
-      <div class="win-title-left">
-        <span class="win-title-dot"></span>
-        <span>MY-ARCHIVE.EXE — 감상 아카이빙 및 취향 통계 탐색기</span>
+      <div class="menu-item-wrap">
+        <button type="button" class="menu-root"><u>F</u>ile (파일)</button>
+        <div class="menu-dropdown">
+          <button type="button" class="menu-opt" id="mnu-new-archive">[+] 새 감상 기록 등록...</button>
+          <button type="button" class="menu-opt" id="mnu-open-memo">[NOTE] 퀵 메모장 열기</button>
+          <div class="menu-sep"></div>
+          <button type="button" class="menu-opt" id="mnu-sync-sheet">[SYNC] 구글 시트 새로고침</button>
+          <button type="button" class="menu-opt" id="mnu-export-csv">[CSV] 전체 데이터 백업 다운로드</button>
+        </div>
       </div>
-      <div class="win-controls">
-        <button type="button" class="win-ctrl-btn" data-action="minimize" data-target="win-main" title="최소화">_</button>
-        <button type="button" class="win-ctrl-btn" data-action="reset-pos" data-target="win-main" title="위치 초기화">□</button>
-        <button type="button" class="win-ctrl-btn close" data-action="close" data-target="win-main" title="닫기">X</button>
+
+      <div class="menu-item-wrap">
+        <button type="button" class="menu-root"><u>V</u>iew (보기)</button>
+        <div class="menu-dropdown">
+          <button type="button" class="menu-opt" data-cat-menu="ALL">전체 아카이브 보기</button>
+          <button type="button" class="menu-opt" data-cat-menu="도서">도서 목록만 보기</button>
+          <button type="button" class="menu-opt" data-cat-menu="음악">음악 목록만 보기</button>
+          <button type="button" class="menu-opt" data-cat-menu="영상">영상 목록만 보기</button>
+          <button type="button" class="menu-opt" data-cat-menu="기타">기타 목록만 보기</button>
+          <div class="menu-sep"></div>
+          <button type="button" class="menu-opt" id="mnu-toggle-charts">기본 통계 차트 표시/숨김</button>
+          <button type="button" class="menu-opt" id="mnu-open-calendar">월별 캘린더 &amp; D-Day 열기</button>
+        </div>
       </div>
+
+      <div class="menu-item-wrap">
+        <button type="button" class="menu-root"><u>T</u>ools (도구·분석)</button>
+        <div class="menu-dropdown">
+          <button type="button" class="menu-opt" id="mnu-open-timeline">[CHART] 연표 &amp; 레이더 취향 분석</button>
+          <button type="button" class="menu-opt" id="mnu-open-visualizer">[NODE] 키워드 &amp; 데이터 노드 맵</button>
+          <button type="button" class="menu-opt" id="mnu-open-mood">[MOOD] 오늘의 기분별 작품 추천</button>
+          <button type="button" class="menu-opt" id="mnu-open-quiz">[QUIZ] 아카이브 복습 퀴즈 &amp; 카드</button>
+          <div class="menu-sep"></div>
+          <button type="button" class="menu-opt" id="mnu-open-stamp">[STAMP] 디지털 도장 &amp; 예산 영수증</button>
+          <button type="button" class="menu-opt" id="mnu-open-mailbox">[MAIL] 비밀 추천 우체통 &amp; QR 공유</button>
+          <button type="button" class="menu-opt" id="mnu-open-jukebox">[PLAY] YouTube 백그라운드 주크박스</button>
+          <button type="button" class="menu-opt" id="mnu-open-gamepack">[GAME] 레트로 카드놀이 &amp; 지뢰찾기</button>
+        </div>
+      </div>
+
+      <div class="menu-item-wrap">
+        <button type="button" class="menu-root"><u>W</u>indow (창·테마)</button>
+        <div class="menu-dropdown">
+          <button type="button" class="menu-opt" id="mnu-cascade">열린 창 계단식 배열 (Cascade)</button>
+          <button type="button" class="menu-opt" id="mnu-close-all-popups">모든 팝업 창 닫기</button>
+          <div class="menu-sep"></div>
+          <button type="button" class="menu-opt" data-theme-opt="teal">배경: 클래식 틸 (Teal)</button>
+          <button type="button" class="menu-opt" data-theme-opt="grid">배경: 모눈종이 (Paper Grid)</button>
+          <button type="button" class="menu-opt" data-theme-opt="brick">배경: 레트로 벽돌 (Brick)</button>
+          <div class="menu-sep"></div>
+          <button type="button" class="menu-opt" id="mnu-toggle-crt">CRT 스캔라인 효과 전환</button>
+          <button type="button" class="menu-opt" id="mnu-toggle-sound">8비트 효과음 음소거 전환</button>
+          <button type="button" class="menu-opt" id="mnu-trigger-bsod">시스템 블루스크린 테스트 (BSOD)</button>
+        </div>
+      </div>
+    </nav>
+
+    <div class="menu-bar-right">
+      <span id="cache-status-badge" class="status-pill" title="오프라인 로컬 캐시 동기화 상태">CACHE: READY</span>
     </div>
+  </header>
 
-    <!-- Menu Bar -->
-    <div class="win-menubar">
-      <div class="menu-item-wrap">
-        <button type="button" class="menu-root">파일(F)</button>
-        <div class="menu-dropdown">
-          <button type="button" class="menu-opt" id="mnu-new-archive"><span>새 감상 기록 등록...</span><span>Ctrl+N</span></button>
-          <button type="button" class="menu-opt" id="mnu-open-memo"><span>아이디어 메모장 열기</span><span>Ctrl+M</span></button>
-          <div class="menu-sep"></div>
-          <button type="button" class="menu-opt" id="mnu-export-csv"><span>아카이브 CSV 내보내기</span><span>CSV</span></button>
-          <button type="button" class="menu-opt" id="mnu-sync-sheet"><span>구글 시트 동기화</span><span>F5</span></button>
+  <!-- 메인 데스크톱 작업 공간 (<main> 시맨틱 구조) -->
+  <main id="desktop-area" class="desktop-workspace">
+
+    <!-- 바탕화면 바로가기 아이콘 그리드 -->
+    <nav class="desktop-icons" aria-label="바탕화면 프로그램 아이콘">
+      <button type="button" class="desk-icon" id="icon-main">
+        <div class="desk-icon-box" style="background: var(--brutal-yellow);">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2.4"><rect x="3" y="4" width="18" height="16" rx="1"/><path d="M3 9h18M9 9v11"/></svg>
+        </div>
+        <span>내 아카이브</span>
+      </button>
+
+      <button type="button" class="desk-icon" id="icon-new">
+        <div class="desk-icon-box" style="background: var(--brutal-green);">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2.6"><path d="M12 5v14M5 12h14"/></svg>
+        </div>
+        <span>새 기록 등록</span>
+      </button>
+
+      <button type="button" class="desk-icon" id="icon-calendar">
+        <div class="desk-icon-box" style="background: var(--brutal-sky);">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2.4"><rect x="3" y="4" width="18" height="17"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+        </div>
+        <span>감상 달력·D-Day</span>
+      </button>
+
+      <button type="button" class="desk-icon" id="icon-mood">
+        <div class="desk-icon-box" style="background: var(--brutal-pink);">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4"><circle cx="12" cy="12" r="9"/><path d="M8 14s1.5 2 4 2 4-2 4-2M9 9h.01M15 9h.01"/></svg>
+        </div>
+        <span>기분별 추천</span>
+      </button>
+
+      <button type="button" class="desk-icon" id="icon-quiz">
+        <div class="desk-icon-box" style="background: #ff9f43;">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2.4"><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><circle cx="12" cy="12" r="9"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        </div>
+        <span>복습 퀴즈</span>
+      </button>
+
+      <button type="button" class="desk-icon" id="icon-timeline">
+        <div class="desk-icon-box" style="background: #a29bfe;">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2.4"><polygon points="12 2 22 8.5 18 20 6 20 2 8.5 12 2"/></svg>
+        </div>
+        <span>연표·레이더</span>
+      </button>
+
+      <button type="button" class="desk-icon" id="icon-stamp">
+        <div class="desk-icon-box" style="background: #ffffff;">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#d63031" stroke-width="2.5"><circle cx="12" cy="12" r="8"/><path d="M9 12l2 2 4-4"/></svg>
+        </div>
+        <span>도장·예산영수증</span>
+      </button>
+
+      <button type="button" class="desk-icon" id="icon-mailbox">
+        <div class="desk-icon-box" style="background: var(--brutal-yellow);">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2.4"><rect x="3" y="5" width="18" height="14"/><polyline points="3 7 12 13 21 7"/></svg>
+        </div>
+        <span>우체통·QR공유</span>
+      </button>
+
+      <button type="button" class="desk-icon" id="icon-jukebox">
+        <div class="desk-icon-box" style="background: #111111;">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#2ed573" stroke-width="2.4"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+        </div>
+        <span>YT 주크박스</span>
+      </button>
+
+      <button type="button" class="desk-icon" id="icon-visualizer">
+        <div class="desk-icon-box" style="background: var(--brutal-sky);">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2.4"><circle cx="6" cy="6" r="3"/><circle cx="18" cy="18" r="3"/><circle cx="18" cy="6" r="3"/><line x1="8.5" y1="7.5" x2="15.5" y2="16.5"/><line x1="8.5" y1="6" x2="15" y2="6"/></svg>
+        </div>
+        <span>데이터 노드</span>
+      </button>
+
+      <button type="button" class="desk-icon" id="icon-memo">
+        <div class="desk-icon-box" style="background: var(--brutal-paper);">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2.4"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        </div>
+        <span>퀵 메모장</span>
+      </button>
+
+      <button type="button" class="desk-icon" id="icon-gamepack">
+        <div class="desk-icon-box" style="background: var(--brutal-pink);">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 12h4M8 10v4M15 11h.01M18 13h.01"/></svg>
+        </div>
+        <span>게임팩 95</span>
+      </button>
+    </nav>
+
+    <!-- ============================================================ -->
+    <!-- 1. 메인 탐색기 창 (MY-ARCHIVE EXPLORER)                        -->
+    <!-- ============================================================ -->
+    <section class="floating-win open focused main-explorer-win" id="win-main" data-win-title="C:\MY-ARCHIVE\EXPLORER.EXE" style="top: 38px; left: 118px; width: 980px;">
+      <div class="win-titlebar draggable">
+        <div class="win-title-left">
+          <span class="win-title-dot" style="background: var(--brutal-yellow);"></span>
+          <span>C:\MY-ARCHIVE\EXPLORER.EXE — 문화 감상 아카이브 관리자</span>
+        </div>
+        <div class="win-controls">
+          <button type="button" class="win-ctrl-btn" data-action="minimize" data-target="win-main">_</button>
+          <button type="button" class="win-ctrl-btn close" data-action="close" data-target="win-main">X</button>
         </div>
       </div>
 
-      <div class="menu-item-wrap">
-        <button type="button" class="menu-root">보기(V) &amp; 시각화</button>
-        <div class="menu-dropdown">
-          <button type="button" class="menu-opt" id="mnu-open-visualizer"><span>[NET] 데이터 노드 &amp; 워드클라우드 생성</span></button>
-          <div class="menu-sep"></div>
-          <button type="button" class="menu-opt" data-cat-menu="ALL"><span>전체 매체 보기</span></button>
-          <button type="button" class="menu-opt" data-cat-menu="도서"><span>도서 기록만 보기</span></button>
-          <button type="button" class="menu-opt" data-cat-menu="음악"><span>음악 기록만 보기</span></button>
-          <button type="button" class="menu-opt" data-cat-menu="영상"><span>영상 기록만 보기</span></button>
-          <div class="menu-sep"></div>
-          <button type="button" class="menu-opt" id="mnu-toggle-charts"><span>기본 통계 차트 접기/펼치기</span></button>
-        </div>
-      </div>
-
-      <div class="menu-item-wrap">
-        <button type="button" class="menu-root">실험실(X)</button>
-        <div class="menu-dropdown">
-          <button type="button" class="menu-opt" id="mnu-toggle-dragmode"><span>드래그 방식: 점선 와이어프레임 (전환)</span></button>
-          <button type="button" class="menu-opt" id="mnu-cycle-wallpaper"><span>바탕화면 패턴 전환 (청록/모눈/벽돌)</span></button>
-          <button type="button" class="menu-opt" id="mnu-toggle-crt"><span>CRT 브라운관 스캔라인 켜기/끄기</span></button>
-          <button type="button" class="menu-opt" id="mnu-run-screensaver"><span>3D 별빛 화면 보호기 실행</span></button>
-          <div class="menu-sep"></div>
-          <button type="button" class="menu-opt" id="mnu-bsod"><span>[!] 블루스크린(BSOD) 테스트</span></button>
-        </div>
-      </div>
-
-      <div class="menu-item-wrap">
-        <button type="button" class="menu-root">창(W)</button>
-        <div class="menu-dropdown">
-          <button type="button" class="menu-opt" id="mnu-cascade"><span>열린 팝업 창 계단식 정렬</span></button>
-          <button type="button" class="menu-opt" id="mnu-close-all-popups"><span>모든 팝업 창 닫기</span></button>
-        </div>
-      </div>
-    </div>
-
-    <div class="win-body">
-      <section class="os-hero">
-        <div>
-          <h1>감상 아카이빙 및 취향 통계 대시보드</h1>
-          <p>작품 카드를 클릭하면 <strong>수정·삭제·연관 추천·유튜브 이동</strong>이 가능하며, 선택 시점에 데이터 노드와 워드클라우드를 생성할 수 있습니다.</p>
-        </div>
-        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-          <button type="button" class="btn95 sky" id="btn-open-vis-hero">[NET] 노드·워드클라우드</button>
-          <button type="button" class="btn95 yellow" id="btn-open-register">+ 새 감상 기록하기</button>
-        </div>
-      </section>
-
-      <!-- KPI Panels -->
-      <section class="kpi-grid">
-        <div class="kpi-panel yellow">
-          <div class="kpi-lbl">총 누적 아카이브</div>
-          <div class="kpi-val" id="kpi-total">0건</div>
-          <div class="kpi-sub" id="kpi-recent-sub">데이터 동기화 중...</div>
-        </div>
-        <div class="kpi-panel">
-          <div class="kpi-lbl">평균 감상 평점</div>
-          <div class="kpi-val" id="kpi-avg-rating">0.0점</div>
-          <div class="kpi-sub">5.0점 만점 기준</div>
-        </div>
-        <div class="kpi-panel sky">
-          <div class="kpi-lbl">최다 감상 매체</div>
-          <div class="kpi-val" id="kpi-top-cat">-</div>
-          <div class="kpi-sub" id="kpi-top-cat-sub">매체 분포 집계</div>
-        </div>
-        <div class="kpi-panel green">
-          <div class="kpi-lbl">선호 장르 TOP 1</div>
-          <div class="kpi-val" id="kpi-top-genre" style="font-size: 1.35rem;">-</div>
-          <div class="kpi-sub" id="kpi-top-genre-sub">장르 키워드 통계</div>
-        </div>
-      </section>
-
-      <!-- Default Charts -->
-      <section class="charts-grid" id="charts-section">
-        <div class="sunken-box">
-          <div class="box-head">
-            <span>매체별 비율 분석</span>
-            <span style="font-size: 0.72rem; background: var(--brutal-sky); padding: 2px 6px; border: 1.5px solid #111;">MEDIA</span>
+      <div class="win-body">
+        <!-- KPI 요약 카드 4종 -->
+        <section class="kpi-grid" aria-label="아카이브 핵심 요약 지표">
+          <div class="kpi-card yellow">
+            <div class="kpi-label">누적 감상 기록</div>
+            <div class="kpi-val" id="kpi-total">0건</div>
+            <div class="kpi-sub" id="kpi-recent-sub">동기화 대기 중...</div>
           </div>
-          <div class="chart-wrap"><canvas id="chart-category"></canvas></div>
-        </div>
-        <div class="sunken-box">
-          <div class="box-head">
-            <span>월별 감상 기록 추이</span>
-            <span style="font-size: 0.72rem; background: var(--brutal-green); padding: 2px 6px; border: 1.5px solid #111;">TIMELINE</span>
+          <div class="kpi-card sky">
+            <div class="kpi-label">평균 만족도 평점</div>
+            <div class="kpi-val" id="kpi-avg-rating">0.0점</div>
+            <div class="kpi-sub">5.0점 만점 기준</div>
           </div>
-          <div class="chart-wrap"><canvas id="chart-monthly"></canvas></div>
-        </div>
-      </section>
+          <div class="kpi-card green">
+            <div class="kpi-label">최다 감상 매체</div>
+            <div class="kpi-val" id="kpi-top-cat">-</div>
+            <div class="kpi-sub" id="kpi-top-cat-sub">데이터 없음</div>
+          </div>
+          <div class="kpi-card pink">
+            <div class="kpi-label">핵심 선호 장르</div>
+            <div class="kpi-val" id="kpi-top-genre">-</div>
+            <div class="kpi-sub" id="kpi-top-genre-sub">데이터 없음</div>
+          </div>
+        </section>
 
-      <!-- Filter Toolbar -->
-      <div class="toolbar-95">
-        <div class="pill-group" id="cat-filter-group">
-          <button type="button" class="pill-btn active" data-cat="ALL">전체 보기</button>
-          <button type="button" class="pill-btn" data-cat="도서">도서</button>
-          <button type="button" class="pill-btn" data-cat="음악">음악</button>
-          <button type="button" class="pill-btn" data-cat="영상">영상</button>
-          <button type="button" class="pill-btn" data-cat="기타">기타</button>
-        </div>
+        <!-- 기본 통계 차트 (도넛 + 월별 막대) -->
+        <section id="charts-section" class="charts-grid" aria-label="매체별·월별 통계 차트">
+          <div class="sunken-box">
+            <div class="box-head"><span>매체별 기록 비중</span><span class="tag-mini">DOUGHNUT</span></div>
+            <div style="height: 155px; position: relative;"><canvas id="chart-category"></canvas></div>
+          </div>
+          <div class="sunken-box">
+            <div class="box-head"><span>월별 감상 추이</span><span class="tag-mini">MONTHLY</span></div>
+            <div style="height: 155px; position: relative;"><canvas id="chart-monthly"></canvas></div>
+          </div>
+        </section>
 
-        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-          <select id="filter-rating" class="win95-select">
-            <option value="0">전체 별점</option>
-            <option value="5">★ 5점만</option>
-            <option value="4">★ 4점 이상</option>
-            <option value="3">★ 3점 이상</option>
-          </select>
-          <input type="text" id="filter-keyword" placeholder="제목·제작자·메모 검색..." style="width: 195px;" />
-        </div>
+        <!-- 필터 & 등록 툴바 -->
+        <section class="toolbar-box" aria-label="목록 필터 및 검색">
+          <div id="cat-filter-group" class="pill-group">
+            <button type="button" class="pill-btn active" data-cat="ALL">전체</button>
+            <button type="button" class="pill-btn" data-cat="도서">도서</button>
+            <button type="button" class="pill-btn" data-cat="음악">음악</button>
+            <button type="button" class="pill-btn" data-cat="영상">영상</button>
+            <button type="button" class="pill-btn" data-cat="기타">기타</button>
+          </div>
+
+          <div class="filter-controls">
+            <select id="filter-rating" class="win95-select" aria-label="최소 평점 필터">
+              <option value="0">모든 평점</option>
+              <option value="5">★★★★★ (5점만)</option>
+              <option value="4">★★★★☆ (4점 이상)</option>
+              <option value="3">★★★☆☆ (3점 이상)</option>
+            </select>
+            <input type="text" id="filter-keyword" placeholder="제목·제작자·장르·감상평 검색..." />
+            <button type="button" class="btn95 yellow sm" id="btn-open-register">[+ 새 감상 기록하기]</button>
+          </div>
+        </section>
+
+        <!-- 감상 기록 카드 그리드 -->
+        <section id="archive-grid" class="archive-grid" aria-label="감상 기록 카드 목록"></section>
       </div>
 
-      <!-- Archive Grid -->
-      <section class="archive-grid" id="archive-grid"></section>
-    </div>
+      <!-- 하단 Win95 상태 표시줄 -->
+      <div class="win-statusbar">
+        <span id="status-left">준비 완료</span>
+        <span id="status-right">0개 개체 표시됨</span>
+      </div>
+    </section>
 
-    <div class="win-statusbar">
-      <div class="status-cell" id="status-left">준비 완료 — 모든 창 제목 표시줄을 드래그하여 이동할 수 있습니다</div>
-      <div class="status-cell" id="status-right">0개 개체 표시됨</div>
-    </div>
+    <!-- ============================================================ -->
+    <!-- 2. 월별 감상 달력 & D-Day 관리 창 (CALENDAR95.EXE)            -->
+    <!-- ============================================================ -->
+    <section class="floating-win" id="win-calendar" data-win-title="[CAL] 감상 달력 & D-Day" style="top: 64px; left: 165px; width: 780px;">
+      <div class="win-titlebar draggable" style="background: var(--brutal-sky); color: #111;">
+        <div class="win-title-left"><span class="win-title-dot" style="background: #111;"></span><span>CALENDAR95.EXE — 월별 감상 캘린더 및 목표 D-Day</span></div>
+        <div class="win-controls">
+          <button type="button" class="win-ctrl-btn" data-action="minimize" data-target="win-calendar">_</button>
+          <button type="button" class="win-ctrl-btn close" data-action="close" data-target="win-calendar">X</button>
+        </div>
+      </div>
+      <div class="win-body" id="calendar-app-body"></div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- 3. 감정 상태별 아카이브 랜덤 추천기 (MOODPICK.EXE)             -->
+    <!-- ============================================================ -->
+    <section class="floating-win" id="win-mood" data-win-title="[MOOD] 기분별 작품 추천" style="top: 84px; left: 210px; width: 620px;">
+      <div class="win-titlebar draggable" style="background: var(--brutal-pink); color: #fff;">
+        <div class="win-title-left"><span class="win-title-dot" style="background: var(--brutal-yellow);"></span><span>MOODPICK.EXE — 오늘의 감정 상태별 아카이브 추천</span></div>
+        <div class="win-controls">
+          <button type="button" class="win-ctrl-btn" data-action="minimize" data-target="win-mood">_</button>
+          <button type="button" class="win-ctrl-btn close" data-action="close" data-target="win-mood">X</button>
+        </div>
+      </div>
+      <div class="win-body" id="mood-app-body"></div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- 4. 내 아카이브 복습 퀴즈 & 카드 뒤집기 (QUIZ95.EXE)           -->
+    <!-- ============================================================ -->
+    <section class="floating-win" id="win-quiz" data-win-title="[QUIZ] 아카이브 복습 퀴즈" style="top: 72px; left: 190px; width: 680px;">
+      <div class="win-titlebar draggable" style="background: #ff9f43; color: #111;">
+        <div class="win-title-left"><span class="win-title-dot" style="background: #111;"></span><span>QUIZ95.EXE — 내 감상 기록 복습 퀴즈 &amp; 초성 챌린지</span></div>
+        <div class="win-controls">
+          <button type="button" class="win-ctrl-btn" data-action="minimize" data-target="win-quiz">_</button>
+          <button type="button" class="win-ctrl-btn close" data-action="close" data-target="win-quiz">X</button>
+        </div>
+      </div>
+      <div class="win-body" id="quiz-app-body"></div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- 5. 인터랙티브 가로 연표 & 레이더 차트 분석기 (TIMELINE95.EXE)  -->
+    <!-- ============================================================ -->
+    <section class="floating-win" id="win-timeline" data-win-title="[ANALYSIS] 연표 & 레이더 분석" style="top: 56px; left: 145px; width: 840px;">
+      <div class="win-titlebar draggable" style="background: #a29bfe; color: #111;">
+        <div class="win-title-left"><span class="win-title-dot" style="background: var(--brutal-yellow);"></span><span>TIMELINE95.EXE — 인터랙티브 감상 연표 &amp; 상·하반기 레이더 비교</span></div>
+        <div class="win-controls">
+          <button type="button" class="win-ctrl-btn" data-action="minimize" data-target="win-timeline">_</button>
+          <button type="button" class="win-ctrl-btn close" data-action="close" data-target="win-timeline">X</button>
+        </div>
+      </div>
+      <div class="win-body" id="timeline-app-body"></div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- 6. 디지털 도장 생성기 & 예산·회고 영수증 (STAMP95.EXE)         -->
+    <!-- ============================================================ -->
+    <section class="floating-win" id="win-stamp" data-win-title="[STAMP] 도장 & 예산 영수증" style="top: 68px; left: 175px; width: 760px;">
+      <div class="win-titlebar draggable yellow-bar">
+        <div class="win-title-left"><span class="win-title-dot"></span><span>STAMP95.EXE — 감상 완료 디지털 도장 &amp; 문화생활 예산 영수증</span></div>
+        <div class="win-controls">
+          <button type="button" class="win-ctrl-btn" data-action="minimize" data-target="win-stamp">_</button>
+          <button type="button" class="win-ctrl-btn close" data-action="close" data-target="win-stamp">X</button>
+        </div>
+      </div>
+      <div class="win-body" id="stamp-app-body"></div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- 7. 비밀 추천 우체통 & QR 코드 공유 (MAILBOX95.EXE)            -->
+    <!-- ============================================================ -->
+    <section class="floating-win" id="win-mailbox" data-win-title="[MAIL] 비밀 추천 우체통 & QR" style="top: 78px; left: 205px; width: 690px;">
+      <div class="win-titlebar draggable" style="background: var(--brutal-green); color: #111;">
+        <div class="win-title-left"><span class="win-title-dot" style="background: #111;"></span><span>MAILBOX95.EXE — 방문자 작품 추천 우체통 &amp; 모바일 QR 공유</span></div>
+        <div class="win-controls">
+          <button type="button" class="win-ctrl-btn" data-action="minimize" data-target="win-mailbox">_</button>
+          <button type="button" class="win-ctrl-btn close" data-action="close" data-target="win-mailbox">X</button>
+        </div>
+      </div>
+      <div class="win-body" id="mailbox-app-body"></div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- 8. 기존 내장 도구 창 (메모장, 주크박스, 데이터노드, 게임팩)     -->
+    <!-- ============================================================ -->
+    <section class="floating-win" id="win-memo" data-win-title="[NOTE] MEMOPAD.EXE" style="top: 90px; left: 230px; width: 540px;">
+      <div class="win-titlebar draggable">
+        <div class="win-title-left"><span class="win-title-dot" style="background: var(--brutal-yellow);"></span><span>MEMOPAD.EXE — 감상 단상 및 아이디어 메모장</span></div>
+        <div class="win-controls">
+          <button type="button" class="win-ctrl-btn" data-action="minimize" data-target="win-memo">_</button>
+          <button type="button" class="win-ctrl-btn close" data-action="close" data-target="win-memo">X</button>
+        </div>
+      </div>
+      <div class="win-body">
+        <form id="memo-form" class="sunken-box" style="margin-bottom: 12px; background: var(--win-gray);">
+          <div class="box-head"><span>새 메모 작성</span><span id="memo-count-badge" class="tag-mini">0건</span></div>
+          <input type="text" id="memo-title" placeholder="메모 제목 (예: 주말에 읽을 책 후보)" style="width: 100%; margin-bottom: 8px;" />
+          <textarea id="memo-content" rows="3" placeholder="기록할 생각이나 문장을 입력하십시오..." required style="width: 100%; margin-bottom: 8px;"></textarea>
+          <div style="display: flex; justify-content: flex-end;">
+            <button type="submit" class="btn95 yellow sm" id="btn-save-memo">메모 시트에 저장</button>
+          </div>
+        </form>
+        <div id="memo-list-container" class="sunken-box" style="max-height: 260px; overflow-y: auto;"></div>
+      </div>
+    </section>
+
+    <section class="floating-win" id="win-jukebox" data-win-title="[PLAY] JUKEBOX95.EXE" style="top: 96px; left: 250px; width: 520px;">
+      <div class="win-titlebar draggable" style="background: #111; color: var(--brutal-green);">
+        <div class="win-title-left"><span class="win-title-dot" style="background: var(--brutal-green);"></span><span>JUKEBOX95.EXE — YouTube 백그라운드 플레이어</span></div>
+        <div class="win-controls">
+          <button type="button" class="win-ctrl-btn" data-action="minimize" data-target="win-jukebox">_</button>
+          <button type="button" class="win-ctrl-btn close" data-action="close" data-target="win-jukebox">X</button>
+        </div>
+      </div>
+      <div class="win-body" id="jukebox-body"></div>
+    </section>
+
+    <section class="floating-win" id="win-visualizer" data-win-title="[NODE] DATANODE95.EXE" style="top: 62px; left: 155px; width: 820px;">
+      <div class="win-titlebar draggable" style="background: var(--brutal-sky); color: #111;">
+        <div class="win-title-left"><span class="win-title-dot" style="background: #111;"></span><span>DATANODE95.EXE — 키워드 워드클라우드 &amp; 데이터 노드 맵</span></div>
+        <div class="win-controls">
+          <button type="button" class="win-ctrl-btn" data-action="minimize" data-target="win-visualizer">_</button>
+          <button type="button" class="win-ctrl-btn close" data-action="close" data-target="win-visualizer">X</button>
+        </div>
+      </div>
+      <div class="win-body" id="visualizer-body"></div>
+    </section>
+
+    <section class="floating-win" id="win-gamepack" data-win-title="[GAME] GAMEPACK95.EXE" style="top: 54px; left: 160px; width: 780px;">
+      <div class="win-titlebar draggable" style="background: var(--brutal-pink); color: #fff;">
+        <div class="win-title-left"><span class="win-title-dot" style="background: var(--brutal-yellow);"></span><span>GAMEPACK95.EXE — 클래식 카드놀이 &amp; 아카이브 미니게임</span></div>
+        <div class="win-controls">
+          <button type="button" class="win-ctrl-btn" data-action="minimize" data-target="win-gamepack">_</button>
+          <button type="button" class="win-ctrl-btn close" data-action="close" data-target="win-gamepack">X</button>
+        </div>
+      </div>
+      <div class="win-body" id="gamepack-body"></div>
+    </section>
+
+    <!-- 동적 상세 탐색기 / 등록 모달 / 시스템 메시지 박스 컨테이너 -->
+    <div id="dynamic-windows-container"></div>
   </main>
 
-  <!-- Right Desktop Widgets -->
-  <aside class="desktop-widgets-col" aria-label="바탕화면 레트로 위젯">
-    <div class="desk-widget">
-      <div class="widget-head"><span>WINAMP 95 JUKEBOX</span><span>128kbps</span></div>
-      <div class="widget-body">
-        <div class="winamp-lcd">
-          <div id="jukebox-track" style="font-size: 0.78rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">01. 아카이브 트랙 대기 중...</div>
-          <div id="jukebox-artist" style="font-size: 0.7rem; color: #ffd83b; margin-top: 2px;">음악 기록 등록 시 자동 연동</div>
-          <div class="eq-bars" id="eq-bars">
-            <div class="eq-bar"></div><div class="eq-bar"></div><div class="eq-bar"></div><div class="eq-bar"></div>
-            <div class="eq-bar"></div><div class="eq-bar"></div><div class="eq-bar"></div><div class="eq-bar"></div>
-            <div class="eq-bar"></div><div class="eq-bar"></div><div class="eq-bar"></div><div class="eq-bar"></div>
-          </div>
-        </div>
-        <div style="display: flex; gap: 4px; justify-content: space-between;">
-          <button type="button" class="btn95 sm" id="jb-prev">|&lt;&lt;</button>
-          <button type="button" class="btn95 green sm" id="jb-play">&gt;</button>
-          <button type="button" class="btn95 sm" id="jb-stop">[]</button>
-          <button type="button" class="btn95 sm" id="jb-next">&gt;&gt;|</button>
-          <a class="btn95 pink sm" id="jb-yt" href="https://www.youtube.com" target="_blank" rel="noopener noreferrer">YT</a>
-        </div>
-      </div>
-    </div>
-
-    <div class="desk-widget">
-      <div class="widget-head"><span>CLOCK.EXE</span><span>KST</span></div>
-      <div class="widget-body" style="text-align: center;">
-        <div class="analog-clock-face">
-          <div class="clock-hand hand-hour" id="clk-hour"></div>
-          <div class="clock-hand hand-min" id="clk-min"></div>
-          <div class="clock-hand hand-sec" id="clk-sec"></div>
-          <div class="clock-pin"></div>
-        </div>
-        <div id="digital-date-lbl" style="font-size: 0.78rem; font-weight: 900;">2026-11-17 (화)</div>
-      </div>
-    </div>
-
-    <div class="desk-widget">
-      <div class="widget-head"><span>LAB_CONTROLS</span><span>WIN95</span></div>
-      <div class="widget-body" style="display: flex; flex-direction: column; gap: 6px;">
-        <button type="button" class="btn95 sm yellow" id="btn-widget-vis">[NET] 데이터 노드 · 워드클라우드</button>
-        <button type="button" class="btn95 sm sky" id="btn-widget-wp">[BG] 바탕화면 패턴 변경</button>
-        <button type="button" class="btn95 sm" id="btn-widget-crt">[CRT] 스캔라인 토글</button>
-        <button type="button" class="btn95 sm green" id="btn-widget-ss">[3D] 별빛 화면 보호기</button>
-      </div>
+  <!-- 시작 메뉴 팝업 -->
+  <aside id="start-menu" class="start-menu-popup" aria-label="시작 메뉴">
+    <div class="start-banner"><span>MY-ARCHIVE <b>95</b></span></div>
+    <div class="start-list">
+      <button type="button" class="start-item" id="sm-new">[+] 새 감상 기록하기</button>
+      <button type="button" class="start-item" id="sm-all">[DIR] 전체 아카이브 열기</button>
+      <button type="button" class="start-item" id="sm-book">[BOOK] 도서 아카이브</button>
+      <button type="button" class="start-item" id="sm-music">[BGM] 음악 아카이브</button>
+      <button type="button" class="start-item" id="sm-video">[VID] 영상 아카이브</button>
+      <div class="menu-sep"></div>
+      <button type="button" class="start-item" id="sm-calendar">[CAL] 월별 캘린더 &amp; D-Day</button>
+      <button type="button" class="start-item" id="sm-mood">[MOOD] 기분별 작품 추천기</button>
+      <button type="button" class="start-item" id="sm-quiz">[QUIZ] 아카이브 복습 퀴즈</button>
+      <button type="button" class="start-item" id="sm-timeline">[CHART] 연표 &amp; 레이더 분석</button>
+      <button type="button" class="start-item" id="sm-stamp">[STAMP] 디지털 도장 &amp; 예산 영수증</button>
+      <button type="button" class="start-item" id="sm-mailbox">[MAIL] 비밀 추천 우체통 &amp; QR</button>
+      <div class="menu-sep"></div>
+      <button type="button" class="start-item" id="sm-memo">[NOTE] 퀵 메모장</button>
+      <button type="button" class="start-item" id="sm-reload">[SYNC] 구글 시트 다시 불러오기</button>
     </div>
   </aside>
-</div>
 
-<!-- FLOATING WINDOW 1: 새 감상 기록 마법사 (Win95 고전 날짜/라디오 평점 컨트롤 적용) -->
-<div class="floating-win" id="win-register" data-win-id="win-register" data-win-title="[+] 새 감상 기록 마법사" style="top: 56px; left: 160px; width: 690px; z-index: 300;">
-  <div class="win-titlebar draggable yellow-bar">
-    <div class="win-title-left"><span class="win-title-dot"></span><span>새 감상 기록 마법사 (MULTI-SOURCE SEARCH)</span></div>
-    <div class="win-controls">
-      <button type="button" class="win-ctrl-btn" data-action="minimize" data-target="win-register">_</button>
-      <button type="button" class="win-ctrl-btn close" data-action="close" data-target="win-register">X</button>
-    </div>
-  </div>
-  <div class="win-body">
-    <div class="sunken-box" style="margin-bottom: 12px; background: var(--win-gray);">
-      <div style="display: grid; grid-template-columns: 1fr 1.15fr; gap: 10px;">
-        <div>
-          <label style="display:block; font-size:0.8rem; font-weight:800; margin-bottom:4px;" for="inp-category">매체 구분</label>
-          <select id="inp-category" class="win95-select" style="width: 100%;">
-            <option value="도서">도서 (Google Books)</option>
-            <option value="음악">음악 (Apple Music · Deezer · MusicBrainz · YouTube)</option>
-            <option value="영상">영상 (Apple TV · YouTube)</option>
-            <option value="기타">기타</option>
-          </select>
-        </div>
-        <div>
-          <label style="display:block; font-size:0.8rem; font-weight:800; margin-bottom:4px;">감상 일자 (년 / 월 / 일)</label>
-          <div class="win95-date-group" id="reg-date-group">
-            <select id="inp-date-y" class="win95-select" aria-label="연도"></select>
-            <select id="inp-date-m" class="win95-select" aria-label="월"></select>
-            <select id="inp-date-d" class="win95-select" aria-label="일"></select>
-          </div>
-        </div>
-      </div>
-      <div style="margin-top: 10px;">
-        <label style="display:block; font-size:0.8rem; font-weight:800; margin-bottom:4px;" for="inp-search-query">작품 제목, 유사어, 또는 링크(URL) 입력</label>
-        <div style="display: flex; gap: 8px;">
-          <input type="text" id="inp-search-query" placeholder="예: 소나기, 밤양갱, 아몬드, 유튜브 링크" style="flex: 1;" />
-          <button type="button" class="btn95 sky" id="btn-auto-search" style="white-space: nowrap;">검색</button>
-        </div>
-      </div>
-      <div id="reg-alert" class="dialog-banner"></div>
-      <div id="rank-list" class="rank-list"></div>
-    </div>
-
-    <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 12px; background: #ffffff; border: 2px solid #111; padding: 10px;">
-      <img id="preview-cover" alt="표지" style="width: 54px; height: 54px; object-fit: cover; border: 2px solid #111;" />
-      <div style="flex: 1;">
-        <label style="display:block; font-size:0.8rem; font-weight:800; margin-bottom:4px;" for="inp-cover-url">표지 / 썸네일 URL</label>
-        <input type="text" id="inp-cover-url" placeholder="https://..." style="width: 100%;" />
-      </div>
-    </div>
-
-    <form id="archive-form">
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
-        <div>
-          <label style="display:block; font-size:0.8rem; font-weight:800; margin-bottom:4px;" for="inp-title">작품 제목 *</label>
-          <input type="text" id="inp-title" required placeholder="작품명 입력" style="width: 100%;" />
-        </div>
-        <div>
-          <label style="display:block; font-size:0.8rem; font-weight:800; margin-bottom:4px;" for="inp-creator">저자 / 아티스트 / 채널 *</label>
-          <input type="text" id="inp-creator" required placeholder="제작자 입력" style="width: 100%;" />
-        </div>
-      </div>
-      <div style="display: grid; grid-template-columns: 1fr 1.25fr; gap: 10px; margin-bottom: 10px;">
-        <div>
-          <label style="display:block; font-size:0.8rem; font-weight:800; margin-bottom:4px;" for="inp-genre">장르 / 키워드</label>
-          <input type="text" id="inp-genre" placeholder="예: 한국소설, 인디록, YouTube" style="width: 100%;" />
-        </div>
-        <div>
-          <span style="display:block; font-size:0.8rem; font-weight:800; margin-bottom:4px;">평점 선택 (1~5점) *</span>
-          <div class="win95-radio-group" role="radiogroup" aria-label="평점 선택">
-            <label class="win95-radio"><input type="radio" name="reg-rating" value="1" /><span>1점</span></label>
-            <label class="win95-radio"><input type="radio" name="reg-rating" value="2" /><span>2점</span></label>
-            <label class="win95-radio"><input type="radio" name="reg-rating" value="3" /><span>3점</span></label>
-            <label class="win95-radio"><input type="radio" name="reg-rating" value="4" checked /><span>4점</span></label>
-            <label class="win95-radio"><input type="radio" name="reg-rating" value="5" /><span>5점</span></label>
-          </div>
-        </div>
-      </div>
-      <div style="margin-bottom: 10px;">
-        <label style="display:block; font-size:0.8rem; font-weight:800; margin-bottom:4px;" for="inp-source-url">원본 / 음원 / 유튜브 링크</label>
-        <input type="text" id="inp-source-url" placeholder="https://..." style="width: 100%;" />
-      </div>
-      <div style="margin-bottom: 12px;">
-        <label style="display:block; font-size:0.8rem; font-weight:800; margin-bottom:4px;" for="inp-review">한줄평 및 감상 메모 *</label>
-        <textarea id="inp-review" rows="2" required placeholder="작품에 대한 감상을 기록하십시오." style="width: 100%;"></textarea>
-      </div>
-      <div style="display: flex; justify-content: flex-end; gap: 8px;">
-        <button type="button" class="btn95" data-action="close" data-target="win-register">취소</button>
-        <button type="submit" class="btn95 yellow" id="btn-submit-reg">확인 및 시트 저장</button>
-      </div>
-    </form>
-  </div>
-</div>
-
-<!-- FLOATING WINDOW 2: 선택형 데이터 노드 & 워드클라우드 -->
-<div class="floating-win" id="win-visualizer" data-win-id="win-visualizer" data-win-title="[NET] 취향 노드·워드클라우드" style="top: 50px; left: 120px; width: 820px; z-index: 300;">
-  <div class="win-titlebar draggable sky-bar">
-    <div class="win-title-left"><span class="win-title-dot"></span><span>VISUALIZER95.EXE — 선택형 취향 데이터 노드 &amp; 워드클라우드</span></div>
-    <div class="win-controls">
-      <button type="button" class="win-ctrl-btn" data-action="minimize" data-target="win-visualizer">_</button>
-      <button type="button" class="win-ctrl-btn close" data-action="close" data-target="win-visualizer">X</button>
-    </div>
-  </div>
-  <div class="win-body">
-    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; background: var(--win-gray); padding: 8px 12px; border: 2px solid #111; box-shadow: var(--bevel-out);">
-      <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-        <button type="button" class="btn95 yellow sm" id="vis-tab-node">[NET] 데이터 관계 노드 맵</button>
-        <button type="button" class="btn95 sm" id="vis-tab-wc">[TAG] 감상 키워드 워드클라우드</button>
-      </div>
-      <div style="display: flex; gap: 6px; align-items: center;">
-        <select id="vis-cat-scope" class="win95-select" style="padding: 4px 8px; font-size: 0.8rem;">
-          <option value="ALL">전체 아카이브 대상</option>
-          <option value="도서">도서만 분석</option>
-          <option value="음악">음악만 분석</option>
-          <option value="영상">영상만 분석</option>
-        </select>
-        <button type="button" class="btn95 green sm" id="btn-rebuild-vis">그래프 재생성</button>
-      </div>
-    </div>
-    <div id="vis-panel-node">
-      <div style="font-size: 0.8rem; font-weight: 800; margin-bottom: 6px; color: #111;">* 노드를 마우스로 드래그하여 재배치할 수 있으며, <strong>작품 노드를 클릭</strong>하면 상세 탐색기가 열립니다.</div>
-      <div class="node-canvas-box"><canvas id="node-graph-canvas"></canvas></div>
-    </div>
-    <div id="vis-panel-wc" style="display: none;">
-      <div style="font-size: 0.8rem; font-weight: 800; margin-bottom: 6px; color: #111;">* 단어를 클릭하면 해당 키워드로 즉시 필터링됩니다.</div>
-      <div class="wordcloud-stage" id="wordcloud-stage"></div>
-    </div>
-  </div>
-</div>
-
-<!-- FLOATING WINDOW 3: 아이디어 메모장 -->
-<div class="floating-win" id="win-memo" data-win-id="win-memo" data-win-title="[TXT] MEMO95.EXE" style="top: 88px; left: 220px; width: 450px; z-index: 300;">
-  <div class="win-titlebar draggable green-bar">
-    <div class="win-title-left"><span class="win-title-dot" style="background: var(--brutal-yellow);"></span><span>MEMO95.EXE — 바탕화면 아이디어 메모장</span></div>
-    <div class="win-controls">
-      <button type="button" class="win-ctrl-btn" data-action="minimize" data-target="win-memo">_</button>
-      <button type="button" class="win-ctrl-btn close" data-action="close" data-target="win-memo">X</button>
-    </div>
-  </div>
-  <div class="win-body">
-    <form id="memo-form" class="sunken-box" style="margin-bottom: 12px; background: var(--win-gray);">
-      <div style="margin-bottom: 8px;">
-        <label style="display:block; font-size:0.8rem; font-weight:800; margin-bottom:3px;" for="memo-title">아이디어 제목</label>
-        <input type="text" id="memo-title" placeholder="예: 다음에 읽을 책 / 작업 아이디어" style="width: 100%;" />
-      </div>
-      <div style="margin-bottom: 10px;">
-        <label style="display:block; font-size:0.8rem; font-weight:800; margin-bottom:3px;" for="memo-content">짧은 메모 내용 *</label>
-        <textarea id="memo-content" rows="3" required placeholder="떠오른 아이디어를 바로 적어두십시오." style="width: 100%;"></textarea>
-      </div>
-      <div style="display: flex; justify-content: flex-end;">
-        <button type="submit" class="btn95 green sm" id="btn-save-memo">메모 시트에 저장</button>
-      </div>
-    </form>
-    <div class="sunken-box" style="max-height: 240px; overflow-y: auto;">
-      <div class="box-head"><span>저장된 아이디어 노트</span><span id="memo-count-badge" style="font-size: 0.72rem; background: var(--brutal-yellow); padding: 2px 6px; border: 1.5px solid #111;">0건</span></div>
-      <div id="memo-list-container"><div style="font-size: 0.82rem; font-weight: 700; color: #4a4a4a;">메모를 불러오는 중...</div></div>
-    </div>
-  </div>
-</div>
-
-<!-- FLOATING WINDOW 4: 지뢰찾기 -->
-<div class="floating-win" id="win-mine" data-win-id="win-mine" data-win-title="[*] WINMINE.EXE" style="top: 110px; left: 320px; width: 340px; z-index: 300;">
-  <div class="win-titlebar draggable">
-    <div class="win-title-left"><span class="win-title-dot" style="background: var(--brutal-pink);"></span><span>WINMINE.EXE — 지뢰찾기</span></div>
-    <div class="win-controls">
-      <button type="button" class="win-ctrl-btn" data-action="minimize" data-target="win-mine">_</button>
-      <button type="button" class="win-ctrl-btn close" data-action="close" data-target="win-mine">X</button>
-    </div>
-  </div>
-  <div class="win-body" style="text-align: center;">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; background: var(--win-gray); padding: 6px 10px; border: 2px solid #111; box-shadow: var(--bevel-in);">
-      <span id="mine-left-lbl" style="font-family: monospace; font-size: 1.1rem; font-weight: 900; background: #111; color: #ff4757; padding: 2px 8px;">010</span>
-      <button type="button" class="btn95 yellow sm" id="btn-mine-reset">[:-)] 다시 시작</button>
-      <span style="font-size: 0.75rem; font-weight: 800;">우클릭: 깃발</span>
-    </div>
-    <div class="mine-grid" id="mine-grid"></div>
-  </div>
-</div>
-
-<div id="dynamic-windows-container"></div>
-
-<!-- START MENU & TASKBAR -->
-<div class="start-menu" id="start-menu">
-  <div class="start-sidebar">MY-ARCHIVE 95</div>
-  <div class="start-items">
-    <button type="button" class="start-item" id="sm-new">[+] 새 감상 기록 마법사</button>
-    <button type="button" class="start-item" id="sm-visualizer">[NET] 데이터 노드 &amp; 워드클라우드</button>
-    <button type="button" class="start-item" id="sm-memo">[TXT] 아이디어 메모장 (MEMO95)</button>
-    <button type="button" class="start-item" id="sm-mine">[*] 지뢰찾기 (WINMINE.EXE)</button>
-    <div class="start-divider"></div>
-    <button type="button" class="start-item" id="sm-all">[DIR] 전체 아카이브 탐색기</button>
-    <button type="button" class="start-item" id="sm-book">[BK] 도서 서가만 보기</button>
-    <button type="button" class="start-item" id="sm-music">[LP] 음악 음반만 보기</button>
-    <button type="button" class="start-item" id="sm-video">[TV] 영상 비디오만 보기</button>
-    <div class="start-divider"></div>
-    <button type="button" class="start-item" id="sm-screensaver">[3D] 화면 보호기 가동</button>
-    <button type="button" class="start-item" id="sm-reload">[SYNC] 구글 시트 데이터 새로고침</button>
-  </div>
-</div>
-
-<footer class="win95-taskbar">
-  <div class="taskbar-left" id="taskbar-tasks">
-    <button type="button" class="start-btn" id="btn-start">
-      <span class="win-flag"><span></span><span></span><span></span><span></span></span>
-      <span>시작</span>
+  <!-- 하단 Windows 95 작업표시줄 (<footer> 시맨틱 구조) -->
+  <footer class="os-taskbar">
+    <button type="button" id="btn-start" class="btn-start">
+      <span class="start-win-logo">⊞</span>
+      <span>시작 (Start)</span>
     </button>
-    <button type="button" class="task-tab active" data-win-target="win-main">[DIR] MY-ARCHIVE.EXE</button>
-  </div>
-  <div class="system-tray">
-    <button type="button" id="btn-sound-toggle" style="background:none; border:none; font-size:0.78rem; font-weight:900;" title="8비트 효과음 켜기/끄기">SPK:ON</button>
-    <span title="Google Sheets 연결됨">[DB:OK]</span>
-    <span id="tray-clock">오전 12:18</span>
-  </div>
-</footer>
+    <div class="taskbar-divider"></div>
+    <div id="taskbar-windows" class="taskbar-windows"></div>
+    <div class="taskbar-tray">
+      <button type="button" id="tray-jukebox-mini" class="tray-btn" title="주크박스 열기">♪</button>
+      <span id="taskbar-clock" class="taskbar-clock">12:00 PM</span>
+    </div>
+  </footer>
 
+  <!-- 라이브러리 및 애플리케이션 스크립트 -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/window-mgr.js"></script>
+  <script src="js/visualizer.js"></script>
+  <script src="js/archive-app.js"></script>
 </body>
 </html>
