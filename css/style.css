@@ -1,408 +1,1322 @@
+/* ============================================================
+   MY-ARCHIVE 95 OS — Windows 95 + Neo-Brutalism Stylesheet
+   ============================================================ */
+
 :root {
-  --desktop-bg: #008080;
   --win-gray: #c0c0c0;
   --win-light: #ffffff;
+  --win-mid: #dfdfdf;
   --win-dark: #808080;
-  --win-black: #111111;
-  --win-blue: #000080;
+  --win-darker: #0a0a0a;
+  --win-navy: #000080;
+  --win-navy-grad: linear-gradient(90deg, #000080 0%, #1084d0 100%);
+
+  --brutal-ink: #111111;
+  --brutal-paper: #f7f5ee;
   --brutal-yellow: #ffd83b;
-  --brutal-pink: #ff4757;
   --brutal-sky: #48dbfb;
+  --brutal-pink: #ff4757;
   --brutal-green: #2ed573;
-  --brutal-paper: #dfdcd3;
+  --brutal-orange: #ff9f43;
+  --brutal-purple: #a29bfe;
 
-  --bevel-out: inset 2px 2px 0px #ffffff, inset -2px -2px 0px #808080, inset -3px -3px 0px #111111;
-  --bevel-in: inset 2px 2px 0px #808080, inset -2px -2px 0px #ffffff, inset 3px 3px 0px #111111;
-  --brutal-border: 3px solid #111111;
-  --brutal-shadow: 6px 6px 0px #111111;
-
-  --cursor-default: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'><path d='M2 2 L2 19 L6.5 14.5 L10 21 L12.5 19.5 L9 13 L15 13 Z' fill='white' stroke='%23111111' stroke-width='2'/></svg>") 2 2, auto;
-  --cursor-pointer: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'><path d='M8 2 V11 H5 V15 L8 21 H17 L19 14 V9 H15 V8 H12 V2 Z' fill='%23ffd83b' stroke='%23111111' stroke-width='2'/></svg>") 8 2, pointer;
-  --cursor-move: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'><path d='M12 2 L15 5 H13 V11 H19 V9 L22 12 L19 15 V13 H13 V19 H15 L12 22 L9 19 H11 V13 H5 V15 L2 12 L5 9 V11 H11 V5 H9 Z' fill='%2348dbfb' stroke='%23111111' stroke-width='1.5'/></svg>") 12 12, move;
-  --cursor-wait: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'><rect x='4' y='2' width='16' height='3' fill='%23111111'/><rect x='4' y='19' width='16' height='3' fill='%23111111'/><path d='M6 5 L12 12 L18 5 Z' fill='%2348dbfb' stroke='%23111111' stroke-width='1.5'/><path d='M6 19 L12 12 L18 19 Z' fill='%23ffd83b' stroke='%23111111' stroke-width='1.5'/></svg>") 12 12, wait;
+  --shadow-hard: 4px 4px 0px #111111;
+  --shadow-hard-sm: 2px 2px 0px #111111;
+  --font-main: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-mono: 'Consolas', 'Courier New', monospace;
 }
 
-* { box-sizing: border-box; margin: 0; padding: 0; cursor: var(--cursor-default); }
-body.is-loading, body.is-loading * { cursor: var(--cursor-wait) !important; }
-button, a, select, label, input[type="radio"], input[type="checkbox"], .desktop-icon, .item-card, .pill-btn, .win-ctrl-btn, .menu-root, .menu-opt, .rank-item, .mine-cell, .wc-word, .mem-card { cursor: var(--cursor-pointer); }
-.win-titlebar.draggable { cursor: var(--cursor-move); }
-input[type="text"], textarea { cursor: text; }
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
 
-body {
-  background-color: var(--desktop-bg);
-  background-image: radial-gradient(#006666 1px, transparent 1px);
-  background-size: 16px 16px;
-  color: var(--win-black);
-  font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, sans-serif;
-  min-height: 100vh;
-  padding: 16px 16px 68px;
+html, body {
+  width: 100%;
+  height: 100%;
   overflow-x: hidden;
-  -webkit-font-smoothing: antialiased;
+  font-family: var(--font-main);
+  color: var(--brutal-ink);
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
-body.wp-grid {
-  background-color: #dfdcd3;
-  background-image: linear-gradient(#bdb9ae 1px, transparent 1px), linear-gradient(90deg, #bdb9ae 1px, transparent 1px);
-  background-size: 24px 24px;
+body.cursor-wait,
+body.cursor-wait * {
+  cursor: wait !important;
 }
-body.wp-bricks {
-  background-color: #7f1d1d;
+
+/* ============================================================
+   1. 바탕화면 테마 3종 & CRT 스캔라인 오버레이
+   ============================================================ */
+body.theme-teal {
+  background-color: #008080;
+}
+
+body.theme-grid {
+  background-color: #f3efe4;
   background-image:
-    linear-gradient(335deg, #991b1b 23px, transparent 23px),
-    linear-gradient(155deg, #991b1b 23px, transparent 23px),
-    linear-gradient(335deg, #991b1b 23px, transparent 23px),
-    linear-gradient(155deg, #991b1b 23px, transparent 23px);
+    linear-gradient(to right, rgba(17, 17, 17, 0.12) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(17, 17, 17, 0.12) 1px, transparent 1px);
+  background-size: 26px 26px;
+}
+
+body.theme-brick {
+  background-color: #8b3a3a;
+  background-image:
+    linear-gradient(335deg, rgba(0, 0, 0, 0.25) 23px, transparent 23px),
+    linear-gradient(155deg, rgba(0, 0, 0, 0.25) 23px, transparent 23px),
+    linear-gradient(335deg, rgba(0, 0, 0, 0.25) 23px, transparent 23px),
+    linear-gradient(155deg, rgba(0, 0, 0, 0.25) 23px, transparent 23px);
   background-size: 58px 58px;
   background-position: 0px 2px, 4px 35px, 29px 31px, 34px 6px;
 }
 
 .crt-overlay {
-  position: fixed; inset: 0; pointer-events: none; z-index: 9990;
-  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.14) 50%);
-  background-size: 100% 4px; display: none;
-}
-body.crt-on .crt-overlay { display: block; }
-
-#drag-ghost-box {
-  position: fixed; border: 3px dashed #ffffff; outline: 2px dashed #111111;
-  background: rgba(255, 216, 59, 0.08); pointer-events: none; z-index: 9800; display: none;
-}
-
-/* 1995 Award Modular BIOS POST Screen */
-#win95-boot-screen {
-  position: fixed; inset: 0; background: #000000; color: #cccccc; z-index: 9999;
-  display: flex; flex-direction: column; justify-content: space-between;
-  padding: 28px 36px; font-family: 'Courier New', Courier, monospace;
-  font-size: clamp(0.78rem, 1.35vw, 0.96rem); line-height: 1.55;
-  user-select: none;
-}
-.bios-top-wrap { max-width: 860px; width: 100%; margin: 0 auto; }
-.bios-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 18px; }
-.bios-epa-box {
-  border: 2px solid #ffd83b; color: #ffd83b; padding: 6px 10px;
-  font-size: 0.72rem; line-height: 1.25; text-align: center; font-weight: 700;
-  white-space: pre;
-}
-.bios-line { white-space: pre-wrap; margin-bottom: 3px; }
-.bios-bright { color: #ffffff; font-weight: 700; }
-.bios-yellow { color: #ffd83b; }
-.bios-cyan { color: #48dbfb; }
-.bios-green { color: #2ed573; }
-.bios-cursor { display: inline-block; width: 9px; height: 15px; background: #cccccc; vertical-align: middle; animation: biosBlink 0.7s steps(2, start) infinite; }
-@keyframes biosBlink { to { visibility: hidden; } }
-.bios-footer { max-width: 860px; width: 100%; margin: 0 auto; border-top: 1px solid #444444; padding-top: 10px; color: #aaaaaa; font-size: 0.82rem; }
-
-#win95-bsod {
-  position: fixed; inset: 0; background: #0000aa; color: #ffffff; font-family: monospace; z-index: 9998;
-  display: none; flex-direction: column; align-items: center; justify-content: center; padding: 32px; line-height: 1.7;
-}
-#screensaver-overlay { position: fixed; inset: 0; background: #000000; z-index: 9995; display: none; }
-#screensaver-canvas { width: 100%; height: 100%; display: block; }
-
-.desktop-workspace { max-width: 1380px; margin: 0 auto; display: grid; grid-template-columns: 96px 1fr 240px; gap: 18px; align-items: start; }
-@media (max-width: 1120px) {
-  .desktop-workspace { grid-template-columns: 96px 1fr; }
-  .desktop-widgets-col { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; }
-}
-@media (max-width: 780px) {
-  .desktop-workspace { grid-template-columns: 1fr; }
-  .desktop-icons { display: flex; flex-wrap: wrap; gap: 8px; }
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9998;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.11) 0px,
+    rgba(0, 0, 0, 0.11) 1px,
+    transparent 1px,
+    transparent 3px
+  );
 }
 
-.desktop-icons { display: flex; flex-direction: column; gap: 12px; user-select: none; }
-.desktop-icon { width: 92px; text-align: center; padding: 5px 4px; border: 2px solid transparent; }
-.desktop-icon:hover { background: rgba(0, 0, 128, 0.35); border: 2px dotted #ffd83b; }
-.icon-glyph { width: 40px; height: 40px; margin: 0 auto 5px; border: 3px solid #111111; box-shadow: 3px 3px 0px #111111; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 0.9rem; background: var(--brutal-yellow); }
-.icon-glyph.sky { background: var(--brutal-sky); }
-.icon-glyph.green { background: var(--brutal-green); }
-.icon-glyph.pink { background: var(--brutal-pink); color: #ffffff; }
-.icon-glyph.white { background: #ffffff; }
-.icon-glyph.dark { background: #222222; color: #2ed573; }
-.icon-label { display: inline-block; background: #000080; color: #ffffff; font-size: 0.74rem; font-weight: 700; padding: 2px 5px; line-height: 1.25; word-break: keep-all; }
+/* ============================================================
+   2. 부팅 스플래시 화면
+   ============================================================ */
+#boot-screen {
+  position: fixed;
+  inset: 0;
+  background: #000000;
+  color: #ffffff;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.35s ease;
+}
 
-.desktop-widgets-col { display: flex; flex-direction: column; gap: 15px; }
-.desk-widget { background: var(--win-gray); border: 3px solid #111111; box-shadow: var(--bevel-out), 5px 5px 0px #111111; }
-.widget-head { background: #111111; color: var(--brutal-yellow); padding: 4px 8px; font-size: 0.75rem; font-weight: 900; display: flex; justify-content: space-between; align-items: center; }
-.widget-body { padding: 12px; background: var(--brutal-paper); }
+#boot-screen.fade-out {
+  opacity: 0;
+  pointer-events: none;
+}
 
-.analog-clock-face { width: 120px; height: 120px; margin: 0 auto 8px; border-radius: 50%; background: #ffffff; border: 3px solid #111111; box-shadow: var(--bevel-in); position: relative; }
-.clock-hand { position: absolute; bottom: 50%; left: 50%; transform-origin: bottom center; background: #111111; }
-.hand-hour { width: 4px; height: 30px; margin-left: -2px; }
-.hand-min { width: 3px; height: 44px; margin-left: -1.5px; background: #000080; }
-.hand-sec { width: 2px; height: 50px; margin-left: -1px; background: #ff4757; }
-.clock-pin { position: absolute; top: 50%; left: 50%; width: 10px; height: 10px; background: var(--brutal-yellow); border: 2px solid #111111; border-radius: 50%; transform: translate(-50%, -50%); }
+.boot-box {
+  width: min(440px, 90vw);
+  border: 3px solid var(--brutal-yellow);
+  background: #111111;
+  padding: 26px 24px;
+  box-shadow: 6px 6px 0px var(--brutal-pink);
+}
 
-.winamp-lcd { background: #111111; color: #2ed573; border: 2px solid #111111; box-shadow: var(--bevel-in); padding: 8px; font-family: monospace; margin-bottom: 8px; }
-.eq-bars { display: flex; align-items: flex-end; gap: 3px; height: 24px; margin-top: 6px; }
-.eq-bar { flex: 1; background: linear-gradient(180deg, #ff4757 0%, #ffd83b 50%, #2ed573 100%); height: 20%; transition: height 0.14s ease; }
+.boot-logo {
+  font-size: 1.7rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  margin-bottom: 6px;
+}
 
-/* 메인 창은 항상 하위 계층(z-index: 10), 팝업 창은 항상 상위 계층(z-index: 300+) */
-.win95-window { background: var(--win-gray); border: var(--brutal-border); box-shadow: var(--bevel-out), var(--brutal-shadow); margin-bottom: 24px; position: relative; z-index: 10 !important; }
-.win95-window.minimized .win-body, .win95-window.minimized .win-menubar, .win95-window.minimized .win-statusbar { display: none; }
+.boot-logo span {
+  background: var(--brutal-yellow);
+  color: #111111;
+  padding: 1px 8px;
+  margin-left: 4px;
+}
 
-.floating-win { position: fixed; top: 64px; left: 140px; width: 680px; max-width: calc(100vw - 24px); max-height: calc(100vh - 84px); background: var(--win-gray); border: 3px solid #111111; box-shadow: var(--bevel-out), 8px 8px 0px #111111; display: none; flex-direction: column; z-index: 300; }
-.floating-win.open { display: flex; }
-.floating-win.minimized { display: none !important; }
-.floating-win .win-body { overflow-y: auto; flex: 1; }
+.boot-sub {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: #a0a0a0;
+  margin-bottom: 16px;
+}
 
-.win-titlebar { background: #808080; color: #e0e0e0; padding: 6px 10px; display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #111111; user-select: none; }
-.win95-window.focused .win-titlebar, .floating-win.focused .win-titlebar { background: linear-gradient(90deg, #000080 0%, #1084d0 100%); color: #ffffff; }
-.floating-win.focused .win-titlebar.yellow-bar { background: var(--brutal-yellow); color: #111111; }
-.floating-win.focused .win-titlebar.green-bar { background: var(--brutal-green); color: #111111; }
-.floating-win.focused .win-titlebar.sky-bar { background: var(--brutal-sky); color: #111111; }
+.boot-bar {
+  width: 100%;
+  height: 18px;
+  border: 2px solid #ffffff;
+  background: #222222;
+  padding: 2px;
+  margin-bottom: 10px;
+}
 
-.win-title-left { display: flex; align-items: center; gap: 8px; font-weight: 900; font-size: 0.9rem; }
-.win-title-dot { display: inline-block; width: 12px; height: 12px; background: var(--brutal-pink); border: 2px solid #111111; }
-.win-controls { display: flex; gap: 4px; }
-.win-ctrl-btn { width: 24px; height: 22px; background: var(--win-gray); color: #111111; border: 2px solid #111111; box-shadow: inset 1px 1px 0px #ffffff, inset -1px -1px 0px #808080; font-weight: 900; font-size: 0.78rem; display: flex; align-items: center; justify-content: center; }
-.win-ctrl-btn:active { box-shadow: inset 1px 1px 0px #808080, inset -1px -1px 0px #ffffff; transform: translate(1px, 1px); }
-.win-ctrl-btn.close { background: var(--brutal-pink); color: #ffffff; }
+.boot-bar-fill {
+  height: 100%;
+  width: 100%;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--brutal-green) 0px,
+    var(--brutal-green) 14px,
+    #111111 14px,
+    #111111 18px
+  );
+  animation: bootSlide 0.6s linear infinite;
+}
 
-.win-menubar { background: var(--win-gray); border-bottom: 2px solid #111111; padding: 2px 8px; display: flex; flex-wrap: wrap; gap: 4px; position: relative; user-select: none; }
-.menu-item-wrap { position: relative; }
-.menu-root { background: transparent; border: 2px solid transparent; padding: 4px 10px; font-family: inherit; font-size: 0.83rem; font-weight: 800; color: #111111; }
-.menu-root:hover, .menu-item-wrap.open .menu-root { background: #000080; color: #ffffff; }
-.menu-dropdown { position: absolute; top: 100%; left: 0; min-width: 240px; background: var(--win-gray); border: 3px solid #111111; box-shadow: var(--bevel-out), 4px 4px 0px #111111; padding: 4px; display: none; flex-direction: column; z-index: 900; }
-.menu-item-wrap.open .menu-dropdown { display: flex; }
-.menu-opt { background: transparent; border: none; padding: 7px 10px; text-align: left; font-family: inherit; font-size: 0.82rem; font-weight: 800; color: #111111; display: flex; justify-content: space-between; gap: 12px; }
-.menu-opt:hover { background: #000080; color: #ffffff; }
-.menu-sep { height: 2px; background: #808080; border-bottom: 1px solid #ffffff; margin: 4px 0; }
+@keyframes bootSlide {
+  from { background-position: 0 0; }
+  to { background-position: 36px 0; }
+}
 
-.win-body { padding: 18px; background: var(--brutal-paper); }
+.boot-hint {
+  font-size: 0.78rem;
+  color: var(--brutal-sky);
+  font-weight: 700;
+}
 
-.btn95 { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 9px 14px; background: var(--win-gray); color: #111111; border: 2px solid #111111; box-shadow: var(--bevel-out), 3px 3px 0px #111111; font-family: inherit; font-size: 0.85rem; font-weight: 800; text-decoration: none; }
-.btn95:active:not(:disabled) { box-shadow: var(--bevel-in); transform: translate(2px, 2px); }
-.btn95:disabled { opacity: 0.6; }
+/* ============================================================
+   3. 상단 OS 메뉴바 (<header>)
+   ============================================================ */
+.os-menubar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 30px;
+  background: var(--win-gray);
+  border-bottom: 2px solid var(--brutal-ink);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 8px;
+  z-index: 4000;
+}
+
+.menu-bar-left {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.os-brand-badge {
+  background: var(--brutal-ink);
+  color: var(--brutal-yellow);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 900;
+  padding: 2px 7px;
+  margin-right: 4px;
+}
+
+.menu-item-wrap {
+  position: relative;
+}
+
+.menu-root {
+  background: transparent;
+  border: 1.5px solid transparent;
+  padding: 2px 8px;
+  font-family: var(--font-main);
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: var(--brutal-ink);
+  cursor: pointer;
+}
+
+.menu-root:hover,
+.menu-item-wrap.open .menu-root {
+  background: var(--win-navy);
+  color: #ffffff;
+}
+
+.menu-dropdown {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  min-width: 230px;
+  background: var(--win-gray);
+  border: 2px solid var(--brutal-ink);
+  box-shadow: var(--shadow-hard);
+  padding: 4px;
+  z-index: 4500;
+}
+
+.menu-item-wrap.open .menu-dropdown {
+  display: block;
+}
+
+.menu-opt {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  padding: 6px 10px;
+  font-family: var(--font-main);
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--brutal-ink);
+  cursor: pointer;
+}
+
+.menu-opt:hover {
+  background: var(--win-navy);
+  color: #ffffff;
+}
+
+.menu-sep {
+  height: 1px;
+  background: var(--win-dark);
+  border-bottom: 1px solid var(--win-light);
+  margin: 4px 2px;
+}
+
+.status-pill {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 900;
+  background: var(--brutal-green);
+  border: 1.5px solid var(--brutal-ink);
+  padding: 1px 7px;
+}
+
+.status-pill.offline {
+  background: var(--brutal-orange);
+}
+
+/* ============================================================
+   4. 바탕화면 아이콘 그리드
+   ============================================================ */
+.desktop-workspace {
+  position: relative;
+  width: 100%;
+  min-height: calc(100vh - 68px);
+  padding: 40px 12px 54px;
+}
+
+.desktop-icons {
+  display: grid;
+  grid-template-columns: repeat(2, 84px);
+  gap: 12px 6px;
+  width: max-content;
+  position: relative;
+  z-index: 10;
+}
+
+.desk-icon {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  background: transparent;
+  border: 1.5px dashed transparent;
+  padding: 6px 4px;
+  cursor: pointer;
+  color: #ffffff;
+  text-shadow: 1px 1px 0px #000000;
+  font-family: var(--font-main);
+  font-size: 0.74rem;
+  font-weight: 800;
+  text-align: center;
+  word-break: keep-all;
+}
+
+body.theme-grid .desk-icon {
+  color: #111111;
+  text-shadow: none;
+}
+
+.desk-icon:hover {
+  border-color: rgba(255, 255, 255, 0.75);
+  background: rgba(0, 0, 128, 0.25);
+}
+
+body.theme-grid .desk-icon:hover {
+  border-color: #111111;
+  background: rgba(255, 216, 59, 0.35);
+}
+
+.desk-icon-box {
+  width: 44px;
+  height: 44px;
+  border: 2.5px solid var(--brutal-ink);
+  box-shadow: var(--shadow-hard-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.1s ease;
+}
+
+.desk-icon:active .desk-icon-box {
+  transform: translate(2px, 2px);
+  box-shadow: none;
+}
+
+/* ============================================================
+   5. 플로팅 윈도우 & 타이틀바 (Win95 + Neo-Brutalism)
+   ============================================================ */
+.floating-win {
+  display: none;
+  position: absolute;
+  max-width: calc(100vw - 24px);
+  background: var(--win-gray);
+  border: 3px solid var(--brutal-ink);
+  box-shadow: 6px 6px 0px var(--brutal-ink);
+  z-index: 120;
+  flex-direction: column;
+}
+
+.floating-win.open {
+  display: flex;
+}
+
+.floating-win.minimized {
+  display: none !important;
+}
+
+.win-titlebar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 5px 8px;
+  background: var(--win-dark);
+  color: #ffffff;
+  border-bottom: 2.5px solid var(--brutal-ink);
+  font-size: 0.82rem;
+  font-weight: 900;
+  cursor: grab;
+}
+
+.floating-win.focused .win-titlebar {
+  background: var(--win-navy-grad);
+}
+
+.win-titlebar.yellow-bar {
+  background: var(--brutal-yellow) !important;
+  color: var(--brutal-ink) !important;
+}
+
+.win-titlebar:active {
+  cursor: grabbing;
+}
+
+.win-title-left {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.win-title-dot {
+  width: 10px;
+  height: 10px;
+  flex-shrink: 0;
+  border: 1.5px solid var(--brutal-ink);
+  background: var(--brutal-pink);
+}
+
+.win-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.win-ctrl-btn {
+  width: 22px;
+  height: 20px;
+  background: var(--win-gray);
+  color: var(--brutal-ink);
+  border: 2px solid var(--brutal-ink);
+  box-shadow: inset 1px 1px 0px #ffffff, inset -1px -1px 0px #808080;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  font-weight: 900;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.win-ctrl-btn:active {
+  box-shadow: inset 1px 1px 0px #808080;
+  transform: translate(1px, 1px);
+}
+
+.win-ctrl-btn.close {
+  background: var(--brutal-pink);
+  color: #ffffff;
+}
+
+.win-body {
+  padding: 14px;
+  background: var(--brutal-paper);
+  max-height: calc(100vh - 130px);
+  overflow-y: auto;
+  user-select: text;
+}
+
+.win-statusbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px;
+  background: var(--win-gray);
+  border-top: 2px solid var(--brutal-ink);
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+
+.sunken-box {
+  background: #ffffff;
+  border: 2.5px solid var(--brutal-ink);
+  box-shadow: inset 2px 2px 0px rgba(0, 0, 0, 0.08);
+  padding: 12px;
+}
+
+.box-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.84rem;
+  font-weight: 900;
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 2px dashed #cccccc;
+}
+
+.tag-mini {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 900;
+  background: var(--brutal-yellow);
+  border: 1.5px solid var(--brutal-ink);
+  padding: 1px 6px;
+}
+
+/* ============================================================
+   6. 버튼, 폼 입력창, 날짜·라디오 공통 컨트롤
+   ============================================================ */
+.btn95 {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 8px 14px;
+  background: var(--win-gray);
+  color: var(--brutal-ink);
+  border: 2.5px solid var(--brutal-ink);
+  box-shadow: var(--shadow-hard-sm);
+  font-family: var(--font-main);
+  font-size: 0.82rem;
+  font-weight: 900;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 0.08s ease;
+}
+
+.btn95:hover:not(:disabled) {
+  filter: brightness(1.04);
+}
+
+.btn95:active:not(:disabled) {
+  transform: translate(2px, 2px);
+  box-shadow: none;
+}
+
+.btn95:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.btn95.sm {
+  padding: 5px 10px;
+  font-size: 0.78rem;
+}
+
 .btn95.yellow { background: var(--brutal-yellow); }
-.btn95.sky { background: var(--brutal-sky); }
-.btn95.green { background: var(--brutal-green); }
-.btn95.pink { background: var(--brutal-pink); color: #ffffff; }
-.btn95.sm { padding: 5px 9px; font-size: 0.77rem; }
+.btn95.sky    { background: var(--brutal-sky); }
+.btn95.green  { background: var(--brutal-green); }
+.btn95.pink   { background: var(--brutal-pink); color: #ffffff; }
 
-/* Win95 Classic ComboBox, Date Selects & Radio Buttons */
-select,
+input[type="text"],
+input[type="number"],
+input[type="email"],
+input[type="date"],
+textarea,
 .win95-select {
-  appearance: none;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  background-color: #ffffff;
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 22 22'><rect x='0' y='0' width='22' height='22' fill='%23c0c0c0'/><line x1='0' y1='0' x2='0' y2='22' stroke='%23111111' stroke-width='2'/><line x1='1.5' y1='1' x2='21' y2='1' stroke='%23ffffff' stroke-width='1.5'/><line x1='1.5' y1='1' x2='1.5' y2='21' stroke='%23ffffff' stroke-width='1.5'/><line x1='21' y1='1' x2='21' y2='21' stroke='%23808080' stroke-width='1.5'/><line x1='1.5' y1='21' x2='21' y2='21' stroke='%23808080' stroke-width='1.5'/><polygon points='7,9 15,9 11,14' fill='%23111111'/></svg>");
-  background-position: right 0 top 0;
-  background-size: 22px 100%;
-  background-repeat: no-repeat;
-  border: 2px solid #111111;
-  box-shadow: var(--bevel-in);
-  padding: 6px 28px 6px 9px;
-  font-family: inherit;
+  padding: 6px 9px;
+  background: #ffffff;
+  color: var(--brutal-ink);
+  border: 2px solid var(--brutal-ink);
+  box-shadow: inset 2px 2px 0px #dcdcdc;
+  font-family: var(--font-main);
   font-size: 0.83rem;
   font-weight: 700;
-  color: #111111;
-  border-radius: 0;
+  outline: none;
 }
 
-select:focus,
+input:focus,
+textarea:focus,
 .win95-select:focus {
-  outline: 1px dotted #111111;
-  outline-offset: -4px;
+  background: #fffdf2;
+  border-color: var(--win-navy);
 }
 
 .win95-date-group {
   display: grid;
-  grid-template-columns: 1.2fr 1fr 1fr;
-  gap: 6px;
-}
-.win95-date-group .win95-select {
-  padding: 6px 24px 6px 6px;
+  grid-template-columns: 1.2fr 0.9fr 0.9fr;
+  gap: 4px;
 }
 
 .win95-radio-group {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  background: var(--win-gray);
-  border: 2px solid #111111;
-  box-shadow: var(--bevel-in);
-  padding: 5px 8px;
 }
+
 .win95-radio {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: 0.8rem;
-  font-weight: 800;
-  user-select: none;
-}
-.win95-radio input[type="radio"] {
-  appearance: none;
-  -webkit-appearance: none;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
+  padding: 3px 8px;
   background: #ffffff;
-  border: 2px solid #111111;
-  box-shadow: inset 1px 1px 0px #808080;
-  display: inline-grid;
-  place-content: center;
-}
-.win95-radio input[type="radio"]::before {
-  content: "";
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #111111;
-  transform: scale(0);
-}
-.win95-radio input[type="radio"]:checked::before {
-  transform: scale(1);
+  border: 2px solid var(--brutal-ink);
+  font-size: 0.78rem;
+  font-weight: 800;
+  cursor: pointer;
 }
 
-input[type="text"], textarea { padding: 7px 10px; background: #ffffff; border: 2px solid #111111; box-shadow: var(--bevel-in); font-family: inherit; font-size: 0.85rem; font-weight: 600; color: #111111; border-radius: 0; }
+/* ============================================================
+   7. 메인 탐색기 내부 (KPI, 차트, 필터, 카드 그리드)
+   ============================================================ */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 12px;
+}
 
-.os-hero { background: #ffffff; border: var(--brutal-border); box-shadow: 4px 4px 0px #111111; padding: 16px 20px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
-.os-hero h1 { font-size: clamp(1.3rem, 2.3vw, 1.8rem); font-weight: 900; letter-spacing: -0.03em; margin-bottom: 3px; }
-.os-hero p { font-size: 0.86rem; font-weight: 600; color: #4a4a4a; }
+.kpi-card {
+  border: 2.5px solid var(--brutal-ink);
+  box-shadow: var(--shadow-hard-sm);
+  padding: 10px 12px;
+  background: #ffffff;
+}
 
-.kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
-@media (max-width: 920px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 520px) { .kpi-grid { grid-template-columns: 1fr; } }
-.kpi-panel { background: #ffffff; border: 2px solid #111111; box-shadow: var(--bevel-in), 3px 3px 0px #111111; padding: 12px 14px; }
-.kpi-panel.yellow { background: var(--brutal-yellow); }
-.kpi-panel.sky { background: var(--brutal-sky); }
-.kpi-panel.green { background: var(--brutal-green); }
-.kpi-lbl { font-size: 0.76rem; font-weight: 800; margin-bottom: 3px; }
-.kpi-val { font-size: 1.6rem; font-weight: 900; line-height: 1.15; }
-.kpi-sub { font-size: 0.76rem; font-weight: 700; margin-top: 4px; }
+.kpi-card.yellow { background: var(--brutal-yellow); }
+.kpi-card.sky    { background: var(--brutal-sky); }
+.kpi-card.green  { background: var(--brutal-green); }
+.kpi-card.pink   { background: var(--brutal-pink); color: #ffffff; }
 
-.charts-grid { display: grid; grid-template-columns: 1fr 1.45fr; gap: 14px; margin-bottom: 18px; }
-@media (max-width: 860px) { .charts-grid { grid-template-columns: 1fr; } }
-.sunken-box { background: #ffffff; border: 2px solid #111111; box-shadow: var(--bevel-in); padding: 14px; }
-.box-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 2px solid #111111; font-weight: 900; font-size: 0.92rem; }
-.chart-wrap { height: 200px; position: relative; }
+.kpi-label {
+  font-size: 0.74rem;
+  font-weight: 800;
+  opacity: 0.88;
+}
 
-.toolbar-95 { background: var(--win-gray); border: 2px solid #111111; box-shadow: var(--bevel-out); padding: 10px 12px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
-.pill-group { display: flex; flex-wrap: wrap; gap: 5px; }
-.pill-btn { padding: 5px 10px; background: var(--win-gray); border: 2px solid #111111; box-shadow: var(--bevel-out); font-family: inherit; font-size: 0.8rem; font-weight: 800; }
-.pill-btn.active { background: var(--brutal-yellow); box-shadow: var(--bevel-in); transform: translate(1px, 1px); }
+.kpi-val {
+  font-size: 1.35rem;
+  font-weight: 900;
+  margin: 2px 0;
+}
 
-.archive-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
-@media (max-width: 980px) { .archive-grid { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 620px) { .archive-grid { grid-template-columns: 1fr; } }
+.kpi-sub {
+  font-size: 0.73rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
-.item-card { background: #ffffff; border: 3px solid #111111; box-shadow: 5px 5px 0px #111111; display: flex; flex-direction: column; transition: transform 0.1s ease; }
-.item-card:hover { transform: translate(-2px, -2px); box-shadow: 7px 7px 0px #111111; background: #fffdf5; }
-.item-card-bar { background: #111111; color: #ffffff; padding: 4px 10px; font-size: 0.72rem; font-weight: 800; display: flex; justify-content: space-between; }
-.item-thumb-box { height: 155px; border-bottom: 3px solid #111111; position: relative; background: #222222; overflow: hidden; }
-.item-thumb { width: 100%; height: 100%; object-fit: cover; display: block; }
-.cat-sticker { position: absolute; top: 8px; left: 8px; padding: 2px 8px; border: 2px solid #111111; font-size: 0.74rem; font-weight: 900; background: var(--brutal-yellow); box-shadow: 2px 2px 0px #111111; }
+.charts-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.35fr;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.toolbar-box {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px;
+  background: var(--win-gray);
+  border: 2.5px solid var(--brutal-ink);
+  margin-bottom: 14px;
+}
+
+.pill-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.pill-btn {
+  padding: 5px 11px;
+  background: #ffffff;
+  border: 2px solid var(--brutal-ink);
+  font-family: var(--font-main);
+  font-size: 0.78rem;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.pill-btn.active {
+  background: var(--brutal-ink);
+  color: var(--brutal-yellow);
+}
+
+.filter-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.archive-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px;
+}
+
+.item-card {
+  background: #ffffff;
+  border: 2.5px solid var(--brutal-ink);
+  box-shadow: var(--shadow-hard);
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+  transition: transform 0.1s ease;
+}
+
+.item-card:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0px var(--brutal-ink);
+}
+
+.item-card-bar {
+  display: flex;
+  justify-content: space-between;
+  padding: 3px 7px;
+  background: var(--brutal-ink);
+  color: #ffffff;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.item-thumb-box {
+  position: relative;
+  height: 170px;
+  background: #1a1a1a;
+  border-bottom: 2.5px solid var(--brutal-ink);
+  overflow: hidden;
+}
+
+.item-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cat-sticker {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  padding: 2px 7px;
+  background: var(--brutal-yellow);
+  color: var(--brutal-ink);
+  border: 2px solid var(--brutal-ink);
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
 .cat-sticker.music { background: var(--brutal-sky); }
 .cat-sticker.video { background: var(--brutal-pink); color: #ffffff; }
-.cat-sticker.etc { background: var(--brutal-green); }
-.star-sticker { position: absolute; bottom: 8px; right: 8px; padding: 2px 7px; border: 2px solid #111111; background: #ffffff; font-size: 0.76rem; font-weight: 900; box-shadow: 2px 2px 0px #111111; }
-.item-content { padding: 12px; display: flex; flex-direction: column; flex: 1; }
-.item-title { font-size: 1.02rem; font-weight: 900; margin-bottom: 3px; line-height: 1.3; }
-.item-creator { font-size: 0.78rem; font-weight: 700; color: #4a4a4a; margin-bottom: 8px; }
-.item-memo { background: var(--brutal-paper); border: 2px solid #111111; padding: 8px 9px; font-size: 0.82rem; font-weight: 600; margin-bottom: 9px; flex: 1; }
-.item-footer { display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; font-weight: 800; padding-top: 7px; border-top: 2px dashed #111111; }
-.inspect-hint { background: var(--brutal-sky); border: 1.5px solid #111111; padding: 2px 6px; font-weight: 900; }
+.cat-sticker.etc   { background: var(--brutal-green); }
 
-.win-statusbar { background: var(--win-gray); border-top: 2px solid #111111; padding: 4px 10px; display: flex; justify-content: space-between; font-size: 0.75rem; font-weight: 700; }
-.status-cell { box-shadow: var(--bevel-in); padding: 2px 10px; background: var(--win-gray); }
+.star-sticker {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  padding: 2px 7px;
+  background: #111111;
+  color: var(--brutal-yellow);
+  border: 1.5px solid #ffffff;
+  font-size: 0.72rem;
+  font-weight: 900;
+}
 
-.rank-list { margin-top: 10px; max-height: 200px; overflow-y: auto; border: 2px solid #111111; background: #ffffff; display: none; }
-.rank-item { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-bottom: 2px solid #111111; }
-.rank-item:last-child { border-bottom: none; }
-.rank-item:hover { background: var(--brutal-yellow); }
-.rank-badge { background: #111111; color: #ffffff; font-size: 0.74rem; font-weight: 900; padding: 2px 7px; white-space: nowrap; }
-.rank-src { background: var(--brutal-sky); border: 1.5px solid #111111; font-size: 0.7rem; font-weight: 800; padding: 1px 5px; }
-.rank-thumb { width: 38px; height: 38px; object-fit: cover; border: 1.5px solid #111111; flex-shrink: 0; }
+.item-content {
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
 
-.dialog-banner { margin-top: 8px; padding: 7px 10px; border: 2px solid #111111; background: var(--brutal-sky); font-size: 0.8rem; font-weight: 800; display: none; }
+.item-title {
+  font-size: 0.96rem;
+  font-weight: 900;
+  margin-bottom: 3px;
+  line-height: 1.3;
+}
+
+.item-creator {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #555555;
+  margin-bottom: 8px;
+}
+
+.item-memo {
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1.45;
+  color: #222222;
+  background: var(--brutal-paper);
+  border: 1.5px solid #cccccc;
+  padding: 6px 8px;
+  margin-bottom: 8px;
+  flex: 1;
+  word-break: keep-all;
+}
+
+.item-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #444444;
+}
+
+.inspect-hint {
+  color: var(--win-navy);
+  font-weight: 900;
+}
+
+/* ============================================================
+   8. 상세 탐색기 / 등록 모달 / 메모장
+   ============================================================ */
+.detail-hero {
+  display: grid;
+  grid-template-columns: 165px 1fr;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.detail-cover {
+  width: 100%;
+  height: 220px;
+  object-fit: cover;
+  border: 2.5px solid var(--brutal-ink);
+  background: #111111;
+}
+
+.rec-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.rec-card {
+  border: 2px solid var(--brutal-ink);
+  background: var(--brutal-paper);
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.rec-thumb {
+  width: 100%;
+  height: 96px;
+  object-fit: cover;
+  border: 1.5px solid var(--brutal-ink);
+  margin-bottom: 6px;
+}
+
+.dialog-banner {
+  display: none;
+  margin-top: 8px;
+  padding: 6px 10px;
+  border: 2px solid var(--brutal-ink);
+  background: #ffffff;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
 .dialog-banner.err { background: var(--brutal-pink); color: #ffffff; }
-.dialog-banner.ok { background: var(--brutal-green); }
+.dialog-banner.ok  { background: var(--brutal-green); color: #111111; }
 
-.detail-hero { display: grid; grid-template-columns: 145px 1fr; gap: 14px; background: #ffffff; border: 3px solid #111111; box-shadow: 4px 4px 0px #111111; padding: 14px; margin-bottom: 14px; }
-@media (max-width: 560px) { .detail-hero { grid-template-columns: 1fr; } }
-.detail-cover { width: 100%; height: 185px; object-fit: cover; border: 2px solid #111111; background: #111111; }
-
-.rec-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 10px; }
-@media (max-width: 640px) { .rec-grid { grid-template-columns: 1fr; } }
-.rec-card { background: #ffffff; border: 2px solid #111111; box-shadow: 3px 3px 0px #111111; padding: 10px; display: flex; flex-direction: column; justify-content: space-between; }
-.rec-thumb { width: 100%; height: 95px; object-fit: cover; border: 2px solid #111111; margin-bottom: 8px; }
-
-.wordcloud-stage { min-height: 220px; background: #ffffff; border: 2px solid #111111; box-shadow: var(--bevel-in); padding: 18px; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px 14px; }
-.wc-word { display: inline-block; padding: 4px 10px; border: 2px solid #111111; box-shadow: 3px 3px 0px #111111; font-weight: 900; line-height: 1.2; transition: transform 0.1s ease; }
-.wc-word:hover { transform: scale(1.08) rotate(-2deg); }
-
-.node-canvas-box { background: #111111; border: 3px solid #111111; box-shadow: var(--bevel-in); position: relative; height: 360px; overflow: hidden; }
-#node-graph-canvas { width: 100%; height: 100%; display: block; }
-
-.note-card { background: #fff9c4; border: 2px solid #111111; box-shadow: 3px 3px 0px #111111; padding: 9px 11px; margin-bottom: 9px; }
-
-/* Minesweeper & Archive Card Games */
-.mine-grid { display: grid; grid-template-columns: repeat(8, 32px); gap: 2px; justify-content: center; background: #808080; padding: 6px; border: 3px solid #111111; box-shadow: var(--bevel-in); }
-.mine-cell { width: 32px; height: 32px; background: var(--win-gray); border: 2px solid #111111; box-shadow: var(--bevel-out); font-weight: 900; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; user-select: none; }
-.mine-cell.revealed { background: #e8e6df; box-shadow: none; border: 1px solid #808080; }
-.mine-cell.boom { background: var(--brutal-pink); color: #ffffff; }
-
-.mem-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 10px; }
-.mem-card { height: 92px; background: #000080; color: #ffd83b; border: 2px solid #111111; box-shadow: var(--bevel-out); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 6px; text-align: center; font-size: 0.74rem; font-weight: 900; user-select: none; overflow: hidden; }
-.mem-card.flipped, .mem-card.matched { background: #ffffff; color: #111111; box-shadow: var(--bevel-in); }
-.mem-card.matched { background: var(--brutal-green); }
-.mem-card img { width: 100%; height: 52px; object-fit: cover; border: 1px solid #111111; margin-bottom: 3px; }
-
-.hl-arena { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px; }
-.hl-card { background: #ffffff; border: 3px solid #111111; box-shadow: 4px 4px 0px #111111; padding: 10px; text-align: center; }
-.hl-card img { width: 100%; height: 115px; object-fit: cover; border: 2px solid #111111; margin-bottom: 8px; }
-
-.win95-taskbar { position: fixed; left: 0; right: 0; bottom: 0; height: 44px; background: var(--win-gray); border-top: 3px solid #111111; box-shadow: inset 0 2px 0px #ffffff; display: flex; justify-content: space-between; align-items: center; padding: 4px 8px; z-index: 9000; user-select: none; }
-.taskbar-left { display: flex; align-items: center; gap: 6px; overflow-x: auto; }
-.start-btn { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; height: 32px; background: var(--brutal-yellow); border: 2px solid #111111; box-shadow: var(--bevel-out); font-family: inherit; font-weight: 900; font-size: 0.88rem; flex-shrink: 0; }
-.start-btn.pressed { box-shadow: var(--bevel-in); transform: translate(1px, 1px); }
-.win-flag { display: inline-grid; grid-template-columns: 1fr 1fr; gap: 1.5px; width: 14px; height: 14px; }
-.win-flag span:nth-child(1) { background: #ff4757; }
-.win-flag span:nth-child(2) { background: #2ed573; }
-.win-flag span:nth-child(3) { background: #48dbfb; }
-.win-flag span:nth-child(4) { background: #ffd83b; }
-
-.task-tab { height: 32px; padding: 0 10px; background: var(--win-gray); border: 2px solid #111111; box-shadow: var(--bevel-out); font-family: inherit; font-size: 0.78rem; font-weight: 800; display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
-.task-tab.active { background: #e8e6df; box-shadow: var(--bevel-in); font-weight: 900; }
-.system-tray { height: 32px; padding: 0 10px; background: var(--win-gray); border: 2px solid #111111; box-shadow: var(--bevel-in); display: flex; align-items: center; gap: 8px; font-size: 0.78rem; font-weight: 800; flex-shrink: 0; }
-
-.start-menu { position: fixed; left: 8px; bottom: 46px; width: 275px; background: var(--win-gray); border: 3px solid #111111; box-shadow: var(--bevel-out), 6px 6px 0px #111111; display: none; z-index: 9500; }
-.start-menu.open { display: flex; }
-.start-sidebar { width: 34px; background: linear-gradient(180deg, #000080 0%, #1084d0 100%); color: #ffffff; writing-mode: vertical-rl; transform: rotate(180deg); padding: 12px 6px; font-weight: 900; font-size: 0.92rem; letter-spacing: 0.08em; }
-.start-items { flex: 1; padding: 6px; display: flex; flex-direction: column; gap: 3px; }
-.start-item { padding: 7px 10px; font-size: 0.83rem; font-weight: 800; text-align: left; background: transparent; border: none; display: flex; align-items: center; gap: 8px; }
-.start-item:hover { background: #000080; color: #ffffff; }
-.start-divider { height: 2px; background: #808080; border-bottom: 1px solid #ffffff; margin: 4px 0; }
-
-/* Classic Windows Solitaire & Spider Card Styles */
-.sol-board { background: #006633; border: 3px solid #111111; box-shadow: var(--bevel-in); padding: 10px; user-select: none; }
-.sol-top-row { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-bottom: 12px; }
-.sol-cols { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; min-height: 250px; align-items: start; }
-.spider-cols { display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; min-height: 265px; align-items: start; }
-
-.card-slot {
-  height: 68px; border: 2px dashed rgba(255, 255, 255, 0.55); background: rgba(0, 0, 0, 0.18);
-  display: flex; align-items: center; justify-content: center; color: rgba(255, 255, 255, 0.75);
-  font-weight: 900; font-size: 0.85rem; position: relative;
+.rank-list {
+  display: none;
+  margin-top: 8px;
+  max-height: 170px;
+  overflow-y: auto;
+  border: 2px solid var(--brutal-ink);
+  background: #ffffff;
 }
-.p-card {
-  width: 100%; height: 68px; background: #ffffff; border: 2px solid #111111;
-  box-shadow: 2px 2px 0px #111111; padding: 3px 4px; font-weight: 900; font-size: 0.78rem;
-  display: flex; flex-direction: column; justify-content: space-between; position: relative;
-  cursor: var(--cursor-pointer);
+
+.rank-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-bottom: 1.5px solid #e0e0e0;
+  cursor: pointer;
 }
-.p-card.red { color: #d63031; }
-.p-card.black { color: #111111; }
-.p-card.back {
-  background-color: #000080;
-  background-image: repeating-linear-gradient(45deg, #1084d0 0, #1084d0 4px, #000080 4px, #000080 8px);
-  border: 2px solid #ffffff; outline: 1px solid #111111;
+
+.rank-item:hover {
+  background: #fff7cc;
 }
-.p-card.selected { outline: 3px solid #ffd83b; transform: translateY(-3px); z-index: 20; }
-.p-card-center { font-size: 1.05rem; text-align: center; line-height: 1; }
-.card-stack { display: flex; flex-direction: column; }
-.card-stack .p-card + .p-card { margin-top: -46px; }
-.spider-cols .card-stack .p-card + .p-card { margin-top: -50px; }
-.spider-cols .p-card { height: 64px; font-size: 0.72rem; padding: 2px 3px; }
+
+.rank-badge {
+  background: var(--brutal-ink);
+  color: var(--brutal-yellow);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 900;
+  padding: 2px 5px;
+}
+
+.rank-thumb {
+  width: 34px;
+  height: 42px;
+  object-fit: cover;
+  border: 1.5px solid var(--brutal-ink);
+}
+
+.rank-src {
+  background: var(--brutal-sky);
+  border: 1px solid var(--brutal-ink);
+  padding: 0 4px;
+  font-weight: 900;
+}
+
+.note-card {
+  background: #fffef5;
+  border: 2px solid var(--brutal-ink);
+  padding: 8px 10px;
+  margin-bottom: 8px;
+}
+
+/* ============================================================
+   9. 신규 확장 앱 UI (달력, 기분 추천, 퀴즈, 연표, 도장/영수증, 우체통)
+   ============================================================ */
+/* 9-1. 월별 캘린더 & D-Day */
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.cal-head-cell {
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 900;
+  padding: 4px;
+  background: var(--brutal-ink);
+  color: #ffffff;
+}
+
+.cal-cell {
+  min-height: 64px;
+  background: #ffffff;
+  border: 1.5px solid var(--brutal-ink);
+  padding: 4px;
+  font-size: 0.74rem;
+  font-weight: 800;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  cursor: pointer;
+}
+
+.cal-cell.empty {
+  background: #eceae2;
+  cursor: default;
+}
+
+.cal-cell.has-record {
+  background: #fff6bf;
+}
+
+.cal-dot-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  margin-top: 4px;
+}
+
+.cal-badge {
+  font-size: 0.65rem;
+  padding: 1px 4px;
+  background: var(--brutal-green);
+  border: 1px solid var(--brutal-ink);
+  font-weight: 900;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* 9-2. 기분별 랜덤 추천기 */
+.mood-btn-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.mood-result-box {
+  background: #ffffff;
+  border: 2.5px solid var(--brutal-ink);
+  box-shadow: var(--shadow-hard-sm);
+  padding: 14px;
+}
+
+/* 9-3. 복습 퀴즈 & 카드 뒤집기 */
+.quiz-option-btn {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 9px 12px;
+  margin-bottom: 7px;
+  background: #ffffff;
+  border: 2px solid var(--brutal-ink);
+  font-family: var(--font-main);
+  font-size: 0.84rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.quiz-option-btn:hover {
+  background: var(--brutal-yellow);
+}
+
+.flip-card-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.flip-card {
+  height: 76px;
+  border: 2.5px solid var(--brutal-ink);
+  background: var(--win-navy);
+  color: var(--brutal-yellow);
+  font-size: 0.78rem;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 6px;
+  cursor: pointer;
+}
+
+.flip-card.flipped,
+.flip-card.matched {
+  background: #ffffff;
+  color: var(--brutal-ink);
+}
+
+.flip-card.matched {
+  background: var(--brutal-green);
+}
+
+/* 9-4. 인터랙티브 가로 연표 */
+.timeline-scroll-wrap {
+  overflow-x: auto;
+  padding: 14px 8px;
+  background: #ffffff;
+  border: 2.5px solid var(--brutal-ink);
+  margin-bottom: 12px;
+}
+
+.timeline-track {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  min-width: max-content;
+  position: relative;
+}
+
+.timeline-node {
+  width: 155px;
+  border: 2px solid var(--brutal-ink);
+  background: var(--brutal-paper);
+  padding: 8px;
+  cursor: pointer;
+  box-shadow: var(--shadow-hard-sm);
+}
+
+.timeline-node.selected {
+  background: var(--brutal-yellow);
+}
+
+/* 9-5. 디지털 도장 & 문화생활 예산 영수증 */
+.receipt-paper {
+  background: #ffffff;
+  border: 2px dashed var(--brutal-ink);
+  padding: 14px;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  line-height: 1.55;
+}
+
+.qr-box {
+  display: inline-block;
+  padding: 10px;
+  background: #ffffff;
+  border: 2.5px solid var(--brutal-ink);
+  box-shadow: var(--shadow-hard-sm);
+}
+
+/* ============================================================
+   10. 시작 메뉴 팝업 & 하단 작업표시줄 (<footer>)
+   ============================================================ */
+.start-menu-popup {
+  display: none;
+  position: fixed;
+  bottom: 38px;
+  left: 4px;
+  width: 265px;
+  background: var(--win-gray);
+  border: 3px solid var(--brutal-ink);
+  box-shadow: 5px 5px 0px var(--brutal-ink);
+  z-index: 5500;
+}
+
+.start-menu-popup.open {
+  display: flex;
+}
+
+.start-banner {
+  width: 30px;
+  background: var(--win-navy);
+  color: #ffffff;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 10px 0;
+  font-size: 0.85rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+}
+
+.start-banner b {
+  color: var(--brutal-yellow);
+}
+
+.start-list {
+  flex: 1;
+  padding: 5px;
+}
+
+.start-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 6px 8px;
+  background: transparent;
+  border: none;
+  font-family: var(--font-main);
+  font-size: 0.8rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.start-item:hover {
+  background: var(--win-navy);
+  color: #ffffff;
+}
+
+.os-taskbar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 38px;
+  background: var(--win-gray);
+  border-top: 2.5px solid var(--brutal-ink);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 6px;
+  z-index: 5000;
+}
+
+.btn-start {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 28px;
+  padding: 0 10px;
+  background: var(--win-gray);
+  border: 2px solid var(--brutal-ink);
+  box-shadow: inset 1.5px 1.5px 0px #ffffff, inset -1.5px -1.5px 0px #808080;
+  font-family: var(--font-main);
+  font-size: 0.8rem;
+  font-weight: 900;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.btn-start.pressed {
+  box-shadow: inset 2px 2px 0px #808080;
+  background: #b0b0b0;
+}
+
+.start-win-logo {
+  color: var(--brutal-pink);
+  font-size: 0.95rem;
+}
+
+.taskbar-divider {
+  width: 2px;
+  height: 22px;
+  background: var(--win-dark);
+  border-right: 1px solid var(--win-light);
+}
+
+.taskbar-windows {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+  overflow-x: auto;
+}
+
+.taskbar-tab {
+  height: 26px;
+  max-width: 175px;
+  padding: 0 9px;
+  background: var(--win-gray);
+  border: 2px solid var(--brutal-ink);
+  font-family: var(--font-main);
+  font-size: 0.75rem;
+  font-weight: 800;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+.taskbar-tab.active {
+  background: #ffffff;
+  box-shadow: inset 2px 2px 0px #808080;
+}
+
+.taskbar-tray {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 8px;
+  background: #d4d4d4;
+  border: 2px inset #808080;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.tray-btn {
+  background: transparent;
+  border: none;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+/* ============================================================
+   11. 스마트폰·태블릿 반응형 웹 규칙 (9주차·12주차 강의 반영)
+   ============================================================ */
+@media (max-width: 768px) {
+  .desktop-workspace {
+    padding: 36px 8px 50px;
+  }
+
+  .desktop-icons {
+    display: flex;
+    flex-wrap: wrap;
+    width: 100%;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .desk-icon {
+    width: 72px;
+    font-size: 0.7rem;
+  }
+
+  .floating-win {
+    width: calc(100vw - 16px) !important;
+    left: 8px !important;
+    top: 42px !important;
+  }
+
+  .kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .charts-grid,
+  .detail-hero,
+  .rec-grid,
+  .mood-btn-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .archive-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .flip-card-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .win-body {
+    padding: 10px;
+    max-height: calc(100vh - 115px);
+  }
+
+  .btn95,
+  .pill-btn {
+    min-height: 36px;
+  }
+}
+
+/* ============================================================
+   12. 예산·구매 회고 영수증 전용 인쇄 스타일 (@media print)
+   ============================================================ */
+@media print {
+  body * {
+    visibility: hidden !important;
+  }
+
+  #printable-receipt-area,
+  #printable-receipt-area * {
+    visibility: visible !important;
+  }
+
+  #printable-receipt-area {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 100%;
+    border: 2px solid #000000 !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    padding: 20px !important;
+  }
+}
