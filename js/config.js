@@ -5,7 +5,7 @@
 const APP_BUILD_VERSION = 'v2026.11.17-04';
 
 // Google Apps Script 웹 앱 배포 URL (/exec)을 아래에 입력하세요.
-const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec';
+const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwH-hzWi2Z3_oTFt0PWBhzYMP10VEx4e-32E9EW7d5SMF2k_bwxQL0_3ONaQ8Ze3sdKUQ/exec';
 
 // 외부 폴더 의존성 없는 인라인 SVG 기본 표지 이미지
 const FALLBACK_COVER = 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
