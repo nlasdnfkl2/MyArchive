@@ -279,6 +279,41 @@ function extractYouTubeVideoId(url) {
   return '';
 }
 
+function normalizeMusicMatchStr(str) {
+  return String(str || '')
+    .replace(/\s*-\s*topic$/i, '')
+    .replace(/[^\w가-힣]/g, '')
+    .toLowerCase();
+}
+
+function isLenientYouTubeMatch(cand, track) {
+  const normTrackTitle = normalizeMusicMatchStr(track.title);
+  const normTrackCreator = normalizeMusicMatchStr(track.creator);
+  const normCandTitle = normalizeMusicMatchStr(cand.title);
+  const normCandCreator = normalizeMusicMatchStr(cand.creator);
+  const combinedCand = normCandTitle + normCandCreator;
+
+  // 1. 제목 부분 포함 여부 (후보 제목+채널명에 곡 제목이 포함되거나, 짧은 유튜브 제목이 등록 제목에 포함되는 경우)
+  const titleIncluded = !normTrackTitle ||
+    combinedCand.includes(normTrackTitle) ||
+    (normCandTitle.length >= 2 && normTrackTitle.includes(normCandTitle));
+
+  // 2. 아티스트 부분 포함 여부 ("- Topic" 제거 후 영상 제목+채널명에서 확인, 아티스트명이 생략된 업로드도 허용)
+  const creatorTokens = String(track.creator || '')
+    .split(/[,&/·()\[\]]+/)
+    .map(t => normalizeMusicMatchStr(t))
+    .filter(t => t.length >= 2);
+
+  const artistIncluded = !normTrackCreator ||
+    combinedCand.includes(normTrackCreator) ||
+    creatorTokens.some(tok => combinedCand.includes(tok));
+
+  // 제목+아티스트 모두 포함(2) > 제목만 포함·아티스트명 생략(1) > 최상단 폴백(0)
+  if (titleIncluded && artistIncluded) return 2;
+  if (titleIncluded) return 1;
+  return 0;
+}
+
 function ensureYouTubeIframeApi() {
   if (window.YT && window.YT.Player) {
     ytApiReady = true;
@@ -300,14 +335,20 @@ window.onYouTubeIframeAPIReady = function () {
 
 function updateJukebox() {
   const musicItems = (archiveItems || []).filter(i => i.category === '음악');
-  jukeboxTracks = musicItems.map(item => ({
-    id: item.id,
-    title: item.title,
-    creator: item.creator,
-    coverUrl: item.coverUrl || FALLBACK_COVER,
-    sourceUrl: item.sourceUrl || '',
-    videoId: extractYouTubeVideoId(item.sourceUrl)
-  }));
+  const vidCache = loadLocalCache('my_archive_95_yt_vid_cache_v1', {});
+
+  jukeboxTracks = musicItems.map(item => {
+    const cacheKey = `${normalizeMusicMatchStr(item.creator)}::${normalizeMusicMatchStr(item.title)}`;
+    const directVid = extractYouTubeVideoId(item.sourceUrl);
+    return {
+      id: item.id,
+      title: item.title,
+      creator: item.creator,
+      coverUrl: item.coverUrl || FALLBACK_COVER,
+      sourceUrl: item.sourceUrl || '',
+      videoId: directVid || (vidCache && vidCache[cacheKey]) || ''
+    };
+  });
 
   if (currentTrackIdx >= jukeboxTracks.length) currentTrackIdx = 0;
   renderJukeboxUI();
@@ -316,17 +357,32 @@ function updateJukebox() {
 async function resolveTrackVideoId(track) {
   if (!track) return '';
   if (track.videoId) return track.videoId;
+
+  const cacheKey = `${normalizeMusicMatchStr(track.creator)}::${normalizeMusicMatchStr(track.title)}`;
+  const vidCache = loadLocalCache('my_archive_95_yt_vid_cache_v1', {});
+  if (vidCache && vidCache[cacheKey]) {
+    track.videoId = vidCache[cacheKey];
+    return track.videoId;
+  }
+
   try {
-    const q = encodeURIComponent(`${track.creator} ${track.title}`);
-    const res = await fetch(`${GAS_WEB_APP_URL}?action=search&q=${q}&category=${encodeURIComponent('음악')}`);
+    const q = encodeURIComponent(`${track.creator} ${track.title}`.trim());
+    const t = encodeURIComponent(track.title || '');
+    const c = encodeURIComponent(track.creator || '');
+    const res = await fetch(`${GAS_WEB_APP_URL}?action=search&q=${q}&title=${t}&creator=${c}&category=${encodeURIComponent('음악')}`);
     const json = await res.json();
-    const cands = json.candidates || [];
-    for (const c of cands) {
-      const vid = extractYouTubeVideoId(c.sourceUrl);
-      if (vid) {
-        track.videoId = vid;
-        return vid;
-      }
+    const cands = (json.candidates || []).filter(item => Boolean(extractYouTubeVideoId(item.sourceUrl)));
+
+    if (!cands.length) return '';
+
+    cands.sort((a, b) => isLenientYouTubeMatch(b, track) - isLenientYouTubeMatch(a, track));
+
+    const matchedVid = extractYouTubeVideoId(cands[0].sourceUrl);
+    if (matchedVid) {
+      track.videoId = matchedVid;
+      vidCache[cacheKey] = matchedVid;
+      saveLocalCache('my_archive_95_yt_vid_cache_v1', vidCache);
+      return matchedVid;
     }
   } catch {
     // 폴백 조회 실패 무시
