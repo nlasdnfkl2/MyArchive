@@ -96,7 +96,7 @@ function buildJukeboxUI() {
           <div id="jb-eq-bars" style="display:flex; align-items:flex-end; justify-content:center; gap:3px; height:26px; margin-top:6px;">
             ${Array.from({ length: 12 }).map((_, i) => `<span class="jb-bar" style="width:5px; height:${6 + (i % 4) * 4}px; background:#39ff14; display:inline-block; transition:height 0.15s;"></span>`).join('')}
           </div>
-          <div style="font-size:0.65rem; color:#88cc99; margin-top:4px;">128 KBPS · 44 KHZ</div>
+          <div style="font-size:0.65rem; color:#88cc99; margin-top:4px;">128 KBPS</div>
         </div>
 
         <div style="min-width:0;">
