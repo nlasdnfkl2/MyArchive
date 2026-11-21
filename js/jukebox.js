@@ -101,7 +101,7 @@ function buildJukeboxUI() {
 
         <div style="min-width:0;">
           <div style="background:#08120c; border:1.5px solid #333; padding:5px 8px; overflow:hidden; white-space:nowrap; margin-bottom:6px;">
-            <div id="jb-marquee-title" style="font-size:0.86rem; font-weight:900; color:#39ff14;">재생할 트랙을 선택하거나 [&gt; 재생] 버튼을 누르십시오.</div>
+            <div id="jb-marquee-title" style="font-size:0.86rem; font-weight:900; color:#39ff14;">재생할 트랙을 선택하여 시작하십시오.</div>
           </div>
           <div id="jb-track-sub" style="font-size:0.74rem; color:#cccccc; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:6px;">
             대기 중 · 내 아카이브 음악 라이브러리 연동됨
