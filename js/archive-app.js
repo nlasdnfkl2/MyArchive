@@ -934,7 +934,7 @@ function ensureRegisterWindowExists() {
             <div>
               <img id="preview-cover" src="${FALLBACK_COVER}" alt="표지" style="width:100%; height:155px; object-fit:cover; border:2px solid #111; background:#111; margin-bottom:4px;" />
               <label class="btn95 sm" style="width:100%; font-size:0.7rem; padding:4px 6px;">
-                📷 사진 압축 첨부
+                ${PIXEL_ICONS.CAMERA} 사진 압축 첨부
                 <input type="file" id="inp-cover-file" accept="image/*" style="display:none;" />
               </label>
             </div>
@@ -988,7 +988,7 @@ function ensureRegisterWindowExists() {
           <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
             <label style="display:flex; align-items:center; gap:6px; font-size:0.8rem; font-weight:900; cursor:pointer; background:#fffdf2; border:1.5px solid #111; padding:4px 8px;">
               <input type="checkbox" id="inp-share-board" checked />
-              <span>📢 전체 공유 게시판(SNS 피드)에도 함께 공유하기</span>
+              <span>${PIXEL_ICONS.SPEAKER} 광장 게시판(SNS 피드)에도 함께 공개하기</span>
             </label>
             <div style="display:flex; gap:8px;">
               <button type="button" class="btn95 sm" id="btn-cancel-reg" data-action="close" data-target="win-register">취소</button>
