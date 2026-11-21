@@ -153,7 +153,7 @@ function initOsWallpaperAndCrt() {
     iconBtn.id = 'icon-browser';
     iconBtn.innerHTML = `
       <div class="desk-icon-box" style="background:var(--brutal-sky); display:flex; align-items:center; justify-content:center;">${BROWSER_PIXEL_ICONS.globe}</div>
-      <span>인터넷 탐색기</span>
+      <span>정보바다 탐색기</span>
     `;
     iconBtn.addEventListener('click', () => openVirtualBrowser());
     iconContainer.appendChild(iconBtn);
@@ -166,7 +166,7 @@ function initOsWallpaperAndCrt() {
     itemBrowser.type = 'button';
     itemBrowser.className = 'start-item';
     itemBrowser.id = 'sm-browser';
-    itemBrowser.innerHTML = `${BROWSER_PIXEL_ICONS.globe}<span>인터넷 탐색기 95 (YouTube·웹)</span>`;
+    itemBrowser.innerHTML = `${BROWSER_PIXEL_ICONS.globe}<span>정보바다 탐색기 95 (YouTube·웹)</span>`;
     itemBrowser.addEventListener('click', () => openVirtualBrowser());
 
     const itemDisplay = document.createElement('button');
@@ -187,7 +187,7 @@ function initOsWallpaperAndCrt() {
     mnuBr.type = 'button';
     mnuBr.className = 'menu-drop-item';
     mnuBr.id = 'mnu-open-browser';
-    mnuBr.textContent = '[WEB] 인터넷 탐색기 95 열기...';
+    mnuBr.textContent = '[WEB] 정보바다 탐색기 95 열기...';
     mnuBr.addEventListener('click', () => openVirtualBrowser());
     firstMenuDrop.prepend(mnuBr);
   }
@@ -227,7 +227,7 @@ function ensureDesktopContextMenu() {
     padding:3px; font-size:0.8rem; font-weight:800;
   `;
   menu.innerHTML = `
-    <button type="button" class="ctx-item" data-ctx="browser">[WEB] 인터넷 탐색기 95 열기</button>
+    <button type="button" class="ctx-item" data-ctx="browser">[WEB] 정보바다 탐색기 95 열기</button>
     <button type="button" class="ctx-item" data-ctx="jukebox">[AUD] 주크박스 95 열기</button>
     <button type="button" class="ctx-item" data-ctx="new">[NEW] 새 감상 기록 등록</button>
     <button type="button" class="ctx-item" data-ctx="memo">[TXT] 퀵 메모장 열기</button>
@@ -378,7 +378,7 @@ function ensureVirtualBrowserWindow() {
   win = document.createElement('div');
   win.className = 'floating-win';
   win.id = 'win-browser';
-  win.dataset.winTitle = '[WEB] 인터넷 탐색기 95';
+  win.dataset.winTitle = '[WEB] 정보바다 탐색기 95';
   win.style.top = '42px';
   win.style.left = '110px';
   win.style.width = '820px';
@@ -475,7 +475,7 @@ function ensureVirtualBrowserWindow() {
       <!-- IE 95 하단 상태 표시줄 -->
       <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px; padding:3px 7px; background:var(--win-gray); border:1.5px solid #808080; font-size:0.72rem; font-weight:800;">
         <span id="br-status-text">준비 완료 — MY-PORTAL 95</span>
-        <span style="font-family:var(--font-mono);">[NET] 56.6 Kbps Connected · [인터넷 영역]</span>
+        <span style="font-family:var(--font-mono);">[NET] 56.6 Kbps Connected · [정보바다 영역]</span>
       </div>
     </div>
   `;
