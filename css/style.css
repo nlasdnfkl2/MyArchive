@@ -2059,3 +2059,362 @@ body.boot-locked {
   border-bottom: 1px solid #dddddd;
   font-size: 0.8rem;
 }
+
+/* ============================================================
+   MY-ARCHIVE 95 OS — Logon Dialog & Win95 Form Controls
+   ============================================================ */
+.win95-logon-dialog {
+  width: 500px;
+  max-width: calc(100vw - 24px);
+  background: #c0c0c0;
+  border: 2px solid;
+  border-color: #ffffff #111111 #111111 #ffffff;
+  box-shadow: 4px 4px 0 #111111;
+  color: #111111;
+  font-family: 'Galmuri9', 'DungGeunMo', 'Dotum', 'Gulim', sans-serif;
+  user-select: none;
+}
+
+/* 대화상자 내부 폼 컨트롤(input, select, option, placeholder) 윈95 글꼴 통일 */
+.win95-logon-dialog input,
+.win95-logon-dialog select,
+.win95-logon-dialog option,
+.win95-logon-dialog button,
+.win95-logon-dialog textarea {
+  font-family: 'Galmuri9', 'DungGeunMo', 'Dotum', 'Gulim', sans-serif !important;
+  font-size: 0.84rem;
+  letter-spacing: -0.01em;
+}
+
+.win95-logon-dialog input::placeholder {
+  font-family: 'Galmuri9', 'DungGeunMo', 'Dotum', 'Gulim', sans-serif !important;
+  color: #777777;
+  opacity: 1;
+}
+
+/* 윈95 입력 박스 */
+.logon-input {
+  width: 100%;
+  height: 28px;
+  padding: 3px 8px;
+  background: #ffffff;
+  color: #111111;
+  border: 2px solid;
+  border-color: #808080 #ffffff #ffffff #808080;
+  box-shadow: inset 1px 1px 0 #111111;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.logon-input:focus {
+  background: #fffef2;
+}
+
+.logon-input:disabled {
+  background: #c0c0c0;
+  color: #555555;
+}
+
+/* 윈95 커스텀 드롭다운 */
+.logon-select-wrap {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+
+.logon-select {
+  width: 100%;
+  height: 28px;
+  padding: 2px 28px 2px 8px;
+  background: #ffffff;
+  color: #111111;
+  border: 2px solid;
+  border-color: #808080 #ffffff #ffffff #808080;
+  box-shadow: inset 1px 1px 0 #111111;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  outline: none;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.logon-select:disabled {
+  background: #d4d0c8;
+  color: #555555;
+  cursor: not-allowed;
+}
+
+.logon-select option {
+  background: #ffffff;
+  color: #111111;
+  padding: 4px 8px;
+}
+
+/* 드롭다운 우측 입체 화살표 버튼 */
+.logon-select-arrow {
+  position: absolute;
+  right: 2px;
+  top: 2px;
+  width: 22px;
+  height: 24px;
+  background: #c0c0c0;
+  border: 2px solid;
+  border-color: #ffffff #404040 #404040 #ffffff;
+  box-shadow: inset -1px -1px 0 #808080;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+/* 계정 선택 옆 검색 아이콘 버튼 */
+.logon-search-btn {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  padding: 0;
+  background: #c0c0c0;
+  border: 2px solid;
+  border-color: #ffffff #111111 #111111 #ffffff;
+  box-shadow: inset -1px -1px 0 #808080;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.logon-search-btn:active,
+.logon-search-btn.active {
+  border-color: #111111 #ffffff #ffffff #111111;
+  box-shadow: inset 1px 1px 0 #808080;
+  background: #b5b5b5;
+}
+
+/* 탭 바 및 탭 본문 패널 (테두리 돌출 오류 방지) */
+.logon-tabs {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  padding: 8px 10px 0 10px;
+}
+
+.logon-tab {
+  padding: 6px 12px;
+  background: #b8b8b8;
+  border: 2px solid;
+  border-color: #ffffff #404040 #111111 #ffffff;
+  border-bottom: none;
+  font-weight: 700;
+  color: #222222;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  position: relative;
+  top: 2px;
+  white-space: nowrap;
+}
+
+.logon-tab.active {
+  background: #c0c0c0;
+  color: #111111;
+  font-weight: 900;
+  padding-top: 7px;
+  padding-bottom: 7px;
+  top: 2px;
+  z-index: 2;
+}
+
+.logon-panel {
+  margin: 0 10px 10px 10px;
+  padding: 14px 16px;
+  background: #c0c0c0;
+  border: 2px solid;
+  border-color: #ffffff #404040 #404040 #ffffff;
+  box-shadow: inset -1px -1px 0 #808080, inset 1px 1px 0 #dfdfdf;
+  box-sizing: border-box;
+}
+
+/* 상단 아이콘 + 안내 문구 정렬 */
+.logon-intro-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.logon-intro-icon {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 2px;
+}
+
+.logon-intro-text {
+  font-size: 0.83rem;
+  line-height: 1.5;
+  color: #111111;
+  word-break: keep-all;
+}
+
+/* 라벨-입력 2열 그리드 정렬 */
+.logon-form-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.logon-form-label {
+  width: 102px;
+  flex-shrink: 0;
+  font-size: 0.83rem;
+  font-weight: 800;
+  color: #111111;
+  white-space: nowrap;
+}
+
+.logon-form-field {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* 유저 검색 확장 바 */
+.logon-user-search-bar {
+  margin: -4px 0 10px 112px;
+  padding: 6px 8px;
+  background: #d4d0c8;
+  border: 1px solid #808080;
+  box-shadow: inset 1px 1px 0 #ffffff;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* 사용자 프로필 / 소개 그룹박스 */
+.logon-fieldset {
+  margin: 12px 0 10px 0;
+  padding: 10px 12px 12px 12px;
+  border: 2px groove #ffffff;
+  box-sizing: border-box;
+}
+
+.logon-fieldset legend {
+  padding: 0 6px;
+  font-size: 0.8rem;
+  font-weight: 900;
+  color: #111111;
+}
+
+.logon-profile-body {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logon-avatar-frame {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  background: #dcdcdc;
+  border: 2px solid;
+  border-color: #808080 #ffffff #ffffff #808080;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 하단 상태 표시줄 */
+.logon-status-strip {
+  width: 100%;
+  padding: 5px 8px;
+  margin-bottom: 14px;
+  background: #c0c0c0;
+  border: 1px solid;
+  border-color: #808080 #ffffff #ffffff #808080;
+  font-size: 0.77rem;
+  color: #222222;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  box-sizing: border-box;
+}
+
+/* 3x2 도트 아바타 선택 버튼 (줄바꿈 방지) */
+.logon-avatar-grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.logon-avatar-opt {
+  height: 34px;
+  padding: 0 6px;
+  background: #c0c0c0;
+  color: #111111;
+  border: 2px solid;
+  border-color: #ffffff #111111 #111111 #ffffff;
+  box-shadow: inset -1px -1px 0 #808080;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.logon-avatar-opt.selected {
+  background: #000080;
+  color: #ffffff;
+  border-color: #111111 #ffffff #ffffff #111111;
+  outline: 1px dotted #ffd83b;
+  outline-offset: -4px;
+}
+
+/* 하단 버튼 행 */
+.logon-footer-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.logon-btn {
+  height: 30px;
+  padding: 0 14px;
+  background: #c0c0c0;
+  color: #111111;
+  border: 2px solid;
+  border-color: #ffffff #111111 #111111 #ffffff;
+  box-shadow: inset -1px -1px 0 #808080;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.logon-btn:active {
+  border-color: #111111 #ffffff #ffffff #111111;
+  box-shadow: inset 1px 1px 0 #808080;
+  padding: 1px 13px 0 15px;
+}
+
+.logon-btn.primary {
+  outline: 1px solid #111111;
+}
