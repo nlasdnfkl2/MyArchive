@@ -411,8 +411,8 @@ function updateLogonStatusLine() {
   const personalCount = getPersonalUsersList().length;
   const archiveCount = Array.isArray(window.archiveItems) ? window.archiveItems.length : 0;
   statusEl.textContent = archiveCount > 0
-    ? `[ONLINE] 중앙 아카이브 서버 접속 완료 (등록 이용자 ${personalCount}명 · 전체 자료 ${archiveCount}건)`
-    : `[READY] 사용자 인증 및 아카이브 단말기 준비 완료 (등록 이용자 ${personalCount}명)`;
+    ? `중앙 아카이브 서버 접속 완료 (등록 이용자 ${personalCount}명 · 전체 자료 ${archiveCount}건)`
+    : `사용자 인증 및 아카이브 단말기 준비 완료 (등록 이용자 ${personalCount}명)`;
   if (ledEl) ledEl.style.background = '#008000';
 }
 
@@ -828,7 +828,7 @@ async function submitNewUserSignup() {
     return;
   }
   if (!/^\d{4}$/.test(pin)) {
-    showLoginError('비밀번호는 반드시 숫자 4자리(예: 2580)로 입력해 주십시오.');
+    showLoginError('비밀번호는 반드시 숫자 4자리(예: 0000)로 입력해 주십시오.');
     document.getElementById('signup-pin')?.focus();
     return;
   }
