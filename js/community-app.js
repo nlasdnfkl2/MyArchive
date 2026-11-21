@@ -4,7 +4,7 @@
 // ============================================================
 
 window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-window.__MOD_VERSIONS.communityApp = 'v2026.11.22-v3';
+window.__MOD_VERSIONS.communityApp = 'v2026.11.22-v4';
 
 const communityState = {
   catFilter: 'ALL',
@@ -48,8 +48,16 @@ function renderCommunityBoard() {
   const body = document.getElementById('community-app-body');
   if (!body) return;
 
+  // 리렌더링 전 검색창 포커스 및 커서 위치 보존
+  const activeEl = document.activeElement;
+  const isSearchFocused = activeEl && activeEl.id === 'comm-search-kw';
+  const selStart = isSearchFocused ? activeEl.selectionStart : null;
+  const selEnd = isSearchFocused ? activeEl.selectionEnd : null;
+
   const sharedAll = getSharedFeedItems();
-  const me = typeof getCurrentUser === 'function' ? getCurrentUser() : { username: '문태양', role: 'owner', avatar: '🐸' };
+  const me = typeof getCurrentUser === 'function'
+    ? getCurrentUser()
+    : { username: '문태양', role: 'owner', avatar: 'USER' };
 
   // 작성자 목록 추출
   const authors = Array.from(new Set(sharedAll.map(i => i.owner || '문태양')));
@@ -91,15 +99,15 @@ function renderCommunityBoard() {
     <!-- 상단 SNS 빠른 공유 배너 -->
     <div class="sunken-box" style="background:#fffdf2; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
       <div style="display:flex; align-items:center; gap:10px;">
-        <span style="font-size:1.5rem;">${esc(me.avatar || '👤')}</span>
+        <div class="sns-avatar-box">${typeof renderPixelAvatarHtml === 'function' ? renderPixelAvatarHtml(me.avatar, 24, me.role) : esc(me.avatar || 'USER')}</div>
         <div>
           <div style="font-size:0.84rem; font-weight:900;">현재 접속: <span style="color:#000080;">${esc(me.username)}</span> (${me.role === 'public' ? '공용 계정' : '개인 계정'})</div>
-          <div style="font-size:0.75rem; color:#444; font-weight:700;">내 감상을 전체 게시판에 공유하거나 다른 이용자의 추천작을 스크랩하세요!</div>
+          <div style="font-size:0.75rem; color:#444; font-weight:700;">내 감상을 전체 게시판에 공유하거나 다른 이용자의 추천작을 스크랩하세요.</div>
         </div>
       </div>
       <div style="display:flex; gap:6px; flex-wrap:wrap;">
-        <button type="button" class="btn95 sm" id="btn-comm-toggle-stats">${communityState.showStats ? '📊 전체 통계 접기' : '📊 전체 통계 펼치기'}</button>
-        <button type="button" class="btn95 yellow sm" id="btn-comm-write-post">✍️ 전체 게시판에 감상 올리기</button>
+        <button type="button" class="btn95 sm" id="btn-comm-toggle-stats">${communityState.showStats ? '[통계] 전체 통계 접기' : '[통계] 전체 통계 펼치기'}</button>
+        <button type="button" class="btn95 yellow sm" id="btn-comm-write-post">+ 전체 게시판에 감상 올리기</button>
       </div>
     </div>
 
@@ -160,8 +168,8 @@ function renderCommunityBoard() {
         </select>
         <select id="comm-sort-by" class="win95-select">
           <option value="latest" ${communityState.sortBy === 'latest' ? 'selected' : ''}>최신 공유순</option>
-          <option value="likes" ${communityState.sortBy === 'likes' ? 'selected' : ''}>❤️ 좋아요 인기순</option>
-          <option value="rating" ${communityState.sortBy === 'rating' ? 'selected' : ''}>★ 별점 높은순</option>
+          <option value="likes" ${communityState.sortBy === 'likes' ? 'selected' : ''}>좋아요 인기순</option>
+          <option value="rating" ${communityState.sortBy === 'rating' ? 'selected' : ''}>별점 높은순</option>
         </select>
         <input type="text" id="comm-search-kw" value="${esc(communityState.keyword)}" placeholder="작품명·작성자·감상평 검색..." />
       </div>
@@ -171,7 +179,7 @@ function renderCommunityBoard() {
     <div class="sns-feed-stream" style="display:flex; flex-direction:column; gap:14px;">
       ${filtered.length === 0 ? `
         <div class="sunken-box" style="text-align:center; padding:36px; font-weight:800;">
-          조건에 일치하는 공유 게시글이 없습니다. 첫 감상을 공유해 보세요!
+          조건에 일치하는 공유 게시글이 없습니다. 첫 감상을 공유해 보세요.
         </div>
       ` : filtered.map(item => buildSnsFeedCardHtml(item, me)).join('')}
     </div>
@@ -179,6 +187,16 @@ function renderCommunityBoard() {
 
   bindCommunityBoardEvents(body);
   if (communityState.showStats) renderCommunityCharts(sharedAll);
+
+  if (isSearchFocused) {
+    const nextSearch = document.getElementById('comm-search-kw');
+    if (nextSearch) {
+      nextSearch.focus();
+      if (selStart !== null && selEnd !== null) {
+        nextSearch.setSelectionRange(selStart, selEnd);
+      }
+    }
+  }
 }
 
 function buildSnsFeedCardHtml(item, me) {
@@ -195,7 +213,7 @@ function buildSnsFeedCardHtml(item, me) {
       <!-- SNS 카드 상단 프로필 바 -->
       <div class="sns-post-header">
         <div style="display:flex; align-items:center; gap:8px;">
-          <div class="sns-avatar-box">${isPublicPost ? '🌐' : '👤'}</div>
+          <div class="sns-avatar-box" style="font-size:0.68rem; font-weight:900; letter-spacing:-0.02em;">${isPublicPost ? 'PUB' : 'USR'}</div>
           <div>
             <div style="font-size:0.86rem; font-weight:900; display:flex; align-items:center; gap:6px;">
               <span>@${esc(item.owner || '문태양')}</span>
@@ -218,9 +236,9 @@ function buildSnsFeedCardHtml(item, me) {
           <div style="font-size:0.78rem; font-weight:800; color:#000080; margin-bottom:8px;">${esc(item.creator)} · #${esc(item.genre || '일반')}</div>
           <p class="sns-post-review">${esc(item.review)}</p>
           <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:8px;">
-            <button type="button" class="btn95 sm btn-sns-inspect" data-id="${esc(item.id)}">🔍 상세 보기</button>
-            ${item.sourceUrl ? `<a class="btn95 sky sm" href="${esc(item.sourceUrl)}" target="_blank" rel="noopener noreferrer">🔗 원본 링크</a>` : ''}
-            ${(item.owner || '') !== me.username ? `<button type="button" class="btn95 sm btn-sns-scrap" data-id="${esc(item.id)}">📥 내 아카이브로 담기</button>` : ''}
+            <button type="button" class="btn95 sm btn-sns-inspect" data-id="${esc(item.id)}">상세 보기</button>
+            ${item.sourceUrl ? `<a class="btn95 sky sm" href="${esc(item.sourceUrl)}" target="_blank" rel="noopener noreferrer">원본 링크</a>` : ''}
+            ${(item.owner || '') !== me.username ? `<button type="button" class="btn95 sm btn-sns-scrap" data-id="${esc(item.id)}">내 아카이브로 담기</button>` : ''}
           </div>
         </div>
       </div>
@@ -228,10 +246,10 @@ function buildSnsFeedCardHtml(item, me) {
       <!-- SNS 하단 액션 바 (좋아요 / 댓글) -->
       <div class="sns-post-actions">
         <button type="button" class="btn95 sm btn-sns-like ${isLiked ? 'pink' : ''}" data-id="${esc(item.id)}">
-          ${isLiked ? '❤️ 좋아요 취소' : '🤍 좋아요'} (${likeUsers.length})
+          ${isLiked ? '좋아요 취소' : '좋아요'} (${likeUsers.length})
         </button>
         <button type="button" class="btn95 sm btn-sns-cmt-toggle" data-id="${esc(item.id)}">
-          💬 댓글 (${cmtList.length})
+          댓글 (${cmtList.length})
         </button>
       </div>
 
@@ -239,7 +257,7 @@ function buildSnsFeedCardHtml(item, me) {
       <div class="sns-cmt-drawer" style="display:${isCmtOpen ? 'block' : 'none'};">
         <div style="display:flex; flex-direction:column; gap:5px; margin-bottom:8px;">
           ${cmtList.length === 0
-            ? '<div style="font-size:0.75rem; color:#666;">첫 번째 감상 댓글을 남겨보세요!</div>'
+            ? '<div style="font-size:0.75rem; color:#666;">첫 번째 감상 댓글을 남겨보세요.</div>'
             : cmtList.map(c => `
               <div style="background:#fff; border:1.5px solid #111; padding:5px 8px; font-size:0.78rem;">
                 <b>@${esc(c.author)}</b> <span style="color:#666; font-size:0.7rem;">(${esc(c.createdAt)})</span>: ${esc(c.content)}
@@ -336,8 +354,10 @@ function bindCommunityBoardEvents(body) {
   // 좋아요 토글
   body.querySelectorAll('.btn-sns-like').forEach(btn => {
     btn.addEventListener('click', async () => {
+      if (btn.disabled) return;
       const arcId = btn.dataset.id;
       const me = getCurrentUser();
+      btn.disabled = true;
       playRetroTone('click');
       try {
         const res = await fetch(GAS_WEB_APP_URL, {
@@ -351,7 +371,9 @@ function bindCommunityBoardEvents(body) {
           communityState.comments = json.comments || {};
           renderCommunityBoard();
         }
-      } catch {}
+      } catch {} finally {
+        btn.disabled = false;
+      }
     });
   });
 
@@ -423,13 +445,13 @@ function bindCommunityBoardEvents(body) {
           archiveItems.unshift(json.item);
           saveLocalCache(STORAGE_KEYS.ARCHIVE, archiveItems);
           refreshAllViews();
-          showWin95MessageBox('스크랩 완료 — MY-ARCHIVE 95', `「${src.title}」 작품이 ${me.username}님의 개인 아카이브에 복사되었습니다!`, 'open');
+          showWin95MessageBox('스크랩 완료 — MY-ARCHIVE 95', `「${src.title}」 작품이 ${me.username}님의 개인 아카이브에 복사되었습니다.`, 'open');
         } else {
           showWin95MessageBox('스크랩 안내 — MY-ARCHIVE 95', json.message || '이미 내 아카이브에 존재하는 작품입니다.', 'boom');
         }
       } finally {
         btn.disabled = false;
-        btn.textContent = '📥 내 아카이브로 담기';
+        btn.textContent = '내 아카이브로 담기';
       }
     });
   });
