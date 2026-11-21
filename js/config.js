@@ -97,6 +97,7 @@ function canDeleteArchiveItem(item) {
 // ============================================================
 const STORAGE_KEYS = {
   ARCHIVE: 'my_archive_95_items_cache_v1',
+  COVER_CACHE: 'my_archive_95_cover_lru_v1',
   NOTES: 'my_archive_95_notes_cache_v1',
   MAILBOX: 'my_archive_95_mailbox_cache_v1',
   PREFS: 'my_archive_95_prefs_v1',
@@ -106,14 +107,33 @@ const STORAGE_KEYS = {
 
 function saveLocalCache(key, value) {
   try {
+    let payloadToStore = value;
+
+    // 아카이브 저장 시 Base64(data:) 이미지는 별도 LRU 캐시(최대 6개)로 분리해 5MB 한도 초과 방지
+    if (key === STORAGE_KEYS.ARCHIVE && Array.isArray(value)) {
+      const coverEntries = [];
+      payloadToStore = value.map(item => {
+        if (item && typeof item.coverUrl === 'string' && item.coverUrl.startsWith('data:')) {
+          if (coverEntries.length < 6) {
+            coverEntries.push([item.id, item.coverUrl]);
+          }
+          return { ...item, coverUrl: `__CACHED_COVER__:${item.id}` };
+        }
+        return item;
+      });
+      try {
+        localStorage.setItem(STORAGE_KEYS.COVER_CACHE, JSON.stringify(Object.fromEntries(coverEntries)));
+      } catch {}
+    }
+
     const serialized = JSON.stringify({
       updatedAt: new Date().toISOString(),
-      data: value
+      data: payloadToStore
     });
     localStorage.setItem(key, serialized);
     return true;
   } catch (err) {
-    console.warn('[LocalStorage 저장 한도 초과 또는 차단]:', err);
+    console.warn('[디스크 캐시 저장 용량 초과]:', err);
     return false;
   }
 }
@@ -123,20 +143,25 @@ function loadLocalCache(key, fallbackValue = null) {
     const raw = localStorage.getItem(key);
     if (!raw) return fallbackValue;
     const parsed = JSON.parse(raw);
-    return parsed && parsed.data !== undefined ? parsed.data : fallbackValue;
+    if (!parsed || parsed.data === undefined) return fallbackValue;
+
+    if (key === STORAGE_KEYS.ARCHIVE && Array.isArray(parsed.data)) {
+      let coverMap = {};
+      try {
+        coverMap = JSON.parse(localStorage.getItem(STORAGE_KEYS.COVER_CACHE) || '{}');
+      } catch {}
+      return parsed.data.map(item => {
+        if (item && typeof item.coverUrl === 'string' && item.coverUrl.startsWith('__CACHED_COVER__:')) {
+          const id = item.coverUrl.replace('__CACHED_COVER__:', '');
+          return { ...item, coverUrl: coverMap[id] || '' };
+        }
+        return item;
+      });
+    }
+
+    return parsed.data;
   } catch (err) {
     return fallbackValue;
-  }
-}
-
-function getCacheTimestamp(key) {
-  try {
-    const raw = localStorage.getItem(key);
-    if (!raw) return '';
-    const parsed = JSON.parse(raw);
-    return parsed && parsed.updatedAt ? parsed.updatedAt : '';
-  } catch {
-    return '';
   }
 }
 
