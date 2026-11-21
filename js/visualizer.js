@@ -1,13 +1,38 @@
 // ============================================================
 // MY-ARCHIVE 95 OS — Keyword WordCloud, Physics Node Map & Stats
+// (1995 Dot-Pixel UI, Scope Filter & Force-Directed Node Graph)
 // ============================================================
 
 window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-window.__MOD_VERSIONS.visualizer = typeof APP_BUILD_VERSION !== 'undefined' ? APP_BUILD_VERSION : 'v2026.11.22-02';
+window.__MOD_VERSIONS.visualizer = typeof APP_BUILD_VERSION !== 'undefined' ? APP_BUILD_VERSION : 'v2026.11.22-03';
 
 let nodeSimAnimId = null;
 let selectedCloudKeyword = '';
-let visualizerScope = 'MY'; // 'MY' (현재 계정 전체) | 'SHARED' (공개 + 공용 계정 전체)
+let visualizerScope = null; // null(초기 자동 감지) | 'MY' (현재 계정 전체) | 'SHARED' (공개 + 공용 계정 전체)
+
+// 1995년 16x16 도트 픽셀 SVG 아이콘 (이모지 미사용)
+const VISUALIZER_PIXEL_ICONS = {
+  chart: `
+    <svg class="pixel-svg-14" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true" style="vertical-align:-2px;">
+      <path fill="#000000" d="M1 1h2v12h12v2H1V1z"/>
+      <path fill="#000080" d="M4 8h2v5H4V8z"/>
+      <path fill="#008000" d="M8 5h2v8H8V5z"/>
+      <path fill="#ff0000" d="M12 2h2v11h-2V2z"/>
+    </svg>`,
+  user: `
+    <svg class="pixel-svg-14" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true" style="vertical-align:-2px;">
+      <path fill="#000000" d="M6 1h4v1h1v4h-1v1H6V6H5V2h1V1zM4 8h8v1h1v5H3V9h1V8z"/>
+      <path fill="#ffff00" d="M6 2h4v4H6V2z"/>
+      <path fill="#008080" d="M4 9h8v4H4V9z"/>
+    </svg>`,
+  globe: `
+    <svg class="pixel-svg-14" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true" style="vertical-align:-2px;">
+      <path fill="#000000" d="M5 1h6v1h2v1h1v2h1v6h-1v2h-1v1h-2v1H5v-1H3v-1H2v-2H1V5h1V3h1V2h2V1z"/>
+      <path fill="#0000ff" d="M5 2h6v1h2v2h1v6h-1v2h-2v1H5v-1H3v-2H2V5h1V3h2V2z"/>
+      <path fill="#00ff00" d="M6 2h3v2H7v1H5V3h1V2zm4 3h3v3h-2v2H9V7h1V5zM3 7h3v3H5v2H3V7z"/>
+      <path fill="#ffffff" d="M4 3h2v1H4V3z"/>
+    </svg>`
+};
 
 document.addEventListener('DOMContentLoaded', () => {
   window.addEventListener('window:opened', ev => {
@@ -17,14 +42,22 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
+function isPublicArchiveOwner(ownerName) {
+  const o = String(ownerName || '').trim();
+  return o === '' || o === '공용' || o === '공용 계정' || o.toUpperCase() === 'PUBLIC' || o.toUpperCase() === 'GUEST';
+}
+
 // ============================================================
 // 0. 시각화 대상 데이터 범위 필터 (내 계정 전체 vs 공개+공용 전체)
 // ============================================================
-function getVisualizerItemsByScope(scope) {
+function getVisualizerItemsByScope(requestedScope) {
   const all = Array.isArray(archiveItems) ? archiveItems : [];
   const me = typeof getCurrentUser === 'function' ? getCurrentUser() : null;
   const myName = me && me.username ? String(me.username).trim() : '';
-  const isGuestMode = !me || me.isGuest || myName === '공용' || myName === '공용 계정';
+  const isGuestMode = !me || me.isGuest || me.role === 'public' || isPublicArchiveOwner(myName);
+
+  // 초기 진입 시 공용 계정은 'SHARED', 개인/관리자 계정은 'MY'로 자동 설정
+  const effectiveScope = requestedScope || (isGuestMode ? 'SHARED' : 'MY');
 
   // 1) 현재 계정(내 기록 전체 — 비공개 포함)
   const myItems = typeof getMyVisibleArchiveItems === 'function'
@@ -32,23 +65,24 @@ function getVisualizerItemsByScope(scope) {
     : all.filter(it => {
         const owner = String(it.owner || '').trim();
         if (isGuestMode) {
-          return owner === '' || owner === '공용' || owner === '공용 계정' || String(it.shared || 'Y') !== 'N';
+          return isPublicArchiveOwner(owner) || String(it.shared || 'Y').toUpperCase() !== 'N';
         }
-        return owner === myName;
+        return owner.toLowerCase() === myName.toLowerCase();
       });
 
   // 2) 공개된 기록 + 공용 계정에서 올린 모든 기록
   const publicAndGuestItems = all.filter(it => {
     const owner = String(it.owner || '').trim();
     const isShared = String(it.shared || 'Y').toUpperCase() !== 'N';
-    const isPublicAccount = owner === '' || owner === '공용' || owner === '공용 계정' || owner.toUpperCase() === 'GUEST';
-    return isShared || isPublicAccount;
+    return isShared || isPublicArchiveOwner(owner);
   });
 
   return {
+    effectiveScope,
+    isGuestMode,
     myItems,
     publicAndGuestItems,
-    activeItems: scope === 'SHARED' ? publicAndGuestItems : myItems
+    activeItems: effectiveScope === 'SHARED' ? publicAndGuestItems : myItems
   };
 }
 
@@ -64,23 +98,24 @@ function renderVisualizerWorkspace() {
     nodeSimAnimId = null;
   }
 
-  const { myItems, publicAndGuestItems, activeItems } = getVisualizerItemsByScope(visualizerScope);
+  const { effectiveScope, myItems, publicAndGuestItems, activeItems } = getVisualizerItemsByScope(visualizerScope);
+  visualizerScope = effectiveScope;
   const items = activeItems;
 
   const scopeToolbarHtml = `
     <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px;padding:6px 8px;background:var(--win-gray);border:1.5px solid #111;">
       <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-        <span style="font-size:0.78rem;font-weight:900;">📊 분석 범위:</span>
+        <span style="font-size:0.78rem;font-weight:900;">${VISUALIZER_PIXEL_ICONS.chart} 분석 범위:</span>
         <button type="button" class="btn95 sm ${visualizerScope === 'MY' ? 'yellow' : ''}" data-vis-scope="MY">
-          👤 내 계정 전체 (${myItems.length}건)
+          ${VISUALIZER_PIXEL_ICONS.user} 내 계정 전체 (${myItems.length}건)
         </button>
         <button type="button" class="btn95 sm ${visualizerScope === 'SHARED' ? 'yellow' : ''}" data-vis-scope="SHARED">
-          🌐 공개 + 공용 계정 (${publicAndGuestItems.length}건)
+          ${VISUALIZER_PIXEL_ICONS.globe} 공개 + 공용 계정 (${publicAndGuestItems.length}건)
         </button>
       </div>
       <div style="display:flex;gap:6px;">
         <button type="button" class="btn95 sky sm" id="btn-vis-reheat">물리 엔진 재정렬</button>
-        <button type="button" class="btn95 sm" id="btn-vis-refresh">데이터 새로고침</button>
+        <button type="button" class="btn95 sm" id="btn-vis-refresh">중앙 시트 동기화</button>
       </div>
     </div>
   `;
@@ -94,8 +129,8 @@ function renderVisualizerWorkspace() {
         </p>
         <p style="font-size:0.82rem;color:#555;">
           ${visualizerScope === 'MY'
-            ? '상단에서 [🌐 공개 + 공용 계정] 범위로 전환하거나 [+ 새 감상 기록하기]에서 기록을 등록해 주세요.'
-            : '먼저 [+ 새 감상 기록하기]에서 도서·음악·영상 기록을 등록해 주세요.'}
+            ? '상단에서 [공개 + 공용 계정] 범위로 전환하거나 [+ 새 감상 기록하기]에서 기록을 등록해 주십시오.'
+            : '먼저 [+ 새 감상 기록하기]에서 도서·음악·영상 기록을 등록해 주십시오.'}
         </p>
       </div>
     `;
@@ -110,10 +145,15 @@ function renderVisualizerWorkspace() {
     ${scopeToolbarHtml}
 
     <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:8px;">
-      <div style="font-size:0.8rem;font-weight:900;">
-        노드 구성: <span style="color:#000080;">■ 매체</span> — <span style="color:#d63031;">● 장르</span> — <span style="color:#009432;">◆ 작품(클릭 시 상세창 열기)</span>
+      <div style="font-size:0.8rem;font-weight:900;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+        <span>노드 구성:</span>
+        <span style="display:inline-flex;align-items:center;gap:4px;"><span style="display:inline-block;width:10px;height:10px;background:#48dbfb;border:1.5px solid #111;"></span>매체</span>
+        <span>—</span>
+        <span style="display:inline-flex;align-items:center;gap:4px;"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#ff4757;border:1.5px solid #111;"></span>장르</span>
+        <span>—</span>
+        <span style="display:inline-flex;align-items:center;gap:4px;"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#2ed573;border:1.5px solid #111;"></span>작품 (클릭 시 상세창 열기)</span>
       </div>
-      <span class="tag-mini">${visualizerScope === 'MY' ? '내 아카이브 분석 모드' : '공개·공용 전체 통합 분석 모드'}</span>
+      <span class="tag-mini">${visualizerScope === 'MY' ? '내 아카이브 분석 모드' : '공개·공용 통합 분석 모드'}</span>
     </div>
 
     <!-- 1. Canvas 물리 기반 인터랙티브 데이터 노드 맵 -->
@@ -161,7 +201,7 @@ function renderVisualizerWorkspace() {
                 <td style="padding:4px 6px;font-weight:900;">${esc(r.category)}</td>
                 <td style="padding:4px 6px;text-align:right;font-family:var(--font-mono);">${r.count}건</td>
                 <td style="padding:4px 6px;text-align:right;font-family:var(--font-mono);font-weight:900;color:#000080;">${r.pct}%</td>
-                <td style="padding:4px 6px;text-align:right;">★ ${r.avgRating}</td>
+                <td style="padding:4px 6px;text-align:right;font-family:var(--font-mono);">${r.avgRating}점</td>
               </tr>
             `).join('')}
           </tbody>
@@ -178,7 +218,7 @@ function renderVisualizerWorkspace() {
   // 워드클라우드 키워드 클릭 필터 바인딩
   body.querySelectorAll('.wc-tag-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      playRetroTone('click');
+      if (typeof playRetroTone === 'function') playRetroTone('click');
       const word = btn.dataset.word;
       selectedCloudKeyword = selectedCloudKeyword === word ? '' : word;
       renderVisualizerWorkspace();
@@ -212,14 +252,17 @@ function bindVisualizerScopeButtons(container) {
       if (nextScope && nextScope !== visualizerScope) {
         visualizerScope = nextScope;
         selectedCloudKeyword = '';
-        playRetroTone('click');
+        if (typeof playRetroTone === 'function') playRetroTone('click');
         renderVisualizerWorkspace();
       }
     });
   });
 
-  document.getElementById('btn-vis-refresh')?.addEventListener('click', () => {
-    playRetroTone('click');
+  document.getElementById('btn-vis-refresh')?.addEventListener('click', async () => {
+    if (typeof playRetroTone === 'function') playRetroTone('click');
+    if (typeof loadArchiveData === 'function') {
+      await loadArchiveData(true);
+    }
     renderVisualizerWorkspace();
   });
 }
@@ -310,7 +353,7 @@ function buildArchiveStatsAndBias(items) {
 
   let diagnosis = '';
   if (top && Number(top.pct) >= 55) {
-    diagnosis = `[편중도 진단] '${top.category}' 매체가 ${scopeLabel} 전체의 ${top.pct}%를 차지하는 집중형 구성입니다. 균형 확장을 위해 '${low}' 분야 감상을 추가해 보세요.`;
+    diagnosis = `[편중도 진단] '${top.category}' 매체가 ${scopeLabel} 전체의 ${top.pct}%를 차지하는 집중형 구성입니다. 균형 확장을 위해 '${low}' 분야 감상을 추가해 보십시오.`;
   } else if (top) {
     diagnosis = `[균형도 진단] '${top.category}'(${top.pct}%)를 중심으로 여러 매체가 고르게 축적되고 있습니다. 최장 연속 감상 기록은 ${maxStreak}일입니다.`;
   }
@@ -424,7 +467,7 @@ function startPhysicsNodeSimulation(items) {
         tipEl.style.left = `${Math.min(rect.width - 180, Math.max(8, e.clientX - rect.left + 12))}px`;
         tipEl.style.top = `${Math.max(8, e.clientY - rect.top - 26)}px`;
         tipEl.textContent = hit.type === 'item'
-          ? `[클릭하여 상세 보기] ${hit.label} (★${hit.itemObj?.rating || 5})`
+          ? `[클릭하여 상세 보기] ${hit.label} (${hit.itemObj?.rating || 5}점)`
           : `[${hit.type === 'category' ? '매체' : '장르'}] ${hit.label}`;
       } else {
         tipEl.style.display = 'none';
@@ -449,7 +492,7 @@ function startPhysicsNodeSimulation(items) {
   };
 
   document.getElementById('btn-vis-reheat')?.addEventListener('click', () => {
-    playRetroTone('click');
+    if (typeof playRetroTone === 'function') playRetroTone('click');
     nodes.forEach(n => {
       n.vx += (Math.random() - 0.5) * 14;
       n.vy += (Math.random() - 0.5) * 14;
@@ -533,7 +576,12 @@ function startPhysicsNodeSimulation(items) {
     nodes.forEach(n => {
       const isHover = hoveredNode === n;
       ctx.beginPath();
-      ctx.arc(n.x, n.y, isHover ? n.radius + 3 : n.radius, 0, Math.PI * 2);
+      if (n.type === 'category') {
+        const half = (isHover ? n.radius + 3 : n.radius) * 0.88;
+        ctx.rect(n.x - half, n.y - half, half * 2, half * 2);
+      } else {
+        ctx.arc(n.x, n.y, isHover ? n.radius + 3 : n.radius, 0, Math.PI * 2);
+      }
       ctx.fillStyle = isHover ? '#ffd83b' : n.color;
       ctx.fill();
       ctx.lineWidth = 2;
@@ -552,3 +600,5 @@ function startPhysicsNodeSimulation(items) {
 
   nodeSimAnimId = requestAnimationFrame(tick);
 }
+
+window.renderVisualizerWorkspace = renderVisualizerWorkspace;
