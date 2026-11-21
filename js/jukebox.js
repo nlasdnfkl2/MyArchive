@@ -3,7 +3,7 @@
 // ============================================================
 
 window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-window.__MOD_VERSIONS.jukebox = 'v2026.11.22-01';
+window.__MOD_VERSIONS.jukebox = 'v2026.11.22-02';
 
 const JB_CACHE_KEY = 'myarchive95_yt_track_cache_v2';
 
@@ -75,7 +75,7 @@ function buildJukeboxUI() {
             <div id="jb-marquee-title" style="font-size:0.86rem; font-weight:900; color:#39ff14;">재생할 트랙을 선택하거나 PLAY 버튼을 누르십시오.</div>
           </div>
           <div id="jb-track-sub" style="font-size:0.74rem; color:#cccccc; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:6px;">
-            대기 중 · 아카이브 음악 라이브러리 연동됨
+            대기 중 · 내 아카이브 음악 라이브러리 연동됨
           </div>
           <div id="jb-review-ticker" style="font-size:0.74rem; color:#ffd83b; background:#101016; border:1px dashed #444; padding:4px 7px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
             “한줄평 메모가 여기에 표시됩니다.”
@@ -122,7 +122,7 @@ function buildJukeboxUI() {
       <div class="box-head" style="margin-bottom:6px;">
         <span>PLAYLIST — 수록곡 목록 (<span id="jb-count-num">0</span>곡)</span>
         <div style="display:flex; gap:4px;">
-          <button type="button" class="btn95 sm" id="jb-filter-music" style="padding:2px 7px; font-size:0.72rem; background:var(--brutal-yellow);">음악만</button>
+          <button type="button" class="btn95 sm yellow" id="jb-filter-music" style="padding:2px 7px; font-size:0.72rem;">음악만</button>
           <button type="button" class="btn95 sm" id="jb-filter-all" style="padding:2px 7px; font-size:0.72rem;">전체기록</button>
         </div>
       </div>
@@ -193,15 +193,17 @@ function bindJukeboxControls() {
 
   document.getElementById('jb-filter-music')?.addEventListener('click', () => {
     jbState.musicOnly = true;
-    document.getElementById('jb-filter-music').style.background = 'var(--brutal-yellow)';
-    document.getElementById('jb-filter-all').style.background = '';
+    document.getElementById('jb-filter-music')?.classList.add('yellow');
+    document.getElementById('jb-filter-all')?.classList.remove('yellow');
+    playRetroTone('click');
     updateJukebox();
   });
 
   document.getElementById('jb-filter-all')?.addEventListener('click', () => {
     jbState.musicOnly = false;
-    document.getElementById('jb-filter-all').style.background = 'var(--brutal-yellow)';
-    document.getElementById('jb-filter-music').style.background = '';
+    document.getElementById('jb-filter-all')?.classList.add('yellow');
+    document.getElementById('jb-filter-music')?.classList.remove('yellow');
+    playRetroTone('click');
     updateJukebox();
   });
 
@@ -247,10 +249,14 @@ function bindJukeboxControls() {
 
 function updateJukebox() {
   buildJukeboxUI();
-  const source = Array.isArray(archiveItems) ? archiveItems : [];
+  const myItems = typeof getMyVisibleArchiveItems === 'function'
+    ? getMyVisibleArchiveItems()
+    : (Array.isArray(archiveItems) ? archiveItems : []);
+  const validList = myItems.filter(it => it && it.title && String(it.title).trim() !== '');
+
   jbState.playlist = jbState.musicOnly
-    ? source.filter(it => it.category === '음악')
-    : [...source];
+    ? validList.filter(it => it.category === '음악')
+    : [...validList];
 
   if (jbState.currentIndex >= jbState.playlist.length) {
     jbState.currentIndex = 0;
@@ -267,7 +273,7 @@ function renderJukeboxPlaylist() {
   if (!box) return;
 
   if (!jbState.playlist.length) {
-    box.innerHTML = `<div style="padding:14px; text-align:center; font-size:0.8rem; font-weight:800; color:#555;">재생할 수록곡이 없습니다. 음악 기록을 추가하거나 [전체기록] 탭을 눌러보세요.</div>`;
+    box.innerHTML = `<div style="padding:14px; text-align:center; font-size:0.8rem; font-weight:800; color:#555;">내 보관함에 재생할 수록곡이 없습니다. 음악 기록을 추가하거나 [전체기록] 탭을 눌러보세요.</div>`;
     return;
   }
 
