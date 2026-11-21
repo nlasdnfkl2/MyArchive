@@ -2,7 +2,7 @@
 // MY-ARCHIVE 95 OS — Global Config, Storage Cache & Core Utils
 // ============================================================
 
-const APP_BUILD_VERSION = 'v2026.11.17-04';
+const APP_BUILD_VERSION = 'v2026.11.22-05';
 
 // Google Apps Script 웹 앱 배포 URL (/exec)을 아래에 입력하세요.
 const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwH-hzWi2Z3_oTFt0PWBhzYMP10VEx4e-32E9EW7d5SMF2k_bwxQL0_3ONaQ8Ze3sdKUQ/exec';
@@ -35,61 +35,67 @@ var detailWindowCount = 0;
 // 0. Windows 95 + Neo-Brutalism 16x16 도트 SVG 아이콘 맵
 // ============================================================
 const PIXEL_ICONS = {
-  ALL: `<svg class="px-icon" width="16" height="16" viewBox="0 0 16 16" shape-rendering="crispEdges" style="vertical-align:-3px;"><rect x="1" y="3" width="6" height="2" fill="#ffd83b" stroke="#111"/><rect x="1" y="5" width="14" height="9" fill="#ffd83b" stroke="#111"/></svg>`,
-  BOOK: `<svg class="px-icon" width="16" height="16" viewBox="0 0 16 16" shape-rendering="crispEdges" style="vertical-align:-3px;"><rect x="2" y="1" width="12" height="14" fill="#000080" stroke="#111"/><rect x="4" y="3" width="8" height="3" fill="#fff"/></svg>`,
-  MOVIE: `<svg class="px-icon" width="16" height="16" viewBox="0 0 16 16" shape-rendering="crispEdges" style="vertical-align:-3px;"><rect x="1" y="2" width="14" height="12" fill="#222" stroke="#111"/><rect x="3" y="4" width="10" height="8" fill="#008080"/><rect x="2" y="3" width="1" height="1" fill="#fff"/><rect x="13" y="3" width="1" height="1" fill="#fff"/></svg>`,
-  MUSIC: `<svg class="px-icon" width="16" height="16" viewBox="0 0 16 16" shape-rendering="crispEdges" style="vertical-align:-3px;"><rect x="2" y="2" width="12" height="12" fill="#c0c0c0" stroke="#111"/><rect x="6" y="6" width="4" height="4" fill="#ffd83b" stroke="#111"/></svg>`,
-  GAME: `<svg class="px-icon" width="16" height="16" viewBox="0 0 16 16" shape-rendering="crispEdges" style="vertical-align:-3px;"><rect x="1" y="4" width="14" height="8" fill="#c0c0c0" stroke="#111"/><rect x="3" y="7" width="3" height="1" fill="#111"/><rect x="4" y="6" width="1" height="3" fill="#111"/><rect x="11" y="6" width="2" height="2" fill="#c0392b"/></svg>`,
-  EXHIBITION: `<svg class="px-icon" width="16" height="16" viewBox="0 0 16 16" shape-rendering="crispEdges" style="vertical-align:-3px;"><rect x="1" y="4" width="14" height="8" fill="#ffd83b" stroke="#111"/><rect x="4" y="6" width="8" height="4" fill="#fff" stroke="#111"/></svg>`,
-  ETC: `<svg class="px-icon" width="16" height="16" viewBox="0 0 16 16" shape-rendering="crispEdges" style="vertical-align:-3px;"><rect x="2" y="1" width="12" height="14" fill="#000080" stroke="#111"/><rect x="4" y="1" width="8" height="5" fill="#fff"/><rect x="4" y="9" width="8" height="5" fill="#c0c0c0"/></svg>`,
-  NOTE: `<svg class="px-icon" width="14" height="14" viewBox="0 0 16 16" shape-rendering="crispEdges" style="vertical-align:-2px;"><rect x="2" y="1" width="12" height="14" fill="#fff" stroke="#111"/><rect x="4" y="4" width="8" height="1" fill="#111"/><rect x="4" y="7" width="8" height="1" fill="#111"/><rect x="4" y="10" width="5" height="1" fill="#111"/></svg>`,
-  MAIL_READ: `<svg class="px-icon" width="14" height="14" viewBox="0 0 16 16" shape-rendering="crispEdges" style="vertical-align:-2px;"><rect x="1" y="4" width="14" height="9" fill="#dcdcdc" stroke="#111"/><polyline points="1,4 8,9 15,4" fill="none" stroke="#111"/></svg>`,
-  MAIL_UNREAD: `<svg class="px-icon" width="14" height="14" viewBox="0 0 16 16" shape-rendering="crispEdges" style="vertical-align:-2px;"><rect x="1" y="4" width="14" height="9" fill="#ffd83b" stroke="#111"/><polyline points="1,4 8,9 15,4" fill="none" stroke="#111"/></svg>`,
-  WARN: `<svg class="px-icon" width="24" height="24" viewBox="0 0 16 16" shape-rendering="crispEdges"><polygon points="8,1 15,14 1,14" fill="#ffd83b" stroke="#111"/><rect x="7" y="5" width="2" height="5" fill="#111"/><rect x="7" y="11" width="2" height="2" fill="#111"/></svg>`
+  ALL: `<svg class="px-icon" width="14" height="14" viewBox="0 0 16 16" shape-rendering="crispEdges" style="vertical-align:-2px;"><rect x="1" y="3" width="6" height="2" fill="#ffd83b" stroke="#111"/><rect x="1" y="5" width="14" height="9" fill="#ffd83b" stroke="#111"/></svg>`,
+  BOOK: `<svg class="px-icon" width="14" height="14" viewBox="0 0 16 16" shape-rendering="crispEdges" style="vertical-align:-2px;"><rect x="2" y="1" width="12" height="14" fill="#000080" stroke="#111"/><rect x="4" y="3" width="8" height="3" fill="#fff"/></svg>`,
+  MOVIE: `<svg class="px-icon" width="14" height="14" viewBox="0 0 16 16" shape-rendering="crispEdges" style="vertical-align:-2px;"><rect x="1" y="2" width="14" height="12" fill="#222" stroke="#111"/><rect x="3" y="4" width="10" height="8" fill="#008080"/></svg>`,
+  MUSIC: `<svg class="px-icon" width="14" height="14" viewBox="0 0 16 16" shape-rendering="crispEdges" style="vertical-align:-2px;"><rect x="2" y="2" width="12" height="12" fill="#c0c0c0" stroke="#111"/><rect x="6" y="6" width="4" height="4" fill="#ffd83b" stroke="#111"/></svg>`,
+  ETC: `<svg class="px-icon" width="14" height="14" viewBox="0 0 16 16" shape-rendering="crispEdges" style="vertical-align:-2px;"><rect x="2" y="1" width="12" height="14" fill="#000080" stroke="#111"/><rect x="4" y="1" width="8" height="5" fill="#fff"/><rect x="4" y="9" width="8" height="5" fill="#c0c0c0"/></svg>`,
+  CAMERA: `<svg class="px-icon" width="14" height="14" viewBox="0 0 16 16" shape-rendering="crispEdges" style="vertical-align:-2px;"><rect x="1" y="4" width="14" height="9" fill="#c0c0c0" stroke="#111"/><rect x="5" y="2" width="6" height="2" fill="#ffd83b" stroke="#111"/><rect x="6" y="6" width="4" height="4" fill="#000080" stroke="#111"/></svg>`,
+  SPEAKER: `<svg class="px-icon" width="14" height="14" viewBox="0 0 16 16" shape-rendering="crispEdges" style="vertical-align:-2px;"><polygon points="2,6 6,6 11,2 11,14 6,10 2,10" fill="#ffd83b" stroke="#111"/><rect x="13" y="5" width="2" height="6" fill="#111"/></svg>`,
+  LOCK: `<svg class="px-icon" width="14" height="14" viewBox="0 0 16 16" shape-rendering="crispEdges" style="vertical-align:-2px;"><rect x="4" y="2" width="8" height="5" fill="none" stroke="#111" stroke-width="2"/><rect x="2" y="7" width="12" height="7" fill="#c0c0c0" stroke="#111"/><rect x="7" y="9" width="2" height="3" fill="#111"/></svg>`,
+  MOOD_HAPPY: `<svg class="px-icon" width="14" height="14" viewBox="0 0 16 16" shape-rendering="crispEdges" style="vertical-align:-2px;"><rect x="1" y="1" width="14" height="14" fill="#ffd83b" stroke="#111"/><rect x="4" y="5" width="2" height="2" fill="#111"/><rect x="10" y="5" width="2" height="2" fill="#111"/><rect x="4" y="10" width="8" height="2" fill="#111"/></svg>`,
+  MOOD_SAD: `<svg class="px-icon" width="14" height="14" viewBox="0 0 16 16" shape-rendering="crispEdges" style="vertical-align:-2px;"><rect x="1" y="1" width="14" height="14" fill="#48dbfb" stroke="#111"/><rect x="4" y="5" width="2" height="2" fill="#111"/><rect x="10" y="5" width="2" height="2" fill="#111"/><rect x="4" y="11" width="8" height="2" fill="#111"/></svg>`,
+  MOOD_BURNOUT: `<svg class="px-icon" width="14" height="14" viewBox="0 0 16 16" shape-rendering="crispEdges" style="vertical-align:-2px;"><rect x="2" y="4" width="11" height="8" fill="#fff" stroke="#111"/><rect x="13" y="6" width="2" height="4" fill="#111"/><rect x="4" y="6" width="3" height="4" fill="#ff4757"/></svg>`,
+  MOOD_STRESS: `<svg class="px-icon" width="14" height="14" viewBox="0 0 16 16" shape-rendering="crispEdges" style="vertical-align:-2px;"><polygon points="9,1 3,9 8,9 7,15 13,7 8,7" fill="#ff4757" stroke="#111"/></svg>`,
+  REROLL: `<svg class="px-icon" width="14" height="14" viewBox="0 0 16 16" shape-rendering="crispEdges" style="vertical-align:-2px;"><rect x="2" y="3" width="12" height="2" fill="#111"/><rect x="2" y="11" width="12" height="2" fill="#111"/><rect x="11" y="1" width="3" height="5" fill="#000080"/><rect x="2" y="10" width="3" height="5" fill="#000080"/></svg>`,
+  BULB: `<svg class="px-icon" width="14" height="14" viewBox="0 0 16 16" shape-rendering="crispEdges" style="vertical-align:-2px;"><rect x="4" y="2" width="8" height="7" fill="#ffd83b" stroke="#111"/><rect x="5" y="10" width="6" height="4" fill="#c0c0c0" stroke="#111"/></svg>`,
+  TROPHY: `<svg class="px-icon" width="14" height="14" viewBox="0 0 16 16" shape-rendering="crispEdges" style="vertical-align:-2px;"><rect x="3" y="2" width="10" height="7" fill="#ffd83b" stroke="#111"/><rect x="6" y="9" width="4" height="3" fill="#ffd83b" stroke="#111"/><rect x="4" y="12" width="8" height="2" fill="#111"/></svg>`,
+  CROSS: `<svg class="px-icon" width="14" height="14" viewBox="0 0 16 16" shape-rendering="crispEdges" style="vertical-align:-2px;"><rect x="2" y="2" width="12" height="12" fill="#fff" stroke="#111"/><line x1="4" y1="4" x2="12" y2="12" stroke="#111" stroke-width="2"/><line x1="12" y1="4" x2="4" y2="12" stroke="#111" stroke-width="2"/></svg>`,
+  CHART: `<svg class="px-icon" width="14" height="14" viewBox="0 0 16 16" shape-rendering="crispEdges" style="vertical-align:-2px;"><rect x="1" y="1" width="14" height="14" fill="#fff" stroke="#111"/><rect x="3" y="8" width="2" height="5" fill="#000080"/><rect x="7" y="5" width="2" height="8" fill="#ff4757"/><rect x="11" y="3" width="2" height="10" fill="#2ed573"/></svg>`,
+  DOWNLOAD: `<svg class="px-icon" width="14" height="14" viewBox="0 0 16 16" shape-rendering="crispEdges" style="vertical-align:-2px;"><rect x="6" y="1" width="4" height="7" fill="#111"/><polygon points="3,8 13,8 8,13" fill="#111"/><rect x="2" y="13" width="12" height="2" fill="#111"/></svg>`,
+  BAN: `<svg class="px-icon" width="14" height="14" viewBox="0 0 16 16" shape-rendering="crispEdges" style="vertical-align:-2px;"><rect x="2" y="2" width="12" height="12" fill="#ff4757" stroke="#111"/><rect x="4" y="7" width="8" height="2" fill="#fff"/></svg>`,
+  PRINTER: `<svg class="px-icon" width="14" height="14" viewBox="0 0 16 16" shape-rendering="crispEdges" style="vertical-align:-2px;"><rect x="4" y="1" width="8" height="4" fill="#fff" stroke="#111"/><rect x="1" y="5" width="14" height="6" fill="#c0c0c0" stroke="#111"/><rect x="4" y="9" width="8" height="6" fill="#fff" stroke="#111"/></svg>`,
+  MAILBOX: `<svg class="px-icon" width="14" height="14" viewBox="0 0 16 16" shape-rendering="crispEdges" style="vertical-align:-2px;"><rect x="1" y="3" width="14" height="10" fill="#ffd83b" stroke="#111"/><polyline points="1,3 8,9 15,3" fill="none" stroke="#111" stroke-width="1.5"/></svg>`,
+  LINK: `<svg class="px-icon" width="14" height="14" viewBox="0 0 16 16" shape-rendering="crispEdges" style="vertical-align:-2px;"><rect x="1" y="5" width="6" height="6" fill="none" stroke="#111" stroke-width="2"/><rect x="9" y="5" width="6" height="6" fill="none" stroke="#111" stroke-width="2"/><rect x="5" y="7" width="6" height="2" fill="#000080"/></svg>`,
+  USER_BADGE: `<svg class="px-icon" width="16" height="16" viewBox="0 0 16 16" shape-rendering="crispEdges"><rect x="5" y="2" width="6" height="5" fill="#000080"/><rect x="2" y="9" width="12" height="6" fill="#000080"/></svg>`,
+  PUB_BADGE: `<svg class="px-icon" width="16" height="16" viewBox="0 0 16 16" shape-rendering="crispEdges"><rect x="1" y="3" width="14" height="9" fill="#008080" stroke="#111"/><rect x="5" y="12" width="6" height="2" fill="#111"/></svg>`
 };
 
 // ============================================================
-// 0-1. 계정 세션 및 삭제 권한 판별기 (작성자 / 공용 / 관리자)
+// 0-1. 계정 권한 판별 유틸리티 (boot-screen.js의 getCurrentUser 연동)
 // ============================================================
-const AUTH_SESSION_KEY = 'my_archive_95_auth_session_v1';
-
-function getCurrentAuthUser() {
-  try {
-    const raw = sessionStorage.getItem(AUTH_SESSION_KEY) || localStorage.getItem(AUTH_SESSION_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (parsed && parsed.userId) return parsed;
-    }
-  } catch {}
-  return { userId: 'GUEST', userName: '공용 계정(GUEST)', role: 'GUEST', adminKey: '' };
+function isAdminUser(user) {
+  if (!user) return false;
+  const role = String(user.role || '').trim().toLowerCase();
+  const uname = String(user.username || '').trim().toLowerCase();
+  return role === 'admin' || user.isAdmin === true || uname === '관리자' || uname === 'admin';
 }
 
-function setCurrentAuthUser(sessionObj) {
-  const normalized = {
-    userId: String(sessionObj.userId || 'GUEST').trim() || 'GUEST',
-    userName: String(sessionObj.userName || sessionObj.userId || '공용 계정(GUEST)').trim(),
-    role: sessionObj.role === 'ADMIN' ? 'ADMIN' : (sessionObj.userId && sessionObj.userId !== 'GUEST' ? 'USER' : 'GUEST'),
-    adminKey: sessionObj.role === 'ADMIN' ? String(sessionObj.adminKey || '') : ''
-  };
-  try {
-    localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(normalized));
-  } catch {}
-  return normalized;
-}
-
-function canDeleteArchiveItem(item) {
+function isPublicArchiveItem(item) {
   if (!item) return false;
-  const user = getCurrentAuthUser();
+  const owner = String(item.owner || '').trim();
+  const isSharedFlag = item.isShared === true || String(item.isShared || '').toLowerCase() === 'true';
+  return isSharedFlag || !owner || owner === '공용' || owner.toUpperCase() === 'PUBLIC' || owner.toUpperCase() === 'GUEST';
+}
 
-  // 1. 관리자 계정은 모든 자료(공용 계정 게시물 포함) 삭제 가능
-  if (user.role === 'ADMIN') return true;
+function canDeleteArchiveItem(item, user = null) {
+  if (!item) return false;
+  const me = user || (typeof getCurrentUser === 'function' ? getCurrentUser() : null);
+  if (!me || !me.username) return false;
 
-  // 2. 공용 계정(GUEST) 게시물 또는 작성자 미상 자료는 오직 관리자만 삭제 가능
-  const isSharedPost = item.isShared === true || String(item.isShared).toLowerCase() === 'true' || !item.authorId || item.authorId === 'GUEST';
-  if (isSharedPost) return false;
+  // 1. 관리자 계정은 모든 게시물(공용 계정 게시물 포함) 삭제 가능
+  if (isAdminUser(me)) return true;
 
-  // 3. 일반 사용자 계정은 본인이 작성한 자료만 삭제 가능
-  return user.role === 'USER' && user.userId === item.authorId;
+  // 2. 공용 계정으로 접속 중인 상태에서는 어떠한 게시물도 삭제 불가
+  const role = String(me.role || '').trim().toLowerCase();
+  const myName = String(me.username || '').trim();
+  if (role === 'public' || myName === '공용') return false;
+
+  // 3. 공용 계정 게시물은 오직 관리자 계정으로만 삭제 가능
+  if (isPublicArchiveItem(item)) return false;
+
+  // 4. 일반 개인 계정은 본인이 작성한 게시물만 삭제 가능
+  return String(item.owner || '').trim() === myName;
 }
 
 // ============================================================
@@ -117,89 +123,13 @@ function saveLocalCache(key, value) {
           if (coverEntries.length < 6) {
             coverEntries.push([item.id, item.coverUrl]);
           }
-          return { ...item, coverUrl: `__CACHED_COVER__:${item.id}` };
-        }
-        return item;
-      });
-      try {
-        localStorage.setItem(STORAGE_KEYS.COVER_CACHE, JSON.stringify(Object.fromEntries(coverEntries)));
-      } catch {}
-    }
-
-    const serialized = JSON.stringify({
-      updatedAt: new Date().toISOString(),
-      data: payloadToStore
-    });
-    localStorage.setItem(key, serialized);
-    return true;
-  } catch (err) {
-    console.warn('[디스크 캐시 저장 용량 초과]:', err);
-    return false;
-  }
-}
-
-function loadLocalCache(key, fallbackValue = null) {
-  try {
-    const raw = localStorage.getItem(key);
-    if (!raw) return fallbackValue;
-    const parsed = JSON.parse(raw);
-    if (!parsed || parsed.data === undefined) return fallbackValue;
-
-    if (key === STORAGE_KEYS.ARCHIVE && Array.isArray(parsed.data)) {
-      let coverMap = {};
-      try {
-        coverMap = JSON.parse(localStorage.getItem(STORAGE_KEYS.COVER_CACHE) || '{}');
-      } catch {}
-      return parsed.data.map(item => {
-        if (item && typeof item.coverUrl === 'string' && item.coverUrl.startsWith('__CACHED_COVER__:')) {
-          const id = item.coverUrl.replace('__CACHED_COVER__:', '');
-          return { ...item, coverUrl: coverMap[id] || '' };
-        }
-        return item;
-      });
-    }
-
-    return parsed.data;
-  } catch (err) {
-    return fallbackValue;
-  }
-}
-
-// ============================================================
-// 2. 데이터 정규화 & 문자열/초성 유틸리티
-// ============================================================
-function esc(str) {
-  return String(str ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
-
-// 금액/숫자 천 단위 쉼표 포맷 (실습 19·20 정규화 규칙)
-function formatCommaNumber(val) {
-  const num = Number(String(val ?? '').replace(/[^\d.-]/g, ''));
-  if (Number.isNaN(num)) return '0';
-  return num.toLocaleString('ko-KR');
-}
-
-// 날짜 문자열을 YYYY-MM-DD 형식으로 정규화
-function normalizeDateString(input) {
-  const s = String(input || '').trim();
-  const match = s.match(/(\d{4})[-./년\s]+(\d{1,2})[-./월\s]+(\d{1,2})/);
-  if (match) {
-    const y = match[1];
-    const m = match[2].padStart(2, '0');
-    const d = match[3].padStart(2, '0');
-    return `${y}-${m}-${d}`;
+          return { ...item, coverUrl: `__CACHED_COVER__:${item.id}` }; } return item; }); try { localStorage.setItem(STORAGE_KEYS.COVER_CACHE, JSON.stringify(Object.fromEntries(coverEntries))); } catch {} }  const serialized = JSON.stringify({ updatedAt: new Date().toISOString(), data: payloadToStore }); localStorage.setItem(key, serialized); return true; } catch (err) { console.warn('[디스크 캐시 저장 한도 초과 또는 차단]:', err); return false; } }  function loadLocalCache(key, fallbackValue = null) { try { const raw = localStorage.getItem(key); if (!raw) return fallbackValue; const parsed = JSON.parse(raw); if (!parsed \vert{}\vert{} parsed.data === undefined) return fallbackValue;  if (key === STORAGE_KEYS.ARCHIVE && Array.isArray(parsed.data)) { let coverMap = {}; try { coverMap = JSON.parse(localStorage.getItem(STORAGE_KEYS.COVER_CACHE) \vert{}\vert{} '{}'); } catch {} return parsed.data.map(item => { if (item && typeof item.coverUrl === 'string' && item.coverUrl.startsWith('__CACHED_COVER__:')) { const id = item.coverUrl.replace('__CACHED_COVER__:', ''); return { ...item, coverUrl: coverMap[id] \vert{}\vert{} '' }; } return item; }); }  return parsed.data; } catch (err) { return fallbackValue; } }  function getCacheTimestamp(key) { try { const raw = localStorage.getItem(key); if (!raw) return ''; const parsed = JSON.parse(raw); return parsed && parsed.updatedAt ? parsed.updatedAt : ''; } catch { return ''; } }  // ============================================================ // 2. 데이터 정규화 & 문자열/초성 유틸리티 // ============================================================ function esc(str) { return String(str ?? '') .replace(/&/g, '&amp;') .replace(/</g, '&lt;') .replace(/>/g, '&gt;') .replace(/"/g, '&quot;') .replace(/'/g, '&#39;'); }  function formatCommaNumber(val) { const num = Number(String(val ?? '').replace(/[^\d.-]/g, '')); if (Number.isNaN(num)) return '0'; return num.toLocaleString('ko-KR'); }  function normalizeDateString(input) { const s = String(input \vert{}\vert{} '').trim(); const match = s.match(/(\d{4})[-./년\s]+(\d{1,2})[-./월\s]+(\d{1,2})/); if (match) { const y = match[1]; const m = match[2].padStart(2, '0'); const d = match[3].padStart(2, '0'); return `${y}-${m}-${d}`;
   }
   const now = new Date();
   const offsetMs = now.getTimezoneOffset() * 60000;
   return new Date(now.getTime() - offsetMs).toISOString().slice(0, 10);
 }
 
-// 한국어 초성 힌트 추출기 (실습 12 복습 퀴즈 초성 힌트용)
 function extractKoreanChosung(text) {
   const CHOSUNG_LIST = [
     'ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ',
@@ -220,7 +150,7 @@ function extractKoreanChosung(text) {
 }
 
 // ============================================================
-// 3. 클라이언트 이미지 1MB 이하 압축 유틸리티 (실습 23 반영)
+// 3. 클라이언트 이미지 1MB 이하 압축 유틸리티
 // ============================================================
 function compressImageFile(file, maxWidth = 900, maxBytes = 950 * 1024) {
   return new Promise((resolve, reject) => {
@@ -276,16 +206,7 @@ function populateWin95DateSelects(ySel, mSel, dSel, targetDateStr = '') {
   for (let y = currentYear + 1; y >= 1980; y--) {
     const opt = document.createElement('option');
     opt.value = String(y);
-    opt.textContent = `${y}년`;
-    if (y === initY) opt.selected = true;
-    ySel.appendChild(opt);
-  }
-
-  mSel.innerHTML = '';
-  for (let m = 1; m <= 12; m++) {
-    const opt = document.createElement('option');
-    opt.value = String(m).padStart(2, '0');
-    opt.textContent = `${m}월`;
+    opt.textContent = `${y}년`; if (y === initY) opt.selected = true; ySel.appendChild(opt); }  mSel.innerHTML = ''; for (let m = 1; m <= 12; m++) { const opt = document.createElement('option'); opt.value = String(m).padStart(2, '0'); opt.textContent = `${m}월`;
     if (m === initM) opt.selected = true;
     mSel.appendChild(opt);
   }
@@ -298,23 +219,7 @@ function populateWin95DateSelects(ySel, mSel, dSel, targetDateStr = '') {
     for (let d = 1; d <= maxDays; d++) {
       const opt = document.createElement('option');
       opt.value = String(d).padStart(2, '0');
-      opt.textContent = `${d}일`;
-      if (d === Math.min(keepDay, maxDays)) opt.selected = true;
-      dSel.appendChild(opt);
-    }
-  };
-
-  refreshDays(initD);
-  ySel.onchange = () => refreshDays(Number(dSel.value) || 1);
-  mSel.onchange = () => refreshDays(Number(dSel.value) || 1);
-}
-
-function getWin95DateValue(ySel, mSel, dSel) {
-  if (!ySel || !mSel || !dSel) return normalizeDateString('');
-  const y = String(ySel.value || new Date().getFullYear());
-  const m = String(mSel.value || '01').padStart(2, '0');
-  const d = String(dSel.value || '01').padStart(2, '0');
-  return `${y}-${m}-${d}`;
+      opt.textContent = `${d}일`; if (d === Math.min(keepDay, maxDays)) opt.selected = true; dSel.appendChild(opt); } };  refreshDays(initD); ySel.onchange = () => refreshDays(Number(dSel.value) \vert{}\vert{} 1); mSel.onchange = () => refreshDays(Number(dSel.value) \vert{}\vert{} 1); }  function getWin95DateValue(ySel, mSel, dSel) { if (!ySel \vert{}\vert{} !mSel \vert{}\vert{} !dSel) return normalizeDateString(''); const y = String(ySel.value \vert{}\vert{} new Date().getFullYear()); const m = String(mSel.value \vert{}\vert{} '01').padStart(2, '0'); const d = String(dSel.value \vert{}\vert{} '01').padStart(2, '0'); return `${y}-${m}-${d}`;
 }
 
 // ============================================================
@@ -368,9 +273,7 @@ function playRetroTone(type = 'click') {
       playNote(987.77, 0.18, 0.09, 'square', 0.045);
       playNote(1174.66, 0.27, 0.25, 'square', 0.055);
     }
-  } catch {
-    // 오디오 장치 미지원 환경 무시
-  }
+  } catch {}
 }
 
 function setLoadingCursor(isLoading) {
