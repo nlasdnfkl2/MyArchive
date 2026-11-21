@@ -115,7 +115,7 @@ function buildJukeboxUI() {
       <!-- YouTube IFrame 플레이어 영역 -->
       <div id="jb-player-frame-wrap" style="margin-top:8px; background:#000; border:2px solid #333; position:relative; aspect-ratio:16/9; max-height:205px; width:100%; overflow:hidden;">
         <div id="jb-player-placeholder" style="width:100%; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#88cc99; font-size:0.8rem; gap:6px; padding:12px; text-align:center;">
-          <span>[PLAY] 하단 수록곡을 클릭하면 YouTube 공식 음원/영상을 자동으로 찾아 재생합니다.</span>
+          <span>하단 수록곡을 클릭하면 YouTube 음원/영상을 찾아 재생합니다.</span>
         </div>
       </div>
 
@@ -140,7 +140,7 @@ function buildJukeboxUI() {
     <!-- 직접 YouTube 링크 지정 & 가상 브라우저 연동 바 -->
     <div class="sunken-box" style="padding:7px 8px; margin-bottom:8px; background:var(--win-gray);">
       <div style="display:flex; gap:5px; flex-wrap:wrap; align-items:center;">
-        <input type="text" id="jb-manual-yt-inp" placeholder="원하는 URL을 붙여넣어 현재 곡에 연결..." style="flex:1; min-width:190px; font-size:0.76rem;" />
+        <input type="text" id="jb-manual-yt-inp" placeholder="URL을 붙여넣어 현재 곡에 연결..." style="flex:1; min-width:190px; font-size:0.76rem;" />
         <button type="button" class="btn95 green sm" id="jb-btn-bind-yt">링크 연결·재생</button>
         <button type="button" class="btn95 pink sm" id="jb-btn-open-browser">${JUKEBOX_PIXEL_ICONS.globe} 탐색기 95에서 찾기</button>
       </div>
