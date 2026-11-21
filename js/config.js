@@ -2,9 +2,9 @@
 // MY-ARCHIVE 95 OS — Global Config, Storage Cache & Core Utils
 // ============================================================
 
-const APP_BUILD_VERSION = 'v2026.11.22-05';
+const APP_BUILD_VERSION = 'v2026.11.22-06';
 
-// Google Apps Script 웹 앱 배포 URL (/exec)을 아래에 입력하세요.
+// Google Apps Script 웹 앱 배포 URL (/exec)
 const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwH-hzWi2Z3_oTFt0PWBhzYMP10VEx4e-32E9EW7d5SMF2k_bwxQL0_3ONaQ8Ze3sdKUQ/exec';
 window.GAS_WEB_APP_URL = GAS_WEB_APP_URL;
 
@@ -69,7 +69,7 @@ function isAdminUser(user) {
   if (!user) return false;
   const role = String(user.role || '').trim().toLowerCase();
   const uname = String(user.username || '').trim().toLowerCase();
-  return role === 'admin' || user.isAdmin === true || uname === '관리자' || uname === 'admin';
+  return role === 'admin' || role === 'owner' || user.isAdmin === true || uname === '관리자' || uname === 'admin' || uname === 'taeyang';
 }
 
 function isPublicArchiveItem(item) {
@@ -124,7 +124,88 @@ function saveLocalCache(key, value) {
           if (coverEntries.length < 6) {
             coverEntries.push([item.id, item.coverUrl]);
           }
-          return { ...item, coverUrl: `__CACHED_COVER__:${item.id}` }; } return item; }); try { localStorage.setItem(STORAGE_KEYS.COVER_CACHE, JSON.stringify(Object.fromEntries(coverEntries))); } catch {} }  const serialized = JSON.stringify({ updatedAt: new Date().toISOString(), data: payloadToStore }); localStorage.setItem(key, serialized); return true; } catch (err) { console.warn('[디스크 캐시 저장 한도 초과 또는 차단]:', err); return false; } }  function loadLocalCache(key, fallbackValue = null) { try { const raw = localStorage.getItem(key); if (!raw) return fallbackValue; const parsed = JSON.parse(raw); if (!parsed \vert{}\vert{} parsed.data === undefined) return fallbackValue;  if (key === STORAGE_KEYS.ARCHIVE && Array.isArray(parsed.data)) { let coverMap = {}; try { coverMap = JSON.parse(localStorage.getItem(STORAGE_KEYS.COVER_CACHE) \vert{}\vert{} '{}'); } catch {} return parsed.data.map(item => { if (item && typeof item.coverUrl === 'string' && item.coverUrl.startsWith('__CACHED_COVER__:')) { const id = item.coverUrl.replace('__CACHED_COVER__:', ''); return { ...item, coverUrl: coverMap[id] \vert{}\vert{} '' }; } return item; }); }  return parsed.data; } catch (err) { return fallbackValue; } }  function getCacheTimestamp(key) { try { const raw = localStorage.getItem(key); if (!raw) return ''; const parsed = JSON.parse(raw); return parsed && parsed.updatedAt ? parsed.updatedAt : ''; } catch { return ''; } }  // ============================================================ // 2. 데이터 정규화 & 문자열/초성 유틸리티 // ============================================================ function esc(str) { return String(str ?? '') .replace(/&/g, '&amp;') .replace(/</g, '&lt;') .replace(/>/g, '&gt;') .replace(/"/g, '&quot;') .replace(/'/g, '&#39;'); }  function formatCommaNumber(val) { const num = Number(String(val ?? '').replace(/[^\d.-]/g, '')); if (Number.isNaN(num)) return '0'; return num.toLocaleString('ko-KR'); }  function normalizeDateString(input) { const s = String(input \vert{}\vert{} '').trim(); const match = s.match(/(\d{4})[-./년\s]+(\d{1,2})[-./월\s]+(\d{1,2})/); if (match) { const y = match[1]; const m = match[2].padStart(2, '0'); const d = match[3].padStart(2, '0'); return `${y}-${m}-${d}`;
+          return { ...item, coverUrl: `__CACHED_COVER__:${item.id}` };
+        }
+        return item;
+      });
+      try {
+        localStorage.setItem(STORAGE_KEYS.COVER_CACHE, JSON.stringify(Object.fromEntries(coverEntries)));
+      } catch {}
+    }
+
+    const serialized = JSON.stringify({ updatedAt: new Date().toISOString(), data: payloadToStore });
+    localStorage.setItem(key, serialized);
+    return true;
+  } catch (err) {
+    console.warn('[디스크 캐시 저장 한도 초과 또는 차단]:', err);
+    return false;
+  }
+}
+
+function loadLocalCache(key, fallbackValue = null) {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return fallbackValue;
+    const parsed = JSON.parse(raw);
+    if (!parsed || parsed.data === undefined) return fallbackValue;
+
+    if (key === STORAGE_KEYS.ARCHIVE && Array.isArray(parsed.data)) {
+      let coverMap = {};
+      try {
+        coverMap = JSON.parse(localStorage.getItem(STORAGE_KEYS.COVER_CACHE) || '{}');
+      } catch {}
+      return parsed.data.map(item => {
+        if (item && typeof item.coverUrl === 'string' && item.coverUrl.startsWith('__CACHED_COVER__:')) {
+          const id = item.coverUrl.replace('__CACHED_COVER__:', '');
+          return { ...item, coverUrl: coverMap[id] || '' };
+        }
+        return item;
+      });
+    }
+
+    return parsed.data;
+  } catch (err) {
+    return fallbackValue;
+  }
+}
+
+function getCacheTimestamp(key) {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return '';
+    const parsed = JSON.parse(raw);
+    return parsed && parsed.updatedAt ? parsed.updatedAt : '';
+  } catch {
+    return '';
+  }
+}
+
+// ============================================================
+// 2. 데이터 정규화 & 문자열/초성 유틸리티
+// ============================================================
+function esc(str) {
+  return String(str ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function formatCommaNumber(val) {
+  const num = Number(String(val ?? '').replace(/[^\d.-]/g, ''));
+  if (Number.isNaN(num)) return '0';
+  return num.toLocaleString('ko-KR');
+}
+
+function normalizeDateString(input) {
+  const s = String(input || '').trim();
+  const match = s.match(/(\d{4})[-./년\s]+(\d{1,2})[-./월\s]+(\d{1,2})/);
+  if (match) {
+    const y = match[1];
+    const m = match[2].padStart(2, '0');
+    const d = match[3].padStart(2, '0');
+    return `${y}-${m}-${d}`;
   }
   const now = new Date();
   const offsetMs = now.getTimezoneOffset() * 60000;
@@ -207,7 +288,16 @@ function populateWin95DateSelects(ySel, mSel, dSel, targetDateStr = '') {
   for (let y = currentYear + 1; y >= 1980; y--) {
     const opt = document.createElement('option');
     opt.value = String(y);
-    opt.textContent = `${y}년`; if (y === initY) opt.selected = true; ySel.appendChild(opt); }  mSel.innerHTML = ''; for (let m = 1; m <= 12; m++) { const opt = document.createElement('option'); opt.value = String(m).padStart(2, '0'); opt.textContent = `${m}월`;
+    opt.textContent = `${y}년`;
+    if (y === initY) opt.selected = true;
+    ySel.appendChild(opt);
+  }
+
+  mSel.innerHTML = '';
+  for (let m = 1; m <= 12; m++) {
+    const opt = document.createElement('option');
+    opt.value = String(m).padStart(2, '0');
+    opt.textContent = `${m}월`;
     if (m === initM) opt.selected = true;
     mSel.appendChild(opt);
   }
@@ -220,7 +310,23 @@ function populateWin95DateSelects(ySel, mSel, dSel, targetDateStr = '') {
     for (let d = 1; d <= maxDays; d++) {
       const opt = document.createElement('option');
       opt.value = String(d).padStart(2, '0');
-      opt.textContent = `${d}일`; if (d === Math.min(keepDay, maxDays)) opt.selected = true; dSel.appendChild(opt); } };  refreshDays(initD); ySel.onchange = () => refreshDays(Number(dSel.value) \vert{}\vert{} 1); mSel.onchange = () => refreshDays(Number(dSel.value) \vert{}\vert{} 1); }  function getWin95DateValue(ySel, mSel, dSel) { if (!ySel \vert{}\vert{} !mSel \vert{}\vert{} !dSel) return normalizeDateString(''); const y = String(ySel.value \vert{}\vert{} new Date().getFullYear()); const m = String(mSel.value \vert{}\vert{} '01').padStart(2, '0'); const d = String(dSel.value \vert{}\vert{} '01').padStart(2, '0'); return `${y}-${m}-${d}`;
+      opt.textContent = `${d}일`;
+      if (d === Math.min(keepDay, maxDays)) opt.selected = true;
+      dSel.appendChild(opt);
+    }
+  };
+
+  refreshDays(initD);
+  ySel.onchange = () => refreshDays(Number(dSel.value) || 1);
+  mSel.onchange = () => refreshDays(Number(dSel.value) || 1);
+}
+
+function getWin95DateValue(ySel, mSel, dSel) {
+  if (!ySel || !mSel || !dSel) return normalizeDateString('');
+  const y = String(ySel.value || new Date().getFullYear());
+  const m = String(mSel.value || '01').padStart(2, '0');
+  const d = String(dSel.value || '01').padStart(2, '0');
+  return `${y}-${m}-${d}`;
 }
 
 // ============================================================
