@@ -3,10 +3,9 @@
 // ============================================================
 
 window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-window.__MOD_VERSIONS.browserApp = 'v2026.11.22-01';
+window.__MOD_VERSIONS.browserApp = 'v2026.11.22-02';
 
 const BROWSER_BM_CACHE_KEY = 'myarchive95_bookmarks_v1';
-const OS_PREFS_CACHE_KEY = 'myarchive95_osprefs_v1';
 
 const browserState = {
   history: [],
@@ -18,40 +17,63 @@ const browserState = {
   abortCtrl: null
 };
 
-const defaultOsPrefs = {
-  ownerName: '문태양',
-  wallpaper: 'teal', // 'teal' | 'navy' | 'checker' | 'grid' | 'purple'
-  crtScanline: false
-};
-
 // ============================================================
 // 1. OS 개인화 환경설정 & 바탕화면 우클릭 메뉴
 // ============================================================
 function loadOsPrefs() {
-  return { ...defaultOsPrefs, ...loadLocalCache(OS_PREFS_CACHE_KEY, {}) };
+  const base = (typeof loadLocalCache === 'function' && typeof STORAGE_KEYS !== 'undefined')
+    ? (loadLocalCache(STORAGE_KEYS.PREFS, {}) || {})
+    : {};
+  const me = typeof getCurrentUser === 'function' ? getCurrentUser() : null;
+  return {
+    ownerName: base.ownerName || (me && me.username) || '문태양',
+    wallpaper: base.theme || 'teal',
+    crtScanline: Boolean(base.crt),
+    autoSort: Boolean(base.autoSort)
+  };
 }
 
 function saveOsPrefs(prefs) {
-  saveLocalCache(OS_PREFS_CACHE_KEY, prefs);
-  applyOsPrefs(prefs);
-}
-
-function applyOsPrefs(prefs) {
-  const p = prefs || loadOsPrefs();
-  const root = document.body;
-  if (!root) return;
-
-  root.dataset.osWallpaper = p.wallpaper || 'teal';
-  root.classList.toggle('crt-scanlines-on', Boolean(p.crtScanline));
-
-  const statusLeft = document.getElementById('status-left');
-  if (statusLeft && p.ownerName) {
-    statusLeft.title = `${p.ownerName}의 MY-ARCHIVE 95 개인용 워크스테이션`;
+  if (typeof loadLocalCache === 'function' && typeof saveLocalCache === 'function' && typeof STORAGE_KEYS !== 'undefined') {
+    const current = loadLocalCache(STORAGE_KEYS.PREFS, {}) || {};
+    const next = {
+      ...current,
+      ownerName: prefs.ownerName || current.ownerName || '문태양',
+      theme: prefs.wallpaper || current.theme || 'teal',
+      crt: Boolean(prefs.crtScanline),
+      autoSort: Boolean(prefs.autoSort)
+    };
+    saveLocalCache(STORAGE_KEYS.PREFS, next);
   }
+  applyOsPrefsToDom(prefs);
 }
 
-function initDesktopShellEnhancements() {
-  applyOsPrefs();
+function applyOsPrefsToDom(prefs) {
+  const p = prefs || loadOsPrefs();
+  const theme = p.wallpaper || 'teal';
+
+  // window-mgr.js의 전역 테마 함수와 동기화
+  if (typeof applyTheme === 'function') {
+    applyTheme(theme, false);
+  } else {
+    document.body.classList.remove('theme-teal', 'theme-navy', 'theme-olive', 'theme-plum', 'theme-brick', 'theme-matrix');
+    document.body.classList.add(`theme-${theme}`);
+  }
+
+  // window-mgr.js의 전역 CRT 오버레이(#crt-overlay) 및 상단 메뉴 체크박스 상태와 동기화
+  const crtEnabled = Boolean(p.crtScanline);
+  const crtOverlay = document.getElementById('crt-overlay');
+  if (crtOverlay) {
+    crtOverlay.classList.toggle('hidden', !crtEnabled);
+  }
+  const topChk = document.getElementById('chk-crt');
+  if (topChk) topChk.checked = crtEnabled;
+  const dispChk = document.getElementById('chk-crt-scanline');
+  if (dispChk) dispChk.checked = crtEnabled;
+}
+
+function initOsWallpaperAndCrt() {
+  applyOsPrefsToDom(loadOsPrefs());
 
   // 1. 바탕화면 아이콘 자동 등록 (없을 경우)
   const iconContainer = document.querySelector('.desktop-icons');
@@ -174,6 +196,11 @@ function ensureDesktopContextMenu() {
 }
 
 function showDesktopContextMenu(x, y) {
+  // 열려 있는 시작 메뉴 및 상단 드롭다운 메뉴 닫기
+  const startMenu = document.getElementById('start-menu');
+  if (startMenu) startMenu.classList.add('hidden');
+  document.querySelectorAll('.menu-item.open').forEach(el => el.classList.remove('open'));
+
   const menu = document.getElementById('win95-desk-ctx');
   if (!menu) return;
   menu.style.display = 'block';
@@ -185,7 +212,7 @@ function showDesktopContextMenu(x, y) {
 }
 
 // ============================================================
-// 2. 디스플레이 등록 정보 (DISPLAY95.EXE — 배경 패턴 & CRT 모니터 효과)
+// 2. 디스플레이 등록 정보 (DISPLAY95.EXE — 배경 테마 & CRT 모니터 효과)
 // ============================================================
 function openDisplayPropsWindow() {
   let win = document.getElementById('win-display-props');
@@ -206,13 +233,14 @@ function openDisplayPropsWindow() {
       </div>
       <div class="win-body">
         <div class="sunken-box" style="margin-bottom:10px;">
-          <div class="box-head"><span>바탕화면 배경 패턴 / 테마</span><span class="tag-mini">WALLPAPER</span></div>
+          <div class="box-head"><span>바탕화면 배경 테마</span><span class="tag-mini">WALLPAPER</span></div>
           <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
             <button type="button" class="btn95 sm" data-wp="teal">🟩 클래식 틸 (#008080)</button>
-            <button type="button" class="btn95 sm" data-wp="navy">🟦 미드나잇 블루 (#000080)</button>
-            <button type="button" class="btn95 sm" data-wp="checker">🏁 95 체크 패턴</button>
-            <button type="button" class="btn95 sm" data-wp="grid">📐 플로피 그리드</button>
-            <button type="button" class="btn95 sm" data-wp="purple" style="grid-column:1 / -1;">🟪 신스웨이브 퍼플</button>
+            <button type="button" class="btn95 sm" data-wp="navy">🟦 미드나잇 네이비 (#102542)</button>
+            <button type="button" class="btn95 sm" data-wp="olive">🫒 올리브 그린 (#3B5323)</button>
+            <button type="button" class="btn95 sm" data-wp="plum">🟪 빈티지 플럼 (#4A2545)</button>
+            <button type="button" class="btn95 sm" data-wp="brick">🟥 브루탈 브릭 (#6E2626)</button>
+            <button type="button" class="btn95 sm" data-wp="matrix">⬛ 매트릭스 블랙 (#081408)</button>
           </div>
         </div>
 
@@ -253,7 +281,8 @@ function openDisplayPropsWindow() {
 
     document.getElementById('btn-save-os-prefs')?.addEventListener('click', () => {
       const prefs = loadOsPrefs();
-      prefs.ownerName = document.getElementById('inp-os-owner')?.value.trim() || '문태양';
+      const me = typeof getCurrentUser === 'function' ? getCurrentUser() : null;
+      prefs.ownerName = document.getElementById('inp-os-owner')?.value.trim() || (me && me.username) || '문태양';
       saveOsPrefs(prefs);
       playRetroTone('open');
       closeWindow('win-display-props');
@@ -980,6 +1009,6 @@ window.openVirtualBrowser = openVirtualBrowser;
 window.openVirtualBrowserWithQuery = openVirtualBrowserWithQuery;
 
 document.addEventListener('DOMContentLoaded', () => {
-  initDesktopShellEnhancements();
+  initOsWallpaperAndCrt();
   loadBrowserBookmarks();
 });
