@@ -1036,3 +1036,4 @@ document.addEventListener('DOMContentLoaded', () => {
   bindBootScreenEvents();
   startBiosBootSequence();
 });
+window.runBootAnimation = window.runBootAnimation || function () {};
