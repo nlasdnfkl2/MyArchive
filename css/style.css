@@ -2418,3 +2418,392 @@ body.boot-locked {
 .logon-btn.primary {
   outline: 1px solid #111111;
 }
+
+/* ============================================================
+   Windows 95 Logon Dialog & Form Typography Overrides
+   ============================================================ */
+.win95-login-dialog {
+  width: 500px;
+  max-width: calc(100vw - 24px);
+  background: #c0c0c0;
+  border: 2px solid;
+  border-color: #ffffff #111111 #111111 #ffffff;
+  box-shadow: 4px 4px 0 #111111;
+  color: #111111;
+  font-family: var(--font-win95, 'Galmuri9', 'DungGeunMo', 'Dotum', 'Gulim', monospace);
+  user-select: none;
+}
+
+/* 드롭다운·텍스트 박스·플레이스홀더 내부 글꼴을 윈95 스타일로 강제 통일 */
+.win95-login-dialog input,
+.win95-login-dialog select,
+.win95-login-dialog option,
+.win95-login-dialog button,
+.win95-login-dialog textarea {
+  font-family: var(--font-win95, 'Galmuri9', 'DungGeunMo', 'Dotum', 'Gulim', monospace) !important;
+  font-size: 0.83rem;
+  letter-spacing: -0.01em;
+}
+
+.win95-login-dialog input::placeholder {
+  font-family: var(--font-win95, 'Galmuri9', 'DungGeunMo', 'Dotum', 'Gulim', monospace) !important;
+  color: #777777;
+  opacity: 1;
+}
+
+.win95-logon-titlebar {
+  background: linear-gradient(90deg, #000080, #1084d0);
+  color: #ffffff;
+  padding: 4px 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: 900;
+  font-size: 0.85rem;
+}
+
+.win95-logon-title-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.win95-title-help-btn,
+.win95-dlg-btn,
+.win95-mini-btn,
+.win95-user-search-btn {
+  background: #c0c0c0;
+  color: #111111;
+  border: 2px solid;
+  border-color: #ffffff #111111 #111111 #ffffff;
+  box-shadow: inset -1px -1px 0 #808080;
+  cursor: pointer;
+}
+
+.win95-title-help-btn {
+  width: 22px;
+  height: 20px;
+  padding: 0;
+  font-weight: 900;
+}
+
+/* 탭 영역 및 본문 패널 정합성 */
+.win95-logon-tabs {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  padding: 8px 10px 0 10px;
+}
+
+.win95-logon-tab {
+  padding: 6px 12px;
+  background: #b6b6b6;
+  color: #222222;
+  border: 2px solid;
+  border-color: #ffffff #404040 #111111 #ffffff;
+  border-bottom: none;
+  font-weight: 700;
+  white-space: nowrap;
+  position: relative;
+  top: 2px;
+  cursor: pointer;
+}
+
+.win95-logon-tab.active {
+  background: #c0c0c0;
+  color: #111111;
+  font-weight: 900;
+  padding-top: 7px;
+  padding-bottom: 7px;
+  z-index: 2;
+}
+
+.win95-logon-body {
+  margin: 0 10px 10px 10px;
+  padding: 14px 16px;
+  background: #c0c0c0;
+  border: 2px solid;
+  border-color: #ffffff #404040 #404040 #ffffff;
+  box-shadow: inset -1px -1px 0 #808080, inset 1px 1px 0 #dfdfdf;
+  box-sizing: border-box;
+}
+
+.win95-logon-intro {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 14px;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  word-break: keep-all;
+}
+
+.win95-logon-intro svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.win95-logon-intro p {
+  margin: 0;
+}
+
+/* 2열 폼 그리드 */
+.win95-logon-grid {
+  display: grid;
+  grid-template-columns: 104px minmax(0, 1fr);
+  column-gap: 10px;
+  row-gap: 10px;
+  align-items: center;
+}
+
+.win95-logon-label {
+  font-size: 0.82rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.win95-grid-right {
+  grid-column: 2;
+}
+
+.win95-account-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.win95-select-wrap {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+.win95-logon-select,
+.win95-logon-input {
+  width: 100%;
+  height: 28px;
+  background: #ffffff;
+  color: #111111;
+  border: 2px solid;
+  border-color: #808080 #ffffff #ffffff #808080;
+  box-shadow: inset 1px 1px 0 #111111;
+  box-sizing: border-box;
+  outline: none;
+}
+
+.win95-logon-input {
+  padding: 3px 8px;
+}
+
+.win95-logon-input:disabled {
+  background: #d4d0c8;
+  color: #555555;
+}
+
+.win95-logon-select {
+  padding: 2px 26px 2px 8px;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+}
+
+.win95-select-arrow {
+  position: absolute;
+  right: 2px;
+  top: 2px;
+  width: 21px;
+  height: 24px;
+  background: #c0c0c0;
+  border: 2px solid;
+  border-color: #ffffff #404040 #404040 #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.win95-user-search-btn {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.win95-user-search-btn:active,
+.win95-user-search-btn.active {
+  border-color: #111111 #ffffff #ffffff #111111;
+  box-shadow: inset 1px 1px 0 #808080;
+  background: #b2b2b2;
+}
+
+.win95-user-search-row {
+  grid-column: 2;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 6px;
+  background: #d4d0c8;
+  border: 1px solid #808080;
+  box-shadow: inset 1px 1px 0 #ffffff;
+}
+
+.win95-user-search-row .win95-logon-input {
+  height: 24px;
+  font-size: 0.79rem;
+}
+
+.win95-search-count {
+  font-size: 0.74rem;
+  color: #333333;
+  white-space: nowrap;
+}
+
+.win95-mini-btn {
+  height: 24px;
+  padding: 0 7px;
+  font-size: 0.74rem;
+  white-space: nowrap;
+}
+
+/* 사용자 프로필 / 소개 박스 */
+.win95-profile-fieldset {
+  margin: 14px 0 10px 0;
+  padding: 10px 12px 12px 12px;
+  border: 2px groove #ffffff;
+  box-sizing: border-box;
+}
+
+.win95-profile-fieldset legend {
+  padding: 0 6px;
+  font-size: 0.79rem;
+  font-weight: 900;
+}
+
+.win95-profile-inner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.win95-profile-avatar-box {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  background: #dcdcdc;
+  border: 2px solid;
+  border-color: #808080 #ffffff #ffffff #808080;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.win95-profile-meta {
+  min-width: 0;
+  flex: 1;
+}
+
+.win95-profile-name {
+  font-size: 0.88rem;
+  font-weight: 900;
+  color: #000080;
+  margin-bottom: 4px;
+}
+
+.win95-profile-bio {
+  font-size: 0.79rem;
+  color: #222222;
+  line-height: 1.4;
+  word-break: keep-all;
+}
+
+/* 하단 상태바 & 버튼 */
+.win95-status-bar-box {
+  padding: 5px 8px;
+  margin-bottom: 14px;
+  border: 1px solid;
+  border-color: #808080 #ffffff #ffffff #808080;
+  font-size: 0.76rem;
+  color: #222222;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.win95-status-led {
+  width: 8px;
+  height: 8px;
+  flex-shrink: 0;
+  background: #008000;
+  border: 1px solid #111111;
+}
+
+.win95-logon-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.win95-dlg-btn {
+  height: 30px;
+  padding: 0 14px;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.win95-dlg-btn.primary {
+  outline: 1px solid #111111;
+}
+
+/* 3x2 도트 아바타 선택 그리드 (기본유저 줄바꿈 방지) */
+.win95-avatar-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.win95-avatar-choice {
+  height: 34px;
+  padding: 0 6px;
+  background: #c0c0c0;
+  color: #111111;
+  border: 2px solid;
+  border-color: #ffffff #111111 #111111 #ffffff;
+  box-shadow: inset -1px -1px 0 #808080;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  font-size: 0.79rem;
+  font-weight: 800;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.win95-avatar-choice.selected {
+  background: #000080;
+  color: #ffffff;
+  border-color: #111111 #ffffff #ffffff #111111;
+  outline: 1px dotted #ffff00;
+  outline-offset: -4px;
+}
+
+.win95-login-error {
+  margin-bottom: 10px;
+  padding: 6px 8px;
+  background: #fff0f0;
+  border: 1px solid #800000;
+  color: #800000;
+  font-size: 0.79rem;
+  font-weight: 800;
+  align-items: center;
+  gap: 6px;
+}
