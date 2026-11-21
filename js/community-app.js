@@ -134,7 +134,7 @@ function renderCommunityBoard() {
           <div style="height:140px; position:relative;"><canvas id="comm-chart-cat"></canvas></div>
         </div>
         <div class="sunken-box">
-          <div class="box-head"><span>전체 월별 공유 추이 &amp; 멤버 랭킹</span><span class="tag-mini">TREND</span></div>
+          <div class="box-head"><span>전체 월별 공유 추이</span><span class="tag-mini">TREND</span></div>
           <div style="height:140px; position:relative;"><canvas id="comm-chart-month"></canvas></div>
         </div>
       </div>
@@ -187,7 +187,8 @@ function buildSnsFeedCardHtml(item, me) {
   const cmtList = communityState.comments[item.id] || [];
   const isCmtOpen = Boolean(communityState.openComments[item.id]);
   const isPublicPost = (item.owner || '') === '공용';
-  const stars = '★'.repeat(Number(item.rating) || 5) + '☆'.repeat(5 - (Number(item.rating) || 5));
+  const rVal = Math.max(1, Math.min(5, Number(item.rating) || 5));
+  const stars = '★'.repeat(rVal) + '☆'.repeat(5 - rVal);
 
   return `
     <article class="sns-post-card" data-post-id="${esc(item.id)}">
@@ -433,6 +434,9 @@ function bindCommunityBoardEvents(body) {
     });
   });
 }
+
+window.openCommunityBoard = openCommunityBoard;
+window.renderCommunityBoard = renderCommunityBoard;
 
 document.addEventListener('DOMContentLoaded', () => {
   window.addEventListener('window:opened', ev => {

@@ -184,13 +184,25 @@ function refreshAllViews() {
 
   const tlWin = document.getElementById('win-timeline');
   if (tlWin && tlWin.classList.contains('open')) renderTimelineAndRadarApp();
+
+  const commWin = document.getElementById('win-community');
+  if (commWin && commWin.classList.contains('open') && typeof renderCommunityBoard === 'function') {
+    renderCommunityBoard();
+  }
 }
 
 // ============================================================
 // 3. KPI 요약 카드 & 기본 통계 차트 & 메인 카드 그리드
 // ============================================================
+function getMyVisibleArchiveItems() {
+  const me = typeof getCurrentUser === 'function' ? getCurrentUser() : { username: '문태양', role: 'owner' };
+  if (!me || me.role === 'public') return archiveItems;
+  return archiveItems.filter(it => (it.owner || '문태양') === me.username);
+}
+
 function updateKPIs() {
-  const total = archiveItems.length;
+  const myItems = getMyVisibleArchiveItems();
+  const total = myItems.length;
   document.getElementById('kpi-total').textContent = `${total}건`;
   if (!total) {
     document.getElementById('kpi-recent-sub').textContent = '첫 기록을 추가해 보세요';
@@ -202,18 +214,18 @@ function updateKPIs() {
     return;
   }
 
-  document.getElementById('kpi-recent-sub').textContent = `최근: 「${archiveItems[0].title}」`;
-  const avg = archiveItems.reduce((s, c) => s + (Number(c.rating) || 0), 0) / total;
+  document.getElementById('kpi-recent-sub').textContent = `최근: 「${myItems[0].title}」`;
+  const avg = myItems.reduce((s, c) => s + (Number(c.rating) || 0), 0) / total;
   document.getElementById('kpi-avg-rating').textContent = `${avg.toFixed(1)}점`;
 
   const catMap = {};
-  archiveItems.forEach(i => { catMap[i.category] = (catMap[i.category] || 0) + 1; });
+  myItems.forEach(i => { catMap[i.category] = (catMap[i.category] || 0) + 1; });
   const topCat = Object.entries(catMap).sort((a, b) => b[1] - a[1])[0];
   document.getElementById('kpi-top-cat').textContent = topCat[0];
   document.getElementById('kpi-top-cat-sub').textContent = `전체 중 ${topCat[1]}건 (${Math.round((topCat[1] / total) * 100)}%)`;
 
   const gMap = {};
-  archiveItems.forEach(i => { const g = (i.genre || '일반').trim(); gMap[g] = (gMap[g] || 0) + 1; });
+  myItems.forEach(i => { const g = (i.genre || '일반').trim(); gMap[g] = (gMap[g] || 0) + 1; });
   const topG = Object.entries(gMap).sort((a, b) => b[1] - a[1])[0];
   document.getElementById('kpi-top-genre').textContent = topG[0];
   document.getElementById('kpi-top-genre-sub').textContent = `누적 ${topG[1]}건 기록`;
@@ -225,8 +237,9 @@ function renderCharts() {
   Chart.defaults.font.weight = 800;
   Chart.defaults.color = '#111111';
 
+  const myItems = getMyVisibleArchiveItems();
   const cats = ['도서', '음악', '영상', '기타'];
-  const catVals = cats.map(c => archiveItems.filter(i => i.category === c).length);
+  const catVals = cats.map(c => myItems.filter(i => i.category === c).length);
   const catCanvas = document.getElementById('chart-category');
   if (catCanvas) {
     if (categoryChart) categoryChart.destroy();
@@ -250,7 +263,7 @@ function renderCharts() {
   }
 
   const mMap = {};
-  archiveItems.forEach(i => { const ym = (i.watchDate || '').slice(0, 7); if (ym) mMap[ym] = (mMap[ym] || 0) + 1; });
+  myItems.forEach(i => { const ym = (i.watchDate || '').slice(0, 7); if (ym) mMap[ym] = (mMap[ym] || 0) + 1; });
   const months = Object.keys(mMap).sort();
   const monCanvas = document.getElementById('chart-monthly');
   if (monCanvas) {
@@ -286,7 +299,8 @@ document.getElementById('filter-keyword')?.addEventListener('input', renderArchi
 function renderArchiveGrid() {
   const minRating = Number(document.getElementById('filter-rating')?.value) || 0;
   const kw = (document.getElementById('filter-keyword')?.value || '').trim().toLowerCase();
-  const filtered = archiveItems.filter(item => {
+  const myItems = getMyVisibleArchiveItems();
+  const filtered = myItems.filter(item => {
     if (selectedCategory !== 'ALL' && item.category !== selectedCategory) return false;
     if (Number(item.rating) < minRating) return false;
     if (kw && !`${item.title} ${item.creator} ${item.genre} ${item.review}`.toLowerCase().includes(kw)) return false;
@@ -440,6 +454,7 @@ async function spawnDetailWindow(item) {
             <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:12px; align-items:center;">
               <a class="btn95 pink sm" href="${ytUrl}" target="_blank" rel="noopener noreferrer">[PLAY] YouTube 이동</a>
               ${item.sourceUrl ? `<a class="btn95 sky sm" href="${esc(item.sourceUrl)}" target="_blank" rel="noopener noreferrer">원본 링크 &gt;&gt;</a>` : ''}
+              <button type="button" class="btn95 sm btn-toggle-share" style="background:${String(item.shared || 'Y').toUpperCase() !== 'N' ? 'var(--brutal-green)' : '#e0e0e0'};">${String(item.shared || 'Y').toUpperCase() !== 'N' ? '📢 전체 게시판 공유중' : '🔒 비공개 (공유하기)'}</button>
               <button type="button" class="btn95 yellow sm btn-toggle-edit">[EDIT] 기록 수정</button>
               <button type="button" class="btn95 sm btn-delete-item" style="background:#111; color:#fff;">[DEL] 기록 삭제</button>
             </div>
@@ -577,6 +592,34 @@ document.addEventListener('click', async e => {
   const viewBox = winEl.querySelector('.det-view-mode');
   const editForm = winEl.querySelector('.det-edit-form');
   const confirmBar = winEl.querySelector('.del-confirm-bar');
+
+  if (e.target.closest('.btn-toggle-share')) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!item || !item.id) return;
+    const shareBtn = e.target.closest('.btn-toggle-share');
+    shareBtn.disabled = true;
+    try {
+      const res = await fetch(GAS_WEB_APP_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: 'toggle_share', id: item.id })
+      });
+      const json = await res.json();
+      if (json.status === 'success' && json.item) {
+        playRetroTone('open');
+        const idx = archiveItems.findIndex(x => x.id === item.id);
+        if (idx !== -1) archiveItems[idx] = json.item;
+        saveLocalCache(STORAGE_KEYS.ARCHIVE, archiveItems);
+        refreshAllViews();
+        closeWindow(winEl.id);
+        spawnDetailWindow(json.item);
+      }
+    } finally {
+      shareBtn.disabled = false;
+    }
+    return;
+  }
 
   if (e.target.closest('.btn-toggle-edit')) {
     e.preventDefault();
@@ -876,9 +919,15 @@ function ensureRegisterWindowExists() {
             <label style="display:block; font-size:0.78rem; font-weight:800; margin-bottom:2px;">한줄평 / 감상 메모 *</label>
             <textarea id="inp-review" rows="3" required style="width:100%;" placeholder="감상한 소감을 기록하십시오..."></textarea>
           </div>
-          <div style="display:flex; justify-content:flex-end; gap:8px;">
-            <button type="button" class="btn95 sm" id="btn-cancel-reg" data-action="close" data-target="win-register">취소</button>
-            <button type="submit" class="btn95 yellow sm" id="btn-submit-reg">확인 및 시트 저장</button>
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+            <label style="display:flex; align-items:center; gap:6px; font-size:0.8rem; font-weight:900; cursor:pointer; background:#fffdf2; border:1.5px solid #111; padding:4px 8px;">
+              <input type="checkbox" id="inp-share-board" checked />
+              <span>📢 전체 공유 게시판(SNS 피드)에도 함께 공유하기</span>
+            </label>
+            <div style="display:flex; gap:8px;">
+              <button type="button" class="btn95 sm" id="btn-cancel-reg" data-action="close" data-target="win-register">취소</button>
+              <button type="submit" class="btn95 yellow sm" id="btn-submit-reg">확인 및 시트 저장</button>
+            </div>
           </div>
         </form>
       </div>
@@ -943,7 +992,7 @@ function ensureRegisterWindowExists() {
   }
 }
 
-function openRegisterModal() {
+function openRegisterModal(forceShare = false) {
   ensureRegisterWindowExists();
 
   if (regSearchAbortCtrl) {
@@ -979,7 +1028,15 @@ function openRegisterModal() {
   const rankList = document.getElementById('rank-list');
   if (rankList) rankList.style.display = 'none';
 
-  showRegAlert('먼저 STEP 1에서 매체(도서 / 음악 / 영상 / 기타)를 선택해 주세요.', 'info');
+  const shareChk = document.getElementById('inp-share-board');
+  if (shareChk) shareChk.checked = true;
+
+  showRegAlert(
+    forceShare
+      ? '전체 공유 게시판에 올릴 매체(도서 / 음악 / 영상 / 기타)를 먼저 선택해 주세요.'
+      : '먼저 STEP 1에서 매체(도서 / 음악 / 영상 / 기타)를 선택해 주세요.',
+    'info'
+  );
   openWindow('win-register');
 }
 
@@ -1143,6 +1200,8 @@ async function handleRegisterSubmit(e) {
     return;
   }
 
+  const me = typeof getCurrentUser === 'function' ? getCurrentUser() : { username: '문태양' };
+  const shareChecked = document.getElementById('inp-share-board')?.checked !== false;
   const payload = {
     action: editingId ? 'update' : 'create',
     id: editingId,
@@ -1154,7 +1213,9 @@ async function handleRegisterSubmit(e) {
     watchDate: watchDateVal,
     review: document.getElementById('inp-review').value.trim(),
     coverUrl: document.getElementById('inp-cover-url').value.trim(),
-    sourceUrl: document.getElementById('inp-source-url').value.trim()
+    sourceUrl: document.getElementById('inp-source-url').value.trim(),
+    owner: me.username,
+    shared: shareChecked ? 'Y' : 'N'
   };
 
   const btn = document.getElementById('btn-submit-reg');

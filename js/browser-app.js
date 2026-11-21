@@ -341,8 +341,12 @@ function ensureVirtualBrowserWindow() {
             <option value="1">★☆☆☆☆ (1점)</option>
           </select>
         </div>
-        <div style="display:flex; gap:6px;">
-          <input type="text" id="br-clip-review" placeholder="지금 듣고 보면서 느낀 한줄평을 바로 남기세요..." required style="flex:1;" />
+        <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+          <input type="text" id="br-clip-review" placeholder="지금 듣고 보면서 느낀 한줄평을 바로 남기세요..." required style="flex:1; min-width:200px;" />
+          <label style="display:flex; align-items:center; gap:4px; font-size:0.75rem; font-weight:800; cursor:pointer; background:#fff; border:1.5px solid #111; padding:3px 7px;">
+            <input type="checkbox" id="br-clip-share" checked />
+            <span>📢 전체 게시판 공유</span>
+          </label>
           <button type="submit" class="btn95 green sm" id="br-clip-submit">시트에 즉시 저장</button>
         </div>
       </form>
@@ -522,6 +526,8 @@ function bindVirtualBrowserEvents() {
     setLoadingCursor(true);
 
     try {
+      const me = typeof getCurrentUser === 'function' ? getCurrentUser() : { username: '문태양' };
+      const isShared = document.getElementById('br-clip-share')?.checked !== false;
       const payload = {
         action: 'create',
         category,
@@ -532,7 +538,9 @@ function bindVirtualBrowserEvents() {
         watchDate: normalizeDateString(''),
         review,
         coverUrl: page.coverUrl || '',
-        sourceUrl: page.url && page.url !== 'about:home' ? page.url : ''
+        sourceUrl: page.url && page.url !== 'about:home' ? page.url : '',
+        owner: me.username,
+        shared: isShared ? 'Y' : 'N'
       };
       const res = await fetch(GAS_WEB_APP_URL, {
         method: 'POST',

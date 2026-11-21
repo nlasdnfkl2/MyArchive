@@ -60,7 +60,7 @@ function updateDesktopUserBadge() {
   const winMainTitle = document.getElementById('win-main-title-text');
   if (winMainTitle && user) {
     winMainTitle.textContent = user.role === 'public'
-      ? `C:\\MY-ARCHIVE\\PUBLIC.EXE — 공용 워크스테이션 아카이브`
+      ? 'C:\\MY-ARCHIVE\\PUBLIC.EXE — 공용 워크스테이션 아카이브'
       : `C:\\MY-ARCHIVE\\${user.username.toUpperCase()}.EXE — ${user.username}의 개인 아카이브`;
   }
 }
@@ -329,7 +329,7 @@ function finishDesktopLogin(userObj) {
   const statusLeft = document.getElementById('status-left');
   if (statusLeft) {
     statusLeft.textContent = userObj.role === 'public'
-      ? `🌐 공용 계정으로 접속됨 — 전체 공유 아카이브 및 게시판 활성화`
+      ? '🌐 공용 계정으로 접속됨 — 전체 공유 아카이브 및 게시판 활성화'
       : `${userObj.avatar || '👤'} ${userObj.username}님 환영합니다 — 개인 아카이브 및 전체 게시판 준비 완료`;
   }
 
@@ -507,6 +507,14 @@ function bindBootScreenEvents() {
   // [?] BIOS 다시 보기
   document.getElementById('btn-reboot-bios')?.addEventListener('click', () => {
     playBiosPostBeep();
+    startBiosBootSequence();
+  });
+
+  // 시작 메뉴 로그오프 / 계정 전환 버튼 바인딩
+  document.getElementById('sm-logoff')?.addEventListener('click', () => {
+    const sm = document.getElementById('start-menu');
+    if (sm) sm.classList.remove('open');
+    document.getElementById('btn-start')?.classList.remove('pressed');
     startBiosBootSequence();
   });
 }

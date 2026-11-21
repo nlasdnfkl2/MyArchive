@@ -256,3 +256,128 @@ document.addEventListener('DOMContentLoaded', () => {
   bindLauncher(['icon-visualizer', 'mnu-open-visualizer'], 'win-visualizer');
   bindLauncher(['icon-gamepack', 'mnu-open-gamepack'], 'win-gamepack');
 });
+
+
+// ============================================================
+// 4. Windows 95 작업 관리자 (Ctrl+Alt+Delete) & 화면 보호기
+// ============================================================
+function openTaskManager() {
+  openWindow('win-taskmgr');
+  renderTaskManagerList();
+}
+
+function renderTaskManagerList() {
+  const listBox = document.getElementById('taskmgr-list');
+  if (!listBox) return;
+  const openWins = Array.from(document.querySelectorAll('.floating-win.open'));
+  if (openWins.length === 0) {
+    listBox.innerHTML = '<div style="padding:12px;color:#555;font-size:0.8rem;">현재 실행 중인 응용 프로그램이 없습니다.</div>';
+    return;
+  }
+  listBox.innerHTML = openWins.map(w => {
+    const title = w.dataset.winTitle || w.id;
+    const status = w.classList.contains('minimized') ? '최소화됨' : '응답 중';
+    return `
+      <div class="taskmgr-row" data-win-id="${esc(w.id)}">
+        <span><b>${esc(title)}</b></span>
+        <span style="font-size:0.74rem;color:#006600;font-weight:800;">[${status}]</span>
+        <div style="display:flex;gap:4px;">
+          <button type="button" class="btn95 sm" data-tm-focus="${esc(w.id)}" style="padding:2px 7px;font-size:0.72rem;">전환</button>
+          <button type="button" class="btn95 pink sm" data-tm-kill="${esc(w.id)}" style="padding:2px 7px;font-size:0.72rem;">작업 끝내기</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  listBox.querySelectorAll('[data-tm-focus]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const target = document.getElementById(btn.dataset.tmFocus);
+      if (target) focusWindow(target);
+    });
+  });
+
+  listBox.querySelectorAll('[data-tm-kill]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      closeWindow(btn.dataset.tmKill);
+      renderTaskManagerList();
+    });
+  });
+}
+
+let screensaverAnimId = null;
+
+function startWin95Screensaver() {
+  const scr = document.getElementById('win95-screensaver');
+  const canvas = document.getElementById('screensaver-canvas');
+  if (!scr || !canvas) return;
+
+  scr.style.display = 'block';
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  const ctx = canvas.getContext('2d');
+
+  const colors = ['#ff4b4b', '#4be36a', '#4ba3ff', '#ffd83b', '#ff9f43', '#a29bfe'];
+  const sprites = Array.from({ length: 14 }, (_, i) => ({
+    x: Math.random() * (canvas.width - 90),
+    y: Math.random() * (canvas.height - 50),
+    vx: (Math.random() < 0.5 ? -1 : 1) * (1.8 + Math.random() * 2.2),
+    vy: (Math.random() < 0.5 ? -1 : 1) * (1.5 + Math.random() * 2.0),
+    color: colors[i % colors.length],
+    label: i % 2 === 0 ? 'ARCHIVE 95' : '⊞ WIN95'
+  }));
+
+  const stopScreensaver = () => {
+    if (screensaverAnimId) {
+      cancelAnimationFrame(screensaverAnimId);
+      screensaverAnimId = null;
+    }
+    scr.style.display = 'none';
+    document.removeEventListener('keydown', stopScreensaver);
+  };
+
+  scr.onclick = stopScreensaver;
+  document.addEventListener('keydown', stopScreensaver);
+
+  const loop = () => {
+    if (scr.style.display === 'none') return;
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    sprites.forEach(s => {
+      s.x += s.vx;
+      s.y += s.vy;
+      if (s.x <= 0 || s.x + 96 >= canvas.width) s.vx *= -1;
+      if (s.y <= 0 || s.y + 34 >= canvas.height) s.vy *= -1;
+
+      ctx.fillStyle = s.color;
+      ctx.fillRect(s.x, s.y, 96, 34);
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(s.x, s.y, 96, 34);
+      ctx.fillStyle = '#111111';
+      ctx.font = 'bold 12px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(s.label, s.x + 48, s.y + 21);
+    });
+
+    screensaverAnimId = requestAnimationFrame(loop);
+  };
+  screensaverAnimId = requestAnimationFrame(loop);
+}
+
+document.addEventListener('keydown', e => {
+  if (e.ctrlKey && e.altKey && (e.key === 'Delete' || e.key === 'Backspace')) {
+    e.preventDefault();
+    openTaskManager();
+  }
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('mnu-open-taskmgr')?.addEventListener('click', openTaskManager);
+  document.getElementById('mnu-start-screensaver')?.addEventListener('click', startWin95Screensaver);
+  document.getElementById('btn-tm-refresh')?.addEventListener('click', renderTaskManagerList);
+  document.getElementById('btn-tm-reboot')?.addEventListener('click', () => {
+    closeWindow('win-taskmgr');
+    if (typeof startBiosBootSequence === 'function') startBiosBootSequence();
+  });
+});
