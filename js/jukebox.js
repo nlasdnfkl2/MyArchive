@@ -1,268 +1,490 @@
 // ============================================================
-// MY-ARCHIVE 95 OS — YouTube Background Jukebox (JUKEBOX95.EXE)
+// MY-ARCHIVE 95 OS — WINAMP / JUKEBOX 95.EXE (YouTube Auto-Search Fixed)
 // ============================================================
 
 window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-window.__MOD_VERSIONS.jukebox = typeof APP_BUILD_VERSION !== 'undefined' ? APP_BUILD_VERSION : 'v2026.11.17-05';
+window.__MOD_VERSIONS.jukebox = 'v2026.11.22-01';
 
-let ytPlayer = null;
-let ytApiReady = false;
-let jukeboxTracks = [];
-let currentTrackIdx = 0;
-let isJukeboxPlaying = false;
+const JB_CACHE_KEY = 'myarchive95_yt_track_cache_v2';
 
-const YT_VID_CACHE_KEY = 'my_archive_95_yt_vid_cache_v1';
-
-document.addEventListener('DOMContentLoaded', () => {
-  window.addEventListener('window:opened', ev => {
-    if (ev.detail && ev.detail.id === 'win-jukebox') {
-      updateJukebox();
-    }
-  });
-});
-
-function extractYouTubeVideoId(url) {
-  const s = String(url || '').trim();
-  if (!s) return '';
-  const patterns = [
-    /(?:youtube\.com\/watch\?v=|youtu\.be\/|music\.youtube\.com\/watch\?v=|youtube\.com\/embed\/|youtube\.com\/shorts\/)([A-Za-z0-9_-]{11})/
-  ];
-  for (const re of patterns) {
-    const m = s.match(re);
-    if (m && m[1]) return m[1];
-  }
-  return '';
-}
-
-function normalizeMusicMatchStr(str) {
-  return String(str || '')
-    .replace(/\s*-\s*topic$/i, '')
-    .replace(/[^\w가-힣]/g, '')
-    .toLowerCase();
-}
-
-// 부분 포함 매칭: "- Topic" 채널 및 아티스트명 생략 업로드 허용
-function isLenientYouTubeMatch(cand, track) {
-  const normTrackTitle = normalizeMusicMatchStr(track.title);
-  const normTrackCreator = normalizeMusicMatchStr(track.creator);
-  const normCandTitle = normalizeMusicMatchStr(cand.title);
-  const normCandCreator = normalizeMusicMatchStr(cand.creator);
-  const combinedCand = normCandTitle + normCandCreator;
-
-  const titleIncluded = !normTrackTitle ||
-    combinedCand.includes(normTrackTitle) ||
-    (normCandTitle.length >= 2 && normTrackTitle.includes(normCandTitle));
-
-  const creatorTokens = String(track.creator || '')
-    .split(/[,&/·()\[\]]+/)
-    .map(t => normalizeMusicMatchStr(t))
-    .filter(t => t.length >= 2);
-
-  const artistIncluded = !normTrackCreator ||
-    combinedCand.includes(normTrackCreator) ||
-    creatorTokens.some(tok => combinedCand.includes(tok));
-
-  if (titleIncluded && artistIncluded) return 2;
-  if (titleIncluded) return 1;
-  return 0;
-}
-
-function ensureYouTubeIframeApi() {
-  if (window.YT && window.YT.Player) {
-    ytApiReady = true;
-    return;
-  }
-  if (document.getElementById('yt-iframe-api-script')) return;
-  const tag = document.createElement('script');
-  tag.id = 'yt-iframe-api-script';
-  tag.src = 'https://www.youtube.com/iframe_api';
-  document.head.appendChild(tag);
-}
-
-window.onYouTubeIframeAPIReady = function () {
-  ytApiReady = true;
-  if (jukeboxTracks.length > 0) {
-    renderJukeboxUI();
-  }
+const jbState = {
+  playlist: [],
+  currentIndex: 0,
+  isPlaying: false,
+  isShuffle: false,
+  isRepeatOne: false,
+  musicOnly: true,
+  hideVideo: false,
+  candidates: [],
+  candidateIdx: 0,
+  timerSec: 0,
+  timerInterval: null,
+  sleepEndAt: 0,
+  abortCtrl: null
 };
 
-function updateJukebox() {
-  const musicItems = (archiveItems || []).filter(i => i.category === '음악');
-  const vidCache = loadLocalCache(YT_VID_CACHE_KEY, {});
-
-  jukeboxTracks = musicItems.map(item => {
-    const cacheKey = `${normalizeMusicMatchStr(item.creator)}::${normalizeMusicMatchStr(item.title)}`;
-    const directVid = extractYouTubeVideoId(item.sourceUrl);
-    return {
-      id: item.id,
-      title: item.title,
-      creator: item.creator,
-      coverUrl: item.coverUrl || FALLBACK_COVER,
-      sourceUrl: item.sourceUrl || '',
-      videoId: directVid || (vidCache && vidCache[cacheKey]) || ''
-    };
-  });
-
-  if (currentTrackIdx >= jukeboxTracks.length) currentTrackIdx = 0;
-  renderJukeboxUI();
-}
-
-async function resolveTrackVideoId(track) {
-  if (!track) return '';
-  if (track.videoId) return track.videoId;
-
-  const cacheKey = `${normalizeMusicMatchStr(track.creator)}::${normalizeMusicMatchStr(track.title)}`;
-  const vidCache = loadLocalCache(YT_VID_CACHE_KEY, {});
-  if (vidCache && vidCache[cacheKey]) {
-    track.videoId = vidCache[cacheKey];
-    return track.videoId;
-  }
-
+function getJbCache() {
   try {
-    const q = encodeURIComponent(`${track.creator} ${track.title}`.trim());
-    const t = encodeURIComponent(track.title || '');
-    const c = encodeURIComponent(track.creator || '');
-    const res = await fetch(`${GAS_WEB_APP_URL}?action=search&q=${q}&title=${t}&creator=${c}&category=${encodeURIComponent('음악')}`);
-    const json = await res.json();
-    const cands = (json.candidates || []).filter(item => Boolean(extractYouTubeVideoId(item.sourceUrl)));
-
-    if (!cands.length) return '';
-
-    cands.sort((a, b) => isLenientYouTubeMatch(b, track) - isLenientYouTubeMatch(a, track));
-
-    const matchedVid = extractYouTubeVideoId(cands[0].sourceUrl);
-    if (matchedVid) {
-      track.videoId = matchedVid;
-      vidCache[cacheKey] = matchedVid;
-      saveLocalCache(YT_VID_CACHE_KEY, vidCache);
-      return matchedVid;
-    }
+    return JSON.parse(localStorage.getItem(JB_CACHE_KEY) || '{}');
   } catch {
-    // 폴백 조회 실패 무시
-  }
-  return '';
-}
-
-async function playJukeboxTrack(idx) {
-  if (!jukeboxTracks.length) return;
-  currentTrackIdx = (idx + jukeboxTracks.length) % jukeboxTracks.length;
-  const track = jukeboxTracks[currentTrackIdx];
-  renderJukeboxUI();
-
-  ensureYouTubeIframeApi();
-  const statusEl = document.getElementById('jb-status-text');
-  if (statusEl) statusEl.textContent = `트랙 영상 매칭 중: 「${track.title}」...`;
-
-  const vid = await resolveTrackVideoId(track);
-  if (!vid) {
-    if (statusEl) statusEl.textContent = `YouTube 영상 ID를 찾지 못했습니다: 「${track.title}」`;
-    return;
-  }
-
-  if (!ytApiReady || !window.YT || !window.YT.Player) {
-    if (statusEl) statusEl.textContent = 'YouTube 플레이어 엔진 로딩 중... 2초 후 다시 재생을 눌러주세요.';
-    return;
-  }
-
-  if (!ytPlayer) {
-    ytPlayer = new YT.Player('yt-hidden-player', {
-      height: '180',
-      width: '100%',
-      videoId: vid,
-      playerVars: { autoplay: 1, playsinline: 1 },
-      events: {
-        onReady: ev => {
-          ev.target.playVideo();
-          isJukeboxPlaying = true;
-          renderJukeboxUI();
-        },
-        onStateChange: ev => {
-          if (ev.data === YT.PlayerState.ENDED) {
-            playJukeboxTrack(currentTrackIdx + 1);
-          } else if (ev.data === YT.PlayerState.PLAYING) {
-            isJukeboxPlaying = true;
-            renderJukeboxUI();
-          } else if (ev.data === YT.PlayerState.PAUSED) {
-            isJukeboxPlaying = false;
-            renderJukeboxUI();
-          }
-        }
-      }
-    });
-  } else if (typeof ytPlayer.loadVideoById === 'function') {
-    ytPlayer.loadVideoById(vid);
-    isJukeboxPlaying = true;
-    renderJukeboxUI();
+    return {};
   }
 }
 
-function renderJukeboxUI() {
-  const body = document.getElementById('jukebox-body');
-  if (!body) return;
+function setJbCache(map) {
+  try {
+    localStorage.setItem(JB_CACHE_KEY, JSON.stringify(map));
+  } catch {}
+}
 
-  if (!jukeboxTracks.length) {
-    body.innerHTML = `
-      <div class="sunken-box" style="text-align:center;padding:24px;">
-        <p style="font-weight:900;margin-bottom:8px;">아카이브에 등록된 '음악' 기록이 없습니다.</p>
-        <p style="font-size:0.8rem;color:#555;">[+ 새 감상 기록하기]에서 음악 트랙을 등록하면 자동으로 주크박스 재생목록이 구성됩니다.</p>
-      </div>
-    `;
-    return;
-  }
+function parseYtIdFromUrl(url) {
+  const s = String(url || '');
+  const m = s.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/i);
+  return m ? m[1] : '';
+}
 
-  const cur = jukeboxTracks[currentTrackIdx] || jukeboxTracks[0];
+function getTrackCacheKey(item) {
+  return `${String(item.creator || '').trim().toLowerCase()}|${String(item.title || '').trim().toLowerCase()}`;
+}
+
+function buildJukeboxUI() {
+  const win = document.getElementById('win-jukebox');
+  if (!win) return;
+  const body = win.querySelector('.win-body');
+  if (!body || body.dataset.jbInitialized === 'true') return;
+  body.dataset.jbInitialized = 'true';
+
   body.innerHTML = `
-    <div class="sunken-box" style="background:#111;color:#2ed573;margin-bottom:10px;">
-      <div style="display:flex;gap:12px;align-items:center;">
-        <img src="${esc(cur.coverUrl)}" alt="" style="width:68px;height:68px;object-fit:cover;border:2px solid #2ed573;" onerror="this.src='${FALLBACK_COVER}'" />
-        <div style="flex:1;min-width:0;">
-          <div style="font-size:0.72rem;color:#ffd83b;font-family:var(--font-mono);">TRACK ${currentTrackIdx + 1} / ${jukeboxTracks.length}</div>
-          <div style="font-size:1rem;font-weight:900;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(cur.title)}</div>
-          <div style="font-size:0.8rem;color:#48dbfb;">${esc(cur.creator)}</div>
-          <div id="jb-status-text" style="font-size:0.72rem;margin-top:4px;color:#2ed573;">${isJukeboxPlaying ? '▶ 백그라운드 재생 중...' : '■ 대기 중'}</div>
+    <div style="background:#19191f; color:#39ff14; border:3px solid #111; padding:10px; box-shadow:inset 2px 2px 0 #000, inset -2px -2px 0 #444; margin-bottom:10px; font-family:var(--font-mono);">
+      <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.72rem; color:#ffd83b; margin-bottom:6px; border-bottom:1px solid #333; padding-bottom:4px;">
+        <span>WINAMP / JUKEBOX 95 — STEREO AUDIO ENGINE</span>
+        <span id="jb-status-pill" style="background:#111; border:1px solid #39ff14; color:#39ff14; padding:1px 6px;">READY</span>
+      </div>
+
+      <div style="display:grid; grid-template-columns:112px 1fr; gap:10px; align-items:center;">
+        <div style="background:#08120c; border:2px solid #333; padding:6px; text-align:center;">
+          <div id="jb-lcd-time" style="font-size:1.35rem; font-weight:900; letter-spacing:1px; color:#39ff14;">00:00</div>
+          <div id="jb-eq-bars" style="display:flex; align-items:flex-end; justify-content:center; gap:3px; height:26px; margin-top:6px;">
+            ${Array.from({ length: 12 }).map((_, i) => `<span class="jb-bar" style="width:5px; height:${6 + (i % 4) * 4}px; background:#39ff14; display:inline-block; transition:height 0.15s;"></span>`).join('')}
+          </div>
+          <div style="font-size:0.65rem; color:#88cc99; margin-top:4px;">128 KBPS · 44 KHZ</div>
+        </div>
+
+        <div style="min-width:0;">
+          <div style="background:#08120c; border:1.5px solid #333; padding:5px 8px; overflow:hidden; white-space:nowrap; margin-bottom:6px;">
+            <div id="jb-marquee-title" style="font-size:0.86rem; font-weight:900; color:#39ff14;">재생할 트랙을 선택하거나 PLAY 버튼을 누르십시오.</div>
+          </div>
+          <div id="jb-track-sub" style="font-size:0.74rem; color:#cccccc; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:6px;">
+            대기 중 · 아카이브 음악 라이브러리 연동됨
+          </div>
+          <div id="jb-review-ticker" style="font-size:0.74rem; color:#ffd83b; background:#101016; border:1px dashed #444; padding:4px 7px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+            “한줄평 메모가 여기에 표시됩니다.”
+          </div>
         </div>
       </div>
-      <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;">
-        <button type="button" class="btn95 sm" id="jb-prev">◀ 이전 곡</button>
-        <button type="button" class="btn95 yellow sm" id="jb-play">▶ 재생</button>
-        <button type="button" class="btn95 sm" id="jb-pause">❚❚ 일시정지</button>
-        <button type="button" class="btn95 sm" id="jb-next">다음 곡 ▶</button>
+
+      <!-- YouTube IFrame 플레이어 영역 -->
+      <div id="jb-player-frame-wrap" style="margin-top:8px; background:#000; border:2px solid #333; position:relative; aspect-ratio:16/9; max-height:205px; width:100%; overflow:hidden;">
+        <div id="jb-player-placeholder" style="width:100%; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#88cc99; font-size:0.8rem; gap:6px; padding:12px; text-align:center;">
+          <span>▶ 트랙을 클릭하면 YouTube 공식 음원/영상을 자동으로 찾아 재생합니다.</span>
+        </div>
       </div>
-      <div style="margin-top:10px;border:1.5px solid #333;background:#000;">
-        <div id="yt-hidden-player"></div>
+
+      <!-- 검색 후보 1~5번 전환 바 -->
+      <div id="jb-cand-bar" style="display:none; margin-top:7px; padding-top:6px; border-top:1px dashed #333; align-items:center; justify-content:space-between; gap:6px; flex-wrap:wrap;">
+        <span style="font-size:0.7rem; color:#ffd83b;">다른 유튜브 버전 선택:</span>
+        <div id="jb-cand-btns" style="display:flex; gap:4px; flex-wrap:wrap;"></div>
       </div>
     </div>
 
-    <div class="sunken-box" style="max-height:190px;overflow-y:auto;">
-      <div class="box-head"><span>재생목록 (음악 아카이브 연동)</span><span class="tag-mini">${jukeboxTracks.length}곡</span></div>
-      ${jukeboxTracks.map((t, idx) => `
-        <div class="jb-track-row" data-idx="${idx}" style="display:flex;justify-content:space-between;align-items:center;padding:6px 8px;border-bottom:1px solid #ddd;cursor:pointer;background:${idx === currentTrackIdx ? '#fff6bf' : '#fff'};font-size:0.8rem;font-weight:800;">
-          <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${idx === currentTrackIdx ? '▶ ' : `${idx + 1}. `}${esc(t.title)} — ${esc(t.creator)}</span>
-          <span style="font-size:0.7rem;color:#000080;">${t.videoId ? 'YT연결됨' : '자동매칭'}</span>
+    <!-- Winamp 물리 컨트롤 버튼 -->
+    <div style="display:flex; flex-wrap:wrap; gap:5px; margin-bottom:8px; align-items:center;">
+      <button type="button" class="btn95 sm" id="jb-btn-prev" title="이전 곡">⏮ 이전</button>
+      <button type="button" class="btn95 yellow sm" id="jb-btn-play" title="재생 / 다시 불러오기">▶ 재생</button>
+      <button type="button" class="btn95 sm" id="jb-btn-stop" title="정지">⏹ 정지</button>
+      <button type="button" class="btn95 sm" id="jb-btn-next" title="다음 곡">⏭ 다음</button>
+      <button type="button" class="btn95 sm" id="jb-btn-shuffle">🔀 셔플: OFF</button>
+      <button type="button" class="btn95 sm" id="jb-btn-repeat">🔁 한곡반복: OFF</button>
+      <button type="button" class="btn95 sky sm" id="jb-btn-toggle-vid">📺 화면접기</button>
+    </div>
+
+    <!-- 직접 YouTube 링크 지정 & 가상 브라우저 연동 바 -->
+    <div class="sunken-box" style="padding:7px 8px; margin-bottom:8px; background:var(--win-gray);">
+      <div style="display:flex; gap:5px; flex-wrap:wrap; align-items:center;">
+        <input type="text" id="jb-manual-yt-inp" placeholder="원하는 YouTube URL을 붙여넣어 이 곡에 영구 연결..." style="flex:1; min-width:190px; font-size:0.76rem;" />
+        <button type="button" class="btn95 green sm" id="jb-btn-bind-yt">링크 연결·재생</button>
+        <button type="button" class="btn95 pink sm" id="jb-btn-open-browser">🌐 탐색기 95에서 찾기</button>
+      </div>
+    </div>
+
+    <!-- 재생목록 (Playlist Editor) -->
+    <div class="sunken-box" style="padding:8px;">
+      <div class="box-head" style="margin-bottom:6px;">
+        <span>PLAYLIST — 수록곡 목록 (<span id="jb-count-num">0</span>곡)</span>
+        <div style="display:flex; gap:4px;">
+          <button type="button" class="btn95 sm" id="jb-filter-music" style="padding:2px 7px; font-size:0.72rem; background:var(--brutal-yellow);">음악만</button>
+          <button type="button" class="btn95 sm" id="jb-filter-all" style="padding:2px 7px; font-size:0.72rem;">전체기록</button>
         </div>
-      `).join('')}
+      </div>
+      <div id="jb-playlist-box" style="max-height:175px; overflow-y:auto; display:flex; flex-direction:column; gap:4px;"></div>
     </div>
   `;
 
-  document.getElementById('jb-prev')?.addEventListener('click', () => playJukeboxTrack(currentTrackIdx - 1));
-  document.getElementById('jb-next')?.addEventListener('click', () => playJukeboxTrack(currentTrackIdx + 1));
-  document.getElementById('jb-play')?.addEventListener('click', () => {
-    if (ytPlayer && typeof ytPlayer.playVideo === 'function' && cur.videoId) {
-      ytPlayer.playVideo();
-      isJukeboxPlaying = true;
-      renderJukeboxUI();
+  bindJukeboxControls();
+}
+
+function bindJukeboxControls() {
+  document.getElementById('jb-btn-prev')?.addEventListener('click', () => {
+    if (!jbState.playlist.length) return;
+    playRetroTone('click');
+    jbState.currentIndex = (jbState.currentIndex - 1 + jbState.playlist.length) % jbState.playlist.length;
+    playJukeboxTrack(jbState.currentIndex);
+  });
+
+  document.getElementById('jb-btn-next')?.addEventListener('click', () => {
+    if (!jbState.playlist.length) return;
+    playRetroTone('click');
+    if (jbState.isShuffle && jbState.playlist.length > 1) {
+      let nextIdx = jbState.currentIndex;
+      while (nextIdx === jbState.currentIndex) {
+        nextIdx = Math.floor(Math.random() * jbState.playlist.length);
+      }
+      jbState.currentIndex = nextIdx;
     } else {
-      playJukeboxTrack(currentTrackIdx);
+      jbState.currentIndex = (jbState.currentIndex + 1) % jbState.playlist.length;
     }
+    playJukeboxTrack(jbState.currentIndex);
   });
-  document.getElementById('jb-pause')?.addEventListener('click', () => {
-    if (ytPlayer && typeof ytPlayer.pauseVideo === 'function') {
-      ytPlayer.pauseVideo();
-      isJukeboxPlaying = false;
-      renderJukeboxUI();
+
+  document.getElementById('jb-btn-play')?.addEventListener('click', () => {
+    if (!jbState.playlist.length) return;
+    playRetroTone('click');
+    playJukeboxTrack(jbState.currentIndex);
+  });
+
+  document.getElementById('jb-btn-stop')?.addEventListener('click', () => {
+    playRetroTone('close');
+    stopJukeboxPlayback();
+  });
+
+  document.getElementById('jb-btn-shuffle')?.addEventListener('click', e => {
+    jbState.isShuffle = !jbState.isShuffle;
+    e.currentTarget.textContent = `🔀 셔플: ${jbState.isShuffle ? 'ON' : 'OFF'}`;
+    e.currentTarget.classList.toggle('yellow', jbState.isShuffle);
+    playRetroTone('click');
+  });
+
+  document.getElementById('jb-btn-repeat')?.addEventListener('click', e => {
+    jbState.isRepeatOne = !jbState.isRepeatOne;
+    e.currentTarget.textContent = `🔁 한곡반복: ${jbState.isRepeatOne ? 'ON' : 'OFF'}`;
+    e.currentTarget.classList.toggle('yellow', jbState.isRepeatOne);
+    playRetroTone('click');
+  });
+
+  document.getElementById('jb-btn-toggle-vid')?.addEventListener('click', e => {
+    jbState.hideVideo = !jbState.hideVideo;
+    const wrap = document.getElementById('jb-player-frame-wrap');
+    if (wrap) {
+      wrap.style.maxHeight = jbState.hideVideo ? '42px' : '205px';
     }
+    e.currentTarget.textContent = jbState.hideVideo ? '📺 화면펼치기' : '📺 화면접기';
+    playRetroTone('click');
   });
-  body.querySelectorAll('.jb-track-row').forEach(row => {
-    row.addEventListener('click', () => playJukeboxTrack(Number(row.dataset.idx)));
+
+  document.getElementById('jb-filter-music')?.addEventListener('click', () => {
+    jbState.musicOnly = true;
+    document.getElementById('jb-filter-music').style.background = 'var(--brutal-yellow)';
+    document.getElementById('jb-filter-all').style.background = '';
+    updateJukebox();
+  });
+
+  document.getElementById('jb-filter-all')?.addEventListener('click', () => {
+    jbState.musicOnly = false;
+    document.getElementById('jb-filter-all').style.background = 'var(--brutal-yellow)';
+    document.getElementById('jb-filter-music').style.background = '';
+    updateJukebox();
+  });
+
+  // 수동 YouTube URL 직접 연결
+  document.getElementById('jb-btn-bind-yt')?.addEventListener('click', () => {
+    const inp = document.getElementById('jb-manual-yt-inp');
+    const url = (inp?.value || '').trim();
+    const vid = parseYtIdFromUrl(url);
+    const track = jbState.playlist[jbState.currentIndex];
+    if (!track) return;
+    if (!vid) {
+      showWin95MessageBox('YouTube 링크 오류 — JUKEBOX 95', '올바른 YouTube 동영상 URL(youtube.com/watch?v=... 또는 youtu.be/...)을 입력해 주세요.', 'boom');
+      return;
+    }
+
+    const cache = getJbCache();
+    const key = getTrackCacheKey(track);
+    const customEntry = [{
+      videoId: vid,
+      title: `${track.title} (사용자 지정 링크)`,
+      channel: track.creator || 'YouTube',
+      sourceUrl: `https://www.youtube.com/watch?v=${vid}`
+    }];
+    cache[key] = customEntry;
+    setJbCache(cache);
+    if (inp) inp.value = '';
+    playRetroTone('open');
+    jbState.candidates = customEntry;
+    jbState.candidateIdx = 0;
+    mountYouTubeEmbedInJukebox(vid, customEntry[0].title);
+    renderJukeboxCandidates();
+  });
+
+  // 현재 곡을 가상 브라우저 95에서 유튜브 검색
+  document.getElementById('jb-btn-open-browser')?.addEventListener('click', () => {
+    const track = jbState.playlist[jbState.currentIndex];
+    const query = track ? `${track.creator} ${track.title}` : '인기 음악 플레이리스트';
+    if (typeof window.openVirtualBrowserWithQuery === 'function') {
+      window.openVirtualBrowserWithQuery(query, true);
+    }
   });
 }
+
+function updateJukebox() {
+  buildJukeboxUI();
+  const source = Array.isArray(archiveItems) ? archiveItems : [];
+  jbState.playlist = jbState.musicOnly
+    ? source.filter(it => it.category === '음악')
+    : [...source];
+
+  if (jbState.currentIndex >= jbState.playlist.length) {
+    jbState.currentIndex = 0;
+  }
+
+  const countEl = document.getElementById('jb-count-num');
+  if (countEl) countEl.textContent = String(jbState.playlist.length);
+
+  renderJukeboxPlaylist();
+}
+
+function renderJukeboxPlaylist() {
+  const box = document.getElementById('jb-playlist-box');
+  if (!box) return;
+
+  if (!jbState.playlist.length) {
+    box.innerHTML = `<div style="padding:14px; text-align:center; font-size:0.8rem; font-weight:800; color:#555;">재생할 수록곡이 없습니다. 음악 기록을 추가하거나 [전체기록] 탭을 눌러보세요.</div>`;
+    return;
+  }
+
+  box.innerHTML = jbState.playlist.map((item, idx) => {
+    const active = idx === jbState.currentIndex;
+    const cached = getJbCache()[getTrackCacheKey(item)];
+    const hasYt = Boolean(parseYtIdFromUrl(item.sourceUrl) || (cached && cached.length));
+    return `
+      <div class="jb-track-row" data-jb-idx="${idx}" style="display:flex; justify-content:space-between; align-items:center; gap:8px; padding:5px 8px; cursor:pointer; border:1.5px solid #111; background:${active ? '#111111' : '#ffffff'}; color:${active ? '#39ff14' : '#111111'}; font-size:0.78rem; font-weight:800;">
+        <div style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+          <span>${active ? '▶' : `${idx + 1}.`}</span>
+          <span>[${esc(item.category)}] ${esc(item.title)} — ${esc(item.creator)}</span>
+        </div>
+        <span style="font-size:0.68rem; padding:1px 5px; border:1px solid currentColor; flex-shrink:0;">
+          ${hasYt ? 'YT READY' : 'AUTO-FIND'}
+        </span>
+      </div>
+    `;
+  }).join('');
+
+  box.querySelectorAll('[data-jb-idx]').forEach(row => {
+    row.addEventListener('click', () => {
+      const idx = Number(row.dataset.jbIdx);
+      playRetroTone('click');
+      playJukeboxTrack(idx);
+    });
+  });
+}
+
+function startJukeboxTimer() {
+  stopJukeboxTimer();
+  jbState.timerSec = 0;
+  jbState.isPlaying = true;
+  jbState.timerInterval = setInterval(() => {
+    if (!jbState.isPlaying) return;
+    jbState.timerSec += 1;
+    const mm = String(Math.floor(jbState.timerSec / 60)).padStart(2, '0');
+    const ss = String(jbState.timerSec % 60).padStart(2, '0');
+    const lcd = document.getElementById('jb-lcd-time');
+    if (lcd) lcd.textContent = `${mm}:${ss}`;
+
+    document.querySelectorAll('#jb-eq-bars .jb-bar').forEach(bar => {
+      bar.style.height = `${4 + Math.floor(Math.random() * 22)}px`;
+    });
+  }, 1000);
+}
+
+function stopJukeboxTimer() {
+  if (jbState.timerInterval) {
+    clearInterval(jbState.timerInterval);
+    jbState.timerInterval = null;
+  }
+  jbState.isPlaying = false;
+  document.querySelectorAll('#jb-eq-bars .jb-bar').forEach((bar, i) => {
+    bar.style.height = `${5 + (i % 3) * 3}px`;
+  });
+}
+
+function stopJukeboxPlayback() {
+  if (jbState.abortCtrl) {
+    jbState.abortCtrl.abort();
+    jbState.abortCtrl = null;
+  }
+  stopJukeboxTimer();
+  const pill = document.getElementById('jb-status-pill');
+  if (pill) pill.textContent = 'STOPPED';
+  const wrap = document.getElementById('jb-player-frame-wrap');
+  if (wrap) {
+    wrap.innerHTML = `<div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; color:#88cc99; font-size:0.8rem;">⏹ 재생이 정지되었습니다.</div>`;
+  }
+}
+
+function mountYouTubeEmbedInJukebox(videoId, labelText) {
+  const wrap = document.getElementById('jb-player-frame-wrap');
+  const pill = document.getElementById('jb-status-pill');
+  const sub = document.getElementById('jb-track-sub');
+  if (!wrap) return;
+
+  const embedUrl = `https://www.youtube.com/embed/${encodeURIComponent(videoId)}?autoplay=1&rel=0&playsinline=1&enablejsapi=1${jbState.isRepeatOne ? `&loop=1&playlist=${encodeURIComponent(videoId)}` : ''}`;
+
+  wrap.innerHTML = `
+    <iframe
+      src="${embedUrl}"
+      title="${esc(labelText || 'YouTube Player')}"
+      style="width:100%; height:100%; border:0; display:block;"
+      allow="autoplay; encrypted-media; picture-in-picture"
+      referrerpolicy="strict-origin-when-cross-origin"
+      allowfullscreen>
+    </iframe>
+  `;
+
+  if (pill) pill.textContent = 'PLAYING';
+  if (sub && labelText) sub.textContent = `연결된 스트림: ${labelText}`;
+  startJukeboxTimer();
+}
+
+function renderJukeboxCandidates() {
+  const bar = document.getElementById('jb-cand-bar');
+  const btns = document.getElementById('jb-cand-btns');
+  if (!bar || !btns) return;
+
+  if (!jbState.candidates || jbState.candidates.length <= 1) {
+    bar.style.display = 'none';
+    return;
+  }
+
+  bar.style.display = 'flex';
+  btns.innerHTML = jbState.candidates.slice(0, 5).map((c, idx) => `
+    <button type="button" class="btn95 sm ${idx === jbState.candidateIdx ? 'yellow' : ''}" data-jb-cand="${idx}" style="padding:1px 6px; font-size:0.68rem;" title="${esc(c.title)}">
+      #${idx + 1}
+    </button>
+  `).join('');
+
+  btns.querySelectorAll('[data-jb-cand]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const idx = Number(btn.dataset.jbCand);
+      const chosen = jbState.candidates[idx];
+      if (!chosen) return;
+      jbState.candidateIdx = idx;
+      playRetroTone('click');
+      mountYouTubeEmbedInJukebox(chosen.videoId, `${chosen.title} (${chosen.channel || chosen.creator})`);
+      renderJukeboxCandidates();
+    });
+  });
+}
+
+async function playJukeboxTrack(index) {
+  buildJukeboxUI();
+  if (!jbState.playlist.length) return;
+
+  jbState.currentIndex = Math.max(0, Math.min(index, jbState.playlist.length - 1));
+  const track = jbState.playlist[jbState.currentIndex];
+  renderJukeboxPlaylist();
+
+  const marquee = document.getElementById('jb-marquee-title');
+  const sub = document.getElementById('jb-track-sub');
+  const ticker = document.getElementById('jb-review-ticker');
+  const pill = document.getElementById('jb-status-pill');
+  const wrap = document.getElementById('jb-player-frame-wrap');
+
+  if (marquee) marquee.textContent = `${jbState.currentIndex + 1}. ${track.title} — ${track.creator}`;
+  if (ticker) ticker.textContent = `★${track.rating || 5}점 · “${track.review || '등록된 한줄평 없음'}”`;
+
+  // 1순위: 기록 자체에 저장된 YouTube URL이 있는 경우 즉시 재생
+  const directId = parseYtIdFromUrl(track.sourceUrl);
+  if (directId) {
+    jbState.candidates = [{ videoId: directId, title: track.title, channel: track.creator }];
+    jbState.candidateIdx = 0;
+    renderJukeboxCandidates();
+    mountYouTubeEmbedInJukebox(directId, `${track.title} (저장된 원본 링크)`);
+    return;
+  }
+
+  // 2순위: 로컬 캐시에 이미 검색된 YouTube 후보가 있는 경우 즉시 재생
+  const cache = getJbCache();
+  const cacheKey = getTrackCacheKey(track);
+  if (Array.isArray(cache[cacheKey]) && cache[cacheKey].length > 0) {
+    jbState.candidates = cache[cacheKey];
+    jbState.candidateIdx = 0;
+    renderJukeboxCandidates();
+    const first = jbState.candidates[0];
+    mountYouTubeEmbedInJukebox(first.videoId, `${first.title} (${first.channel || first.creator})`);
+    return;
+  }
+
+  // 3순위: Apps Script 전용 ytsearch 엔드포인트 호출
+  if (jbState.abortCtrl) jbState.abortCtrl.abort();
+  const ctrl = new AbortController();
+  jbState.abortCtrl = ctrl;
+  const timeoutId = setTimeout(() => ctrl.abort(), 11000);
+
+  if (pill) pill.textContent = 'SEARCHING...';
+  if (sub) sub.textContent = `YouTube에서 「${track.creator} - ${track.title}」 검색 중...`;
+  if (wrap) {
+    wrap.innerHTML = `<div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; color:#ffd83b; font-size:0.82rem; font-weight:900;">🔍 YouTube 오디오 스트림 자동 탐색 중...</div>`;
+  }
+
+  try {
+    const query = track.category === '음악'
+      ? `${track.creator} ${track.title} official audio`
+      : `${track.title} ${track.creator}`;
+    const res = await fetch(`${GAS_WEB_APP_URL}?action=ytsearch&q=${encodeURIComponent(query)}&limit=5`, {
+      signal: ctrl.signal
+    });
+    const json = await res.json();
+    const videos = Array.isArray(json.videos) ? json.videos : [];
+
+    if (!videos.length) {
+      throw new Error('일치하는 YouTube 영상을 찾지 못했습니다.');
+    }
+
+    cache[cacheKey] = videos;
+    setJbCache(cache);
+    jbState.candidates = videos;
+    jbState.candidateIdx = 0;
+    renderJukeboxCandidates();
+
+    const best = videos[0];
+    mountYouTubeEmbedInJukebox(best.videoId, `${best.title} (${best.channel || best.creator})`);
+  } catch (err) {
+    stopJukeboxTimer();
+    if (pill) pill.textContent = 'NOT FOUND';
+    if (sub) sub.textContent = (err && err.name === 'AbortError') ? '검색 시간 초과 — 아래에서 직접 링크를 연결해 주세요.' : (err.message || '자동 검색 실패');
+    if (wrap) {
+      const ytFallbackSearch = `https://www.youtube.com/results?search_query=${encodeURIComponent(`${track.creator} ${track.title}`)}`;
+      wrap.innerHTML = `
+        <div style="width:100%; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; padding:12px; text-align:center; color:#fff; font-size:0.78rem;">
+          <div>자동 매칭에 실패했습니다. 탐색기 95에서 검색하거나 아래 링크를 붙여넣어 연결할 수 있습니다.</div>
+          <a class="btn95 pink sm" href="${ytFallbackSearch}" target="_blank" rel="noopener noreferrer">새 탭에서 YouTube 검색 &gt;&gt;</a>
+        </div>
+      `;
+    }
+  } finally {
+    clearTimeout(timeoutId);
+    if (jbState.abortCtrl === ctrl) jbState.abortCtrl = null;
+  }
+}
+
+window.updateJukebox = updateJukebox;
+window.playJukeboxTrack = playJukeboxTrack;
