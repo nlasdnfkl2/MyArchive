@@ -3,10 +3,11 @@
 // ============================================================
 
 window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-window.__MOD_VERSIONS.visualizer = typeof APP_BUILD_VERSION !== 'undefined' ? APP_BUILD_VERSION : 'v2026.11.17-04';
+window.__MOD_VERSIONS.visualizer = typeof APP_BUILD_VERSION !== 'undefined' ? APP_BUILD_VERSION : 'v2026.11.22-02';
 
 let nodeSimAnimId = null;
 let selectedCloudKeyword = '';
+let visualizerScope = 'MY'; // 'MY' (현재 계정 전체) | 'SHARED' (공개 + 공용 계정 전체)
 
 document.addEventListener('DOMContentLoaded', () => {
   window.addEventListener('window:opened', ev => {
@@ -15,6 +16,41 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 });
+
+// ============================================================
+// 0. 시각화 대상 데이터 범위 필터 (내 계정 전체 vs 공개+공용 전체)
+// ============================================================
+function getVisualizerItemsByScope(scope) {
+  const all = Array.isArray(archiveItems) ? archiveItems : [];
+  const me = typeof getCurrentUser === 'function' ? getCurrentUser() : null;
+  const myName = me && me.username ? String(me.username).trim() : '';
+  const isGuestMode = !me || me.isGuest || myName === '공용' || myName === '공용 계정';
+
+  // 1) 현재 계정(내 기록 전체 — 비공개 포함)
+  const myItems = typeof getMyVisibleArchiveItems === 'function'
+    ? getMyVisibleArchiveItems()
+    : all.filter(it => {
+        const owner = String(it.owner || '').trim();
+        if (isGuestMode) {
+          return owner === '' || owner === '공용' || owner === '공용 계정' || String(it.shared || 'Y') !== 'N';
+        }
+        return owner === myName;
+      });
+
+  // 2) 공개된 기록 + 공용 계정에서 올린 모든 기록
+  const publicAndGuestItems = all.filter(it => {
+    const owner = String(it.owner || '').trim();
+    const isShared = String(it.shared || 'Y').toUpperCase() !== 'N';
+    const isPublicAccount = owner === '' || owner === '공용' || owner === '공용 계정' || owner.toUpperCase() === 'GUEST';
+    return isShared || isPublicAccount;
+  });
+
+  return {
+    myItems,
+    publicAndGuestItems,
+    activeItems: scope === 'SHARED' ? publicAndGuestItems : myItems
+  };
+}
 
 // ============================================================
 // 1. 시각화 메인 워크스페이스 렌더링
@@ -28,14 +64,42 @@ function renderVisualizerWorkspace() {
     nodeSimAnimId = null;
   }
 
-  const items = Array.isArray(archiveItems) ? archiveItems : [];
+  const { myItems, publicAndGuestItems, activeItems } = getVisualizerItemsByScope(visualizerScope);
+  const items = activeItems;
+
+  const scopeToolbarHtml = `
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px;padding:6px 8px;background:var(--win-gray);border:1.5px solid #111;">
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+        <span style="font-size:0.78rem;font-weight:900;">📊 분석 범위:</span>
+        <button type="button" class="btn95 sm ${visualizerScope === 'MY' ? 'yellow' : ''}" data-vis-scope="MY">
+          👤 내 계정 전체 (${myItems.length}건)
+        </button>
+        <button type="button" class="btn95 sm ${visualizerScope === 'SHARED' ? 'yellow' : ''}" data-vis-scope="SHARED">
+          🌐 공개 + 공용 계정 (${publicAndGuestItems.length}건)
+        </button>
+      </div>
+      <div style="display:flex;gap:6px;">
+        <button type="button" class="btn95 sky sm" id="btn-vis-reheat">물리 엔진 재정렬</button>
+        <button type="button" class="btn95 sm" id="btn-vis-refresh">데이터 새로고침</button>
+      </div>
+    </div>
+  `;
+
   if (items.length === 0) {
     body.innerHTML = `
+      ${scopeToolbarHtml}
       <div class="sunken-box" style="text-align:center;padding:32px;">
-        <p style="font-size:1rem;font-weight:900;margin-bottom:8px;">시각화할 감상 기록 데이터가 없습니다.</p>
-        <p style="font-size:0.82rem;color:#555;">먼저 [+ 새 감상 기록하기]에서 도서·음악·영상 기록을 등록해 주세요.</p>
+        <p style="font-size:1rem;font-weight:900;margin-bottom:8px;">
+          ${visualizerScope === 'MY' ? '현재 계정에 시각화할 감상 기록이 없습니다.' : '공개 및 공용 계정의 감상 기록 데이터가 없습니다.'}
+        </p>
+        <p style="font-size:0.82rem;color:#555;">
+          ${visualizerScope === 'MY'
+            ? '상단에서 [🌐 공개 + 공용 계정] 범위로 전환하거나 [+ 새 감상 기록하기]에서 기록을 등록해 주세요.'
+            : '먼저 [+ 새 감상 기록하기]에서 도서·음악·영상 기록을 등록해 주세요.'}
+        </p>
       </div>
     `;
+    bindVisualizerScopeButtons(body);
     return;
   }
 
@@ -43,14 +107,13 @@ function renderVisualizerWorkspace() {
   const wordList = extractArchiveKeywords(items);
 
   body.innerHTML = `
-    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
-      <div style="font-size:0.82rem;font-weight:900;">
+    ${scopeToolbarHtml}
+
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:8px;">
+      <div style="font-size:0.8rem;font-weight:900;">
         노드 구성: <span style="color:#000080;">■ 매체</span> — <span style="color:#d63031;">● 장르</span> — <span style="color:#009432;">◆ 작품(클릭 시 상세창 열기)</span>
       </div>
-      <div style="display:flex;gap:6px;">
-        <button type="button" class="btn95 yellow sm" id="btn-vis-reheat">물리 엔진 재정렬</button>
-        <button type="button" class="btn95 sm" id="btn-vis-refresh">데이터 새로고침</button>
-      </div>
+      <span class="tag-mini">${visualizerScope === 'MY' ? '내 아카이브 분석 모드' : '공개·공용 전체 통합 분석 모드'}</span>
     </div>
 
     <!-- 1. Canvas 물리 기반 인터랙티브 데이터 노드 맵 -->
@@ -77,7 +140,7 @@ function renderVisualizerWorkspace() {
         <div id="wordcloud-match-box" style="margin-top:8px;font-size:0.76rem;font-weight:700;color:#222;"></div>
       </div>
 
-      <!-- 3. 백분율(%) 통계 집계표 & 취향 편중도 진단 (11주차 중급 반영) -->
+      <!-- 3. 백분율(%) 통계 집계표 & 취향 편중도 진단 -->
       <div class="sunken-box">
         <div class="box-head">
           <span>매체별 백분율(%) &amp; 취향 편중도 진단</span>
@@ -110,6 +173,8 @@ function renderVisualizerWorkspace() {
     </div>
   `;
 
+  bindVisualizerScopeButtons(body);
+
   // 워드클라우드 키워드 클릭 필터 바인딩
   body.querySelectorAll('.wc-tag-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -137,12 +202,26 @@ function renderVisualizerWorkspace() {
     }
   }
 
+  startPhysicsNodeSimulation(items);
+}
+
+function bindVisualizerScopeButtons(container) {
+  container.querySelectorAll('[data-vis-scope]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const nextScope = btn.dataset.visScope;
+      if (nextScope && nextScope !== visualizerScope) {
+        visualizerScope = nextScope;
+        selectedCloudKeyword = '';
+        playRetroTone('click');
+        renderVisualizerWorkspace();
+      }
+    });
+  });
+
   document.getElementById('btn-vis-refresh')?.addEventListener('click', () => {
     playRetroTone('click');
     renderVisualizerWorkspace();
   });
-
-  startPhysicsNodeSimulation(items);
 }
 
 // ============================================================
@@ -227,10 +306,11 @@ function buildArchiveStatsAndBias(items) {
   const sortedByCount = [...rows].sort((a, b) => b.count - a.count);
   const top = sortedByCount[0];
   const low = categories.find(c => !rows.some(r => r.category === c)) || sortedByCount[sortedByCount.length - 1]?.category;
+  const scopeLabel = visualizerScope === 'MY' ? '내 아카이브' : '공개·공용 아카이브';
 
   let diagnosis = '';
   if (top && Number(top.pct) >= 55) {
-    diagnosis = `[편중도 진단] '${top.category}' 매체가 전체의 ${top.pct}%를 차지하는 집중형 아카이브입니다. 균형 확장을 위해 '${low}' 분야 감상을 추가해 보세요.`;
+    diagnosis = `[편중도 진단] '${top.category}' 매체가 ${scopeLabel} 전체의 ${top.pct}%를 차지하는 집중형 구성입니다. 균형 확장을 위해 '${low}' 분야 감상을 추가해 보세요.`;
   } else if (top) {
     diagnosis = `[균형도 진단] '${top.category}'(${top.pct}%)를 중심으로 여러 매체가 고르게 축적되고 있습니다. 최장 연속 감상 기록은 ${maxStreak}일입니다.`;
   }
