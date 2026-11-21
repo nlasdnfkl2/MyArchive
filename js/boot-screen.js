@@ -4,7 +4,7 @@
 // ============================================================
 
 window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-window.__MOD_VERSIONS.bootScreen = 'v2026.11.22-v5';
+window.__MOD_VERSIONS.bootScreen = 'v2026.11.22-v6';
 
 const SESSION_USER_KEY = 'myarchive95_current_user_v2';
 const USERS_CACHE_KEY = 'myarchive95_users_cache_v2';
@@ -70,22 +70,29 @@ const PIXEL_AVATAR_OPTIONS = [
   { key: 'star', label: '별' }
 ];
 
-const EMOJI_TO_PIXEL_KEY = {
-  '🐸': 'frog',
-  '🌐': 'globe',
-  '👤': 'user',
-  '📚': 'book',
-  '🎧': 'headphone',
-  '🎬': 'movie',
-  '⭐': 'star'
+// Code.gs 서버 코드(ADMIN/PUBLIC/USER) 및 구버전 시트 유니코드 이모지 호환 매핑
+const AVATAR_ALIAS_MAP = {
+  ADMIN: 'frog',
+  PUBLIC: 'globe',
+  USER: 'user',
+  '\u{1F438}': 'frog',
+  '\u{1F310}': 'globe',
+  '\u{1F464}': 'user',
+  '\u{1F4DA}': 'book',
+  '\u{1F3A7}': 'headphone',
+  '\u{1F3AC}': 'movie',
+  '\u{2B50}': 'star'
 };
 
 function normalizePixelAvatarKey(rawAvatar, role = 'user') {
   if (role === 'public' && !rawAvatar) return 'globe';
+  if ((role === 'owner' || role === 'admin') && !rawAvatar) return 'frog';
   const val = String(rawAvatar || '').trim();
-  if (EMOJI_TO_PIXEL_KEY[val]) return EMOJI_TO_PIXEL_KEY[val];
+  const upperVal = val.toUpperCase();
+  if (AVATAR_ALIAS_MAP[val]) return AVATAR_ALIAS_MAP[val];
+  if (AVATAR_ALIAS_MAP[upperVal]) return AVATAR_ALIAS_MAP[upperVal];
   if (PIXEL_AVATARS[val]) return val;
-  return role === 'public' ? 'globe' : 'user';
+  return role === 'public' ? 'globe' : ((role === 'owner' || role === 'admin') ? 'frog' : 'user');
 }
 
 function renderPixelAvatarHtml(rawAvatar, sizePx = 28, role = 'user') {
@@ -94,24 +101,28 @@ function renderPixelAvatarHtml(rawAvatar, sizePx = 28, role = 'user') {
   return `<span class="pixel-avatar-wrap" style="width:${sizePx}px;height:${sizePx}px;">${svg}</span>`;
 }
 
-// 1995년 시대 고증에 맞게 이모지를 제거하고 워크스테이션 기능 소개 태그로 정제
+// 1995년 PC통신/Win95 시대 고증에 맞게 이모지를 제거하고 워크스테이션 소개 태그로 정제
 function formatRetroBio(rawBio, userObj = {}) {
   const cleaned = String(rawBio || '')
     .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\uFE0F]/gu, '')
     .trim();
 
+  const isAdmin = typeof isAdminUser === 'function'
+    ? isAdminUser(userObj)
+    : (userObj.role === 'owner' || userObj.role === 'admin' || userObj.username === '문태양');
+
   if (userObj.role === 'public' || userObj.username === '공용') {
     return cleaned
       ? `[PUBLIC] ${cleaned.replace(/^\[PUBLIC\]\s*/i, '')}`
-      : '[PUBLIC] 공용 단말기 모드 - 누구나 자유롭게 감상을 기록하고 공유';
+      : '[PUBLIC] 공용 단말기 모드 - 누구나 자유롭게 감상을 기록하고 광장 게시판에 공유';
   }
-  if (userObj.role === 'owner' || userObj.username === '문태양') {
+  if (isAdmin) {
     return cleaned
       ? `[SYSOP] ${cleaned.replace(/^\[SYSOP\]\s*/i, '')}`
-      : '[SYSOP] 개인 서재 보관함 및 전체 게시판 관리 워크스테이션';
+      : '[SYSOP] 시스템 관리자 워크스테이션 - 개인 서재 및 광장 게시판 전체 관리';
   }
   if (!cleaned) {
-    return '[USER] 개인 서재 보관함 관리 및 전체 게시판 글쓰기·스크랩 지원';
+    return '[USER] 개인 서재 보관함 관리 및 광장 게시판 기고·스크랩 지원';
   }
   return /^\[[A-Z0-9_-]+\]/i.test(cleaned) ? cleaned : `[USER] ${cleaned}`;
 }
@@ -126,14 +137,14 @@ const DEFAULT_FALLBACK_USERS = [
     id: 'USR-PUBLIC',
     username: '공용',
     role: 'public',
-    bio: '[PUBLIC] 공용 단말기 모드 - 누구나 자유롭게 감상을 기록하고 공유',
+    bio: '[PUBLIC] 공용 단말기 모드 - 누구나 자유롭게 감상을 기록하고 광장 게시판에 공유',
     avatar: 'globe'
   },
   {
     id: 'USR-OWNER',
     username: '문태양',
     role: 'owner',
-    bio: '[SYSOP] 개인 서재 보관함 및 전체 게시판 관리 워크스테이션',
+    bio: '[SYSOP] 시스템 관리자 워크스테이션 - 개인 서재 및 광장 게시판 전체 관리',
     avatar: 'frog'
   }
 ];
@@ -151,7 +162,7 @@ const bootState = {
   biosBeepPlayed: false
 };
 
-// 공용 계정을 제외한 개인 계정 목록만 추출
+// 공용 계정을 제외한 개인/관리자 계정 목록만 추출
 function getPersonalUsersList() {
   const all = Array.isArray(window.registeredOsUsers) ? window.registeredOsUsers : DEFAULT_FALLBACK_USERS;
   return all.filter(u =>
@@ -182,22 +193,30 @@ function getCurrentUser() {
 }
 
 function setCurrentUser(userObj) {
-  window.currentOsUser = userObj;
-  saveLocalCache(SESSION_USER_KEY, userObj);
+  const normalized = {
+    ...userObj,
+    avatar: normalizePixelAvatarKey(userObj.avatar, userObj.role)
+  };
+  window.currentOsUser = normalized;
+  saveLocalCache(SESSION_USER_KEY, normalized);
   updateDesktopUserBadge();
 }
 
 function updateDesktopUserBadge() {
   const user = getCurrentUser();
+  const isAdmin = typeof isAdminUser === 'function'
+    ? isAdminUser(user)
+    : (user && (user.role === 'owner' || user.role === 'admin'));
+
   const badge = document.getElementById('active-user-badge');
   if (badge && user) {
-    const roleLabel = user.role === 'public' ? '비로그인' : '개인';
+    const roleLabel = user.role === 'public' ? '비로그인' : (isAdmin ? '관리자' : '개인');
     badge.innerHTML = `${renderPixelAvatarHtml(user.avatar, 14, user.role)}<span>${esc(user.username)} (${roleLabel})</span>`;
   }
   const winMainTitle = document.getElementById('win-main-title-text');
   if (winMainTitle && user) {
     winMainTitle.textContent = user.role === 'public'
-      ? 'C:\\MY-ARCHIVE\\PUBLIC.EXE — 공용 워크스테이션 아카이브'
+      ? 'C:\\MY-ARCHIVE\\PUBLIC.EXE — 공용 단말기 아카이브'
       : `C:\\MY-ARCHIVE\\${user.username.toUpperCase()}.EXE — ${user.username}의 개인 아카이브`;
   }
 }
@@ -318,6 +337,15 @@ async function syncRegisteredUsersList() {
     if (json.status === 'success' && Array.isArray(json.users) && json.users.length > 0) {
       window.registeredOsUsers = json.users;
       saveLocalCache(USERS_CACHE_KEY, json.users);
+
+      // 현재 활성 세션의 사용자 권한이 서버와 다르면 동기화
+      if (window.currentOsUser && window.currentOsUser.username) {
+        const syncedMe = json.users.find(u => u.username === window.currentOsUser.username);
+        if (syncedMe && syncedMe.role !== window.currentOsUser.role) {
+          setCurrentUser({ ...window.currentOsUser, role: syncedMe.role });
+        }
+      }
+
       populateLoginAccountSelect();
       updateLogonStatusLine();
     }
@@ -332,8 +360,8 @@ function updateLogonStatusLine() {
   const personalCount = getPersonalUsersList().length;
   const archiveCount = Array.isArray(window.archiveItems) ? window.archiveItems.length : 0;
   statusEl.textContent = archiveCount > 0
-    ? `[ONLINE] 중앙 아카이브 서버 연결 완료 (등록 이용자 ${personalCount}명 · 전체 기록 ${archiveCount}건)`
-    : `[READY] 사용자 인증 및 아카이브 워크스테이션 준비 완료 (등록 이용자 ${personalCount}명)`;
+    ? `[ONLINE] 중앙 아카이브 서버 접속 완료 (등록 이용자 ${personalCount}명 · 전체 자료 ${archiveCount}건)`
+    : `[READY] 사용자 인증 및 아카이브 단말기 준비 완료 (등록 이용자 ${personalCount}명)`;
   if (ledEl) ledEl.style.background = '#008000';
 }
 
@@ -360,8 +388,10 @@ function populateLoginAccountSelect() {
       : `<option value="__CUSTOM__">[+] 등록된 개인 계정 없음 — 직접 이름 입력...</option>`;
   } else {
     sel.innerHTML = filteredUsers.map(u => {
-      const prefix = u.role === 'owner' ? '[SYSOP]' : '[USER]';
-      return `<option value="${esc(u.username)}">${prefix} ${esc(u.username)} (개인 계정)</option>`;
+      const isAdmin = typeof isAdminUser === 'function' ? isAdminUser(u) : (u.role === 'owner' || u.role === 'admin');
+      const prefix = isAdmin ? '[SYSOP]' : '[USER]';
+      const roleDesc = isAdmin ? '관리자 계정' : '개인 계정';
+      return `<option value="${esc(u.username)}">${prefix} ${esc(u.username)} (${roleDesc})</option>`;
     }).join('') + `<option value="__CUSTOM__">[+] 직접 사용자 이름 입력...</option>`;
   }
 
@@ -415,7 +445,8 @@ function handleLoginAccountSelectChange() {
 
   const matched = getPersonalUsersList().find(u => u.username === val);
   const userObj = matched || { username: val, role: 'user', avatar: 'user', bio: '' };
-  const roleTag = userObj.role === 'owner' ? '[SYSOP]' : '[USER]';
+  const isAdmin = typeof isAdminUser === 'function' ? isAdminUser(userObj) : (userObj.role === 'owner' || userObj.role === 'admin');
+  const roleTag = isAdmin ? '[SYSOP]' : '[USER]';
 
   if (avatarBox) {
     avatarBox.innerHTML = renderPixelAvatarHtml(userObj.avatar, 32, userObj.role);
@@ -573,11 +604,19 @@ function finishDesktopLogin(userObj) {
   bootState.stage = 'done';
   setCurrentUser(userObj);
 
+  const isAdmin = typeof isAdminUser === 'function'
+    ? isAdminUser(userObj)
+    : (userObj.role === 'owner' || userObj.role === 'admin');
+
   const statusLeft = document.getElementById('status-left');
   if (statusLeft) {
-    statusLeft.textContent = userObj.role === 'public'
-      ? '[GUEST] 로그인 없이 이용 중 — 공용 워크스테이션 및 전체 게시판 활성화'
-      : `[LOGIN] ${userObj.username}님 환영합니다 — 개인 감상 보관함 및 전체 게시판 준비 완료`;
+    if (userObj.role === 'public') {
+      statusLeft.textContent = '[GUEST] 공용 단말기 접속 중 — 광장 게시판 및 공용 자료 열람 활성화';
+    } else if (isAdmin) {
+      statusLeft.textContent = `[SYSOP] 관리자(${userObj.username}) 접속 완료 — 개인 보관함 및 광장 게시판 전체 관리 권한`;
+    } else {
+      statusLeft.textContent = `[LOGIN] ${userObj.username}님 환영합니다 — 개인 감상 보관함 및 광장 게시판 준비 완료`;
+    }
   }
 
   playWin95StartupSound();
@@ -712,7 +751,7 @@ function bindBootScreenEvents() {
     const pin = (document.getElementById('login-password')?.value || '').trim();
 
     if (!rawName) {
-      showLoginError('사용자 이름을 입력하거나 선택해 주세요.');
+      showLoginError('사용자 이름을 입력하거나 선택해 주십시오.');
       return;
     }
 
@@ -747,7 +786,7 @@ function bindBootScreenEvents() {
       if (rawName === '문태양' && pin === '1234') {
         finishDesktopLogin(DEFAULT_FALLBACK_USERS[1]);
       } else {
-        showLoginError('서버 연결에 실패했습니다. 네트워크 상태를 확인하십시오.');
+        showLoginError('중앙 서버 회선 연결에 실패했습니다. 통신 상태를 확인하십시오.');
       }
     } finally {
       if (btn) { btn.disabled = false; btn.textContent = '확인 (로그인)'; }
@@ -771,7 +810,7 @@ function bindBootScreenEvents() {
     const bio = formatRetroBio(rawBio, { username, role: 'user' });
 
     if (username.length < 2 || username.length > 15) {
-      showLoginError('사용자 이름은 2~15자로 입력해 주세요.');
+      showLoginError('사용자 이름은 2~15자로 입력해 주십시오.');
       return;
     }
     if (username === '공용' || username.toUpperCase() === 'PUBLIC') {
@@ -779,7 +818,7 @@ function bindBootScreenEvents() {
       return;
     }
     if (!/^\d{4}$/.test(pin)) {
-      showLoginError('비밀번호는 반드시 숫자 4자리(예: 2580)로 입력해 주세요.');
+      showLoginError('비밀번호는 반드시 숫자 4자리(예: 2580)로 입력해 주십시오.');
       return;
     }
     if (pin !== pinConfirm) {
@@ -805,7 +844,7 @@ function bindBootScreenEvents() {
         showLoginError(json.message || '계정 생성에 실패했습니다.');
       }
     } catch {
-      showLoginError('중앙 서버 통신 중 오류가 발생했습니다. 잠시 후 다시 시도하십시오.');
+      showLoginError('중앙 서버 통신 중 회선 오류가 발생했습니다. 잠시 후 다시 시도하십시오.');
     } finally {
       if (btn) { btn.disabled = false; btn.textContent = '계정 생성 및 즉시 로그인'; }
     }
