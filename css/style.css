@@ -1684,3 +1684,132 @@ body.boot-locked {
     gap: 4px;
   }
 }
+
+
+/* ============================================================
+   Windows 95 Logon Tabs, Task Manager & Community SNS Feed Styles
+   ============================================================ */
+.win95-login-tabs {
+  display: flex;
+  background: #b0b0b0;
+  border-bottom: 2px solid #111111;
+  padding: 4px 8px 0;
+  gap: 4px;
+}
+
+.win95-tab-btn {
+  background: #c0c0c0;
+  border: 2px solid #111111;
+  border-bottom: none;
+  padding: 5px 10px;
+  font-size: 0.76rem;
+  font-weight: 900;
+  cursor: pointer;
+  color: #333333;
+}
+
+.win95-tab-btn.active {
+  background: #ffffff;
+  color: #000080;
+  position: relative;
+  top: 2px;
+  padding-bottom: 7px;
+}
+
+.win95-login-err-banner {
+  background: #ff4757;
+  color: #ffffff;
+  font-size: 0.78rem;
+  font-weight: 900;
+  padding: 6px 12px;
+  border-bottom: 2px solid #111111;
+}
+
+.sns-post-card {
+  background: #ffffff;
+  border: 2.5px solid #111111;
+  box-shadow: 4px 4px 0 #111111;
+  padding: 12px;
+}
+
+.sns-post-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1.5px dashed #cccccc;
+  margin-bottom: 10px;
+}
+
+.sns-avatar-box {
+  width: 34px;
+  height: 34px;
+  border: 2px solid #111111;
+  background: var(--brutal-yellow, #ffd83b);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.15rem;
+}
+
+.sns-role-tag {
+  font-size: 0.68rem;
+  padding: 1px 6px;
+  border: 1.5px solid #111111;
+  font-weight: 900;
+}
+
+.sns-role-tag.pub { background: #48dbfb; color: #111111; }
+.sns-role-tag.priv { background: #2ed573; color: #111111; }
+
+.sns-post-body {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.sns-post-cover {
+  width: 82px;
+  height: 112px;
+  object-fit: cover;
+  border: 2px solid #111111;
+  flex-shrink: 0;
+  background: #111111;
+}
+
+.sns-post-review {
+  background: var(--brutal-paper, #f7f5ee);
+  border: 1.5px solid #111111;
+  padding: 8px 10px;
+  font-size: 0.84rem;
+  line-height: 1.5;
+  font-weight: 600;
+  white-space: pre-wrap;
+}
+
+.sns-post-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1.5px solid #eeeeee;
+}
+
+.sns-cmt-drawer {
+  margin-top: 8px;
+  background: var(--win-gray, #c0c0c0);
+  border: 1.5px solid #111111;
+  padding: 8px;
+}
+
+.taskmgr-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-bottom: 1px solid #dddddd;
+  font-size: 0.8rem;
+}
