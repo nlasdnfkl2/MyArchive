@@ -1,11 +1,50 @@
 // ============================================================
 // MY-ARCHIVE 95 OS — Retro Mini-Game Pack (GAMEPACK95.EXE)
+// (Solitaire 95, Classic Bevel Minesweeper, Memory Flip & Hi-Lo)
 // ============================================================
 
 window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-window.__MOD_VERSIONS.gamepack = typeof APP_BUILD_VERSION !== 'undefined' ? APP_BUILD_VERSION : 'v2026.11.17-05';
+window.__MOD_VERSIONS.gamepack = typeof APP_BUILD_VERSION !== 'undefined' ? APP_BUILD_VERSION : 'v2026.11.22-03';
 
 let activeGameTab = 'solitaire';
+
+// 1995년 16x16 도트 픽셀 SVG 아이콘 (이모지 미사용)
+const GAMEPACK_PIXEL_ICONS = {
+  mine: `
+    <svg class="pixel-svg-14" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true" style="vertical-align:-2px;">
+      <path fill="#000000" d="M7 1h2v2h2v1h1v2h2v2h-2v2h-1v1H9v2H7v-2H5v-1H4V8H2V6h2V4h1V3h2V1z"/>
+      <path fill="#000000" d="M3 2h2v2H3V2zm8 0h2v2h-2V2zM3 10h2v2H3v-2zm8 0h2v2h-2v-2z"/>
+      <path fill="#ffffff" d="M6 5h2v2H6V5z"/>
+    </svg>`,
+  flag: `
+    <svg class="pixel-svg-14" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true" style="vertical-align:-2px;">
+      <path fill="#ff0000" d="M4 2h5v1h2v2H9v1H4V2z"/>
+      <path fill="#000000" d="M8 6h1v6H8V6zM5 12h7v1H5v-1zM4 13h9v2H4v-2z"/>
+    </svg>`,
+  star: `
+    <svg class="pixel-svg-14" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true" style="vertical-align:-2px;">
+      <path fill="#000000" d="M7 1h2v3h5v2h-2v2h1v5h-2v-1H9v-1H7v1H5v1H3V8h1V6H2V4h5V1z"/>
+      <path fill="#ffd83b" d="M7 2h2v3h4v1h-2v2h1v4h-2v-1H9v-1H7v1H6v1H4V8h1V6H3V5h4V2z"/>
+    </svg>`,
+  trophy: `
+    <svg class="pixel-svg-14" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true" style="vertical-align:-2px;">
+      <path fill="#000000" d="M4 1h8v2h2v4h-2v1h-2v2H9v2h3v2H4v-2h3v-2H6V8H4V7H2V3h2V1z"/>
+      <path fill="#ffd83b" d="M5 2h6v5H9v2H7V7H5V2zM3 4h1v2H3V4zm9 0h1v2h-1V4zM5 12h6v1H5v-1z"/>
+    </svg>`
+};
+
+function safePlayGameTone(type) {
+  if (typeof playRetroTone === 'function') {
+    playRetroTone(type);
+  }
+}
+
+function getGameArchivePool() {
+  if (typeof getMyVisibleArchiveItems === 'function') {
+    return getMyVisibleArchiveItems();
+  }
+  return Array.isArray(archiveItems) ? archiveItems : [];
+}
 
 document.addEventListener('DOMContentLoaded', () => {
   window.addEventListener('window:opened', ev => {
@@ -22,7 +61,7 @@ function renderGamePackShell() {
   body.innerHTML = `
     <div class="pill-group" style="margin-bottom:12px;">
       <button type="button" class="pill-btn ${activeGameTab === 'solitaire' ? 'active' : ''}" data-gtab="solitaire">카드 솔리테어 95</button>
-      <button type="button" class="pill-btn ${activeGameTab === 'mine' ? 'active' : ''}" data-gtab="mine">지뢰찾기 95 (8×8)</button>
+      <button type="button" class="pill-btn ${activeGameTab === 'mine' ? 'active' : ''}" data-gtab="mine">지뢰찾기 95 (8x8)</button>
       <button type="button" class="pill-btn ${activeGameTab === 'flip' ? 'active' : ''}" data-gtab="flip">아카이브 카드 짝맞추기</button>
       <button type="button" class="pill-btn ${activeGameTab === 'hilo' ? 'active' : ''}" data-gtab="hilo">작품 별점 하이로우</button>
     </div>
@@ -31,7 +70,7 @@ function renderGamePackShell() {
 
   body.querySelectorAll('[data-gtab]').forEach(btn => {
     btn.addEventListener('click', () => {
-      playRetroTone('click');
+      safePlayGameTone('click');
       activeGameTab = btn.dataset.gtab;
       renderGamePackShell();
     });
@@ -121,7 +160,7 @@ function renderSolitaireGame() {
         foundations[top.suit].push(waste.pop());
         moves++;
         selected = null;
-        playRetroTone('open');
+        safePlayGameTone('open');
         return true;
       }
     } else if (zone === 'tableau') {
@@ -133,7 +172,7 @@ function renderSolitaireGame() {
           revealTopTableau();
           moves++;
           selected = null;
-          playRetroTone('open');
+          safePlayGameTone('open');
           return true;
         }
       }
@@ -144,7 +183,7 @@ function renderSolitaireGame() {
   const checkSolitaireWin = () => {
     const totalDone = Object.values(foundations).reduce((s, p) => s + p.length, 0);
     if (totalDone === 52) {
-      playRetroTone('fanfare');
+      safePlayGameTone('fanfare');
       return true;
     }
     return false;
@@ -155,9 +194,9 @@ function renderSolitaireGame() {
 
     stage.innerHTML = `
       <div class="box-head">
-        <span>클론다이크 솔리테어 95 ${isWon ? '— 🎉 완승 축하합니다!' : `(이동: ${moves}회)`}</span>
+        <span>클론다이크 솔리테어 95 ${isWon ? `— ${GAMEPACK_PIXEL_ICONS.trophy} [CLEAR] 완승 축하합니다!` : `(이동: ${moves}회)`}</span>
         <div style="display:flex;gap:6px;">
-          <button type="button" class="btn95 sky sm" id="btn-sol-auto">⚡ 자동 올리기</button>
+          <button type="button" class="btn95 sky sm" id="btn-sol-auto">[AUTO] 자동 올리기</button>
           <button type="button" class="btn95 yellow sm" id="btn-sol-new">새 카드 배분</button>
         </div>
       </div>
@@ -166,7 +205,7 @@ function renderSolitaireGame() {
         <!-- 상단 줄: 덱(Stock) + 버린카드(Waste) + 완성집(Foundations 4곳) -->
         <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:14px;">
           <button type="button" id="sol-stock" style="height:56px;border:2px solid #111;background:${stock.length ? '#000080' : 'rgba(255,255,255,0.15)'};color:#ffd83b;font-weight:900;font-size:0.75rem;cursor:pointer;">
-            ${stock.length ? `DECK<br/>(${stock.length})` : '↻ 다시'}
+            ${stock.length ? `DECK<br/>(${stock.length})` : '[RELOAD]'}
           </button>
 
           <div id="sol-waste" style="height:56px;border:2px solid ${selected && selected.zone === 'waste' ? '#ffd83b' : '#111'};background:${waste.length ? '#ffffff' : 'rgba(255,255,255,0.1)'};color:${waste.length ? waste[waste.length - 1].color : '#ccc'};display:flex;align-items:center;justify-content:center;font-weight:900;font-size:0.95rem;cursor:pointer;box-shadow:${selected && selected.zone === 'waste' ? '0 0 0 2px #ffd83b' : 'none'};">
@@ -203,12 +242,12 @@ function renderSolitaireGame() {
         </div>
       </div>
       <div style="margin-top:6px;font-size:0.74rem;font-weight:800;color:#444;">
-        조작법: 카드를 한 번 클릭해 선택한 뒤 이동할 열 또는 상단 완성집을 클릭하세요. (이미 선택된 맨 위 카드를 다시 클릭하면 완성집으로 자동 이동)
+        조작법: 카드를 한 번 클릭하여 선택한 뒤 이동할 열 또는 상단 완성집을 클릭하십시오. (선택된 맨 위 카드를 다시 클릭하면 완성집으로 자동 이동)
       </div>
     `;
 
     document.getElementById('btn-sol-new')?.addEventListener('click', () => {
-      playRetroTone('click');
+      safePlayGameTone('click');
       renderSolitaireGame();
     });
 
@@ -239,10 +278,10 @@ function renderSolitaireGame() {
       }
       if (movedAny) {
         selected = null;
-        playRetroTone('open');
+        safePlayGameTone('open');
         draw();
       } else {
-        playRetroTone('click');
+        safePlayGameTone('click');
       }
     });
 
@@ -258,7 +297,7 @@ function renderSolitaireGame() {
         waste = [];
       }
       moves++;
-      playRetroTone('click');
+      safePlayGameTone('click');
       draw();
     });
 
@@ -271,7 +310,7 @@ function renderSolitaireGame() {
         return;
       }
       selected = { zone: 'waste' };
-      playRetroTone('click');
+      safePlayGameTone('click');
       draw();
     });
 
@@ -297,7 +336,7 @@ function renderSolitaireGame() {
           foundations[targetSuit].push(movingCard);
           moves++;
           selected = null;
-          playRetroTone('open');
+          safePlayGameTone('open');
           draw();
         }
       });
@@ -332,14 +371,14 @@ function renderSolitaireGame() {
             }
             moves++;
             selected = null;
-            playRetroTone('click');
+            safePlayGameTone('click');
             draw();
             return;
           }
         }
 
         selected = { zone: 'tableau', col, idx: cIdx };
-        playRetroTone('click');
+        safePlayGameTone('click');
         draw();
       });
     });
@@ -364,7 +403,7 @@ function renderSolitaireGame() {
           }
           moves++;
           selected = null;
-          playRetroTone('click');
+          safePlayGameTone('click');
           draw();
         }
       });
@@ -375,7 +414,7 @@ function renderSolitaireGame() {
 }
 
 // ============================================================
-// 2. 지뢰찾기 95 (8x8)
+// 2. 지뢰찾기 95 (8x8 — 정통 Windows 95 양각 베벨 & 우클릭 깃발)
 // ============================================================
 function renderMinesweeperGame() {
   const stage = document.getElementById('gamepack-stage');
@@ -386,6 +425,18 @@ function renderMinesweeperGame() {
   let flagMode = false;
   let gameOver = false;
   let won = false;
+  let boomPos = null;
+
+  const NUM_COLORS = {
+    1: '#0000ff',
+    2: '#008000',
+    3: '#ff0000',
+    4: '#000080',
+    5: '#800000',
+    6: '#008080',
+    7: '#000000',
+    8: '#808080'
+  };
 
   const board = Array.from({ length: SIZE }, () =>
     Array.from({ length: SIZE }, () => ({ mine: false, open: false, flag: false, count: 0 }))
@@ -427,6 +478,14 @@ function renderMinesweeperGame() {
     }
   };
 
+  const revealAllMines = () => {
+    for (let r = 0; r < SIZE; r++) {
+      for (let c = 0; c < SIZE; c++) {
+        if (board[r][c].mine) board[r][c].open = true;
+      }
+    }
+  };
+
   const checkWin = () => {
     let safeOpened = 0;
     for (let r = 0; r < SIZE; r++) {
@@ -437,63 +496,90 @@ function renderMinesweeperGame() {
     if (safeOpened === SIZE * SIZE - MINES) {
       won = true;
       gameOver = true;
-      playRetroTone('fanfare');
+      safePlayGameTone('fanfare');
     }
   };
 
   const draw = () => {
+    const flagCount = board.flat().filter(c => c.flag).length;
+    const remainMines = Math.max(0, MINES - flagCount);
+
     stage.innerHTML = `
       <div class="box-head">
-        <span>지뢰찾기 95 ${won ? '— 🎉 승리!' : gameOver ? '— 💥 지뢰 폭발!' : `(지뢰 ${MINES}개)`}</span>
+        <span>지뢰찾기 95 ${won ? `— ${GAMEPACK_PIXEL_ICONS.trophy} [CLEAR] 승리!` : gameOver ? `— ${GAMEPACK_PIXEL_ICONS.mine} [BOOM] 지뢰 폭발!` : `(남은 지뢰: ${remainMines}개)`}</span>
         <div style="display:flex;gap:6px;">
-          <button type="button" class="btn95 sm ${flagMode ? 'pink' : ''}" id="btn-mine-flag">🚩 깃발 모드: ${flagMode ? 'ON' : 'OFF'}</button>
+          <button type="button" class="btn95 sm ${flagMode ? 'pink' : ''}" id="btn-mine-flag">${GAMEPACK_PIXEL_ICONS.flag} 깃발 모드: ${flagMode ? 'ON' : 'OFF'}</button>
           <button type="button" class="btn95 yellow sm" id="btn-mine-reset">새 게임</button>
         </div>
       </div>
-      <div style="display:grid;grid-template-columns:repeat(${SIZE},34px);gap:2px;justify-content:center;padding:8px;">
-        ${board.map((row, r) => row.map((cell, c) => {
-          let label = '';
-          let bg = '#c0c0c0';
-          if (cell.open) {
-            bg = cell.mine ? '#ff4757' : '#ffffff';
-            label = cell.mine ? '💣' : (cell.count || '');
-          } else if (cell.flag) {
-            label = '🚩';
-          }
-          return `<button type="button" class="mine-cell" data-r="${r}" data-c="${c}" style="width:34px;height:34px;border:2px solid #111;background:${bg};font-weight:900;cursor:pointer;">${label}</button>`;
-        }).join('')).join('')}
+      <div style="background:#c0c0c0;border:2px solid #111;padding:10px;display:flex;justify-content:center;">
+        <div style="display:grid;grid-template-columns:repeat(${SIZE},34px);gap:0;border:2px solid #808080;background:#808080;">
+          ${board.map((row, r) => row.map((cell, c) => {
+            let contentHtml = '';
+            let styleStr = 'width:34px;height:34px;font-weight:900;font-size:0.9rem;font-family:var(--font-mono);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;';
+            if (cell.open) {
+              const isBoom = boomPos && boomPos.r === r && boomPos.c === c;
+              const bg = cell.mine ? (isBoom ? '#ff0000' : '#d8d8d8') : '#dcdcdc';
+              const txtColor = NUM_COLORS[cell.count] || '#111111';
+              styleStr += `background:${bg};color:${txtColor};border:1px solid #808080;`;
+              contentHtml = cell.mine ? GAMEPACK_PIXEL_ICONS.mine : (cell.count ? String(cell.count) : '');
+            } else {
+              styleStr += 'background:#c0c0c0;border-width:2px;border-style:solid;border-color:#ffffff #808080 #808080 #ffffff;';
+              if (cell.flag) {
+                contentHtml = GAMEPACK_PIXEL_ICONS.flag;
+              }
+            }
+            return `<button type="button" class="mine-cell" data-r="${r}" data-c="${c}" style="${styleStr}">${contentHtml}</button>`;
+          }).join('')).join('')}
+        </div>
+      </div>
+      <div style="margin-top:6px;font-size:0.74rem;font-weight:800;color:#444;">
+        조작법: 좌클릭으로 칸을 열고, 마우스 우클릭(또는 상단 [깃발 모드])으로 지뢰 위치를 표시하십시오.
       </div>
     `;
 
     document.getElementById('btn-mine-flag')?.addEventListener('click', () => {
       flagMode = !flagMode;
-      playRetroTone('click');
+      safePlayGameTone('click');
       draw();
     });
     document.getElementById('btn-mine-reset')?.addEventListener('click', () => {
-      playRetroTone('click');
+      safePlayGameTone('click');
       renderMinesweeperGame();
     });
 
     stage.querySelectorAll('.mine-cell').forEach(btn => {
+      btn.addEventListener('contextmenu', e => {
+        e.preventDefault();
+        if (gameOver) return;
+        const r = Number(btn.dataset.r), c = Number(btn.dataset.c);
+        const cell = board[r][c];
+        if (!cell.open) {
+          cell.flag = !cell.flag;
+          safePlayGameTone('click');
+          draw();
+        }
+      });
+
       btn.addEventListener('click', () => {
         if (gameOver) return;
         const r = Number(btn.dataset.r), c = Number(btn.dataset.c);
         const cell = board[r][c];
         if (flagMode) {
           if (!cell.open) cell.flag = !cell.flag;
-          playRetroTone('click');
+          safePlayGameTone('click');
           draw();
           return;
         }
         if (cell.flag || cell.open) return;
         if (cell.mine) {
-          cell.open = true;
+          boomPos = { r, c };
           gameOver = true;
-          playRetroTone('boom');
+          revealAllMines();
+          safePlayGameTone('boom');
         } else {
           reveal(r, c);
-          playRetroTone('click');
+          safePlayGameTone('click');
           checkWin();
         }
         draw();
@@ -520,9 +606,10 @@ function renderMemoryFlipGame() {
     { key: 'G3', label: '다큐멘터리' }
   ];
 
-  const sourcePool = (archiveItems || []).slice(0, 6).map((item, i) => ({
+  const visiblePool = getGameArchivePool();
+  const sourcePool = visiblePool.slice(0, 6).map((item, i) => ({
     key: `ARC-${i}`,
-    label: item.title.slice(0, 12)
+    label: String(item.title || '').slice(0, 12)
   }));
   while (sourcePool.length < 6) {
     sourcePool.push(fallbackPairs[sourcePool.length]);
@@ -555,7 +642,7 @@ function renderMemoryFlipGame() {
     `;
 
     document.getElementById('btn-flip-reset')?.addEventListener('click', () => {
-      playRetroTone('click');
+      safePlayGameTone('click');
       renderMemoryFlipGame();
     });
 
@@ -563,7 +650,7 @@ function renderMemoryFlipGame() {
       el.addEventListener('click', () => {
         const idx = Number(el.dataset.cidx);
         if (lockBoard || flippedIndices.includes(idx) || matchedKeys.has(deck[idx].key)) return;
-        playRetroTone('click');
+        safePlayGameTone('click');
         flippedIndices.push(idx);
         draw();
 
@@ -573,7 +660,7 @@ function renderMemoryFlipGame() {
             matchedKeys.add(deck[a].key);
             score += 100;
             flippedIndices = [];
-            playRetroTone(matchedKeys.size === 6 ? 'fanfare' : 'open');
+            safePlayGameTone(matchedKeys.size === 6 ? 'fanfare' : 'open');
             draw();
           } else {
             lockBoard = true;
@@ -598,19 +685,21 @@ function renderStarHiLoGame() {
   const stage = document.getElementById('gamepack-stage');
   if (!stage) return;
 
-  if (!archiveItems || archiveItems.length < 2) {
-    stage.innerHTML = `<div style="padding:20px;text-align:center;font-weight:800;">별점 하이로우 대결을 진행하려면 최소 2건 이상의 감상 기록이 필요합니다.</div>`;
+  const pool = getGameArchivePool();
+
+  if (!pool || pool.length < 2) {
+    stage.innerHTML = `<div style="padding:20px;text-align:center;font-weight:800;">별점 하이로우 대결을 진행하려면 최소 2건 이상의 감상 기록이 필요합니다. 먼저 감상 기록을 등록해 주십시오.</div>`;
     return;
   }
 
   let streak = 0;
-  let feedback = '오른쪽 작품의 평점이 왼쪽 작품보다 높거나 같을지 맞춰보세요!';
+  let feedback = '오른쪽 작품의 평점이 왼쪽 작품보다 높거나 같을지 맞추어 보십시오.';
 
   const pickPair = () => {
-    const aIdx = Math.floor(Math.random() * archiveItems.length);
-    let bIdx = Math.floor(Math.random() * archiveItems.length);
-    while (bIdx === aIdx) bIdx = Math.floor(Math.random() * archiveItems.length);
-    return [archiveItems[aIdx], archiveItems[bIdx]];
+    const aIdx = Math.floor(Math.random() * pool.length);
+    let bIdx = Math.floor(Math.random() * pool.length);
+    while (bIdx === aIdx) bIdx = Math.floor(Math.random() * pool.length);
+    return [pool[aIdx], pool[bIdx]];
   };
 
   let [leftItem, rightItem] = pickPair();
@@ -628,18 +717,22 @@ function renderStarHiLoGame() {
           <div style="font-size:0.75rem;font-weight:800;">[기준 작품]</div>
           <div style="font-size:0.95rem;font-weight:900;margin:4px 0;">${esc(leftItem.title)}</div>
           <div style="font-size:0.75rem;color:#555;margin-bottom:6px;">${esc(leftItem.creator)}</div>
-          <div style="font-size:1.2rem;font-weight:900;color:#d63031;">★ ${leftItem.rating}점</div>
+          <div style="font-size:1.15rem;font-weight:900;color:#d63031;display:flex;align-items:center;justify-content:center;gap:4px;">
+            ${GAMEPACK_PIXEL_ICONS.star}<span>${leftItem.rating}점</span>
+          </div>
         </div>
         <div class="sunken-box" style="text-align:center;background:#e8f8ff;">
           <div style="font-size:0.75rem;font-weight:800;">[도전 작품]</div>
           <div style="font-size:0.95rem;font-weight:900;margin:4px 0;">${esc(rightItem.title)}</div>
           <div style="font-size:0.75rem;color:#555;margin-bottom:6px;">${esc(rightItem.creator)}</div>
-          <div style="font-size:1.2rem;font-weight:900;color:#000080;">${revealed ? `★ ${rightItem.rating}점` : '★ ?점'}</div>
+          <div style="font-size:1.15rem;font-weight:900;color:#000080;display:flex;align-items:center;justify-content:center;gap:4px;">
+            ${GAMEPACK_PIXEL_ICONS.star}<span>${revealed ? `${rightItem.rating}점` : '?점'}</span>
+          </div>
         </div>
       </div>
       <div style="display:flex;justify-content:center;gap:8px;">
         ${!revealed ? `
-          <button type="button" class="btn95 green sm" id="btn-hilo-up">▲ 높거나 같다 (≥ ${leftItem.rating}점)</button>
+          <button type="button" class="btn95 green sm" id="btn-hilo-up">▲ 높거나 같다 (&gt;= ${leftItem.rating}점)</button>
           <button type="button" class="btn95 pink sm" id="btn-hilo-down">▼ 더 낮다 (&lt; ${leftItem.rating}점)</button>
         ` : `
           <button type="button" class="btn95 yellow sm" id="btn-hilo-next">다음 라운드 진행 &gt;&gt;</button>
@@ -651,12 +744,12 @@ function renderStarHiLoGame() {
       revealed = true;
       if (Number(rightItem.rating) >= Number(leftItem.rating)) {
         streak++;
-        feedback = `정답입니다! 「${rightItem.title}」의 평점은 ${rightItem.rating}점입니다.`;
-        playRetroTone('fanfare');
+        feedback = `[정답] 「${rightItem.title}」의 평점은 ${rightItem.rating}점입니다.`;
+        safePlayGameTone('fanfare');
       } else {
         streak = 0;
-        feedback = `아쉽습니다! 「${rightItem.title}」의 평점은 ${rightItem.rating}점으로 더 낮았습니다.`;
-        playRetroTone('boom');
+        feedback = `[오답] 「${rightItem.title}」의 평점은 ${rightItem.rating}점으로 더 낮았습니다.`;
+        safePlayGameTone('boom');
       }
       draw();
     });
@@ -665,12 +758,12 @@ function renderStarHiLoGame() {
       revealed = true;
       if (Number(rightItem.rating) < Number(leftItem.rating)) {
         streak++;
-        feedback = `정답입니다! 「${rightItem.title}」의 평점은 ${rightItem.rating}점입니다.`;
-        playRetroTone('fanfare');
+        feedback = `[정답] 「${rightItem.title}」의 평점은 ${rightItem.rating}점입니다.`;
+        safePlayGameTone('fanfare');
       } else {
         streak = 0;
-        feedback = `아쉽습니다! 「${rightItem.title}」의 평점은 ${rightItem.rating}점으로 더 높거나 같았습니다.`;
-        playRetroTone('boom');
+        feedback = `[오답] 「${rightItem.title}」의 평점은 ${rightItem.rating}점으로 더 높거나 같았습니다.`;
+        safePlayGameTone('boom');
       }
       draw();
     });
@@ -678,11 +771,13 @@ function renderStarHiLoGame() {
     document.getElementById('btn-hilo-next')?.addEventListener('click', () => {
       [leftItem, rightItem] = pickPair();
       revealed = false;
-      feedback = '오른쪽 작품의 평점이 왼쪽 작품보다 높거나 같을지 맞춰보세요!';
-      playRetroTone('click');
+      feedback = '오른쪽 작품의 평점이 왼쪽 작품보다 높거나 같을지 맞추어 보십시오.';
+      safePlayGameTone('click');
       draw();
     });
   };
 
   draw();
 }
+
+window.renderGamePackShell = renderGamePackShell;
