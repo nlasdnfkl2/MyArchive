@@ -14,50 +14,45 @@
 
   <!-- Pretendard 웹폰트 -->
   <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
-  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/style.css?v=20261122-v3" />
 </head>
 <body class="theme-teal">
 
   <!-- ============================================================ -->
-  <!-- MY-ARCHIVE 95 OS — BIOS POST & Windows 95 로그인 부팅 오버레이 -->
+  <!-- MY-ARCHIVE 95 OS — BIOS POST & 정통 Windows 95 로그인 오버레이 -->
   <!-- ============================================================ -->
-  <div id="os-boot-overlay" role="dialog" aria-modal="true" aria-label="MY-ARCHIVE 95 시스템 부팅 및 로그인">
-    <!-- 1단계: Award Modular BIOS POST 화면 -->
-    <div id="boot-stage-bios" class="boot-stage">
+  <div id="os-boot-overlay" role="dialog" aria-modal="true" aria-label="MY-ARCHIVE 95 부팅 및 로그인" style="position:fixed;inset:0;z-index:200000;background:#000000;display:flex;align-items:center;justify-content:center;">
+    <!-- 1. BIOS POST -->
+    <div id="boot-stage-bios" class="boot-stage" style="width:100%;height:100%;">
       <div class="bios-top-row">
         <div>
           <div class="bios-brand">AWARD MODULAR BIOS v4.51PG, An Energy Star Ally</div>
           <div>Copyright (C) 1984-1995, Award Software, Inc.</div>
-          <div style="color:#55ffff; margin-top:4px;">MY-ARCHIVE 95 PERSONAL WORKSTATION BIOS REV 2.6</div>
+          <div style="color:#55ffff; margin-top:4px;">MY-ARCHIVE 95 MULTI-USER WORKSTATION BIOS REV 3.0</div>
         </div>
         <div class="bios-energy-box">
           <div style="color:#ffff55; font-weight:900;">ENERGY</div>
           <div style="color:#55ff55; font-size:0.68rem;">EPA POLLUTION PREVENTER</div>
         </div>
       </div>
-
       <div class="bios-spec-block">
         <div>MAIN PROCESSOR : AMD Ryzen / 80486DX4-100MHz Compatible</div>
         <div>MEMORY TESTING : <span id="bios-ram-count">640</span>K OK + 65536K EXTENDED</div>
       </div>
-
       <div id="bios-log-lines" class="bios-log-area"></div>
-
       <div id="bios-cmos-easter" class="bios-cmos-box" style="display:none;">
-        <div style="color:#ffff55; font-weight:900; margin-bottom:4px;">[CMOS SETUP UTILITY — QUICK VIEW]</div>
-        <div>• Primary Master : MY-ARCHIVE-CLOUD (Google Sheets API)</div>
-        <div>• Sound Blaster  : WebAudio 16-Bit Stereo Synth (IRQ 5, DMA 1)</div>
-        <div>• Display Adapter: Neo-Brutalism VGA 256-Color / CRT Ready</div>
+        <div style="color:#ffff55; font-weight:900; margin-bottom:4px;">[CMOS SETUP UTILITY]</div>
+        <div>• Primary Master : Google Sheets Multi-User DB (Archive / Users / Feed)</div>
+        <div>• Public Account : '공용' (No PIN Required) / Default Owner: '문태양' (PIN: 1234)</div>
       </div>
-
       <div class="bios-footer-bar">
-        <span>Press <b>DEL</b> to view CMOS, <b>SPACE / CLICK</b> to skip POST</span>
+        <span>Press <b>DEL</b> for CMOS, <b>SPACE / CLICK</b> to skip POST</span>
         <span id="bios-sync-badge" style="color:#ffff55;">CLOUD SYNC: STANDBY</span>
       </div>
     </div>
 
-    <!-- 2단계: Windows 95 / MY-ARCHIVE 95 부팅 로고 화면 -->
-    <div id="boot-stage-splash" class="boot-stage" style="display:none;">
+    <!-- 2. Windows 95 부팅 스플래시 -->
+    <div id="boot-stage-splash" class="boot-stage" style="display:none;width:100%;height:100%;">
       <div class="win95-splash-card">
         <div class="win95-flag-grid" aria-hidden="true">
           <span style="background:#ff4b4b;"></span>
@@ -65,58 +60,108 @@
           <span style="background:#4ba3ff;"></span>
           <span style="background:#ffd83b;"></span>
         </div>
-        <div class="win95-splash-sub">PERSONAL DIGITAL ARCHIVE OPERATING SYSTEM</div>
+        <div class="win95-splash-sub">MULTI-USER CULTURE ARCHIVE &amp; COMMUNITY OS</div>
         <div class="win95-splash-title">MY-ARCHIVE <span class="win95-splash-95">95</span></div>
-        <div class="win95-splash-desc">시스템 드라이버 및 아카이브 데이터베이스를 초기화하는 중...</div>
+        <div class="win95-splash-desc">사용자 계정 및 전체 공유 게시판을 초기화하는 중...</div>
       </div>
-      <div class="win95-boot-track">
-        <div class="win95-boot-runner"></div>
-      </div>
+      <div class="win95-boot-track"><div class="win95-boot-runner"></div></div>
     </div>
 
-    <!-- 3단계: Windows 95 로그온 대화상자 (로그인 버튼 클릭 대기) -->
-    <div id="boot-stage-login" class="boot-stage" style="display:none;">
+    <!-- 3. 정통 Windows 95 네트워크/워크스테이션 로그온 대화상자 -->
+    <div id="boot-stage-login" class="boot-stage" style="display:none;width:100%;height:100%;">
       <div class="win95-login-dialog">
         <div class="win95-login-titlebar">
-          <span>🔑 MY-ARCHIVE 95 시작 — 네트워크 및 시스템 로그온</span>
-          <button type="button" id="btn-reboot-bios" class="win95-login-help-btn" title="BIOS 부팅 과정 다시 보기">?</button>
+          <span>🔑 Windows 95 시작 — MY-ARCHIVE 95 로그온</span>
+          <button type="button" id="btn-reboot-bios" class="win95-login-help-btn" title="BIOS 다시 보기">?</button>
         </div>
 
-        <div class="win95-login-body">
+        <!-- Win95 탭 전환 (기존 계정 로그인 / 새 이용자 계정 생성) -->
+        <div class="win95-login-tabs">
+          <button type="button" id="tab-win95-signin" class="win95-tab-btn active">🔐 기존 계정 로그인</button>
+          <button type="button" id="tab-win95-signup" class="win95-tab-btn">➕ 새 이용자 계정 만들기 (4자리 PIN)</button>
+        </div>
+
+        <div id="win95-login-error" class="win95-login-err-banner" style="display:none;"></div>
+
+        <!-- TAB 1: 기존 계정 로그인 -->
+        <div id="win95-pane-signin" class="win95-login-body">
           <div class="win95-login-icon-col" aria-hidden="true">
             <div class="win95-key-badge">🖥️<span class="win95-key-mini">🔑</span></div>
           </div>
 
           <form id="win95-login-form" class="win95-login-form-col">
             <p class="win95-login-lead">
-              <b>MY-ARCHIVE 95</b> 개인용 워크스테이션에 접속하려면 사용자 이름과 암호를 입력한 후 <b>[확인 (로그인)]</b>을 누르십시오.
+              사용자 계정을 선택하고 <b>4자리 숫자 비밀번호(PIN)</b>를 입력한 뒤 <b>[확인 (로그인)]</b>을 누르십시오.
             </p>
 
             <div class="win95-login-row">
-              <label for="login-username">사용자 이름(<u>U</u>):</label>
-              <input type="text" id="login-username" autocomplete="username" value="문태양" required />
+              <label for="login-account-select">계정 선택(<u>U</u>):</label>
+              <div style="display:flex;flex-direction:column;gap:5px;">
+                <select id="login-account-select" class="win95-select"></select>
+                <input type="text" id="login-username" placeholder="사용자 이름 직접 입력" style="display:none;" />
+              </div>
             </div>
 
             <div class="win95-login-row">
-              <label for="login-password">암호(<u>P</u>):</label>
-              <input type="password" id="login-password" autocomplete="current-password" placeholder="(선택 사항 — 바로 로그인 가능)" />
-            </div>
-
-            <div class="win95-login-row">
-              <label for="login-session-mode">로그온 대상(<u>D</u>):</label>
-              <select id="login-session-mode" class="win95-select">
-                <option value="owner">MY-ARCHIVE-PC (개인 아카이브 모드)</option>
-                <option value="guest">GUEST-WORKGROUP (방문자 열람 모드)</option>
-              </select>
+              <label for="login-password">4자리 암호(<u>P</u>):</label>
+              <input type="password" id="login-password" maxlength="4" inputmode="numeric" pattern="\d{4}" placeholder="4자리 숫자 PIN (예: 1234)" />
             </div>
 
             <div class="win95-login-status-strip">
-              <span id="login-cloud-status">● Google Sheets 아카이브 연결 준비 완료</span>
+              <div id="login-account-hint" style="color:#000080;margin-bottom:2px;">● 계정을 선택해 주세요.</div>
+              <div id="login-cloud-status" style="color:#006600;">● Google Sheets 동기화 대기 중</div>
+            </div>
+
+            <div class="win95-login-actions" style="justify-content:space-between;">
+              <button type="button" id="btn-win95-public-enter" class="btn95 sky">🌐 공용 계정 바로 입장</button>
+              <button type="submit" id="btn-win95-login" class="btn95 yellow">확인 (로그인)</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- TAB 2: 새 이용자 계정 생성 (구글 시트 Users 탭 저장) -->
+        <div id="win95-pane-signup" class="win95-login-body" style="display:none;">
+          <div class="win95-login-icon-col" aria-hidden="true">
+            <div class="win95-key-badge">🆕<span class="win95-key-mini">4#</span></div>
+          </div>
+
+          <form id="win95-signup-form" class="win95-login-form-col">
+            <p class="win95-login-lead">
+              새 개인 계정을 생성하면 Google Sheets <b>Users</b> 탭에 등록되며 나만의 아카이브와 전체 게시판 공유 기능을 모두 이용할 수 있습니다.
+            </p>
+
+            <div class="win95-login-row">
+              <label for="signup-username">사용자 이름 *:</label>
+              <input type="text" id="signup-username" maxlength="15" placeholder="2~15자 닉네임 (예: 홍길동)" required />
+            </div>
+
+            <div class="win95-login-row">
+              <label for="signup-pin">4자리 PIN *:</label>
+              <input type="password" id="signup-pin" maxlength="4" inputmode="numeric" pattern="\d{4}" placeholder="숫자 4자리 (예: 2580)" required />
+            </div>
+
+            <div class="win95-login-row">
+              <label for="signup-pin-confirm">PIN 확인 *:</label>
+              <input type="password" id="signup-pin-confirm" maxlength="4" inputmode="numeric" pattern="\d{4}" placeholder="숫자 4자리 재입력" required />
+            </div>
+
+            <div class="win95-login-row">
+              <label for="signup-avatar">아바타 / 소개:</label>
+              <div style="display:flex;gap:6px;">
+                <select id="signup-avatar" class="win95-select" style="width:72px;">
+                  <option value="🐸">🐸</option>
+                  <option value="👤">👤</option>
+                  <option value="📚">📚</option>
+                  <option value="🎧">🎧</option>
+                  <option value="🎬">🎬</option>
+                  <option value="⭐">⭐</option>
+                </select>
+                <input type="text" id="signup-bio" placeholder="한줄 소개 (선택)" style="flex:1;" />
+              </div>
             </div>
 
             <div class="win95-login-actions">
-              <button type="submit" id="btn-win95-login" class="btn95 yellow">확인 (로그인)</button>
-              <button type="button" id="btn-win95-guest" class="btn95">방문자 입장</button>
+              <button type="submit" id="btn-win95-signup-submit" class="btn95 yellow">계정 생성 및 즉시 로그인</button>
             </div>
           </form>
         </div>
@@ -160,6 +205,7 @@
       <div class="menu-item-wrap">
         <button type="button" class="menu-root"><u>T</u>ools (도구·분석)</button>
         <div class="menu-dropdown">
+          <button type="button" class="menu-opt" id="mnu-open-community" onclick="openCommunityBoard()">[SNS] 전체 공유 게시판 (COMMUNITY95)</button>
           <button type="button" class="menu-opt" id="mnu-open-browser">[WEB] 인터넷 탐색기 95 (YouTube·웹)</button>
           <button type="button" class="menu-opt" id="mnu-open-timeline">[CHART] 연표 &amp; 레이더 취향 분석</button>
           <button type="button" class="menu-opt" id="mnu-open-visualizer">[NODE] 키워드 &amp; 데이터 노드 맵</button>
@@ -185,12 +231,15 @@
           <div class="menu-sep"></div>
           <button type="button" class="menu-opt" id="mnu-toggle-crt">CRT 스캔라인 효과 전환</button>
           <button type="button" class="menu-opt" id="mnu-toggle-sound">8비트 효과음 음소거 전환</button>
+          <button type="button" class="menu-opt" id="mnu-open-taskmgr">[TASK] 작업 관리자 (Ctrl+Alt+Del)</button>
+          <button type="button" class="menu-opt" id="mnu-start-screensaver">[SCR] 화면 보호기 실행 (Win95 로고)</button>
           <button type="button" class="menu-opt" id="mnu-trigger-bsod">시스템 블루스크린 테스트 (BSOD)</button>
         </div>
       </div>
     </nav>
 
-    <div class="menu-bar-right">
+    <div class="menu-bar-right" style="display:flex;align-items:center;gap:6px;">
+      <button type="button" id="active-user-badge" class="status-pill" style="background:var(--brutal-yellow);color:#111;cursor:pointer;" onclick="startBiosBootSequence()" title="클릭하여 계정 전환 / 로그오프">🐸 문태양 (개인)</button>
       <span id="cache-status-badge" class="status-pill" title="오프라인 로컬 캐시 동기화 상태">CACHE: READY</span>
     </div>
   </header>
@@ -212,6 +261,13 @@
           <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2.6"><path d="M12 5v14M5 12h14"/></svg>
         </div>
         <span>새 기록 등록</span>
+      </button>
+
+      <button type="button" class="desk-icon" id="icon-community" onclick="openCommunityBoard()">
+        <div class="desk-icon-box" style="background: var(--brutal-green);">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2.4"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        </div>
+        <span>전체 공유 게시판</span>
       </button>
 
       <button type="button" class="desk-icon" id="icon-browser">
@@ -299,7 +355,7 @@
       <div class="win-titlebar draggable">
         <div class="win-title-left">
           <span class="win-title-dot" style="background: var(--brutal-yellow);"></span>
-          <span>C:\MY-ARCHIVE\EXPLORER.EXE — 문화 감상 아카이브 관리자</span>
+          <span id="win-main-title-text">C:\MY-ARCHIVE\EXPLORER.EXE — 문화 감상 아카이브 관리자</span>
         </div>
         <div class="win-controls">
           <button type="button" class="win-ctrl-btn" data-action="minimize" data-target="win-main">_</button>
@@ -518,6 +574,40 @@
       <div class="win-body" id="gamepack-body"></div>
     </section>
 
+    <!-- ============================================================ -->
+    <!-- 9. 전체 공유 게시판 (COMMUNITY95.EXE — SNS 피드 & 전체 통계)   -->
+    <!-- ============================================================ -->
+    <section class="floating-win" id="win-community" data-win-title="[SNS] 전체 공유 게시판" style="top: 46px; left: 140px; width: 880px;">
+      <div class="win-titlebar draggable" style="background: var(--brutal-green); color: #111;">
+        <div class="win-title-left"><span class="win-title-dot" style="background: #111;"></span><span>COMMUNITY95.EXE — 전체 공유 게시판 (SNS 피드 &amp; 전체 통계)</span></div>
+        <div class="win-controls">
+          <button type="button" class="win-ctrl-btn" data-action="minimize" data-target="win-community">_</button>
+          <button type="button" class="win-ctrl-btn close" data-action="close" data-target="win-community">X</button>
+        </div>
+      </div>
+      <div class="win-body" id="community-app-body"></div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- 10. Windows 95 작업 관리자 (TASKMGR95.EXE)                    -->
+    <!-- ============================================================ -->
+    <section class="floating-win" id="win-taskmgr" data-win-title="[TASK] 작업 관리자" style="top: 110px; left: 260px; width: 460px;">
+      <div class="win-titlebar draggable">
+        <div class="win-title-left"><span class="win-title-dot" style="background: var(--brutal-pink);"></span><span>TASKMGR95.EXE — 프로그램 닫기 (Ctrl+Alt+Del)</span></div>
+        <div class="win-controls">
+          <button type="button" class="win-ctrl-btn close" data-action="close" data-target="win-taskmgr">X</button>
+        </div>
+      </div>
+      <div class="win-body" style="background:var(--win-gray);">
+        <p style="font-size:0.78rem;font-weight:800;margin-bottom:8px;">현재 실행 중인 응용 프로그램 목록입니다. 응답하지 않는 창을 강제 종료하거나 새로고침할 수 있습니다.</p>
+        <div id="taskmgr-list" class="sunken-box" style="max-height:220px;overflow-y:auto;margin-bottom:10px;background:#fff;"></div>
+        <div style="display:flex;justify-content:space-between;gap:6px;">
+          <button type="button" class="btn95 sm" id="btn-tm-refresh">목록 새로고침</button>
+          <button type="button" class="btn95 yellow sm" id="btn-tm-reboot">시스템 다시 시작...</button>
+        </div>
+      </div>
+    </section>
+
     <!-- 동적 상세 탐색기 / 등록 모달 / 시스템 메시지 박스 컨테이너 -->
     <div id="dynamic-windows-container"></div>
   </main>
@@ -527,6 +617,7 @@
     <div class="start-banner"><span>MY-ARCHIVE <b>95</b></span></div>
     <div class="start-list">
       <button type="button" class="start-item" id="sm-new">[+] 새 감상 기록하기</button>
+      <button type="button" class="start-item" id="sm-community" onclick="openCommunityBoard()">[SNS] 전체 공유 게시판 (SNS 피드)</button>
       <button type="button" class="start-item" id="sm-browser">[WEB] 인터넷 탐색기 95 (YouTube·웹)</button>
       <button type="button" class="start-item" id="sm-all">[DIR] 전체 아카이브 열기</button>
       <button type="button" class="start-item" id="sm-book">[BOOK] 도서 아카이브</button>
@@ -546,6 +637,12 @@
     </div>
   </aside>
 
+  <!-- Windows 95 플라잉 로고 화면 보호기 -->
+  <div id="win95-screensaver" style="display:none;position:fixed;inset:0;z-index:250000;background:#000000;cursor:none;">
+    <canvas id="screensaver-canvas"></canvas>
+    <div style="position:fixed;bottom:14px;right:18px;color:#888;font-family:monospace;font-size:0.75rem;">Click or press any key to return to MY-ARCHIVE 95</div>
+  </div>
+
   <!-- 하단 Windows 95 작업표시줄 (<footer> 시맨틱 구조) -->
   <footer class="os-taskbar">
     <button type="button" id="btn-start" class="btn-start">
@@ -563,13 +660,14 @@
   <!-- 라이브러리 및 애플리케이션 스크립트 -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  <script src="js/config.js"></script>
-  <script src="js/window-mgr.js"></script>
-  <script src="js/jukebox.js"></script>
-  <script src="js/gamepack.js"></script>
-  <script src="js/visualizer.js"></script>
-  <script src="js/archive-app.js"></script>
-  <script src="js/browser-app.js"></script>
-  <script src="js/boot-screen.js"></script>
+  <script src="js/config.js?v=20261122-v3"></script>
+  <script src="js/window-mgr.js?v=20261122-v3"></script>
+  <script src="js/jukebox.js?v=20261122-v3"></script>
+  <script src="js/gamepack.js?v=20261122-v3"></script>
+  <script src="js/visualizer.js?v=20261122-v3"></script>
+  <script src="js/archive-app.js?v=20261122-v3"></script>
+  <script src="js/browser-app.js?v=20261122-v3"></script>
+  <script src="js/community-app.js?v=20261122-v3"></script>
+  <script src="js/boot-screen.js?v=20261122-v3"></script>
 </body>
 </html>
