@@ -1463,7 +1463,7 @@ body.boot-locked {
   color: #ffffff;
 }
 
-/* 2. Windows 95 스플래시 화면 */
+/* 2. Windows 95 스플래시 화면 (정통 3D Bevel 대화상자) */
 #boot-stage-splash {
   background: radial-gradient(circle at 50% 42%, #87cefa 0%, #3b82c4 52%, #000080 100%);
   display: flex;
@@ -1476,23 +1476,30 @@ body.boot-locked {
 
 .win95-splash-card {
   margin: auto;
-  background: var(--win-gray, #c0c0c0);
-  border: 3px solid #111111;
-  box-shadow: 8px 8px 0px #111111, inset 2px 2px 0 #ffffff;
-  padding: 28px 36px;
+  background: #c0c0c0;
+  border-top: 2px solid #ffffff;
+  border-left: 2px solid #ffffff;
+  border-right: 2px solid #000000;
+  border-bottom: 2px solid #000000;
+  box-shadow: inset 1px 1px 0 #dfdfdf, inset -1px -1px 0 #808080;
+  padding: 26px 34px;
   text-align: center;
-  max-width: 480px;
+  max-width: 470px;
   width: 92%;
 }
 
 .win95-flag-grid {
   display: inline-grid;
-  grid-template-columns: repeat(2, 22px);
-  grid-template-rows: repeat(2, 22px);
-  gap: 4px;
+  grid-template-columns: repeat(2, 20px);
+  grid-template-rows: repeat(2, 20px);
+  gap: 3px;
   margin-bottom: 12px;
-  padding: 6px;
-  background: #111111;
+  padding: 4px;
+  background: #000000;
+  border-top: 1px solid #808080;
+  border-left: 1px solid #808080;
+  border-right: 1px solid #ffffff;
+  border-bottom: 1px solid #ffffff;
 }
 
 .win95-splash-sub {
@@ -1505,32 +1512,36 @@ body.boot-locked {
 }
 
 .win95-splash-title {
-  font-size: 2rem;
+  font-size: 1.95rem;
   font-weight: 900;
-  color: #111111;
+  color: #000000;
   letter-spacing: -0.5px;
 }
 
 .win95-splash-95 {
   display: inline-block;
-  background: var(--brutal-yellow, #ffd83b);
-  border: 2px solid #111111;
+  background: #000080;
+  color: #ffffff;
+  border-top: 1px solid #ffffff;
+  border-left: 1px solid #ffffff;
+  border-right: 1px solid #000000;
+  border-bottom: 1px solid #000000;
   padding: 0 8px;
-  margin-left: 2px;
+  margin-left: 4px;
 }
 
 .win95-splash-desc {
   margin-top: 10px;
-  font-size: 0.82rem;
-  font-weight: 800;
-  color: #333333;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #222222;
 }
 
 .win95-boot-track {
   width: 100%;
   height: 16px;
   background: #000044;
-  border-top: 2px solid #111111;
+  border-top: 2px solid #808080;
   overflow: hidden;
   position: relative;
 }
@@ -1549,123 +1560,390 @@ body.boot-locked {
   100% { left: 105%; }
 }
 
-/* 3. Windows 95 로그인 대화상자 */
+/* 3. 정통 Windows 95 로그온 대화상자 (현대적 박스 제거 & 1995 입체 프레임) */
 #boot-stage-login {
   background-color: #008080;
-  background-image: linear-gradient(45deg, #007272 25%, transparent 25%),
-    linear-gradient(-45deg, #007272 25%, transparent 25%),
-    linear-gradient(45deg, transparent 75%, #007272 75%),
-    linear-gradient(-45deg, transparent 75%, #007272 75%);
-  background-size: 20px 20px;
-  background-position: 0 0, 0 10px, 10px -10px, -10px 0;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 16px;
 }
 
+.win95-login-dialog,
+.win95-login-dialog * {
+  border-radius: 0 !important;
+  -webkit-font-smoothing: none;
+}
+
 .win95-login-dialog {
   width: 100%;
-  max-width: 470px;
-  background: var(--win-gray, #c0c0c0);
-  border: 2px solid #111111;
-  box-shadow: 6px 6px 0px #111111, inset 2px 2px 0 #ffffff, inset -2px -2px 0 #808080;
+  max-width: 490px;
+  background: #c0c0c0;
+  border-top: 2px solid #ffffff;
+  border-left: 2px solid #ffffff;
+  border-right: 2px solid #000000;
+  border-bottom: 2px solid #000000;
+  box-shadow: inset 1px 1px 0 #dfdfdf, inset -1px -1px 0 #808080;
+  padding: 2px;
+  color: #000000;
 }
 
 .win95-login-titlebar {
-  background: #000080;
+  background: linear-gradient(90deg, #000080 0%, #1084d0 100%);
   color: #ffffff;
-  font-weight: 900;
-  font-size: 0.85rem;
-  padding: 6px 10px;
+  font-weight: 700;
+  font-size: 0.82rem;
+  padding: 3px 5px;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-bottom: 4px;
 }
 
 .win95-login-help-btn {
-  width: 20px;
-  height: 20px;
-  background: var(--win-gray, #c0c0c0);
-  color: #111111;
-  border: 1.5px solid #111111;
-  box-shadow: inset 1px 1px 0 #fff;
+  width: 18px;
+  height: 17px;
+  background: #c0c0c0;
+  color: #000000;
+  border-top: 1px solid #ffffff;
+  border-left: 1px solid #ffffff;
+  border-right: 1px solid #000000;
+  border-bottom: 1px solid #000000;
+  box-shadow: inset -1px -1px 0 #808080;
   font-weight: 900;
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   line-height: 1;
+  padding: 0;
   cursor: pointer;
 }
 
+.win95-login-help-btn:active {
+  border-top: 1px solid #000000;
+  border-left: 1px solid #000000;
+  border-right: 1px solid #ffffff;
+  border-bottom: 1px solid #ffffff;
+  box-shadow: none;
+}
+
+/* 도트 픽셀 SVG 선명 렌더링 */
+.pixel-svg-12,
+.pixel-svg-14,
+.pixel-svg-16,
+.pixel-svg-48,
+.pixel-avatar-svg {
+  display: block;
+  flex-shrink: 0;
+  image-rendering: pixelated;
+  shape-rendering: crispEdges;
+}
+
+.pixel-svg-12 { width: 12px; height: 12px; }
+.pixel-svg-14 { width: 14px; height: 14px; }
+.pixel-svg-16 { width: 16px; height: 16px; }
+.pixel-svg-48 { width: 48px; height: 48px; }
+
+.pixel-avatar-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.pixel-avatar-svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* Windows 95 Property Sheet 탭 */
+.win95-login-tabs {
+  display: flex;
+  align-items: flex-end;
+  padding: 2px 6px 0;
+  gap: 2px;
+  position: relative;
+  z-index: 2;
+}
+
+.win95-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #c0c0c0;
+  color: #000000;
+  border-top: 2px solid #ffffff;
+  border-left: 2px solid #ffffff;
+  border-right: 2px solid #000000;
+  border-bottom: none;
+  box-shadow: inset 1px 1px 0 #dfdfdf, inset -1px 0 0 #808080;
+  padding: 4px 10px 3px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.win95-tab-btn.active {
+  padding: 6px 11px 5px;
+  margin-bottom: -2px;
+  background: #c0c0c0;
+  position: relative;
+  z-index: 3;
+}
+
+.win95-tab-btn.active:focus {
+  outline: 1px dotted #000000;
+  outline-offset: -4px;
+}
+
+/* 탭 본문 양각 패널 */
+.win95-tab-page-body {
+  margin: 0 6px 6px;
+  background: #c0c0c0;
+  border-top: 2px solid #ffffff;
+  border-left: 2px solid #ffffff;
+  border-right: 2px solid #000000;
+  border-bottom: 2px solid #000000;
+  box-shadow: inset 1px 1px 0 #dfdfdf, inset -1px -1px 0 #808080;
+}
+
+.win95-login-err-banner {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 8px 10px 0;
+  background: #ffffff;
+  color: #800000;
+  font-size: 0.76rem;
+  font-weight: 700;
+  padding: 5px 8px;
+  border-top: 2px solid #808080;
+  border-left: 2px solid #808080;
+  border-right: 2px solid #ffffff;
+  border-bottom: 2px solid #ffffff;
+  box-shadow: inset 1px 1px 0 #000000;
+}
+
 .win95-login-body {
-  padding: 16px;
+  padding: 14px 14px 12px;
   display: grid;
-  grid-template-columns: 74px 1fr;
-  gap: 14px;
+  grid-template-columns: 56px 1fr;
+  gap: 12px;
   align-items: start;
 }
 
 .win95-login-icon-col {
   display: flex;
   justify-content: center;
-  padding-top: 4px;
-}
-
-.win95-key-badge {
-  position: relative;
-  width: 58px;
-  height: 58px;
-  background: #ffffff;
-  border: 2px solid #111111;
-  box-shadow: 3px 3px 0 #111111;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 2rem;
-}
-
-.win95-key-mini {
-  position: absolute;
-  bottom: -6px;
-  right: -6px;
-  background: var(--brutal-yellow, #ffd83b);
-  border: 1.5px solid #111111;
-  font-size: 0.9rem;
-  padding: 1px 3px;
+  padding-top: 2px;
 }
 
 .win95-login-lead {
-  font-size: 0.82rem;
+  font-size: 0.79rem;
   line-height: 1.45;
-  color: #111111;
-  margin-bottom: 12px;
+  color: #000000;
+  margin-bottom: 10px;
 }
 
 .win95-login-row {
   display: grid;
-  grid-template-columns: 112px 1fr;
+  grid-template-columns: 96px 1fr;
   gap: 8px;
   align-items: center;
-  margin-bottom: 8px;
-  font-size: 0.8rem;
-  font-weight: 800;
+  margin-bottom: 7px;
+  font-size: 0.78rem;
+  font-weight: 700;
 }
 
-.win95-login-status-strip {
-  margin-top: 10px;
-  padding: 5px 8px;
+/* 로그온 대화상자 내부 입력창: 현대적 두꺼운 테두리 대신 Win95 음각 Sunken Bevel */
+.win95-login-dialog input[type="text"],
+.win95-login-dialog input[type="password"],
+.win95-login-dialog .win95-select {
   background: #ffffff;
-  border: 1.5px solid #808080;
-  box-shadow: inset 1px 1px 0 #404040;
-  font-size: 0.74rem;
-  font-weight: 800;
-  color: #006600;
+  color: #000000;
+  border-top: 2px solid #808080;
+  border-left: 2px solid #808080;
+  border-right: 2px solid #ffffff;
+  border-bottom: 2px solid #ffffff;
+  box-shadow: inset 1px 1px 0 #000000, inset -1px -1px 0 #dfdfdf;
+  padding: 4px 6px;
+  font-size: 0.79rem;
+  font-weight: 400;
 }
 
+.win95-login-dialog input:disabled {
+  background: #c0c0c0;
+  color: #555555;
+}
+
+.win95-login-dialog input:focus,
+.win95-login-dialog .win95-select:focus {
+  background: #ffffff;
+  outline: none;
+}
+
+/* 1995 Windows GroupBox (사용자 프로필 / 소개) */
+.win95-groupbox {
+  border: 1px solid #808080;
+  box-shadow: 1px 1px 0 #ffffff, inset 1px 1px 0 #ffffff;
+  padding: 6px 8px 8px;
+  margin: 8px 0 7px;
+  background: #c0c0c0;
+}
+
+.win95-groupbox legend {
+  padding: 0 4px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #000000;
+}
+
+.win95-profile-preview {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.win95-pixel-avatar-frame {
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #c0c0c0;
+  border-top: 2px solid #808080;
+  border-left: 2px solid #808080;
+  border-right: 2px solid #ffffff;
+  border-bottom: 2px solid #ffffff;
+  box-shadow: inset 1px 1px 0 #000000;
+}
+
+.win95-profile-meta {
+  min-width: 0;
+  flex: 1;
+}
+
+.win95-profile-name {
+  font-size: 0.78rem;
+  font-weight: 900;
+  color: #000080;
+  margin-bottom: 2px;
+}
+
+.win95-profile-bio {
+  font-size: 0.74rem;
+  line-height: 1.35;
+  color: #111111;
+  word-break: keep-all;
+}
+
+/* 회원가입 도트 아바타 선택 그리드 */
+.win95-avatar-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+}
+
+.win95-avatar-choice {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 6px;
+  background: #c0c0c0;
+  color: #000000;
+  border-top: 2px solid #ffffff;
+  border-left: 2px solid #ffffff;
+  border-right: 2px solid #000000;
+  border-bottom: 2px solid #000000;
+  box-shadow: inset 1px 1px 0 #dfdfdf, inset -1px -1px 0 #808080;
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.win95-avatar-choice.selected {
+  background: #000080;
+  color: #ffffff;
+  border-top: 2px solid #000000;
+  border-left: 2px solid #000000;
+  border-right: 2px solid #ffffff;
+  border-bottom: 2px solid #ffffff;
+  box-shadow: inset 1px 1px 0 #808080;
+  outline: 1px dotted #ffff00;
+  outline-offset: -3px;
+}
+
+/* 1995 음각 상태 표시줄 */
+.win95-sunken-statusbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 6px;
+  background: #c0c0c0;
+  border-top: 1px solid #808080;
+  border-left: 1px solid #808080;
+  border-right: 1px solid #ffffff;
+  border-bottom: 1px solid #ffffff;
+  font-size: 0.72rem;
+  color: #000000;
+}
+
+.win95-pixel-led {
+  width: 6px;
+  height: 6px;
+  flex-shrink: 0;
+  background: #808000;
+  border: 1px solid #000000;
+}
+
+/* 정통 Windows 95 3D Command Button */
 .win95-login-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 8px;
-  margin-top: 14px;
+  gap: 6px;
+  margin-top: 11px;
+}
+
+.win95-cmd-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-width: 84px;
+  padding: 5px 12px;
+  background: #c0c0c0;
+  color: #000000;
+  border-top: 2px solid #ffffff;
+  border-left: 2px solid #ffffff;
+  border-right: 2px solid #000000;
+  border-bottom: 2px solid #000000;
+  box-shadow: inset 1px 1px 0 #dfdfdf, inset -1px -1px 0 #808080;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.win95-cmd-btn.default-btn {
+  outline: 1px solid #000000;
+}
+
+.win95-cmd-btn:focus {
+  outline: 1px dotted #000000;
+  outline-offset: -4px;
+}
+
+.win95-cmd-btn:active:not(:disabled) {
+  border-top: 2px solid #000000;
+  border-left: 2px solid #000000;
+  border-right: 2px solid #ffffff;
+  border-bottom: 2px solid #ffffff;
+  box-shadow: inset 1px 1px 0 #808080;
+  padding: 6px 11px 4px 13px;
+}
+
+.win95-cmd-btn:disabled {
+  color: #808080;
+  text-shadow: 1px 1px 0 #ffffff;
+  cursor: not-allowed;
 }
 
 @media (max-width: 520px) {
@@ -1683,48 +1961,14 @@ body.boot-locked {
     grid-template-columns: 1fr;
     gap: 4px;
   }
+  .win95-avatar-picker-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
-
 
 /* ============================================================
-   Windows 95 Logon Tabs, Task Manager & Community SNS Feed Styles
+   Community SNS Feed & Task Manager Styles
    ============================================================ */
-.win95-login-tabs {
-  display: flex;
-  background: #b0b0b0;
-  border-bottom: 2px solid #111111;
-  padding: 4px 8px 0;
-  gap: 4px;
-}
-
-.win95-tab-btn {
-  background: #c0c0c0;
-  border: 2px solid #111111;
-  border-bottom: none;
-  padding: 5px 10px;
-  font-size: 0.76rem;
-  font-weight: 900;
-  cursor: pointer;
-  color: #333333;
-}
-
-.win95-tab-btn.active {
-  background: #ffffff;
-  color: #000080;
-  position: relative;
-  top: 2px;
-  padding-bottom: 7px;
-}
-
-.win95-login-err-banner {
-  background: #ff4757;
-  color: #ffffff;
-  font-size: 0.78rem;
-  font-weight: 900;
-  padding: 6px 12px;
-  border-bottom: 2px solid #111111;
-}
-
 .sns-post-card {
   background: #ffffff;
   border: 2.5px solid #111111;
@@ -1746,12 +1990,14 @@ body.boot-locked {
 .sns-avatar-box {
   width: 34px;
   height: 34px;
-  border: 2px solid #111111;
-  background: var(--brutal-yellow, #ffd83b);
+  border-top: 2px solid #808080;
+  border-left: 2px solid #808080;
+  border-right: 2px solid #ffffff;
+  border-bottom: 2px solid #ffffff;
+  background: #c0c0c0;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.15rem;
 }
 
 .sns-role-tag {
