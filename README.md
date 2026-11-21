@@ -6,29 +6,38 @@
 
 ---
 
-## 지금까지 완료한 작업 (v2.0 코어 OS · 탐색/재생 · 커뮤니티 피드)
+## 지금까지 완료한 작업 (v2.1 코어 OS · 계정/탐색/재생 · 데이터 시각화)
 
-### 1. Windows 95 + Neo-Brutalism 멀티 윈도우 데스크톱 셸
-- **멀티 태스킹 창 관리 (`index.html`, `css/style.css`, `js/window-mgr.js`):** 다중 창 드래그 이동, 최소화/복원, 제목 표시줄 더블클릭 최대화, 시작 메뉴·하단 태스크바 창 전환 및 Web Audio API 기반 8비트 시스템 효과음을 구현했습니다.
+### 1. Windows 95 + Neo-Brutalism 멀티 윈도우 데스크톱 셸 & BIOS 부팅
+- **BIOS POST 부팅 & 계정 로그인 (`js/boot-screen.js`):**
+  - 1995년 PC 부팅 시퀀스(메모리 체크, 드라이브 인식, 도트 픽셀 부팅 로고) 및 부팅 생략(`ESC`/클릭) 지원
+  - 개인 계정 로그인, 신규 계정 등록, 비밀번호 없는 **공용 워크스테이션** 접속 모드 전환 및 관리자 권한 분리
+- **멀티 태스킹 창 관리 (`index.html`, `css/style.css`, `js/window-mgr.js`):**
+  - 다중 창 드래그 이동, 최소화/복원, 제목 표시줄 더블클릭 최대화, 시작 메뉴·하단 작업표시줄 창 전환
+  - `Ctrl+Alt+Delete` **Windows 95 작업 관리자**, 화면 보호기, 블루스크린(BSOD) 이스터에그 및 Web Audio API 기반 8비트 시스템 효과음 구현
+  - 현대 유니코드 이모지를 배제하고 16×16 도트 픽셀 SVG(`crispEdges`)와 입체 베벨(Bevel)을 적용한 1995년 시대 고증 UI
 - **데스크톱 개인화 & 디스플레이 등록 정보 (`DISPLAY95.EXE`):**
   - 바탕화면 우클릭 컨텍스트 메뉴 지원
-  - 배경 테마·패턴 5종 전환 (클래식 틸, 미드나잇 블루, 95 체크 패턴, 플로피 그리드, 신스웨이브 퍼플)
-  - **CRT 브라운관 스캔라인(주사선) 오버레이** 토글 및 워크스테이션 소유자 이름 설정
+  - 배경 테마·패턴 전환 (`teal`, `navy`, `olive`, `plum`, `brick`, `matrix`, `grid`)
+  - **CRT 브라운관 스캔라인(주사선) 오버레이** 실시간 토글 및 워크스테이션 소유자 이름 설정
 
 ### 2. Google Apps Script 서버리스 백엔드 & 아카이브 CRUD
-- **시트 자동 생성 및 실시간 동기화 (`backend/Code.gs`, `js/archive-app.js`):** `Archive`, `Notes`, `Mailbox`, `Bookmarks` 등 핵심 시트를 자동 구성하고 실시간 CRUD 및 상호작용 데이터를 동기화합니다.
+- **시트 자동 생성 및 실시간 동기화 (`backend/Code.gs`, `js/archive-app.js`):** `Archive`, `Users`, `Notes`, `Mailbox`, `Bookmarks`, `Likes`, `Comments` 등 핵심 시트를 자동 구성하고 실시간 CRUD 및 상호작용 데이터를 동기화합니다.
 - **다중 소스 메타데이터 자동 수집 & 무결성 검증:**
   - **도서:** Google Books, Apple Books, Open Library API 연동
   - **음악:** Apple Music (KR/US) 및 YouTube 검색 연동
   - **영상:** iTunes Movie 및 TVMaze 시리즈 API 연동
   - **웹 URL 파서:** 일반 웹페이지나 YouTube URL 입력 시 제목·제작자·표지(Open Graph) 자동 추출
   - 동일 매체·동일 제목 중복 등록 차단(본인 ID 수정 시 예외 허용) 및 다중 필터·정렬 기능 적용
-- **내장 기본 유틸리티:** 개인 감상 통계 차트(`js/visualizer.js`), 퀵 메모장(`Notes`), 비밀 추천 우체통(`GmailApp` 이메일 즉시 알림), 레트로 미니게임 팩(`js/gamepack.js`)을 탑재했습니다.
+- **내장 기본 유틸리티:**
+  - **감상 통계 & 물리 노드 맵 (`js/visualizer.js`):** Canvas 물리 엔진 기반 인터랙티브 노드 그래프(매체–장르–작품 연결 및 클릭 상세 열기), 한줄평 키워드 워드클라우드 필터, 매체별 백분율(%)·취향 편중도·최장 연속 감상 일수 진단, 분석 범위 전환(`내 계정 전체` vs `공개 + 공용 계정`) 지원
+  - **레트로 미니게임 팩 (`js/gamepack.js`):** 클론다이크 솔리테어 95(자동 올리기 지원), 정통 입체 베벨 지뢰찾기 95(우클릭 깃발 표시), 아카이브 12장 카드 뒤집기, 작품 별점 하이로우 대결 탑재
+  - **퀵 메모장 & 비밀 우체통:** 개인 메모 동기화(`Notes`) 및 `GmailApp` 기반 비밀 추천 메시지 이메일 즉시 알림
 
-### 3. 주크박스 YouTube 자동 검색 및 스트리밍 복구 (`JUKEBOX 95`)
-- **InnerTube API 기반 검색 엔진 (`js/jukebox.js`, `backend/Code.gs`):** YouTube InnerTube 검색 및 HTML 파싱 기반 `ytsearch` 엔드포인트를 구축해 재생 실패 문제를 해결하고, 검색 결과를 `localStorage`에 캐싱해 재재생 속도를 높였습니다.
+### 3. 주크박스 YouTube 자동 검색 및 스트리밍 플레이어 (`JUKEBOX 95`)
+- **InnerTube API 기반 검색 엔진 (`js/jukebox.js`, `backend/Code.gs`):** YouTube InnerTube 검색 및 HTML 파싱 기반 `ytsearch` 엔드포인트를 구축하고, 검색 결과를 `localStorage`에 캐싱해 재재생 속도를 높였습니다.
 - **후보 전환 & 링크 영구 연결:** 검색된 상위 후보 `#1 ~ #5` 버튼으로 라이브·MV·공식 음원을 즉시 전환하거나, 원하는 YouTube URL을 직접 입력해 해당 트랙에 영구 연결할 수 있습니다.
-- **탐색기 95 연동:** 주크박스에서 `[탐색기 95에서 찾기]`를 클릭하면 가상 브라우저가 열리며 해당 아티스트의 영상 목록을 바로 탐색할 수 있습니다.
+- **탐색기 95 양방향 연동:** 주크박스에서 `[탐색기 95에서 찾기]`로 영상을 검색하거나, 반대로 탐색기 95에서 찾은 영상을 `[주크박스 95에서 듣기]`로 즉시 전송해 재생할 수 있습니다.
 
 ### 4. 가상 웹·유튜브 탐색기 & 즉석 감상 기록 (`EXPLORER95.EXE`)
 - **인앱 YouTube 95 검색 & 재생 (`js/browser-app.js`):** 주소창에 검색어 또는 `yt:검색어`를 입력하면 가상 브라우저 뷰포트 안에서 YouTube 영상을 검색하고 즉시 재생합니다.
@@ -52,12 +61,13 @@ MyArchive-main/
 │   └── style.css              # Windows 95 입체 UI + Neo-Brutalism 스타일, 배경 테마, CRT 효과
 ├── js/
 │   ├── config.js              # GAS Web App URL 설정, 로컬 스토리지 키, 공통 유틸리티
-│   ├── window-mgr.js          # 창 드래그·포커스·최소화, 8비트 사운드, Win95 알림창
+│   ├── boot-screen.js         # BIOS POST 부팅 시퀀스, 계정 로그인/회원가입/공용 모드 전환
+│   ├── window-mgr.js          # 창 드래그·포커스·최소화, 6종 테마 엔진, 작업 관리자, 화면 보호기, BSOD
 │   ├── archive-app.js         # 감상 기록 CRUD, 다중 소스 검색, 메모장, 비밀 우체통
-│   ├── visualizer.js          # 개인 감상 통계 차트 시각화 모듈
+│   ├── visualizer.js          # Canvas 물리 데이터 노드 맵, 워드클라우드, 편중도 통계 진단
 │   ├── community-app.js       # COMMUNITY95.EXE 커뮤니티 SNS 피드, 전체 통계, 좋아요·댓글·스크랩
-│   ├── jukebox.js             # JUKEBOX 95 (YouTube 자동 검색·캐싱·후보 전환 플레이어)
+│   ├── jukebox.js             # JUKEBOX 95 (YouTube 자동 검색·캐싱·후보 전환 스테레오 플레이어)
 │   ├── browser-app.js         # EXPLORER95.EXE 가상 브라우저, 북마크, DISPLAY95.EXE, 우클릭 메뉴
-│   └── gamepack.js            # 내장 레트로 미니게임 팩
+│   └── gamepack.js            # 내장 레트로 미니게임 팩 (솔리테어 95, 지뢰찾기 95, 카드 뒤집기, 하이로우)
 └── backend/
-    └── Code.gs                # Google Apps Script 서버리스 API (시트 CRUD, 피드 상호작용, 파서, 메일 알림)
+    └── Code.gs                # Google Apps Script 서버리스 API (시트 CRUD, 계정 인증, 피드 상호작용, 파서, 메일 알림)
