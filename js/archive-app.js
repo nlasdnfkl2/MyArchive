@@ -144,7 +144,7 @@ function updateCacheBadge(isOnline, labelText) {
 async function loadArchiveData(showFeedback = false) {
   setLoadingCursor(true);
   const statusLeft = document.getElementById('status-left');
-  if (statusLeft) statusLeft.textContent = `구글 시트 동기화 중... (${APP_BUILD_VERSION})`;
+  if (statusLeft) statusLeft.textContent = `중앙 데이터 서버 접속 중... (${APP_BUILD_VERSION})`;
 
   try {
     const res = await fetch(`${GAS_WEB_APP_URL}?action=list`);
@@ -153,7 +153,7 @@ async function loadArchiveData(showFeedback = false) {
       archiveItems = json.items;
       saveLocalCache(STORAGE_KEYS.ARCHIVE, archiveItems);
       updateCacheBadge(true, 'SHEET + CACHE: SYNCED');
-      if (statusLeft) statusLeft.textContent = `동기화 완료 [${APP_BUILD_VERSION}] — 모든 창 제목 표시줄을 드래그하여 이동할 수 있습니다`;
+      if (statusLeft) statusLeft.textContent = `통신 접속 완료 [${APP_BUILD_VERSION}] — 각 창의 제목 표시줄을 끌어 위치를 이동할 수 있습니다`;
       if (showFeedback) playRetroTone('open');
     } else {
       throw new Error('Invalid response');
@@ -162,7 +162,7 @@ async function loadArchiveData(showFeedback = false) {
     const fallback = loadLocalCache(STORAGE_KEYS.ARCHIVE, []);
     archiveItems = Array.isArray(fallback) ? fallback : [];
     updateCacheBadge(false, 'OFFLINE CACHE MODE');
-    if (statusLeft) statusLeft.textContent = `오프라인 로컬 캐시 모드 [${APP_BUILD_VERSION}] — 시트 연결 대기 중`;
+    if (statusLeft) statusLeft.textContent = `오프라인 디스크 모드 [${APP_BUILD_VERSION}] — 중앙 서버 회선 대기 중`;
   } finally {
     setLoadingCursor(false);
   }
@@ -196,7 +196,7 @@ function refreshAllViews() {
 // ============================================================
 function getMyVisibleArchiveItems() {
   const me = typeof getCurrentUser === 'function' ? getCurrentUser() : { username: '문태양', role: 'owner' };
-  if (!me || me.role === 'public') return archiveItems;
+  if (!me || me.role === 'public' || isAdminUser(me)) return archiveItems;
   return archiveItems.filter(it => (it.owner || '문태양') === me.username);
 }
 
@@ -205,16 +205,16 @@ function updateKPIs() {
   const total = myItems.length;
   document.getElementById('kpi-total').textContent = `${total}건`;
   if (!total) {
-    document.getElementById('kpi-recent-sub').textContent = '첫 기록을 추가해 보세요';
+    document.getElementById('kpi-recent-sub').textContent = '첫 감상 자료를 등록해 보십시오';
     document.getElementById('kpi-avg-rating').textContent = '0.0점';
     document.getElementById('kpi-top-cat').textContent = '-';
-    document.getElementById('kpi-top-cat-sub').textContent = '데이터 없음';
+    document.getElementById('kpi-top-cat-sub').textContent = '기록 없음';
     document.getElementById('kpi-top-genre').textContent = '-';
-    document.getElementById('kpi-top-genre-sub').textContent = '데이터 없음';
+    document.getElementById('kpi-top-genre-sub').textContent = '기록 없음';
     return;
   }
 
-  document.getElementById('kpi-recent-sub').textContent = `최근: 「${myItems[0].title}」`;
+  document.getElementById('kpi-recent-sub').textContent = `최근 수록: 「${myItems[0].title}」`;
   const avg = myItems.reduce((s, c) => s + (Number(c.rating) || 0), 0) / total;
   document.getElementById('kpi-avg-rating').textContent = `${avg.toFixed(1)}점`;
 
@@ -228,7 +228,7 @@ function updateKPIs() {
   myItems.forEach(i => { const g = (i.genre || '일반').trim(); gMap[g] = (gMap[g] || 0) + 1; });
   const topG = Object.entries(gMap).sort((a, b) => b[1] - a[1])[0];
   document.getElementById('kpi-top-genre').textContent = topG[0];
-  document.getElementById('kpi-top-genre-sub').textContent = `누적 ${topG[1]}건 기록`;
+  document.getElementById('kpi-top-genre-sub').textContent = `누적 ${topG[1]}건 수록`;
 }
 
 function renderCharts() {
@@ -303,7 +303,7 @@ function renderArchiveGrid() {
   const filtered = myItems.filter(item => {
     if (selectedCategory !== 'ALL' && item.category !== selectedCategory) return false;
     if (Number(item.rating) < minRating) return false;
-    if (kw && !`${item.title} ${item.creator} ${item.genre} ${item.review}`.toLowerCase().includes(kw)) return false;
+    if (kw && !`${item.title} ${item.creator} ${item.genre} ${item.review} ${item.owner || ''}`.toLowerCase().includes(kw)) return false;
     return true;
   });
 
@@ -314,29 +314,31 @@ function renderArchiveGrid() {
   grid.innerHTML = '';
 
   if (!filtered.length) {
-    grid.innerHTML = `<div style="grid-column: 1 / -1; text-align: center; padding: 44px 16px; background: #ffffff; border: 3px dashed #111111; font-weight: 800;">표시할 감상 기록이 없습니다. [+ 새 감상 기록하기] 버튼을 눌러 첫 기록을 등록하십시오.</div>`;
+    grid.innerHTML = `<div style="grid-column: 1 / -1; text-align: center; padding: 44px 16px; background: #ffffff; border: 3px dashed #111111; font-weight: 800;">디스크에 표시할 감상 자료가 없습니다. [+ 새 감상 기록하기] 단추를 눌러 첫 자료를 등록하십시오.</div>`;
     return;
   }
 
   filtered.forEach(item => {
     const catCls = item.category === '음악' ? 'music' : item.category === '영상' ? 'video' : item.category === '기타' ? 'etc' : '';
+    const catIcon = item.category === '도서' ? PIXEL_ICONS.BOOK : item.category === '음악' ? PIXEL_ICONS.MUSIC : item.category === '영상' ? PIXEL_ICONS.MOVIE : PIXEL_ICONS.ETC;
     const stars = '★'.repeat(item.rating) + '☆'.repeat(5 - item.rating);
     const coverSrc = item.coverUrl ? esc(item.coverUrl) : FALLBACK_COVER;
+    const ownerLabel = isPublicArchiveItem(item) ? '공용' : esc(item.owner || '문태양');
 
     const card = document.createElement('article');
     card.className = 'item-card';
     card.innerHTML = `
-      <div class="item-card-bar"><span>${esc(item.id || 'ARCHIVE.DAT')}</span><span>[상세·수정·삭제]</span></div>
+      <div class="item-card-bar"><span>${esc(item.id || 'ARCHIVE.DAT')}</span><span>[열람·편집]</span></div>
       <div class="item-thumb-box">
         <img class="item-thumb" src="${coverSrc}" alt="${esc(item.title)}" onerror="this.onerror=null;this.src='${FALLBACK_COVER}';" />
-        <span class="cat-sticker ${catCls}">${esc(item.category)}</span>
+        <span class="cat-sticker ${catCls}">${catIcon} ${esc(item.category)}</span>
         <span class="star-sticker">${stars}</span>
       </div>
       <div class="item-content">
         <h3 class="item-title">${esc(item.title)}</h3>
         <div class="item-creator">${esc(item.creator)} · ${esc(item.genre || '일반')}</div>
         <p class="item-memo">${esc(item.review)}</p>
-        <div class="item-footer"><span>${esc(item.watchDate)}</span><span class="inspect-hint">열기 · 관리 &gt;&gt;</span></div>
+        <div class="item-footer"><span>${esc(item.watchDate)} · @${ownerLabel}</span><span class="inspect-hint">자료 열람 &gt;&gt;</span></div>
       </div>
     `;
     card.addEventListener('click', () => spawnDetailWindow(item));
@@ -396,7 +398,7 @@ function showWin95MessageBox(title, message, tone = 'boom') {
 }
 
 // ============================================================
-// 5. 상세 탐색기 창 (조회 + 수정 + 삭제 + 연관 추천)
+// 5. 상세 탐색기 창 (조회 + 수정 + 권한별 삭제 + 연관 추천)
 // ============================================================
 const detailItemRegistry = {};
 
@@ -420,6 +422,15 @@ async function spawnDetailWindow(item) {
       : `${item.title} ${item.creator}`;
   const ytUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(ytQuery)}`;
 
+  const deletable = canDeleteArchiveItem(item);
+  const isPublicPost = isPublicArchiveItem(item);
+  const authorBadgeText = isPublicPost
+    ? '등록 계정: 공용 계정 (관리자 전용 삭제)'
+    : `등록 계정: @${item.owner || '문태양'}`;
+  const deleteDenyMsg = isPublicPost
+    ? '공용 계정 게시물은 관리자 계정으로만 삭제할 수 있습니다.'
+    : '감상평 삭제는 작성자 본인 또는 관리자 계정으로만 가능합니다.';
+
   const winEl = document.createElement('div');
   winEl.className = 'floating-win open focused';
   winEl.id = winId;
@@ -432,7 +443,7 @@ async function spawnDetailWindow(item) {
 
   winEl.innerHTML = `
     <div class="win-titlebar draggable">
-      <div class="win-title-left"><span class="win-title-dot" style="background: var(--brutal-green);"></span><span>${esc(item.title)} — 상세 탐색기 및 관리</span></div>
+      <div class="win-title-left"><span class="win-title-dot" style="background: var(--brutal-green);"></span><span>${esc(item.title)} — 등록 자료 상세 정보</span></div>
       <div class="win-controls">
         <button type="button" class="win-ctrl-btn" data-action="minimize" data-target="${winId}">_</button>
         <button type="button" class="win-ctrl-btn close" data-action="close" data-target="${winId}">X</button>
@@ -447,37 +458,42 @@ async function spawnDetailWindow(item) {
               <span style="padding:2px 8px; border:2px solid #111; background:var(--brutal-yellow); font-size:0.75rem; font-weight:900;">${esc(item.category)}</span>
               <span style="padding:2px 8px; border:2px solid #111; background:#fff; font-size:0.75rem; font-weight:900;">${'★'.repeat(item.rating)}${'☆'.repeat(5 - item.rating)}</span>
               <span style="padding:2px 8px; border:2px solid #111; background:var(--win-gray); font-size:0.75rem; font-weight:800;">${esc(item.watchDate)}</span>
+              <span style="padding:2px 8px; border:2px solid #111; background:${isPublicPost ? '#d0f0fd' : '#fffdf2'}; font-size:0.74rem; font-weight:800;">${esc(authorBadgeText)}</span>
             </div>
             <h2 style="font-size:1.25rem; font-weight:900; margin-bottom:4px;">${esc(item.title)}</h2>
             <div style="font-size:0.86rem; font-weight:700; color:#4a4a4a; margin-bottom:10px;">${esc(item.creator)} · ${esc(item.genre || '일반')}</div>
             <p style="background:var(--brutal-paper); border:2px solid #111; padding:10px; font-size:0.86rem; font-weight:600;">${esc(item.review)}</p>
             <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:12px; align-items:center;">
-              <a class="btn95 pink sm" href="${ytUrl}" target="_blank" rel="noopener noreferrer">[PLAY] YouTube 이동</a>
-              ${item.sourceUrl ? `<a class="btn95 sky sm" href="${esc(item.sourceUrl)}" target="_blank" rel="noopener noreferrer">원본 링크 &gt;&gt;</a>` : ''}
-              <button type="button" class="btn95 sm btn-toggle-share" style="background:${String(item.shared || 'Y').toUpperCase() !== 'N' ? 'var(--brutal-green)' : '#e0e0e0'};">${String(item.shared || 'Y').toUpperCase() !== 'N' ? '📢 전체 게시판 공유중' : '🔒 비공개 (공유하기)'}</button>
-              <button type="button" class="btn95 yellow sm btn-toggle-edit">[EDIT] 기록 수정</button>
-              <button type="button" class="btn95 sm btn-delete-item" style="background:#111; color:#fff;">[DEL] 기록 삭제</button>
+              <a class="btn95 pink sm" href="${ytUrl}" target="_blank" rel="noopener noreferrer">[PLAY] 영상관(YouTube) 연결</a>
+              ${item.sourceUrl ? `<a class="btn95 sky sm" href="${esc(item.sourceUrl)}" target="_blank" rel="noopener noreferrer">원본 자료실 &gt;&gt;</a>` : ''}
+              <button type="button" class="btn95 sm btn-toggle-share" style="background:${String(item.shared || 'Y').toUpperCase() !== 'N' ? 'var(--brutal-green)' : '#e0e0e0'};">${String(item.shared || 'Y').toUpperCase() !== 'N' ? `${PIXEL_ICONS.SPEAKER} 광장 게시판 공개중` : `${PIXEL_ICONS.LOCK} 개인 보관함 (공개 전환)`}</button>
+              <button type="button" class="btn95 yellow sm btn-toggle-edit">[EDIT] 자료 편집</button>
+              ${deletable
+                ? `<button type="button" class="btn95 sm btn-delete-item" style="background:#111; color:#fff;">[DEL] 자료 삭제</button>`
+                : `<button type="button" class="btn95 sm" disabled style="opacity:0.55; cursor:not-allowed;" title="${esc(deleteDenyMsg)}">${PIXEL_ICONS.LOCK} 삭제 불가</button>`
+              }
             </div>
+            ${deletable ? `
             <div class="del-confirm-bar" style="display:none; margin-top:10px; padding:8px 10px; background:var(--brutal-pink); color:#fff; border:2px solid #111; font-size:0.8rem; font-weight:900; align-items:center; justify-content:space-between; gap:8px;">
-              <span>구글 시트에서 이 기록을 영구 삭제할까요?</span>
+              <span>중앙 데이터베이스에서 본 자료를 영구 삭제하시겠습니까?</span>
               <div style="display:flex; gap:6px;">
                 <button type="button" class="btn95 sm btn-delete-cancel">취소</button>
-                <button type="button" class="btn95 yellow sm btn-delete-confirm">예, 영구 삭제</button>
+                <button type="button" class="btn95 yellow sm btn-delete-confirm">예, 영구 삭제(Y)</button>
               </div>
-            </div>
+            </div>` : ''}
           </div>
         </div>
         <div class="sunken-box">
-          <div class="box-head"><span>「${esc(item.creator)} · ${esc(item.title)}」 연관 추천</span><span style="font-size:0.72rem; background:var(--brutal-yellow); padding:2px 6px; border:1.5px solid #111;">SIMILAR</span></div>
-          <div class="rec-status-msg" style="font-size:0.82rem; font-weight:700; color:#4a4a4a;">연관 작품을 검색하고 있습니다...</div>
+          <div class="box-head"><span>「${esc(item.creator)} · ${esc(item.title)}」 연관 추천 자료</span><span style="font-size:0.72rem; background:var(--brutal-yellow); padding:2px 6px; border:1.5px solid #111;">SIMILAR</span></div>
+          <div class="rec-status-msg" style="font-size:0.82rem; font-weight:700; color:#4a4a4a;">연관 자료를 조회하고 있습니다...</div>
           <div class="rec-grid"></div>
         </div>
       </div>
 
       <form class="det-edit-form sunken-box" style="display:none; background: var(--win-gray);">
-        <div class="box-head"><span>[EDIT] 감상 기록 수정 (${esc(item.id || 'NO-ID')})</span><span style="font-size:0.72rem; background:var(--brutal-green); padding:2px 6px; border:1.5px solid #111;">EDIT MODE</span></div>
+        <div class="box-head"><span>[EDIT] 등록 자료 편집 (${esc(item.id || 'NO-ID')})</span><span style="font-size:0.72rem; background:var(--brutal-green); padding:2px 6px; border:1.5px solid #111;">EDIT MODE</span></div>
         <div style="display:grid; grid-template-columns:1fr 1.15fr; gap:10px; margin-bottom:10px;">
-          <div><label style="display:block; font-size:0.78rem; font-weight:800; margin-bottom:3px;">매체</label>
+          <div><label style="display:block; font-size:0.78rem; font-weight:800; margin-bottom:3px;">매체 분류</label>
             <select name="category" class="win95-select" style="width:100%;">
               <option value="도서" ${item.category === '도서' ? 'selected' : ''}>도서</option>
               <option value="음악" ${item.category === '음악' ? 'selected' : ''}>음악</option>
@@ -495,11 +511,11 @@ async function spawnDetailWindow(item) {
         </div>
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
           <div><label style="display:block; font-size:0.78rem; font-weight:800; margin-bottom:3px;">작품 제목 *</label><input type="text" name="title" value="${esc(item.title)}" required style="width:100%;" /></div>
-          <div><label style="display:block; font-size:0.78rem; font-weight:800; margin-bottom:3px;">제작자 *</label><input type="text" name="creator" value="${esc(item.creator)}" required style="width:100%;" /></div>
+          <div><label style="display:block; font-size:0.78rem; font-weight:800; margin-bottom:3px;">저작·제작자 *</label><input type="text" name="creator" value="${esc(item.creator)}" required style="width:100%;" /></div>
         </div>
         <div style="display:grid; grid-template-columns:1fr 1.25fr; gap:10px; margin-bottom:10px;">
-          <div><label style="display:block; font-size:0.78rem; font-weight:800; margin-bottom:3px;">장르 / 키워드</label><input type="text" name="genre" value="${esc(item.genre)}" style="width:100%;" /></div>
-          <div><span style="display:block; font-size:0.78rem; font-weight:800; margin-bottom:3px;">평점 선택</span>
+          <div><label style="display:block; font-size:0.78rem; font-weight:800; margin-bottom:3px;">장르 / 색인어</label><input type="text" name="genre" value="${esc(item.genre)}" style="width:100%;" /></div>
+          <div><span style="display:block; font-size:0.78rem; font-weight:800; margin-bottom:3px;">평가 등급 선택</span>
             <div class="win95-radio-group">
               ${[1, 2, 3, 4, 5].map(r => `
                 <label class="win95-radio">
@@ -510,12 +526,12 @@ async function spawnDetailWindow(item) {
             </div>
           </div>
         </div>
-        <div style="margin-bottom:10px;"><label style="display:block; font-size:0.78rem; font-weight:800; margin-bottom:3px;">표지 URL</label><input type="text" name="coverUrl" value="${esc(item.coverUrl)}" style="width:100%;" /></div>
-        <div style="margin-bottom:10px;"><label style="display:block; font-size:0.78rem; font-weight:800; margin-bottom:3px;">원본 링크</label><input type="text" name="sourceUrl" value="${esc(item.sourceUrl)}" style="width:100%;" /></div>
-        <div style="margin-bottom:12px;"><label style="display:block; font-size:0.78rem; font-weight:800; margin-bottom:3px;">감상 메모 *</label><textarea name="review" rows="3" required style="width:100%;">${esc(item.review)}</textarea></div>
+        <div style="margin-bottom:10px;"><label style="display:block; font-size:0.78rem; font-weight:800; margin-bottom:3px;">표지 이미지 URL</label><input type="text" name="coverUrl" value="${esc(item.coverUrl)}" style="width:100%;" /></div>
+        <div style="margin-bottom:10px;"><label style="display:block; font-size:0.78rem; font-weight:800; margin-bottom:3px;">원본 자료 URL</label><input type="text" name="sourceUrl" value="${esc(item.sourceUrl)}" style="width:100%;" /></div>
+        <div style="margin-bottom:12px;"><label style="display:block; font-size:0.78rem; font-weight:800; margin-bottom:3px;">감상 비평문 *</label><textarea name="review" rows="3" required style="width:100%;">${esc(item.review)}</textarea></div>
         <div style="display:flex; justify-content:flex-end; gap:8px;">
-          <button type="button" class="btn95 sm btn-cancel-edit">수정 취소</button>
-          <button type="submit" class="btn95 yellow sm btn-save-edit">수정 내용 시트 반영</button>
+          <button type="button" class="btn95 sm btn-cancel-edit">편집 취소</button>
+          <button type="submit" class="btn95 yellow sm btn-save-edit">편집 내용 저장(S)</button>
         </div>
       </form>
     </div>
@@ -541,7 +557,7 @@ async function spawnDetailWindow(item) {
       const json = await (await fetch(`https://itunes.apple.com/search?term=${q}&country=KR&media=music&limit=6`)).json();
       recs = (json.results || []).filter(r => (r.trackName || '').toLowerCase() !== item.title.toLowerCase()).slice(0, 3).map(r => ({
         title: r.trackName || r.collectionName, creator: r.artistName,
-        thumb: r.artworkUrl100 ? r.artworkUrl100.replace('100x100bb', '300x300bb') : FALLBACK_COVER,
+        thumb: r.artworkUrl100 ? r.artworkUrl100.replace('100x100bb', '600x600bb') : FALLBACK_COVER,
         yt: `https://www.youtube.com/results?search_query=${encodeURIComponent(`${r.artistName} ${r.trackName}`)}`, link: r.trackViewUrl || ''
       }));
     } else if (item.category === '영상') {
@@ -562,9 +578,9 @@ async function spawnDetailWindow(item) {
       }));
     }
 
-    if (!recs.length) statusEl.textContent = '일치하는 자동 추천 결과가 없습니다.';
+    if (!recs.length) statusEl.textContent = '일치하는 연관 추천 자료가 없습니다.';
     else {
-      statusEl.textContent = `유사 작품 ${recs.length}건을 찾았습니다.`;
+      statusEl.textContent = `유사 자료 ${recs.length}건을 검색했습니다.`;
       recGrid.innerHTML = recs.map(r => `
         <div class="rec-card">
           <div>
@@ -579,10 +595,10 @@ async function spawnDetailWindow(item) {
         </div>
       `).join('');
     }
-  } catch { statusEl.textContent = '연관 작품 조회 중 오류가 발생했습니다.'; }
+  } catch { statusEl.textContent = '연관 자료 조회 중 통신 오류가 발생했습니다.'; }
 }
 
-// 상세 창 수정/삭제 버튼 전역 위임 처리
+// 상세 창 수정/삭제 버튼 전역 위임 처리 (작성자·관리자·공용 권한 검증 포함)
 document.addEventListener('click', async e => {
   const winEl = e.target.closest('.floating-win[data-item-key]');
   if (!winEl) return;
@@ -642,6 +658,16 @@ document.addEventListener('click', async e => {
   if (e.target.closest('.btn-delete-item')) {
     e.preventDefault();
     e.stopPropagation();
+    if (!canDeleteArchiveItem(item)) {
+      showWin95MessageBox(
+        '삭제 권한 없음 — MY-ARCHIVE 95',
+        isPublicArchiveItem(item)
+          ? '공용 계정 게시물은 관리자 계정으로만 삭제할 수 있습니다.'
+          : '감상평 삭제는 작성자 본인 또는 관리자 계정으로만 가능합니다.',
+        'boom'
+      );
+      return;
+    }
     playRetroTone('click');
     if (confirmBar) confirmBar.style.display = 'flex';
     return;
@@ -659,18 +685,35 @@ document.addEventListener('click', async e => {
     e.preventDefault();
     e.stopPropagation();
     if (!item || !item.id) {
-      showWin95MessageBox('삭제 불가 — MY-ARCHIVE 95', '이 기록에는 고유 ID가 없어 시트에서 삭제할 수 없습니다.', 'boom');
+      showWin95MessageBox('삭제 불가 — MY-ARCHIVE 95', '본 자료에는 고유 식별번호(ID)가 없어 삭제할 수 없습니다.', 'boom');
       return;
     }
+    if (!canDeleteArchiveItem(item)) {
+      showWin95MessageBox(
+        '삭제 권한 없음 — MY-ARCHIVE 95',
+        isPublicArchiveItem(item)
+          ? '공용 계정 게시물은 관리자 계정으로만 삭제할 수 있습니다.'
+          : '감상평 삭제는 작성자 본인 또는 관리자 계정으로만 가능합니다.',
+        'boom'
+      );
+      return;
+    }
+
+    const me = typeof getCurrentUser === 'function' ? getCurrentUser() : { username: '', role: '' };
     const delBtn = e.target.closest('.btn-delete-confirm');
     delBtn.disabled = true;
-    delBtn.textContent = '삭제 중...';
+    delBtn.textContent = '삭제 처리 중...';
     setLoadingCursor(true);
     try {
       const res = await fetch(GAS_WEB_APP_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action: 'delete', id: item.id })
+        body: JSON.stringify({
+          action: 'delete',
+          id: item.id,
+          requester: me.username,
+          requesterRole: me.role
+        })
       });
       const json = await res.json();
       if (json.status === 'success') {
@@ -681,103 +724,126 @@ document.addEventListener('click', async e => {
         refreshAllViews();
         closeWindow(winEl.id);
       } else {
-        showWin95MessageBox('삭제 오류 — MY-ARCHIVE 95', json.message || '삭제 중 오류가 발생했습니다.', 'boom');
+        showWin95MessageBox('삭제 거부 — MY-ARCHIVE 95', json.message || '삭제 처리 중 오류가 발생했습니다.', 'boom');
       }
     } catch {
-      showWin95MessageBox('통신 오류 — MY-ARCHIVE 95', '서버 통신 중 오류가 발생했습니다. GAS 새 버전 배포 상태를 확인하십시오.', 'boom');
+      showWin95MessageBox('통신 오류 — MY-ARCHIVE 95', '서버 통신 중 회선 오류가 발생했습니다.', 'boom');
     } finally {
       delBtn.disabled = false;
-      delBtn.textContent = '예, 영구 삭제';
+      delBtn.textContent = '예, 영구 삭제(Y)';
       setLoadingCursor(false);
     }
-  }
-});
-
-// 상세 창 수정 폼 제출 전역 위임 처리 (자기 자신 ID 제외 중복 검증)
-document.addEventListener('submit', async e => {
-  const editForm = e.target.closest('.det-edit-form');
-  if (!editForm) return;
-  e.preventDefault();
-  e.stopPropagation();
-
-  const winEl = editForm.closest('.floating-win[data-item-key]');
-  const itemKey = winEl ? winEl.dataset.itemKey : '';
-  const item = detailItemRegistry[itemKey];
-  if (!item || !item.id) {
-    showWin95MessageBox('수정 불가 — MY-ARCHIVE 95', '이 기록에는 고유 ID가 없어 수정할 수 없습니다.', 'boom');
-    return;
-  }
-
-  const newCategory = editForm.category.value;
-  const newTitle = editForm.title.value.trim();
-
-  // 자기 자신의 ID(item.id)는 제외하고 동일 매체·제목 중복 체크
-  const isDetailDup = archiveItems.some(x => {
-    if (String(x.id).trim() === String(item.id).trim()) return false;
-    return x.category === newCategory && String(x.title || '').trim().toLowerCase() === newTitle.toLowerCase();
-  });
-
-  if (isDetailDup) {
-    showWin95MessageBox('중복 기록 오류 — MY-ARCHIVE 95', `이미 '${newCategory}' 목록에 동일한 제목(「${newTitle}」)의 다른 기록이 존재합니다.`, 'boom');
-    return;
-  }
-
-  const saveBtn = editForm.querySelector('.btn-save-edit');
-  if (saveBtn) {
-    saveBtn.disabled = true;
-    saveBtn.textContent = '시트 반영 중...';
-  }
-  setLoadingCursor(true);
-
-  const checkedRating = editForm.querySelector('input[name="editRating"]:checked');
-  const watchDateStr = (typeof getWin95DateValue === 'function' && editForm.dateY)
-    ? getWin95DateValue(editForm.dateY, editForm.dateM, editForm.dateD)
-    : item.watchDate;
-
-  try {
-    const res = await fetch(GAS_WEB_APP_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({
-        action: 'update',
-        id: item.id,
-        category: newCategory,
-        title: newTitle,
-        creator: editForm.creator.value.trim(),
-        genre: editForm.genre.value.trim() || '일반',
-        rating: checkedRating ? Number(checkedRating.value) : 5,
-        watchDate: watchDateStr,
-        coverUrl: editForm.coverUrl.value.trim(),
-        sourceUrl: editForm.sourceUrl.value.trim(),
-        review: editForm.review.value.trim()
-      })
-    });
-    const json = await res.json();
-    if (json.status === 'success' && json.item) {
-      playRetroTone('boot');
-      const idx = archiveItems.findIndex(x => x.id === item.id);
-      if (idx !== -1) archiveItems[idx] = json.item;
-      saveLocalCache(STORAGE_KEYS.ARCHIVE, archiveItems);
-      refreshAllViews();
-      closeWindow(winEl.id);
-      spawnDetailWindow(json.item);
-    } else {
-      showWin95MessageBox('수정 오류 — MY-ARCHIVE 95', json.message || '수정 중 오류가 발생했습니다.', 'boom');
-    }
-  } catch {
-    showWin95MessageBox('통신 오류 — MY-ARCHIVE 95', '네트워크 오류가 발생했습니다. GAS 새 버전 배포 상태를 확인하십시오.', 'boom');
-  } finally {
-    if (saveBtn) {
-      saveBtn.disabled = false;
-      saveBtn.textContent = '수정 내용 시트 반영';
-    }
-    setLoadingCursor(false);
   }
 });
 
 // ============================================================
 // 6. 새 감상 기록 등록 모달 (카테고리 선선택 + 타임아웃 검색 + 1MB 압축)
 // ============================================================
+
+// ============================================================
+// 공식 음원 사이트 앨범아트 조회 유틸리티 (유튜브 썸네일 대체용)
+// ============================================================
+function isYoutubeAssetUrl(url) {
+  return /(youtube\.com|youtu\.be|ytimg\.com|ggpht\.com)/i.test(String(url || ''));
+}
+
+function cleanMusicSearchTitle(rawTitle) {
+  return String(rawTitle || '')
+    .replace(/\[[^\]]*\]/g, ' ')
+    .replace(/\((official|mv|m\/v|audio|lyrics?|가사|live|ver\.?|feat\.?)[^)]*\)/gi, ' ')
+    .replace(/official\s*(music\s*)?(video|audio|mv)/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+async function fetchOfficialMusicCandidates(rawQuery, signal) {
+  let searchKeyword = String(rawQuery || '').trim();
+  let originalYoutubeUrl = '';
+
+  // 유튜브 URL 입력 시 oEmbed로 곡/아티스트명을 추출하되 썸네일은 공식 음반 표지로 교체
+  if (/^https?:\/\/(www\.|m\.)?(youtube\.com|youtu\.be)\//i.test(searchKeyword)) {
+    originalYoutubeUrl = searchKeyword;
+    try {
+      const oembedRes = await fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent(searchKeyword)}&format=json`, { signal });
+      if (oembedRes.ok) {
+        const oembed = await oembedRes.json();
+        if (oembed && oembed.title) {
+          searchKeyword = cleanMusicSearchTitle(oembed.title);
+        }
+      }
+    } catch {}
+  } else {
+    searchKeyword = cleanMusicSearchTitle(searchKeyword);
+  }
+
+  const results = [];
+  const seenKeys = new Set();
+
+  // 1순위: Apple Music / iTunes 공식 음원 메타데이터 (KR -> 부족 시 US 보완)
+  for (const country of ['KR', 'US']) {
+    if (results.length >= 6) break;
+    try {
+      const itunesUrl = `https://itunes.apple.com/search?term=${encodeURIComponent(searchKeyword)}&country=${country}&media=music&entity=song&limit=6`;
+      const res = await fetch(itunesUrl, { signal });
+      if (res.ok) {
+        const json = await res.json();
+        (json.results || []).forEach(r => {
+          const title = r.trackName || r.collectionName || '';
+          const creator = r.artistName || '';
+          const dedupKey = `${title.toLowerCase()}|${creator.toLowerCase()}`;
+          if (!title || seenKeys.has(dedupKey)) return;
+          seenKeys.add(dedupKey);
+
+          const officialArt = r.artworkUrl100
+            ? String(r.artworkUrl100).replace('100x100bb', '600x600bb')
+            : '';
+
+          results.push({
+            category: '음악',
+            title,
+            creator,
+            genre: r.primaryGenreName || '음악',
+            year: r.releaseDate ? String(r.releaseDate).slice(0, 4) : '',
+            extra: r.collectionName ? `앨범: ${r.collectionName}` : '공식 음원',
+            source: `Apple Music 공식 (${country})`,
+            coverUrl: officialArt,
+            sourceUrl: originalYoutubeUrl || r.trackViewUrl || r.collectionViewUrl || ''
+          });
+        });
+      }
+    } catch {}
+  }
+
+  // 2순위: MusicBrainz + Cover Art Archive 공식 음반 DB 폴백
+  if (results.length === 0) {
+    try {
+      const mbUrl = `https://musicbrainz.org/ws/2/release/?query=${encodeURIComponent(searchKeyword)}&fmt=json&limit=4`;
+      const mbRes = await fetch(mbUrl, { headers: { Accept: 'application/json' }, signal });
+      if (mbRes.ok) {
+        const mbJson = await mbRes.json();
+        (mbJson.releases || []).forEach(rel => {
+          const title = rel.title || '';
+          const creator = rel['artist-credit']?.[0]?.name || '아티스트 미상';
+          if (!title) return;
+          results.push({
+            category: '음악',
+            title,
+            creator,
+            genre: '음반',
+            year: rel.date ? String(rel.date).slice(0, 4) : '',
+            extra: '공식 음반 DB',
+            source: 'Cover Art Archive',
+            coverUrl: `https://coverartarchive.org/release/${rel.id}/front-500`,
+            sourceUrl: originalYoutubeUrl || `https://musicbrainz.org/release/${rel.id}`
+          });
+        });
+      }
+    } catch {}
+  }
+
+  return results;
+}
+
 let regEventsBound = false;
 let regSearchAbortCtrl = null;
 
@@ -1059,12 +1125,11 @@ async function runRankedSearch() {
 
   const query = document.getElementById('inp-search-query').value.trim();
   if (!query) {
-    showRegAlert('검색어 또는 링크(URL)를 입력하십시오.', 'err');
+    showRegAlert('검색어 또는 자료 주소(URL)를 입력하십시오.', 'err');
     document.getElementById('inp-search-query')?.focus();
     return;
   }
 
-  // 이전 미완료 검색 요청이 있다면 즉시 중단
   if (regSearchAbortCtrl) {
     regSearchAbortCtrl.abort();
   }
@@ -1075,42 +1140,76 @@ async function runRankedSearch() {
   const btn = document.getElementById('btn-auto-search');
   const rankBox = document.getElementById('rank-list');
   btn.disabled = true;
-  btn.textContent = '검색 중...';
+  btn.textContent = '조회 중...';
   setLoadingCursor(true);
   if (rankBox) rankBox.style.display = 'none';
-  showRegAlert(`[${category}] 「${query}」 메타데이터를 검색하고 있습니다...`);
+  showRegAlert(
+    category === '음악'
+      ? `[음악] 「${query}」 공식 음원 사이트 앨범아트를 조회하고 있습니다...`
+      : `[${category}] 「${query}」 서지·메타데이터를 조회하고 있습니다...`
+  );
 
   try {
-    const url = `${GAS_WEB_APP_URL}?action=search&q=${encodeURIComponent(query)}&title=${encodeURIComponent(query)}&category=${encodeURIComponent(category)}`;
-    const res = await fetch(url, { signal: controller.signal });
-    if (!res.ok) {
-      throw new Error(`HTTP 응답 오류 (${res.status})`);
+    let list = [];
+
+    if (category === '음악') {
+      // 1. 공식 음원 사이트(Apple Music/iTunes, Cover Art Archive) 우선 조회
+      const officialMusicList = await fetchOfficialMusicCandidates(query, controller.signal);
+
+      // 2. 필요 시 GAS 백엔드 보조 조회 후 유튜브 썸네일 제거 및 공식 앨범아트 매핑
+      let gasMusicList = [];
+      if (officialMusicList.length < 3) {
+        try {
+          const url = `${GAS_WEB_APP_URL}?action=search&q=${encodeURIComponent(query)}&title=${encodeURIComponent(query)}&category=${encodeURIComponent(category)}`;
+          const res = await fetch(url, { signal: controller.signal });
+          if (res.ok) {
+            const parsed = JSON.parse(await res.text());
+            if (Array.isArray(parsed.candidates)) {
+              gasMusicList = parsed.candidates.map(c => ({
+                ...c,
+                coverUrl: isYoutubeAssetUrl(c.coverUrl)
+                  ? (officialMusicList[0]?.coverUrl || '')
+                  : (c.coverUrl || officialMusicList[0]?.coverUrl || '')
+              }));
+            }
+          }
+        } catch {}
+      }
+
+      list = [...officialMusicList, ...gasMusicList];
+    } else {
+      const url = `${GAS_WEB_APP_URL}?action=search&q=${encodeURIComponent(query)}&title=${encodeURIComponent(query)}&category=${encodeURIComponent(category)}`;
+      const res = await fetch(url, { signal: controller.signal });
+      if (!res.ok) {
+        throw new Error(`HTTP 응답 오류 (${res.status})`);
+      }
+
+      const rawText = await res.text();
+      let result;
+      try {
+        result = JSON.parse(rawText);
+      } catch {
+        throw new Error('서버 응답이 JSON 형식이 아닙니다. Apps Script 배포 상태를 확인하십시오.');
+      }
+
+      if (result.status === 'error') {
+        showRegAlert(result.message || '조회 중 백엔드 오류가 발생했습니다.', 'err');
+        return;
+      }
+
+      list = Array.isArray(result.candidates) ? result.candidates : [];
     }
 
-    const rawText = await res.text();
-    let result;
-    try {
-      result = JSON.parse(rawText);
-    } catch {
-      throw new Error('서버 응답이 JSON 형식이 아닙니다. Apps Script 새 배포 상태를 확인하십시오.');
-    }
-
-    if (result.status === 'error') {
-      showRegAlert(result.message || '검색 중 백엔드 오류가 발생했습니다.', 'err');
-      return;
-    }
-
-    const list = Array.isArray(result.candidates) ? result.candidates : [];
     if (!list.length) {
-      showRegAlert(result.message || '검색 결과가 없습니다. 아래에 직접 입력하십시오.', 'info');
+      showRegAlert('일치하는 조회 결과가 없습니다. 아래 입력란에 직접 기재해 주십시오.', 'info');
       return;
     }
 
     applyCandidateToForm(list[0]);
     showRegAlert(
       list.length > 1
-        ? `총 ${list.length}건의 후보를 찾았습니다. 아래 목록에서 다른 항목을 고를 수 있습니다.`
-        : '메타데이터를 불러왔습니다.',
+        ? `총 ${list.length}건의 공식 자료를 찾았습니다. 아래 목록에서 원하는 항목을 선택할 수 있습니다.`
+        : '공식 메타데이터 및 표지를 불러왔습니다.',
       'ok'
     );
 
@@ -1130,7 +1229,7 @@ async function runRankedSearch() {
         row.addEventListener('click', () => {
           applyCandidateToForm(cand);
           playRetroTone('click');
-          showRegAlert(`선택됨: 「${cand.title}」 (${cand.creator})`, 'ok');
+          showRegAlert(`선택 완료: 「${cand.title}」 (${cand.creator})`, 'ok');
         });
         rankBox.appendChild(row);
       });
@@ -1138,9 +1237,9 @@ async function runRankedSearch() {
     }
   } catch (err) {
     if (err && err.name === 'AbortError') {
-      showRegAlert('검색 요청 시간이 초과(12초)되었습니다. 다시 시도하거나 아래에 직접 입력하십시오.', 'err');
+      showRegAlert('조회 제한 시간(12초)이 경과했습니다. 다시 시도하거나 직접 입력하십시오.', 'err');
     } else {
-      showRegAlert(`검색 오류: ${(err && err.message) || '네트워크 상태를 확인하십시오.'}`, 'err');
+      showRegAlert(`조회 오류: ${(err && err.message) || '통신 회선 상태를 확인하십시오.'}`, 'err');
     }
   } finally {
     clearTimeout(timeoutId);
@@ -1306,7 +1405,7 @@ document.getElementById('memo-form')?.addEventListener('submit', async e => {
 });
 
 // ============================================================
-// 8. 확장 미니 앱 초기화 브리지 (9~13주차 강의 실습 통합 모듈)
+// 8. 확장 미니 앱 초기화 브리지
 // ============================================================
 function initExtensionApps() {
   window.addEventListener('window:opened', ev => {
@@ -1378,7 +1477,7 @@ function renderCalendarApp() {
         <span style="font-size:1.05rem;font-weight:900;padding:0 8px;">${calCurrentYear}년 ${calCurrentMonth}월</span>
         <button type="button" class="btn95 sm" id="cal-next-m">다음 달 ▶</button>
       </div>
-      <span class="tag-mini">이번 달 감상: ${Object.values(itemsByDate).reduce((s, a) => s + a.length, 0)}건</span>
+      <span class="tag-mini">당월 수록: ${Object.values(itemsByDate).reduce((s, a) => s + a.length, 0)}건</span>
     </div>
 
     <div class="cal-grid">
@@ -1386,7 +1485,7 @@ function renderCalendarApp() {
       ${cellsHtml}
     </div>
     <div id="cal-day-detail" class="sunken-box" style="margin-top:10px;font-size:0.82rem;font-weight:800;">
-      날짜 칸을 클릭하면 해당 날짜에 감상한 작품 목록이 표시됩니다.
+      달력의 날짜 칸을 누르면 해당 일자의 감상 목록이 출력됩니다.
     </div>
 
     <div class="sunken-box" style="margin-top:12px;background:var(--win-gray);">
@@ -1398,7 +1497,7 @@ function renderCalendarApp() {
       </form>
       <div style="display:flex;flex-direction:column;gap:5px;">
         ${sortedDdays.map(dd => {
-          const badge = dd.diff === 0 ? 'D-DAY (오늘)' : dd.diff > 0 ? `D-${dd.diff}` : `D+${Math.abs(dd.diff)}`;
+          const badge = dd.diff === 0 ? 'D-DAY (금일)' : dd.diff > 0 ? `D-${dd.diff}` : `D+${Math.abs(dd.diff)}`;
           return `
             <div style="display:flex;justify-content:space-between;align-items:center;background:#fff;border:1.5px solid #111;padding:5px 8px;font-size:0.8rem;font-weight:800;">
               <span><b style="background:#ffd83b;padding:1px 6px;border:1px solid #111;margin-right:6px;">${badge}</b>${esc(dd.title)} (${esc(dd.date)})</span>
@@ -1432,9 +1531,9 @@ function renderCalendarApp() {
       if (!box) return;
       playRetroTone('click');
       if (!list.length) {
-        box.textContent = `${dKey}에는 등록된 감상 기록이 없습니다.`;
+        box.textContent = `${dKey}에는 등록된 감상 자료가 없습니다.`;
       } else {
-        box.innerHTML = `<b>[${dKey} 감상 기록 ${list.length}건]</b><br/>` +
+        box.innerHTML = `<b>[${dKey} 감상 자료 ${list.length}건]</b><br/>` +
           list.map(it => `• [${esc(it.category)}] ${esc(it.title)} — ${esc(it.creator)} (★${it.rating}점)`).join('<br/>');
       }
     });
@@ -1463,7 +1562,7 @@ function renderCalendarApp() {
 }
 
 // ------------------------------------------------------------
-// 8-2. 감정 상태별 아카이브 랜덤 추천기 (MOODPICK.EXE, 연속 출현 방지)
+// 8-2. 감정 상태별 아카이브 랜덤 추천기 (MOODPICK.EXE)
 // ------------------------------------------------------------
 let lastMoodPickedKey = '';
 let currentMoodType = 'happy';
@@ -1473,10 +1572,10 @@ function renderMoodRecommenderApp() {
   if (!body) return;
 
   const moods = [
-    { key: 'happy', label: '😊 기쁘고 행복함', color: 'yellow', keywords: ['행복', '사랑', '설렘', '유쾌', '즐거', '희망', '밝은', '코미디'] },
-    { key: 'sad', label: '🌧️ 슬프고 우울함', color: 'sky', keywords: ['위로', '눈물', '슬픔', '그리움', '감동', '치유', '잔잔', '드라마'] },
-    { key: 'burnout', label: '🔋 지치고 번아웃', color: 'green', keywords: ['휴식', '힐링', '여유', '산책', '자유', '인디', '에세이', '자연'] },
-    { key: 'stress', label: '⚡ 불안하고 스트레스', color: 'pink', keywords: ['몰입', '액션', '스릴', '에너지', '도전', '록', '판타지', '추리'] }
+    { key: 'happy', icon: PIXEL_ICONS.MOOD_HAPPY, label: '기쁘고 행복함', color: 'yellow', keywords: ['행복', '사랑', '설렘', '유쾌', '즐거', '희망', '밝은', '코미디'] },
+    { key: 'sad', icon: PIXEL_ICONS.MOOD_SAD, label: '슬프고 우울함', color: 'sky', keywords: ['위로', '눈물', '슬픔', '그리움', '감동', '치유', '잔잔', '드라마'] },
+    { key: 'burnout', icon: PIXEL_ICONS.MOOD_BURNOUT, label: '지치고 번아웃', color: 'green', keywords: ['휴식', '힐링', '여유', '산책', '자유', '인디', '에세이', '자연'] },
+    { key: 'stress', icon: PIXEL_ICONS.MOOD_STRESS, label: '불안하고 스트레스', color: 'pink', keywords: ['몰입', '액션', '스릴', '에너지', '도전', '록', '판타지', '추리'] }
   ];
 
   const fallbackQuotes = [
@@ -1500,11 +1599,11 @@ function renderMoodRecommenderApp() {
   lastMoodPickedKey = picked.id || picked.title;
 
   body.innerHTML = `
-    <p style="font-size:0.84rem;font-weight:800;margin-bottom:10px;">지금 느끼는 감정 상태를 선택하면 내 아카이브에서 어울리는 작품과 한줄평을 건네드립니다.</p>
+    <p style="font-size:0.84rem;font-weight:800;margin-bottom:10px;">현재 기분 상태를 선택하시면 보관함에서 어울리는 작품과 감상평을 추천해 드립니다.</p>
     <div class="mood-btn-grid">
       ${moods.map(m => `
         <button type="button" class="btn95 ${m.key === currentMoodType ? m.color : ''}" data-mood-key="${m.key}">
-          ${m.label}
+          ${m.icon} ${m.label}
         </button>
       `).join('')}
     </div>
@@ -1512,7 +1611,7 @@ function renderMoodRecommenderApp() {
     <div class="mood-result-box">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
         <span class="tag-mini">${esc(picked.category || '추천')}</span>
-        <span style="font-size:0.75rem;font-weight:800;color:#555;">감정 처방: ${esc(activeMood.label)}</span>
+        <span style="font-size:0.75rem;font-weight:800;color:#555;">처방 분류: ${activeMood.icon} ${esc(activeMood.label)}</span>
       </div>
       <h3 style="font-size:1.15rem;font-weight:900;margin-bottom:4px;">「${esc(picked.title)}」</h3>
       <div style="font-size:0.82rem;font-weight:700;color:#4a4a4a;margin-bottom:10px;">${esc(picked.creator)}</div>
@@ -1520,7 +1619,7 @@ function renderMoodRecommenderApp() {
         “${esc(picked.review)}”
       </blockquote>
       <div style="display:flex;justify-content:flex-end;gap:8px;">
-        <button type="button" class="btn95 yellow sm" id="btn-mood-reroll">🔄 다른 추천 작품 보기</button>
+        <button type="button" class="btn95 yellow sm" id="btn-mood-reroll">${PIXEL_ICONS.REROLL} 다른 추천 작품 보기</button>
       </div>
     </div>
   `;
@@ -1550,18 +1649,19 @@ function renderArchiveQuizApp() {
   const body = document.getElementById('quiz-app-body');
   if (!body) return;
 
-  if (archiveItems.length < 4) {
+  const pool = getMyVisibleArchiveItems();
+  if (pool.length < 4) {
     body.innerHTML = `
       <div class="sunken-box" style="text-align:center;padding:24px;">
-        <p style="font-weight:900;margin-bottom:8px;">4지선다 복습 퀴즈를 생성하려면 최소 4건 이상의 감상 기록이 필요합니다.</p>
-        <p style="font-size:0.8rem;color:#555;">현재 등록된 기록: ${archiveItems.length}건</p>
+        <p style="font-weight:900;margin-bottom:8px;">4지선다 기억력 퀴즈를 출제하려면 최소 4건 이상의 감상 자료가 필요합니다.</p>
+        <p style="font-size:0.8rem;color:#555;">현재 보관 중인 자료: ${pool.length}건</p>
       </div>
     `;
     return;
   }
 
   quizHintUsed = false;
-  const shuffled = [...archiveItems].sort(() => Math.random() - 0.5);
+  const shuffled = [...pool].sort(() => Math.random() - 0.5);
   const answerItem = shuffled[0];
   const distractors = shuffled.slice(1, 4);
   const options = [answerItem, ...distractors].sort(() => Math.random() - 0.5);
@@ -1570,19 +1670,19 @@ function renderArchiveQuizApp() {
 
   body.innerHTML = `
     <div class="box-head">
-      <span>내 감상 기록 4지선다 복습 퀴즈</span>
-      <span class="tag-mini">점수: ${quizScore}점 (${quizCount}문제 풀이)</span>
+      <span>보관 자료 4지선다 기억력 퀴즈</span>
+      <span class="tag-mini">획득 점수: ${quizScore} PTS (${quizCount}문항 완료)</span>
     </div>
 
     <div class="sunken-box" style="background:#fff6bf;margin-bottom:12px;">
-      <div style="font-size:0.78rem;font-weight:800;color:#444;margin-bottom:4px;">Q. 다음 설명에 해당하는 작품 제목은 무엇일까요?</div>
+      <div style="font-size:0.78rem;font-weight:800;color:#444;margin-bottom:4px;">Q. 아래 서지 및 감상 기록에 해당하는 작품명은 무엇입니까?</div>
       <div style="font-size:0.95rem;font-weight:900;margin-bottom:6px;">
-        • 매체/장르: [${esc(answerItem.category)}] ${esc(answerItem.genre || '일반')}<br/>
-        • 제작자(저자/아티스트): ${esc(answerItem.creator)}<br/>
-        • 나의 한줄평: “${esc(answerItem.review)}”
+- 매체/장르: [${esc(answerItem.category)}] ${esc(answerItem.genre || '일반')}<br/>
+- 저작·제작자: ${esc(answerItem.creator)}<br/>
+- 수록 감상평: “${esc(answerItem.review)}”
       </div>
       <div style="display:flex;align-items:center;gap:8px;margin-top:8px;">
-        <button type="button" class="btn95 sky sm" id="btn-quiz-hint">💡 초성 힌트 보기</button>
+        <button type="button" class="btn95 sky sm" id="btn-quiz-hint">${PIXEL_ICONS.BULB} 초성 힌트 보기</button>
         <span id="quiz-hint-text" style="font-family:var(--font-mono);font-size:0.88rem;font-weight:900;color:#000080;"></span>
       </div>
     </div>
@@ -1618,7 +1718,8 @@ function renderArchiveQuizApp() {
         playRetroTone('fanfare');
         fb.style.display = 'block';
         fb.style.background = 'var(--brutal-green)';
-        fb.innerHTML = `🎉 정답입니다! 「${esc(answerItem.title)}」 (+${quizHintUsed ? 5 : 10}점) <button type="button" class="btn95 yellow sm" id="btn-quiz-next" style="margin-left:8px;">다음 문제 &gt;&gt;</button>`;
+        fb.style.color = '#111111';
+        fb.innerHTML = `${PIXEL_ICONS.TROPHY} 정답입니다! 「${esc(answerItem.title)}」 (+${quizHintUsed ? 5 : 10} PTS) <button type="button" class="btn95 yellow sm" id="btn-quiz-next" style="margin-left:8px;">다음 문항 &gt;&gt;</button>`;
         body.querySelectorAll('.quiz-option-btn').forEach(b => (b.disabled = true));
         document.getElementById('btn-quiz-next')?.addEventListener('click', renderArchiveQuizApp);
       } else {
@@ -1626,7 +1727,7 @@ function renderArchiveQuizApp() {
         fb.style.display = 'block';
         fb.style.background = 'var(--brutal-pink)';
         fb.style.color = '#ffffff';
-        fb.textContent = '❌ 다시 생각해 보세요! 다른 보기를 선택할 수 있습니다.';
+        fb.innerHTML = `${PIXEL_ICONS.CROSS} 오답입니다! 다른 보기를 다시 선택해 보십시오.`;
         btn.disabled = true;
         btn.style.opacity = '0.5';
       }
@@ -1651,7 +1752,7 @@ function renderTimelineAndRadarApp() {
 
   body.innerHTML = `
     <div class="box-head">
-      <span>시간순 인터랙티브 가로 감상 연표 (클릭 시 상세 보기)</span>
+      <span>연대기순 가로 감상 연표 (클릭 시 상세 열람)</span>
       <span class="tag-mini">총 ${sortedByDate.length}개 노드</span>
     </div>
     <div class="timeline-scroll-wrap">
@@ -1662,14 +1763,14 @@ function renderTimelineAndRadarApp() {
             <div style="font-size:0.84rem;font-weight:900;margin:3px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(it.title)}</div>
             <div style="font-size:0.74rem;color:#555;">[${esc(it.category)}] ★${it.rating}</div>
           </div>
-        `).join('') : '<div style="padding:12px;font-weight:800;">표시할 연표 데이터가 없습니다.</div>'}
+        `).join('') : '<div style="padding:12px;font-weight:800;">출력할 연표 자료가 없습니다.</div>'}
       </div>
     </div>
 
     <div class="sunken-box">
       <div class="box-head">
         <span>상반기(사전) vs 하반기(사후) 매체 활동 레이더 비교</span>
-        <button type="button" class="btn95 yellow sm" id="btn-save-radar-png">🖼️ 레이더 차트 PNG 저장</button>
+        <button type="button" class="btn95 yellow sm" id="btn-save-radar-png">${PIXEL_ICONS.CHART} 레이더 차트 PNG 저장</button>
       </div>
       <div style="height:230px;position:relative;">
         <canvas id="chart-radar-compare"></canvas>
@@ -1727,7 +1828,7 @@ function renderTimelineAndRadarApp() {
 }
 
 // ------------------------------------------------------------
-// 8-5. 디지털 도장 생성기 & 문화생활 예산·구매 회고 영수증 (STAMP95.EXE)
+// 8-5. 전자 직인(도장) 생성기 & 문화생활 가계부·전표 (STAMP95.EXE)
 // ------------------------------------------------------------
 function renderStampAndReceiptApp() {
   const body = document.getElementById('stamp-app-body');
@@ -1744,32 +1845,32 @@ function renderStampAndReceiptApp() {
 
   body.innerHTML = `
     <div class="charts-grid" style="grid-template-columns:1fr 1.15fr;">
-      <!-- 좌측: 투명 배경 PNG 디지털 도장 생성기 -->
+      <!-- 좌측: 투명 배경 PNG 전자 직인 생성기 -->
       <div class="sunken-box">
-        <div class="box-head"><span>감상 완료 디지털 도장 생성기</span><span class="tag-mini">PNG</span></div>
+        <div class="box-head"><span>열람 확인 전자 직인(도장) 생성기</span><span class="tag-mini">PNG</span></div>
         <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px;">
-          <input type="text" id="stamp-name-inp" value="문태양" maxlength="4" placeholder="이름 (최대 4자)" />
+          <input type="text" id="stamp-name-inp" value="문태양" maxlength="4" placeholder="성명 (최대 4자)" />
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
             <select id="stamp-shape-sel" class="win95-select">
-              <option value="circle">원형 도장</option>
-              <option value="square">사각형 도장</option>
+              <option value="circle">원형 인장</option>
+              <option value="square">사각형 인장</option>
             </select>
             <select id="stamp-font-sel" class="win95-select">
               <option value="serif">명조체 (Serif)</option>
               <option value="sans-serif">고딕체 (Sans)</option>
-              <option value="cursive">손글씨풍 (Cursive)</option>
+              <option value="cursive">필기체 (Cursive)</option>
             </select>
           </div>
         </div>
         <div style="text-align:center;padding:10px;background:#f7f5ee;border:1.5px dashed #111;margin-bottom:10px;">
           <canvas id="stamp-preview-canvas" width="140" height="140"></canvas>
         </div>
-        <button type="button" class="btn95 pink sm" id="btn-download-stamp" style="width:100%;">⬇️ 투명 배경 PNG 도장 다운로드</button>
+        <button type="button" class="btn95 pink sm" id="btn-download-stamp" style="width:100%;">${PIXEL_ICONS.DOWNLOAD} 투명 배경 PNG 직인 내려받기</button>
       </div>
 
-      <!-- 우측: 월간 문화생활 예산 & 구매 이유 영수증 -->
+      <!-- 우측: 월간 문화생활 가계부 & 취득 사유 전표 -->
       <div class="sunken-box">
-        <div class="box-head"><span>문화생활 예산 &amp; 구매 이유 영수증</span><span class="tag-mini">예산 ${formatCommaNumber(budgetState.limit)}원</span></div>
+        <div class="box-head"><span>문화생활 가계부 &amp; 취득 사유 전표</span><span class="tag-mini">한도 ${formatCommaNumber(budgetState.limit)}원</span></div>
         <div style="display:flex;gap:6px;margin-bottom:8px;">
           <input type="number" id="budget-limit-inp" value="${budgetState.limit}" step="5000" style="width:130px;" />
           <button type="button" class="btn95 sm" id="btn-set-budget">한도 설정</button>
@@ -1777,45 +1878,49 @@ function renderStampAndReceiptApp() {
 
         <form id="expense-add-form" style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px;">
           <div style="display:grid;grid-template-columns:1.3fr 1fr;gap:6px;">
-            <input type="text" id="exp-title-inp" placeholder="도서·음반·티켓명" required />
+            <input type="text" id="exp-title-inp" placeholder="도서·음반·관람권명" required />
             <input type="number" id="exp-price-inp" placeholder="금액 (원)" required />
           </div>
-          <input type="text" id="exp-reason-inp" placeholder="이 작품을 선택·구매한 합리적 이유 서술..." required />
+          <input type="text" id="exp-reason-inp" placeholder="본 자료를 선택·취득한 합리적 사유 기재..." required />
           <button type="submit" class="btn95 yellow sm" ${isOverBudget ? 'disabled' : ''}>
-            ${isOverBudget ? '🚫 예산 초과 락 (한도 조정 필요)' : '+ 지출 및 구매 이유 추가'}
+            ${isOverBudget ? `${PIXEL_ICONS.BAN} 예산 초과 잠금 (한도 조정 필요)` : '+ 지출 및 취득 사유 등록'}
           </button>
         </form>
 
         <div id="printable-receipt-area" class="receipt-paper">
           <div style="text-align:center;font-weight:900;border-bottom:1px dashed #111;padding-bottom:6px;margin-bottom:6px;">
-            *** MY-ARCHIVE 95 문화생활 영수증 ***<br/>
-            발행일: ${normalizeDateString('')}
+            *** MY-ARCHIVE 95 문화생활 전표 ***<br/>
+            발행일자: ${normalizeDateString('')}
           </div>
           ${(budgetState.expenses || []).map(ex => `
             <div style="margin-bottom:6px;border-bottom:1px dotted #ccc;padding-bottom:4px;">
-              <div style="display:flex;justify-content:space-between;font-weight:900;">
+              <div style="display:flex;justify-content:space-between;align-items:center;font-weight:900;">
                 <span>${esc(ex.title)}</span>
-                <span>${formatCommaNumber(ex.price)}원</span>
+                <span>
+                  ${formatCommaNumber(ex.price)}원
+                  <button type="button" data-del-exp="${esc(ex.id)}" style="margin-left:4px;border:1px solid #111;background:#eee;font-size:0.68rem;cursor:pointer;">×</button>
+                </span>
               </div>
               <div style="font-size:0.74rem;color:#333;">사유: ${esc(ex.reason)}</div>
             </div>
-          `).join('') || '<div style="color:#666;">등록된 지출 내역이 없습니다.</div>'}
+          `).join('') || '<div style="color:#666;">기재된 지출 내역이 없습니다.</div>'}
           <div style="border-top:1px dashed #111;padding-top:6px;margin-top:6px;font-weight:900;">
-            <div>총 지출 금액: ${formatCommaNumber(totalSpent)}원</div>
+            <div>총 지출 합계: ${formatCommaNumber(totalSpent)}원</div>
             <div style="color:${isOverBudget ? '#d63031' : '#000080'};">남은 예산 잔액: ${formatCommaNumber(remain)}원</div>
           </div>
         </div>
-        <button type="button" class="btn95 sm" id="btn-print-receipt" style="width:100%;margin-top:8px;">🖨️ 영수증 인쇄 / PDF 저장</button>
+        <button type="button" class="btn95 sm" id="btn-print-receipt" style="width:100%;margin-top:8px;">${PIXEL_ICONS.PRINTER} 전표 인쇄 / PDF 출력</button>
       </div>
     </div>
   `;
 
-  // 디지털 도장 실시간 렌더링
+  // 전자 직인 실시간 렌더링 ('인' 중복 방지)
   const drawStamp = () => {
     const canvas = document.getElementById('stamp-preview-canvas');
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
-    const name = (document.getElementById('stamp-name-inp')?.value || '완독').trim() + '인';
+    const rawName = (document.getElementById('stamp-name-inp')?.value || '완독').trim();
+    const name = rawName.endsWith('인') ? rawName : `${rawName}인`;
     const shape = document.getElementById('stamp-shape-sel')?.value || 'circle';
     const font = document.getElementById('stamp-font-sel')?.value || 'serif';
 
@@ -1835,7 +1940,7 @@ function renderStampAndReceiptApp() {
     ctx.font = `900 28px ${font}`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    if (name.length === 4) {
+    if (name.length >= 4) {
       ctx.fillText(name.slice(0, 2), 70, 52);
       ctx.fillText(name.slice(2, 4), 70, 88);
     } else {
@@ -1853,12 +1958,11 @@ function renderStampAndReceiptApp() {
     if (!canvas) return;
     const a = document.createElement('a');
     a.href = canvas.toDataURL('image/png');
-    a.download = `감상완료도장_${Date.now()}.png`;
+    a.download = `열람확인직인_${Date.now()}.png`;
     a.click();
     playRetroTone('open');
   });
 
-  // 예산 설정 및 지출 추가
   document.getElementById('btn-set-budget')?.addEventListener('click', () => {
     const newLimit = Number(document.getElementById('budget-limit-inp')?.value) || 0;
     budgetState.limit = Math.max(0, newLimit);
@@ -1875,7 +1979,7 @@ function renderStampAndReceiptApp() {
     if (!title || price <= 0) return;
 
     if (totalSpent + price > budgetState.limit) {
-      showWin95MessageBox('예산 초과 경고 — MY-ARCHIVE 95', `설정된 예산(${formatCommaNumber(budgetState.limit)}원)을 초과하여 지출을 등록할 수 없습니다.`, 'boom');
+      showWin95MessageBox('예산 초과 경고 — MY-ARCHIVE 95', `설정된 한도(${formatCommaNumber(budgetState.limit)}원)를 초과하여 지출을 기입할 수 없습니다.`, 'boom');
       return;
     }
 
@@ -1883,6 +1987,15 @@ function renderStampAndReceiptApp() {
     saveLocalCache(STORAGE_KEYS.BUDGET, budgetState);
     playRetroTone('open');
     renderStampAndReceiptApp();
+  });
+
+  body.querySelectorAll('[data-del-exp]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      budgetState.expenses = (budgetState.expenses || []).filter(x => x.id !== btn.dataset.delExp);
+      saveLocalCache(STORAGE_KEYS.BUDGET, budgetState);
+      playRetroTone('close');
+      renderStampAndReceiptApp();
+    });
   });
 
   document.getElementById('btn-print-receipt')?.addEventListener('click', () => window.print());
@@ -1899,12 +2012,11 @@ async function renderMailboxAndQrApp() {
 
   body.innerHTML = `
     <div class="charts-grid" style="grid-template-columns:1.35fr 1fr;">
-      <!-- 좌측: 비밀 추천 우체통 (시트 저장 + GmailApp 알림) -->
       <div class="sunken-box">
-        <div class="box-head"><span>방문자 작품 추천 · 비밀 우체통</span><span class="tag-mini">MAILBOX</span></div>
+        <div class="box-head"><span>방문자 작품 추천 · 전자 우체통</span><span class="tag-mini">MAILBOX</span></div>
         <form id="mailbox-send-form" style="display:flex;flex-direction:column;gap:7px;margin-bottom:12px;">
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
-            <input type="text" id="mb-sender" placeholder="보내는 사람 (익명 가능)" />
+            <input type="text" id="mb-sender" placeholder="발신인 성명 (익명 가능)" />
             <select id="mb-category" class="win95-select">
               <option value="도서 추천">도서 추천</option>
               <option value="음악 추천">음악 추천</option>
@@ -1912,29 +2024,27 @@ async function renderMailboxAndQrApp() {
               <option value="응원·방명록">응원·방명록</option>
             </select>
           </div>
-          <textarea id="mb-content" rows="3" required placeholder="추천하고 싶은 작품 제목과 이유, 또는 방명록 메시지를 남겨주세요..."></textarea>
-          <button type="submit" class="btn95 green sm" id="btn-send-mailbox">📮 우체통 전송 (시트 저장 + 메일 알림)</button>
+          <textarea id="mb-content" rows="3" required placeholder="추천하고 싶은 작품명과 사유, 또는 방명록 전언을 남겨주십시오..."></textarea>
+          <button type="submit" class="btn95 green sm" id="btn-send-mailbox">${PIXEL_ICONS.MAILBOX} 우체통 발송 (서버 저장 + 전자우편 알림)</button>
         </form>
 
-        <div class="box-head"><span>도착한 추천 메시지함</span><span id="mb-count-tag" class="tag-mini">불러오는 중...</span></div>
+        <div class="box-head"><span>수신된 추천 전언함</span><span id="mb-count-tag" class="tag-mini">조회 중...</span></div>
         <div id="mailbox-list-box" style="max-height:175px;overflow-y:auto;"></div>
       </div>
 
-      <!-- 우측: 스마트폰 접속용 QR 코드 공유 -->
       <div class="sunken-box" style="text-align:center;">
-        <div class="box-head"><span>스마트폰 QR 공유</span><span class="tag-mini">PWA</span></div>
+        <div class="box-head"><span>단말기 QR 코드 접속</span><span class="tag-mini">PWA</span></div>
         <p style="font-size:0.78rem;font-weight:800;margin-bottom:10px;word-break:keep-all;">
-          스마트폰 카메라로 아래 QR 코드를 스캔하면 모바일에서도 아카이브를 열람하고 홈 화면에 앱으로 설치할 수 있습니다.
+          휴대용 단말기 카메라로 아래 QR 코드를 판독하시면 이동 통신 환경에서도 자료실에 접속할 수 있습니다.
         </p>
         <div id="qr-code-container" class="qr-box"></div>
         <div style="margin-top:10px;">
-          <button type="button" class="btn95 yellow sm" id="btn-copy-app-url">🔗 접속 주소 복사하기</button>
+          <button type="button" class="btn95 yellow sm" id="btn-copy-app-url">${PIXEL_ICONS.LINK} 접속 주소 복사하기</button>
         </div>
       </div>
     </div>
   `;
 
-  // QR 코드 렌더링
   const qrContainer = document.getElementById('qr-code-container');
   if (qrContainer && typeof QRCode !== 'undefined') {
     qrContainer.innerHTML = '';
@@ -1950,13 +2060,12 @@ async function renderMailboxAndQrApp() {
   document.getElementById('btn-copy-app-url')?.addEventListener('click', async () => {
     try {
       await navigator.clipboard.writeText(currentUrl);
-      showWin95MessageBox('주소 복사 완료 — MY-ARCHIVE 95', '현재 아카이브 접속 URL이 클립보드에 복사되었습니다.', 'open');
+      showWin95MessageBox('주소 복사 완료 — MY-ARCHIVE 95', '현재 자료실 접속 주소(URL)가 클립보드에 복사되었습니다.', 'open');
     } catch {
-      showWin95MessageBox('주소 안내 — MY-ARCHIVE 95', currentUrl, 'click');
+      showWin95MessageBox('접속 주소 안내 — MY-ARCHIVE 95', currentUrl, 'click');
     }
   });
 
-  // 도착 메시지함 불러오기
   const loadMailbox = async () => {
     const listBox = document.getElementById('mailbox-list-box');
     const countTag = document.getElementById('mb-count-tag');
@@ -1977,7 +2086,7 @@ async function renderMailboxAndQrApp() {
           </div>
           <div style="font-size:0.8rem;font-weight:700;margin-top:3px;white-space:pre-wrap;">${esc(m.content)}</div>
         </div>
-      `).join('') : '<div style="font-size:0.78rem;color:#666;">도착한 추천 메시지가 없습니다.</div>';
+      `).join('') : '<div style="font-size:0.78rem;color:#666;">수신된 추천 전언이 없습니다.</div>';
     }
   };
 
@@ -1991,7 +2100,7 @@ async function renderMailboxAndQrApp() {
     if (!content) return;
 
     const btn = document.getElementById('btn-send-mailbox');
-    btn.disabled = true; btn.textContent = '전송 중...'; setLoadingCursor(true);
+    btn.disabled = true; btn.textContent = '발송 중...'; setLoadingCursor(true);
     try {
       const res = await fetch(GAS_WEB_APP_URL, {
         method: 'POST',
@@ -2004,16 +2113,16 @@ async function renderMailboxAndQrApp() {
         document.getElementById('mailbox-send-form').reset();
         await loadMailbox();
         showWin95MessageBox(
-          '우체통 전송 완료 — MY-ARCHIVE 95',
-          json.emailSent ? '구글 시트 저장 및 관리자 이메일 알림 발송이 완료되었습니다!' : '구글 시트 우체통에 안전하게 저장되었습니다.',
+          '우체통 발송 완료 — MY-ARCHIVE 95',
+          json.emailSent ? '중앙 데이터 저장 및 관리자 전자우편 알림 발송이 완료되었습니다.' : '전자 우체통에 안전하게 보관되었습니다.',
           'open'
         );
       }
     } catch {
-      showWin95MessageBox('전송 오류 — MY-ARCHIVE 95', '우체통 전송 중 네트워크 오류가 발생했습니다.', 'boom');
+      showWin95MessageBox('전송 오류 — MY-ARCHIVE 95', '우체통 발송 중 통신 회선 오류가 발생했습니다.', 'boom');
     } finally {
       btn.disabled = false;
-      btn.textContent = '📮 우체통 전송 (시트 저장 + 메일 알림)';
+      btn.innerHTML = `${PIXEL_ICONS.MAILBOX} 우체통 발송 (서버 저장 + 전자우편 알림)`;
       setLoadingCursor(false);
     }
   });
