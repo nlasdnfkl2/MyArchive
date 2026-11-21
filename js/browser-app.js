@@ -144,10 +144,11 @@ function applyOsPrefsToDom(prefs) {
 function initOsWallpaperAndCrt() {
   applyOsPrefsToDom(loadOsPrefs());
 
-  // 1. 바탕화면 아이콘 자동 등록 (없을 경우)
+  // 1. 바탕화면 아이콘 이벤트 연결 (없으면 생성 후 연결)
+  let iconBtn = document.getElementById('icon-browser');
   const iconContainer = document.querySelector('.desktop-icons');
-  if (iconContainer && !document.getElementById('icon-browser')) {
-    const iconBtn = document.createElement('button');
+  if (!iconBtn && iconContainer) {
+    iconBtn = document.createElement('button');
     iconBtn.type = 'button';
     iconBtn.className = 'desk-icon';
     iconBtn.id = 'icon-browser';
@@ -155,42 +156,49 @@ function initOsWallpaperAndCrt() {
       <div class="desk-icon-box" style="background:var(--brutal-sky); display:flex; align-items:center; justify-content:center;">${BROWSER_PIXEL_ICONS.globe}</div>
       <span>정보바다 탐색기</span>
     `;
-    iconBtn.addEventListener('click', () => openVirtualBrowser());
     iconContainer.appendChild(iconBtn);
   }
+  iconBtn?.addEventListener('click', () => openVirtualBrowser());
 
-  // 2. 시작 메뉴 항목 자동 등록 (없을 경우)
+  // 2. 시작 메뉴 항목 이벤트 연결 (없으면 생성 후 연결)
   const startMenuList = document.querySelector('#start-menu .start-menu-items') || document.getElementById('start-menu');
-  if (startMenuList && !document.getElementById('sm-browser')) {
-    const itemBrowser = document.createElement('button');
+  let itemBrowser = document.getElementById('sm-browser');
+  if (!itemBrowser && startMenuList) {
+    itemBrowser = document.createElement('button');
     itemBrowser.type = 'button';
     itemBrowser.className = 'start-item';
     itemBrowser.id = 'sm-browser';
     itemBrowser.innerHTML = `${BROWSER_PIXEL_ICONS.globe}<span>정보바다 탐색기 95 (YouTube·웹)</span>`;
-    itemBrowser.addEventListener('click', () => openVirtualBrowser());
+    startMenuList.appendChild(itemBrowser);
+  }
+  itemBrowser?.addEventListener('click', () => openVirtualBrowser());
 
-    const itemDisplay = document.createElement('button');
+  let itemDisplay = document.getElementById('sm-display');
+  if (!itemDisplay && startMenuList) {
+    itemDisplay = document.createElement('button');
     itemDisplay.type = 'button';
     itemDisplay.className = 'start-item';
     itemDisplay.id = 'sm-display';
     itemDisplay.innerHTML = `${BROWSER_PIXEL_ICONS.display}<span>디스플레이 등록 정보 (테마·CRT)</span>`;
-    itemDisplay.addEventListener('click', () => openDisplayPropsWindow());
-
-    startMenuList.appendChild(itemBrowser);
     startMenuList.appendChild(itemDisplay);
   }
+  itemDisplay?.addEventListener('click', () => openDisplayPropsWindow());
 
-  // 3. 상단 메뉴바 '프로그램/도구' 확장 항목 추가
+  // 3. 상단 메뉴바 이벤트 연결 (없으면 생성 후 연결)
   const firstMenuDrop = document.querySelector('.menu-item-wrap .menu-dropdown');
-  if (firstMenuDrop && !document.getElementById('mnu-open-browser')) {
-    const mnuBr = document.createElement('button');
+  let mnuBr = document.getElementById('mnu-open-browser');
+  if (!mnuBr && firstMenuDrop) {
+    mnuBr = document.createElement('button');
     mnuBr.type = 'button';
     mnuBr.className = 'menu-drop-item';
     mnuBr.id = 'mnu-open-browser';
     mnuBr.textContent = '[WEB] 정보바다 탐색기 95 열기...';
-    mnuBr.addEventListener('click', () => openVirtualBrowser());
     firstMenuDrop.prepend(mnuBr);
   }
+  mnuBr?.addEventListener('click', () => openVirtualBrowser());
+
+  // 상단 Window 메뉴의 디스플레이 등록 정보 버튼이 있을 경우 함께 연결
+  document.getElementById('mnu-open-display')?.addEventListener('click', () => openDisplayPropsWindow());
 
   // 4. 창 제목 표시줄 더블클릭 시 최대화/원래 크기 토글
   document.addEventListener('dblclick', e => {
