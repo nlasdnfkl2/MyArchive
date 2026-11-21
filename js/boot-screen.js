@@ -4,7 +4,7 @@
 // ============================================================
 
 window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-window.__MOD_VERSIONS.bootScreen = 'v2026.11.22-v4';
+window.__MOD_VERSIONS.bootScreen = 'v2026.11.22-v5';
 
 const SESSION_USER_KEY = 'myarchive95_current_user_v2';
 const USERS_CACHE_KEY = 'myarchive95_users_cache_v2';
@@ -94,7 +94,7 @@ function renderPixelAvatarHtml(rawAvatar, sizePx = 28, role = 'user') {
   return `<span class="pixel-avatar-wrap" style="width:${sizePx}px;height:${sizePx}px;">${svg}</span>`;
 }
 
-// 1995년 시대 고증에 맞게 이모지를 제거하고 PC통신/워크스테이션 태그로 정제
+// 1995년 시대 고증에 맞게 이모지를 제거하고 워크스테이션 기능 소개 태그로 정제
 function formatRetroBio(rawBio, userObj = {}) {
   const cleaned = String(rawBio || '')
     .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\uFE0F]/gu, '')
@@ -108,10 +108,10 @@ function formatRetroBio(rawBio, userObj = {}) {
   if (userObj.role === 'owner' || userObj.username === '문태양') {
     return cleaned
       ? `[SYSOP] ${cleaned.replace(/^\[SYSOP\]\s*/i, '')}`
-      : '[SYSOP] MY-ARCHIVE 95 OS 관리자 워크스테이션';
+      : '[SYSOP] 개인 서재 보관함 및 전체 게시판 관리 워크스테이션';
   }
   if (!cleaned) {
-    return `[LOCAL] ${userObj.username || '이용자'}의 문화 감상 워크스테이션`;
+    return '[USER] 개인 서재 보관함 관리 및 전체 게시판 글쓰기·스크랩 지원';
   }
   return /^\[[A-Z0-9_-]+\]/i.test(cleaned) ? cleaned : `[USER] ${cleaned}`;
 }
@@ -133,7 +133,7 @@ const DEFAULT_FALLBACK_USERS = [
     id: 'USR-OWNER',
     username: '문태양',
     role: 'owner',
-    bio: '[SYSOP] MY-ARCHIVE 95 OS 관리자 워크스테이션',
+    bio: '[SYSOP] 개인 서재 보관함 및 전체 게시판 관리 워크스테이션',
     avatar: 'frog'
   }
 ];
@@ -144,10 +144,23 @@ window.registeredOsUsers = [...DEFAULT_FALLBACK_USERS];
 const bootState = {
   stage: 'bios',
   loginTab: 'signin', // 'signin' | 'signup'
+  userSearchOpen: false,
+  userSearchQuery: '',
   timers: [],
   ramInterval: null,
   biosBeepPlayed: false
 };
+
+// 공용 계정을 제외한 개인 계정 목록만 추출
+function getPersonalUsersList() {
+  const all = Array.isArray(window.registeredOsUsers) ? window.registeredOsUsers : DEFAULT_FALLBACK_USERS;
+  return all.filter(u =>
+    u &&
+    String(u.role || '').toLowerCase() !== 'public' &&
+    String(u.username || '').trim() !== '공용' &&
+    String(u.id || '') !== 'USR-PUBLIC'
+  );
+}
 
 function clearBootTimers() {
   bootState.timers.forEach(id => clearTimeout(id));
@@ -178,7 +191,7 @@ function updateDesktopUserBadge() {
   const user = getCurrentUser();
   const badge = document.getElementById('active-user-badge');
   if (badge && user) {
-    const roleLabel = user.role === 'public' ? '공용' : '개인';
+    const roleLabel = user.role === 'public' ? '비로그인' : '개인';
     badge.innerHTML = `${renderPixelAvatarHtml(user.avatar, 14, user.role)}<span>${esc(user.username)} (${roleLabel})</span>`;
   }
   const winMainTitle = document.getElementById('win-main-title-text');
@@ -273,7 +286,7 @@ function renderSignupAvatarPicker() {
               role="radio"
               aria-checked="${selected}"
               title="${opt.label}">
-        ${renderPixelAvatarHtml(opt.key, 24)}
+        ${renderPixelAvatarHtml(opt.key, 20)}
         <span>${opt.label}</span>
       </button>
     `;
@@ -289,7 +302,7 @@ function renderSignupAvatarPicker() {
 }
 
 // ============================================================
-// Google Sheets Users 목록 동기화
+// 등록 사용자 목록 동기화 & 유저 검색 필터링
 // ============================================================
 async function syncRegisteredUsersList() {
   const cached = loadLocalCache(USERS_CACHE_KEY, null);
@@ -297,6 +310,7 @@ async function syncRegisteredUsersList() {
     window.registeredOsUsers = cached;
   }
   populateLoginAccountSelect();
+  updateLogonStatusLine();
 
   try {
     const res = await fetch(`${GAS_WEB_APP_URL}?action=users`);
@@ -305,25 +319,58 @@ async function syncRegisteredUsersList() {
       window.registeredOsUsers = json.users;
       saveLocalCache(USERS_CACHE_KEY, json.users);
       populateLoginAccountSelect();
+      updateLogonStatusLine();
     }
   } catch {}
+}
+
+function updateLogonStatusLine() {
+  const statusEl = document.getElementById('login-cloud-status');
+  const ledEl = document.getElementById('login-cloud-led');
+  if (!statusEl) return;
+
+  const personalCount = getPersonalUsersList().length;
+  const archiveCount = Array.isArray(window.archiveItems) ? window.archiveItems.length : 0;
+  statusEl.textContent = archiveCount > 0
+    ? `[ONLINE] 중앙 아카이브 서버 연결 완료 (등록 이용자 ${personalCount}명 · 전체 기록 ${archiveCount}건)`
+    : `[READY] 사용자 인증 및 아카이브 워크스테이션 준비 완료 (등록 이용자 ${personalCount}명)`;
+  if (ledEl) ledEl.style.background = '#008000';
 }
 
 function populateLoginAccountSelect() {
   const sel = document.getElementById('login-account-select');
   if (!sel) return;
-  const users = window.registeredOsUsers || DEFAULT_FALLBACK_USERS;
+
+  const personalUsers = getPersonalUsersList();
+  const q = bootState.userSearchQuery.trim().toLowerCase();
+  const filteredUsers = q
+    ? personalUsers.filter(u => `${u.username} ${u.bio || ''}`.toLowerCase().includes(q))
+    : personalUsers;
+
+  const countBadge = document.getElementById('login-user-search-count');
+  if (countBadge) {
+    countBadge.textContent = `${filteredUsers.length}/${personalUsers.length}명`;
+  }
+
   const prevVal = sel.value;
 
-  sel.innerHTML = users.map(u => {
-    const prefix = u.role === 'public' ? '[PUBLIC]' : (u.role === 'owner' ? '[SYSOP]' : '[USER]');
-    const suffix = u.role === 'public' ? '(공용 계정)' : '(개인 계정)';
-    return `<option value="${esc(u.username)}">${prefix} ${esc(u.username)} ${suffix}</option>`;
-  }).join('') + `<option value="__CUSTOM__">[+] 직접 사용자 이름 입력...</option>`;
+  if (filteredUsers.length === 0) {
+    sel.innerHTML = q
+      ? `<option value="__NO_MATCH__">[검색 결과 없음] 일치하는 이용자가 없습니다</option><option value="__CUSTOM__">[+] 직접 사용자 이름 입력...</option>`
+      : `<option value="__CUSTOM__">[+] 등록된 개인 계정 없음 — 직접 이름 입력...</option>`;
+  } else {
+    sel.innerHTML = filteredUsers.map(u => {
+      const prefix = u.role === 'owner' ? '[SYSOP]' : '[USER]';
+      return `<option value="${esc(u.username)}">${prefix} ${esc(u.username)} (개인 계정)</option>`;
+    }).join('') + `<option value="__CUSTOM__">[+] 직접 사용자 이름 입력...</option>`;
+  }
 
   if (prevVal && Array.from(sel.options).some(o => o.value === prevVal)) {
     sel.value = prevVal;
+  } else if (filteredUsers.length > 0) {
+    sel.value = filteredUsers[0].username;
   }
+
   handleLoginAccountSelectChange();
 }
 
@@ -337,24 +384,38 @@ function handleLoginAccountSelectChange() {
   if (!sel || !customInput || !pinInput) return;
 
   const val = sel.value;
+  if (val === '__NO_MATCH__') {
+    customInput.style.display = 'none';
+    customInput.value = '';
+    pinInput.value = '';
+    pinInput.disabled = true;
+    pinInput.placeholder = '검색 조건과 일치하는 계정 없음';
+    if (avatarBox) avatarBox.innerHTML = renderPixelAvatarHtml('user', 32, 'user');
+    if (nameBox) nameBox.textContent = '[SEARCH] 일치하는 이용자 없음';
+    if (hintBox) hintBox.textContent = '[INFO] 검색어를 변경하거나 하단의 [로그인 없이 이용]을 선택하십시오.';
+    return;
+  }
+
   if (val === '__CUSTOM__') {
     customInput.style.display = 'block';
     customInput.value = '';
-    customInput.focus();
+    if (document.activeElement?.id !== 'login-user-search-input') {
+      customInput.focus();
+    }
     pinInput.disabled = false;
     pinInput.placeholder = '4자리 숫자 PIN 입력';
     if (avatarBox) avatarBox.innerHTML = renderPixelAvatarHtml('user', 32, 'user');
     if (nameBox) nameBox.textContent = '[CUSTOM] 직접 계정 입력 모드';
-    if (hintBox) hintBox.textContent = '[INPUT] 등록한 사용자 이름과 4자리 숫자 암호를 입력하십시오.';
+    if (hintBox) hintBox.textContent = '[INPUT] 등록한 개인 사용자 이름과 4자리 숫자 암호를 입력하십시오.';
     return;
   }
 
   customInput.style.display = 'none';
   customInput.value = val;
 
-  const matched = (window.registeredOsUsers || []).find(u => u.username === val);
+  const matched = getPersonalUsersList().find(u => u.username === val);
   const userObj = matched || { username: val, role: 'user', avatar: 'user', bio: '' };
-  const roleTag = userObj.role === 'public' ? '[PUBLIC]' : (userObj.role === 'owner' ? '[SYSOP]' : '[USER]');
+  const roleTag = userObj.role === 'owner' ? '[SYSOP]' : '[USER]';
 
   if (avatarBox) {
     avatarBox.innerHTML = renderPixelAvatarHtml(userObj.avatar, 32, userObj.role);
@@ -363,15 +424,10 @@ function handleLoginAccountSelectChange() {
     nameBox.textContent = `${roleTag} ${userObj.username}`;
   }
 
-  if (userObj.role === 'public') {
-    pinInput.value = '';
-    pinInput.disabled = true;
-    pinInput.placeholder = '공용 계정은 암호 없이 입장 가능';
-    if (hintBox) hintBox.textContent = formatRetroBio(userObj.bio, userObj);
-  } else {
-    pinInput.disabled = false;
-    pinInput.placeholder = '4자리 숫자 PIN (예: 1234)';
-    if (hintBox) hintBox.textContent = `${formatRetroBio(userObj.bio, userObj)} // [PIN REQUIRED]`;
+  pinInput.disabled = false;
+  pinInput.placeholder = '4자리 숫자 PIN (예: 1234)';
+  if (hintBox) {
+    hintBox.textContent = formatRetroBio(userObj.bio, userObj);
   }
 }
 
@@ -389,18 +445,19 @@ function setBootStage(stageName) {
   if (loginEl) loginEl.style.display = stageName === 'login' ? 'flex' : 'none';
 
   if (stageName === 'login') {
+    bootState.userSearchOpen = false;
+    bootState.userSearchQuery = '';
+    const searchRow = document.getElementById('login-user-search-row');
+    const searchBtn = document.getElementById('btn-toggle-user-search');
+    const searchInput = document.getElementById('login-user-search-input');
+    if (searchRow) searchRow.style.display = 'none';
+    if (searchBtn) searchBtn.classList.remove('active');
+    if (searchInput) searchInput.value = '';
+
     switchLoginTab('signin');
     renderSignupAvatarPicker();
     syncRegisteredUsersList();
-    const statusEl = document.getElementById('login-cloud-status');
-    const ledEl = document.getElementById('login-cloud-led');
-    if (statusEl) {
-      const count = Array.isArray(window.archiveItems) ? window.archiveItems.length : 0;
-      statusEl.textContent = count > 0
-        ? `[ONLINE] Google Sheets 아카이브 동기화 완료 (전체 ${count}건 대기 중)`
-        : '[READY] Google Sheets 사용자 인증 및 아카이브 준비 완료';
-    }
-    if (ledEl) ledEl.style.background = '#008000';
+    updateLogonStatusLine();
   }
 }
 
@@ -413,8 +470,8 @@ function switchLoginTab(tabName) {
   const errBox = document.getElementById('win95-login-error');
 
   if (errBox) errBox.style.display = 'none';
-  if (signinPane) signinPane.style.display = tabName === 'signin' ? 'grid' : 'none';
-  if (signupPane) signupPane.style.display = tabName === 'signup' ? 'grid' : 'none';
+  if (signinPane) signinPane.style.display = tabName === 'signin' ? 'block' : 'none';
+  if (signupPane) signupPane.style.display = tabName === 'signup' ? 'block' : 'none';
   if (tabSignin) {
     tabSignin.classList.toggle('active', tabName === 'signin');
     tabSignin.setAttribute('aria-selected', String(tabName === 'signin'));
@@ -474,10 +531,10 @@ function startBiosBootSequence() {
   }, 50);
 
   const postSteps = [
-    { delay: 200, text: 'Detecting IDE Primary Master   ... MY-ARCHIVE-SSD [OK]' },
+    { delay: 200, text: 'Detecting IDE Primary Master   ... MY-ARCHIVE-HDD [OK]' },
     { delay: 440, text: 'Detecting IDE Primary Slave    ... JUKEBOX-CDROM 4X [OK]' },
-    { delay: 700, text: 'Initializing User Account DB   ... Users & Community Sheet [OK]' },
-    { delay: 980, text: 'Connecting Google Apps Script  ... Cloud Drive Mounted [OK]' },
+    { delay: 700, text: 'Initializing User Registry     ... Local & Network Accounts [OK]' },
+    { delay: 980, text: 'Connecting Archive Host        ... Network Drive Mounted [OK]' },
     { delay: 1280, text: 'Verifying DMI Pool Data ........ Update Success' },
     { delay: 1560, text: 'Starting MY-ARCHIVE 95...' }
   ];
@@ -494,8 +551,8 @@ function startBiosBootSequence() {
       }
       logEl.appendChild(line);
 
-      if (syncBadge && step.text.includes('Cloud Drive')) {
-        syncBadge.textContent = 'CLOUD SYNC: CONNECTED';
+      if (syncBadge && step.text.includes('Archive Host')) {
+        syncBadge.textContent = 'ARCHIVE HOST: CONNECTED';
         syncBadge.style.color = '#55ff55';
       }
     }, step.delay);
@@ -519,8 +576,8 @@ function finishDesktopLogin(userObj) {
   const statusLeft = document.getElementById('status-left');
   if (statusLeft) {
     statusLeft.textContent = userObj.role === 'public'
-      ? '[PUBLIC] 공용 계정으로 접속됨 — 전체 공유 아카이브 및 게시판 활성화'
-      : `[LOGIN] ${userObj.username}님 환영합니다 — 개인 아카이브 및 전체 게시판 준비 완료`;
+      ? '[GUEST] 로그인 없이 이용 중 — 공용 워크스테이션 및 전체 게시판 활성화'
+      : `[LOGIN] ${userObj.username}님 환영합니다 — 개인 감상 보관함 및 전체 게시판 준비 완료`;
   }
 
   playWin95StartupSound();
@@ -542,7 +599,7 @@ function finishDesktopLogin(userObj) {
 }
 
 // ============================================================
-// 로그인 / 회원가입 이벤트 핸들러
+// 로그인 / 회원가입 / 유저 검색 이벤트 핸들러
 // ============================================================
 function bindBootScreenEvents() {
   document.getElementById('boot-stage-bios')?.addEventListener('click', () => {
@@ -588,10 +645,67 @@ function bindBootScreenEvents() {
 
   document.getElementById('login-account-select')?.addEventListener('change', handleLoginAccountSelectChange);
 
+  // 유저 검색 아이콘 토글
+  document.getElementById('btn-toggle-user-search')?.addEventListener('click', () => {
+    playRetroTone('click');
+    bootState.userSearchOpen = !bootState.userSearchOpen;
+    const searchRow = document.getElementById('login-user-search-row');
+    const searchBtn = document.getElementById('btn-toggle-user-search');
+    const searchInput = document.getElementById('login-user-search-input');
+
+    if (searchRow) searchRow.style.display = bootState.userSearchOpen ? 'flex' : 'none';
+    if (searchBtn) searchBtn.classList.toggle('active', bootState.userSearchOpen);
+
+    if (bootState.userSearchOpen) {
+      searchInput?.focus();
+    } else {
+      bootState.userSearchQuery = '';
+      if (searchInput) searchInput.value = '';
+      populateLoginAccountSelect();
+    }
+  });
+
+  // 유저 실시간 검색 입력
+  document.getElementById('login-user-search-input')?.addEventListener('input', e => {
+    bootState.userSearchQuery = e.target.value;
+    const clearBtn = document.getElementById('btn-clear-user-search');
+    if (clearBtn) clearBtn.style.display = bootState.userSearchQuery ? 'inline-flex' : 'none';
+    populateLoginAccountSelect();
+  });
+
+  document.getElementById('login-user-search-input')?.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      document.getElementById('btn-toggle-user-search')?.click();
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      document.getElementById('login-password')?.focus();
+    }
+  });
+
+  // 유저 검색 초기화
+  document.getElementById('btn-clear-user-search')?.addEventListener('click', () => {
+    playRetroTone('click');
+    bootState.userSearchQuery = '';
+    const searchInput = document.getElementById('login-user-search-input');
+    if (searchInput) {
+      searchInput.value = '';
+      searchInput.focus();
+    }
+    const clearBtn = document.getElementById('btn-clear-user-search');
+    if (clearBtn) clearBtn.style.display = 'none';
+    populateLoginAccountSelect();
+  });
+
   // 1. 기존 계정 로그인 폼 제출
   document.getElementById('win95-login-form')?.addEventListener('submit', async e => {
     e.preventDefault();
     const selVal = document.getElementById('login-account-select')?.value;
+    if (selVal === '__NO_MATCH__') {
+      showLoginError('선택된 계정이 없습니다. 검색어를 초기화하거나 하단의 [로그인 없이 이용]을 누르십시오.');
+      return;
+    }
+
     const rawName = selVal === '__CUSTOM__'
       ? document.getElementById('login-username')?.value.trim()
       : selVal;
@@ -633,14 +747,14 @@ function bindBootScreenEvents() {
       if (rawName === '문태양' && pin === '1234') {
         finishDesktopLogin(DEFAULT_FALLBACK_USERS[1]);
       } else {
-        showLoginError('서버 연결에 실패했습니다. 네트워크 및 Apps Script 배포 상태를 확인하세요.');
+        showLoginError('서버 연결에 실패했습니다. 네트워크 상태를 확인하십시오.');
       }
     } finally {
       if (btn) { btn.disabled = false; btn.textContent = '확인 (로그인)'; }
     }
   });
 
-  // 2. 공용 계정 원클릭 입장 버튼
+  // 2. 로그인 없이 이용 버튼
   document.getElementById('btn-win95-public-enter')?.addEventListener('click', () => {
     const pubUser = (window.registeredOsUsers || []).find(u => u.username === '공용') || DEFAULT_FALLBACK_USERS[0];
     finishDesktopLogin(pubUser);
@@ -658,6 +772,10 @@ function bindBootScreenEvents() {
 
     if (username.length < 2 || username.length > 15) {
       showLoginError('사용자 이름은 2~15자로 입력해 주세요.');
+      return;
+    }
+    if (username === '공용' || username.toUpperCase() === 'PUBLIC') {
+      showLoginError('예약된 시스템 이름은 사용할 수 없습니다.');
       return;
     }
     if (!/^\d{4}$/.test(pin)) {
@@ -687,7 +805,7 @@ function bindBootScreenEvents() {
         showLoginError(json.message || '계정 생성에 실패했습니다.');
       }
     } catch {
-      showLoginError('서버 통신 중 오류가 발생했습니다. Apps Script 새 배포 상태를 확인하세요.');
+      showLoginError('중앙 서버 통신 중 오류가 발생했습니다. 잠시 후 다시 시도하십시오.');
     } finally {
       if (btn) { btn.disabled = false; btn.textContent = '계정 생성 및 즉시 로그인'; }
     }
