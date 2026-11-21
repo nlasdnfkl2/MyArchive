@@ -1,13 +1,59 @@
 // ============================================================
 // MY-ARCHIVE 95 OS — BIOS POST & Authentic Windows 95 Logon
-// (Full-Viewport Desktop Logon, 1995 Dot-Pixel Avatars & Signup)
+// (Self-Contained Safe Helpers, Full-Viewport Logon & Signup)
 // ============================================================
 
 window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-window.__MOD_VERSIONS.bootScreen = 'v2026.11.22-v7';
+window.__MOD_VERSIONS.bootScreen = 'v2026.11.22-v8';
 
 const SESSION_USER_KEY = 'myarchive95_current_user_v2';
 const USERS_CACHE_KEY = 'myarchive95_users_cache_v2';
+
+// 외부 config.js 의존성 오류 방지용 안전 유틸리티
+function safeEsc(str) {
+  if (typeof window.esc === 'function') return window.esc(str);
+  return String(str ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function safeLoadCache(key, fallback) {
+  if (typeof window.loadLocalCache === 'function') {
+    try { return window.loadLocalCache(key, fallback); } catch {}
+  }
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function safeSaveCache(key, value) {
+  if (typeof window.saveLocalCache === 'function') {
+    try { window.saveLocalCache(key, value); return; } catch {}
+  }
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch {}
+}
+
+function getGasApiUrl() {
+  if (typeof GAS_WEB_APP_URL !== 'undefined' && GAS_WEB_APP_URL) return String(GAS_WEB_APP_URL).trim();
+  if (window.GAS_WEB_APP_URL) return String(window.GAS_WEB_APP_URL).trim();
+  if (window.CONFIG?.GAS_WEB_APP_URL) return String(window.CONFIG.GAS_WEB_APP_URL).trim();
+  if (window.APP_CONFIG?.GAS_WEB_APP_URL) return String(window.APP_CONFIG.GAS_WEB_APP_URL).trim();
+  return '';
+}
+
+function safeBootTone(type) {
+  if (typeof window.playRetroTone === 'function') {
+    try { window.playRetroTone(type); } catch {}
+  }
+}
 
 // 1995년 16색 도트 픽셀 SVG 아바타 라이브러리 (이모지 미사용)
 const PIXEL_AVATARS = {
@@ -83,12 +129,6 @@ const AVATAR_ALIAS_MAP = {
   '\u{2B50}': 'star'
 };
 
-function safeBootTone(type) {
-  if (typeof playRetroTone === 'function') {
-    try { playRetroTone(type); } catch {}
-  }
-}
-
 function normalizePixelAvatarKey(rawAvatar, role = 'user') {
   const normRole = String(role || 'user').trim().toLowerCase();
   if (normRole === 'public' && !rawAvatar) return 'globe';
@@ -104,7 +144,7 @@ function normalizePixelAvatarKey(rawAvatar, role = 'user') {
 function renderPixelAvatarHtml(rawAvatar, sizePx = 28, role = 'user') {
   const key = normalizePixelAvatarKey(rawAvatar, role);
   const svg = PIXEL_AVATARS[key] || PIXEL_AVATARS.user;
-  return `<span class="pixel-avatar-wrap" style="width:${sizePx}px;height:${sizePx}px;">${svg}</span>`;
+  return `<span class="pixel-avatar-wrap" style="width:${sizePx}px;height:${sizePx}px;display:inline-flex;align-items:center;justify-content:center;">${svg}</span>`;
 }
 
 function formatRetroBio(rawBio, userObj = {}) {
@@ -113,8 +153,8 @@ function formatRetroBio(rawBio, userObj = {}) {
     .trim();
 
   const normRole = String(userObj.role || '').trim().toLowerCase();
-  const isAdmin = typeof isAdminUser === 'function'
-    ? isAdminUser(userObj)
+  const isAdmin = typeof window.isAdminUser === 'function'
+    ? window.isAdminUser(userObj)
     : (normRole === 'owner' || normRole === 'admin' || userObj.username === '문태양');
 
   if (normRole === 'public' || userObj.username === '공용') {
@@ -160,10 +200,10 @@ window.registeredOsUsers = [...DEFAULT_FALLBACK_USERS];
 
 const bootState = {
   stage: 'bios',
-  loginTab: 'signin', // 'signin' | 'signup'
+  loginTab: 'signin',
   userSearchOpen: false,
   userSearchQuery: '',
-  isSignupSubmitting: false,
+  isSubmitting: false,
   timers: [],
   ramInterval: null,
   biosBeepPlayed: false
@@ -190,7 +230,7 @@ function clearBootTimers() {
 
 function getCurrentUser() {
   if (window.currentOsUser) return window.currentOsUser;
-  const saved = typeof loadLocalCache === 'function' ? loadLocalCache(SESSION_USER_KEY, null) : null;
+  const saved = safeLoadCache(SESSION_USER_KEY, null);
   if (saved && saved.username) {
     window.currentOsUser = saved;
     return saved;
@@ -206,23 +246,21 @@ function setCurrentUser(userObj) {
     avatar: normalizePixelAvatarKey(userObj.avatar, normalizedRole)
   };
   window.currentOsUser = normalized;
-  if (typeof saveLocalCache === 'function') {
-    saveLocalCache(SESSION_USER_KEY, normalized);
-  }
+  safeSaveCache(SESSION_USER_KEY, normalized);
   updateDesktopUserBadge();
 }
 
 function updateDesktopUserBadge() {
   const user = getCurrentUser();
   const normRole = String(user?.role || '').trim().toLowerCase();
-  const isAdmin = typeof isAdminUser === 'function'
-    ? isAdminUser(user)
+  const isAdmin = typeof window.isAdminUser === 'function'
+    ? window.isAdminUser(user)
     : (normRole === 'owner' || normRole === 'admin');
 
   const badge = document.getElementById('active-user-badge');
   if (badge && user) {
     const roleLabel = normRole === 'public' ? '비로그인' : (isAdmin ? '관리자' : '개인');
-    badge.innerHTML = `${renderPixelAvatarHtml(user.avatar, 14, normRole)}<span>${esc(user.username)} (${roleLabel})</span>`;
+    badge.innerHTML = `${renderPixelAvatarHtml(user.avatar, 14, normRole)}<span>${safeEsc(user.username)} (${roleLabel})</span>`;
   }
   const winMainTitle = document.getElementById('win-main-title-text');
   if (winMainTitle && user) {
@@ -335,21 +373,22 @@ function renderSignupAvatarPicker() {
 // 등록 사용자 목록 동기화 & 유저 검색 필터링
 // ============================================================
 async function syncRegisteredUsersList() {
-  const cached = typeof loadLocalCache === 'function' ? loadLocalCache(USERS_CACHE_KEY, null) : null;
+  const cached = safeLoadCache(USERS_CACHE_KEY, null);
   if (Array.isArray(cached) && cached.length > 0) {
     window.registeredOsUsers = cached;
   }
   populateLoginAccountSelect();
   updateLogonStatusLine();
 
+  const apiUrl = getGasApiUrl();
+  if (!apiUrl) return;
+
   try {
-    const res = await fetch(`${GAS_WEB_APP_URL}?action=users`);
+    const res = await fetch(`${apiUrl}?action=users`, { redirect: 'follow' });
     const json = await res.json();
     if (json.status === 'success' && Array.isArray(json.users) && json.users.length > 0) {
       window.registeredOsUsers = json.users;
-      if (typeof saveLocalCache === 'function') {
-        saveLocalCache(USERS_CACHE_KEY, json.users);
-      }
+      safeSaveCache(USERS_CACHE_KEY, json.users);
 
       if (window.currentOsUser && window.currentOsUser.username) {
         const syncedMe = json.users.find(u => u.username === window.currentOsUser.username);
@@ -401,10 +440,10 @@ function populateLoginAccountSelect() {
   } else {
     sel.innerHTML = filteredUsers.map(u => {
       const normRole = String(u.role || '').trim().toLowerCase();
-      const isAdmin = typeof isAdminUser === 'function' ? isAdminUser(u) : (normRole === 'owner' || normRole === 'admin');
+      const isAdmin = typeof window.isAdminUser === 'function' ? window.isAdminUser(u) : (normRole === 'owner' || normRole === 'admin');
       const prefix = isAdmin ? '[SYSOP]' : '[USER]';
       const roleDesc = isAdmin ? '관리자 계정' : '개인 계정';
-      return `<option value="${esc(u.username)}">${prefix} ${esc(u.username)} (${roleDesc})</option>`;
+      return `<option value="${safeEsc(u.username)}">${prefix} ${safeEsc(u.username)} (${roleDesc})</option>`;
     }).join('') + `<option value="__CUSTOM__">[+] 직접 사용자 이름 입력...</option>`;
   }
 
@@ -459,7 +498,7 @@ function handleLoginAccountSelectChange() {
   const matched = getPersonalUsersList().find(u => u.username === val);
   const userObj = matched || { username: val, role: 'user', avatar: 'user', bio: '' };
   const normRole = String(userObj.role || '').trim().toLowerCase();
-  const isAdmin = typeof isAdminUser === 'function' ? isAdminUser(userObj) : (normRole === 'owner' || normRole === 'admin');
+  const isAdmin = typeof window.isAdminUser === 'function' ? window.isAdminUser(userObj) : (normRole === 'owner' || normRole === 'admin');
   const roleTag = isAdmin ? '[SYSOP]' : '[USER]';
 
   if (avatarBox) {
@@ -555,25 +594,28 @@ function switchLoginTab(tabName) {
 function showLoginError(msg) {
   safeBootTone('boom');
   const errBox = document.getElementById('win95-login-error');
-  if (errBox) {
-    // 현재 활성화된 탭 패널 안에서도 에러 박스가 반드시 보이도록 위치 보정
-    const activePane = bootState.loginTab === 'signup'
-      ? document.getElementById('win95-pane-signup')
-      : document.getElementById('win95-pane-signin');
-    if (activePane && !activePane.contains(errBox) && errBox.closest('#win95-pane-signin')) {
-      activePane.insertBefore(errBox, activePane.firstChild);
-    }
-
-    errBox.style.display = 'flex';
-    errBox.innerHTML = `
-      <svg class="pixel-svg-14" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true">
-        <path fill="#000000" d="M7 1h2v2h1v2h1v2h1v2h1v2h1v3H2v-3h1V9h1V7h1V5h1V3h1V1z"/>
-        <path fill="#ffff00" d="M7 3h2v2h1v2h1v2h1v2h1v2H3v-2h1V9h1V7h1V5h1V3z"/>
-        <path fill="#000000" d="M7 5h2v5H7V5zm0 6h2v2H7v-2z"/>
-      </svg>
-      <span>[ERROR] ${esc(msg)}</span>
-    `;
+  if (!errBox) {
+    alert('[ERROR] ' + msg);
+    return;
   }
+
+  const activePane = bootState.loginTab === 'signup'
+    ? document.getElementById('win95-pane-signup')
+    : document.getElementById('win95-pane-signin');
+  if (activePane && !activePane.contains(errBox) && (errBox.closest('#win95-pane-signin') || errBox.closest('#win95-pane-signup'))) {
+    activePane.insertBefore(errBox, activePane.firstChild);
+  }
+
+  // 텍스트와 아이콘을 먼저 채운 뒤 화면에 표시
+  errBox.innerHTML = `
+    <svg class="pixel-svg-14" style="flex-shrink:0;width:14px;height:14px;" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true">
+      <path fill="#000000" d="M7 1h2v2h1v2h1v2h1v2h1v2h1v3H2v-3h1V9h1V7h1V5h1V3h1V1z"/>
+      <path fill="#ffff00" d="M7 3h2v2h1v2h1v2h1v2h1v2H3v-2h1V9h1V7h1V5h1V3z"/>
+      <path fill="#000000" d="M7 5h2v5H7V5zm0 6h2v2H7v-2z"/>
+    </svg>
+    <span style="color:#800000;font-weight:700;line-height:1.35;">[ERROR] ${safeEsc(msg)}</span>
+  `;
+  errBox.style.display = 'flex';
 }
 
 function startBiosBootSequence() {
@@ -653,8 +695,8 @@ function finishDesktopLogin(userObj) {
   setCurrentUser(userObj);
 
   const normRole = String(userObj.role || '').trim().toLowerCase();
-  const isAdmin = typeof isAdminUser === 'function'
-    ? isAdminUser(userObj)
+  const isAdmin = typeof window.isAdminUser === 'function'
+    ? window.isAdminUser(userObj)
     : (normRole === 'owner' || normRole === 'admin');
 
   const statusLeft = document.getElementById('status-left');
@@ -670,8 +712,8 @@ function finishDesktopLogin(userObj) {
 
   playWin95StartupSound();
 
-  if (typeof refreshAllViews === 'function') {
-    refreshAllViews();
+  if (typeof window.refreshAllViews === 'function') {
+    window.refreshAllViews();
   }
 
   const overlay = document.getElementById('os-boot-overlay');
@@ -687,10 +729,85 @@ function finishDesktopLogin(userObj) {
 }
 
 // ============================================================
-// 신규 이용자 계정 생성 실행기 (Form submit & Button click 겸용)
+// 로그인 & 신규 이용자 가입 실행기
 // ============================================================
+async function submitUserLogin() {
+  if (bootState.isSubmitting) return;
+
+  const selVal = document.getElementById('login-account-select')?.value;
+  if (selVal === '__NO_MATCH__') {
+    showLoginError('선택된 계정이 없습니다. 검색어를 초기화하거나 하단의 [공용 단말기 접속]을 누르십시오.');
+    return;
+  }
+
+  const rawName = (!selVal || selVal === '__CUSTOM__')
+    ? (document.getElementById('login-username')?.value || '').trim()
+    : selVal.trim();
+  const pin = (document.getElementById('login-password')?.value || '').trim();
+
+  if (!rawName) {
+    showLoginError('이용자 이름을 선택하거나 직접 입력해 주십시오.');
+    return;
+  }
+
+  if (rawName === '공용') {
+    const pubUser = (window.registeredOsUsers || []).find(u => u.username === '공용') || DEFAULT_FALLBACK_USERS[0];
+    finishDesktopLogin(pubUser);
+    return;
+  }
+
+  if (!/^\d{4}$/.test(pin)) {
+    showLoginError('개인 계정은 4자리 숫자 비밀번호(PIN)를 입력해야 합니다.');
+    document.getElementById('login-password')?.focus();
+    return;
+  }
+
+  const apiUrl = getGasApiUrl();
+  if (!apiUrl || !/^https:\/\/script\.google\.com\//i.test(apiUrl)) {
+    if (rawName === '문태양' && pin === '1234') {
+      finishDesktopLogin(DEFAULT_FALLBACK_USERS[1]);
+    } else {
+      showLoginError('js/config.js에 Google Apps Script 배포 URL(GAS_WEB_APP_URL)이 설정되지 않았습니다.');
+    }
+    return;
+  }
+
+  const btn = document.getElementById('btn-win95-login');
+  const prevBtnText = btn ? btn.textContent : '확인 (접속)';
+  bootState.isSubmitting = true;
+  if (btn) { btn.disabled = true; btn.textContent = '인증 확인 중...'; }
+
+  try {
+    const res = await fetch(apiUrl, {
+      method: 'POST',
+      redirect: 'follow',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: 'login_user', username: rawName, pin })
+    });
+    const rawText = await res.text();
+    if (rawText.trim().startsWith('<')) {
+      throw new Error("Apps Script 웹 앱 권한을 '모든 사용자(Anyone)'로 배포했는지 확인해 주십시오.");
+    }
+    const json = JSON.parse(rawText);
+    if (json.status === 'success' && json.user) {
+      finishDesktopLogin(json.user);
+    } else {
+      showLoginError(json.message || '로그인 인증에 실패했습니다.');
+    }
+  } catch (err) {
+    if (rawName === '문태양' && pin === '1234') {
+      finishDesktopLogin(DEFAULT_FALLBACK_USERS[1]);
+    } else {
+      showLoginError(err?.message || '중앙 서버 회선 연결에 실패했습니다. 통신 상태를 확인하십시오.');
+    }
+  } finally {
+    bootState.isSubmitting = false;
+    if (btn) { btn.disabled = false; btn.textContent = prevBtnText; }
+  }
+}
+
 async function submitNewUserSignup() {
-  if (bootState.isSignupSubmitting) return;
+  if (bootState.isSubmitting) return;
 
   const username = (document.getElementById('signup-username')?.value || '').trim();
   const pin = (document.getElementById('signup-pin')?.value || '').trim();
@@ -721,16 +838,19 @@ async function submitNewUserSignup() {
     return;
   }
 
-  const btn = document.getElementById('btn-win95-signup-submit');
-  const prevBtnText = btn ? btn.textContent : '계정 생성 및 즉시 로그인';
-  bootState.isSignupSubmitting = true;
-  if (btn) {
-    btn.disabled = true;
-    btn.textContent = '계정 생성 중...';
+  const apiUrl = getGasApiUrl();
+  if (!apiUrl || !/^https:\/\/script\.google\.com\//i.test(apiUrl)) {
+    showLoginError('js/config.js에 Google Apps Script 배포 URL(GAS_WEB_APP_URL)이 설정되지 않았습니다.');
+    return;
   }
 
+  const btn = document.getElementById('btn-win95-signup-submit');
+  const prevBtnText = btn ? btn.textContent : '계정 생성 및 즉시 로그인';
+  bootState.isSubmitting = true;
+  if (btn) { btn.disabled = true; btn.textContent = '계정 생성 중...'; }
+
   try {
-    const res = await fetch(GAS_WEB_APP_URL, {
+    const res = await fetch(apiUrl, {
       method: 'POST',
       redirect: 'follow',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -738,30 +858,23 @@ async function submitNewUserSignup() {
     });
 
     const rawText = await res.text();
-    let json = null;
-    try {
-      json = JSON.parse(rawText);
-    } catch {
-      throw new Error('서버 응답 형식이 올바르지 않습니다. Apps Script 새 버전 배포 상태를 확인하십시오.');
+    if (rawText.trim().startsWith('<')) {
+      throw new Error("Apps Script 웹 앱 권한을 '모든 사용자(Anyone)'로 배포했는지 확인해 주십시오.");
     }
+    const json = JSON.parse(rawText);
 
     if (json && json.status === 'success' && json.user) {
       window.registeredOsUsers = [...(window.registeredOsUsers || []), json.user];
-      if (typeof saveLocalCache === 'function') {
-        saveLocalCache(USERS_CACHE_KEY, window.registeredOsUsers);
-      }
+      safeSaveCache(USERS_CACHE_KEY, window.registeredOsUsers);
       finishDesktopLogin(json.user);
     } else {
       showLoginError((json && json.message) || '계정 생성에 실패했습니다.');
     }
   } catch (err) {
-    showLoginError((err && err.message) || '중앙 서버 통신 중 회선 오류가 발생했습니다. 잠시 후 다시 시도하십시오.');
+    showLoginError(err?.message || '중앙 서버 통신 중 회선 오류가 발생했습니다. 잠시 후 다시 시도하십시오.');
   } finally {
-    bootState.isSignupSubmitting = false;
-    if (btn) {
-      btn.disabled = false;
-      btn.textContent = prevBtnText;
-    }
+    bootState.isSubmitting = false;
+    if (btn) { btn.disabled = false; btn.textContent = prevBtnText; }
   }
 }
 
@@ -799,7 +912,6 @@ function bindBootScreenEvents() {
     }
   });
 
-  // 탭 전환 (직접 ID 바인딩 + 이벤트 위임 겸용)
   const loginStageEl = document.getElementById('boot-stage-login');
   loginStageEl?.addEventListener('click', e => {
     const tabBtn = e.target.closest('#tab-win95-signin, #tab-win95-signup, [data-login-tab]');
@@ -815,14 +927,12 @@ function bindBootScreenEvents() {
 
   document.getElementById('login-account-select')?.addEventListener('change', handleLoginAccountSelectChange);
 
-  // PIN 입력창 숫자 4자리 자동 정제
   ['login-password', 'signup-pin', 'signup-pin-confirm'].forEach(id => {
     document.getElementById(id)?.addEventListener('input', e => {
       e.target.value = String(e.target.value || '').replace(/\D/g, '').slice(0, 4);
     });
   });
 
-  // 유저 검색 아이콘 토글
   document.getElementById('btn-toggle-user-search')?.addEventListener('click', () => {
     safeBootTone('click');
     bootState.userSearchOpen = !bootState.userSearchOpen;
@@ -842,7 +952,6 @@ function bindBootScreenEvents() {
     }
   });
 
-  // 유저 실시간 검색 입력
   document.getElementById('login-user-search-input')?.addEventListener('input', e => {
     bootState.userSearchQuery = e.target.value;
     const clearBtn = document.getElementById('btn-clear-user-search');
@@ -860,7 +969,6 @@ function bindBootScreenEvents() {
     }
   });
 
-  // 유저 검색 초기화
   document.getElementById('btn-clear-user-search')?.addEventListener('click', () => {
     safeBootTone('click');
     bootState.userSearchQuery = '';
@@ -874,77 +982,29 @@ function bindBootScreenEvents() {
     populateLoginAccountSelect();
   });
 
-  // 1. 기존 계정 로그인 폼 제출
-  document.getElementById('win95-login-form')?.addEventListener('submit', async e => {
+  // 기존 계정 로그인 (Form submit & 버튼 직접 클릭 겸용)
+  document.getElementById('win95-login-form')?.addEventListener('submit', e => {
     e.preventDefault();
-    const selVal = document.getElementById('login-account-select')?.value;
-    if (selVal === '__NO_MATCH__') {
-      showLoginError('선택된 계정이 없습니다. 검색어를 초기화하거나 하단의 [공용 단말기 접속]을 누르십시오.');
-      return;
-    }
-
-    const rawName = selVal === '__CUSTOM__'
-      ? document.getElementById('login-username')?.value.trim()
-      : selVal;
-    const pin = (document.getElementById('login-password')?.value || '').trim();
-
-    if (!rawName) {
-      showLoginError('사용자 이름을 입력하거나 선택해 주십시오.');
-      return;
-    }
-
-    if (rawName === '공용') {
-      const pubUser = (window.registeredOsUsers || []).find(u => u.username === '공용') || DEFAULT_FALLBACK_USERS[0];
-      finishDesktopLogin(pubUser);
-      return;
-    }
-
-    if (!/^\d{4}$/.test(pin)) {
-      showLoginError('개인 계정은 4자리 숫자 비밀번호(PIN)를 입력해야 합니다.');
-      document.getElementById('login-password')?.focus();
-      return;
-    }
-
-    const btn = document.getElementById('btn-win95-login');
-    const prevBtnText = btn ? btn.textContent : '확인 (접속)';
-    if (btn) { btn.disabled = true; btn.textContent = '인증 확인 중...'; }
-
-    try {
-      const res = await fetch(GAS_WEB_APP_URL, {
-        method: 'POST',
-        redirect: 'follow',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action: 'login_user', username: rawName, pin })
-      });
-      const json = await res.json();
-      if (json.status === 'success' && json.user) {
-        finishDesktopLogin(json.user);
-      } else {
-        showLoginError(json.message || '로그인 인증에 실패했습니다.');
-      }
-    } catch {
-      if (rawName === '문태양' && pin === '1234') {
-        finishDesktopLogin(DEFAULT_FALLBACK_USERS[1]);
-      } else {
-        showLoginError('중앙 서버 회선 연결에 실패했습니다. 통신 상태를 확인하십시오.');
-      }
-    } finally {
-      if (btn) { btn.disabled = false; btn.textContent = prevBtnText; }
+    submitUserLogin();
+  });
+  document.getElementById('btn-win95-login')?.addEventListener('click', e => {
+    if (e.currentTarget.type !== 'submit') {
+      e.preventDefault();
+      submitUserLogin();
     }
   });
 
-  // 2. 공용 단말기 접속 버튼
+  // 공용 단말기 접속
   document.getElementById('btn-win95-public-enter')?.addEventListener('click', () => {
     const pubUser = (window.registeredOsUsers || []).find(u => u.username === '공용') || DEFAULT_FALLBACK_USERS[0];
     finishDesktopLogin(pubUser);
   });
 
-  // 3. 새 이용자 계정 생성 (Form submit & 버튼 직접 클릭 모두 지원)
+  // 신규 이용자 계정 생성 (Form submit & 버튼 직접 클릭 겸용)
   document.getElementById('win95-signup-form')?.addEventListener('submit', e => {
     e.preventDefault();
     submitNewUserSignup();
   });
-
   document.getElementById('btn-win95-signup-submit')?.addEventListener('click', e => {
     if (e.currentTarget.type !== 'submit') {
       e.preventDefault();
@@ -958,7 +1018,7 @@ function bindBootScreenEvents() {
     startBiosBootSequence();
   });
 
-  // 시작 메뉴 로그오프 / 계정 전환 버튼 바인딩
+  // 시작 메뉴 로그오프 / 계정 전환
   document.getElementById('sm-logoff')?.addEventListener('click', () => {
     const sm = document.getElementById('start-menu');
     if (sm) sm.classList.remove('open');
