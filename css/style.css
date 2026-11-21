@@ -1320,3 +1320,47 @@ textarea:focus,
     padding: 20px !important;
   }
 }
+
+/* ============================================================
+   Windows 95 개인화 배경 테마, 최대화 창, CRT 스캔라인 오버레이
+   ============================================================ */
+body[data-os-wallpaper="teal"] { background-color: #008080 !important; }
+body[data-os-wallpaper="navy"] { background-color: #000080 !important; }
+body[data-os-wallpaper="purple"] { background-color: #2d1b4e !important; }
+body[data-os-wallpaper="checker"] {
+  background-color: #008080 !important;
+  background-image: linear-gradient(45deg, #006b6b 25%, transparent 25%),
+    linear-gradient(-45deg, #006b6b 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #006b6b 75%),
+    linear-gradient(-45deg, transparent 75%, #006b6b 75%) !important;
+  background-size: 24px 24px !important;
+  background-position: 0 0, 0 12px, 12px -12px, -12px 0 !important;
+}
+body[data-os-wallpaper="grid"] {
+  background-color: #163b3b !important;
+  background-image: linear-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.08) 1px, transparent 1px) !important;
+  background-size: 20px 20px !important;
+}
+
+.floating-win.win-maximized {
+  top: 28px !important;
+  left: 6px !important;
+  width: calc(100vw - 12px) !important;
+  max-width: calc(100vw - 12px) !important;
+}
+
+body.crt-scanlines-on::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 99998;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0) 0px,
+    rgba(0, 0, 0, 0) 2px,
+    rgba(0, 0, 0, 0.14) 3px,
+    rgba(0, 0, 0, 0.14) 4px
+  );
+}
