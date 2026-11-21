@@ -32,6 +32,67 @@ var topZIndex = 120;
 var detailWindowCount = 0;
 
 // ============================================================
+// 0. Windows 95 + Neo-Brutalism 16x16 도트 SVG 아이콘 맵
+// ============================================================
+const PIXEL_ICONS = {
+  ALL: `<svg class="px-icon" width="16" height="16" viewBox="0 0 16 16" shape-rendering="crispEdges" style="vertical-align:-3px;"><rect x="1" y="3" width="6" height="2" fill="#ffd83b" stroke="#111"/><rect x="1" y="5" width="14" height="9" fill="#ffd83b" stroke="#111"/></svg>`,
+  BOOK: `<svg class="px-icon" width="16" height="16" viewBox="0 0 16 16" shape-rendering="crispEdges" style="vertical-align:-3px;"><rect x="2" y="1" width="12" height="14" fill="#000080" stroke="#111"/><rect x="4" y="3" width="8" height="3" fill="#fff"/></svg>`,
+  MOVIE: `<svg class="px-icon" width="16" height="16" viewBox="0 0 16 16" shape-rendering="crispEdges" style="vertical-align:-3px;"><rect x="1" y="2" width="14" height="12" fill="#222" stroke="#111"/><rect x="3" y="4" width="10" height="8" fill="#008080"/><rect x="2" y="3" width="1" height="1" fill="#fff"/><rect x="13" y="3" width="1" height="1" fill="#fff"/></svg>`,
+  MUSIC: `<svg class="px-icon" width="16" height="16" viewBox="0 0 16 16" shape-rendering="crispEdges" style="vertical-align:-3px;"><rect x="2" y="2" width="12" height="12" fill="#c0c0c0" stroke="#111"/><rect x="6" y="6" width="4" height="4" fill="#ffd83b" stroke="#111"/></svg>`,
+  GAME: `<svg class="px-icon" width="16" height="16" viewBox="0 0 16 16" shape-rendering="crispEdges" style="vertical-align:-3px;"><rect x="1" y="4" width="14" height="8" fill="#c0c0c0" stroke="#111"/><rect x="3" y="7" width="3" height="1" fill="#111"/><rect x="4" y="6" width="1" height="3" fill="#111"/><rect x="11" y="6" width="2" height="2" fill="#c0392b"/></svg>`,
+  EXHIBITION: `<svg class="px-icon" width="16" height="16" viewBox="0 0 16 16" shape-rendering="crispEdges" style="vertical-align:-3px;"><rect x="1" y="4" width="14" height="8" fill="#ffd83b" stroke="#111"/><rect x="4" y="6" width="8" height="4" fill="#fff" stroke="#111"/></svg>`,
+  ETC: `<svg class="px-icon" width="16" height="16" viewBox="0 0 16 16" shape-rendering="crispEdges" style="vertical-align:-3px;"><rect x="2" y="1" width="12" height="14" fill="#000080" stroke="#111"/><rect x="4" y="1" width="8" height="5" fill="#fff"/><rect x="4" y="9" width="8" height="5" fill="#c0c0c0"/></svg>`,
+  NOTE: `<svg class="px-icon" width="14" height="14" viewBox="0 0 16 16" shape-rendering="crispEdges" style="vertical-align:-2px;"><rect x="2" y="1" width="12" height="14" fill="#fff" stroke="#111"/><rect x="4" y="4" width="8" height="1" fill="#111"/><rect x="4" y="7" width="8" height="1" fill="#111"/><rect x="4" y="10" width="5" height="1" fill="#111"/></svg>`,
+  MAIL_READ: `<svg class="px-icon" width="14" height="14" viewBox="0 0 16 16" shape-rendering="crispEdges" style="vertical-align:-2px;"><rect x="1" y="4" width="14" height="9" fill="#dcdcdc" stroke="#111"/><polyline points="1,4 8,9 15,4" fill="none" stroke="#111"/></svg>`,
+  MAIL_UNREAD: `<svg class="px-icon" width="14" height="14" viewBox="0 0 16 16" shape-rendering="crispEdges" style="vertical-align:-2px;"><rect x="1" y="4" width="14" height="9" fill="#ffd83b" stroke="#111"/><polyline points="1,4 8,9 15,4" fill="none" stroke="#111"/></svg>`,
+  WARN: `<svg class="px-icon" width="24" height="24" viewBox="0 0 16 16" shape-rendering="crispEdges"><polygon points="8,1 15,14 1,14" fill="#ffd83b" stroke="#111"/><rect x="7" y="5" width="2" height="5" fill="#111"/><rect x="7" y="11" width="2" height="2" fill="#111"/></svg>`
+};
+
+// ============================================================
+// 0-1. 계정 세션 및 삭제 권한 판별기 (작성자 / 공용 / 관리자)
+// ============================================================
+const AUTH_SESSION_KEY = 'my_archive_95_auth_session_v1';
+
+function getCurrentAuthUser() {
+  try {
+    const raw = sessionStorage.getItem(AUTH_SESSION_KEY) || localStorage.getItem(AUTH_SESSION_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && parsed.userId) return parsed;
+    }
+  } catch {}
+  return { userId: 'GUEST', userName: '공용 계정(GUEST)', role: 'GUEST', adminKey: '' };
+}
+
+function setCurrentAuthUser(sessionObj) {
+  const normalized = {
+    userId: String(sessionObj.userId || 'GUEST').trim() || 'GUEST',
+    userName: String(sessionObj.userName || sessionObj.userId || '공용 계정(GUEST)').trim(),
+    role: sessionObj.role === 'ADMIN' ? 'ADMIN' : (sessionObj.userId && sessionObj.userId !== 'GUEST' ? 'USER' : 'GUEST'),
+    adminKey: sessionObj.role === 'ADMIN' ? String(sessionObj.adminKey || '') : ''
+  };
+  try {
+    localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(normalized));
+  } catch {}
+  return normalized;
+}
+
+function canDeleteArchiveItem(item) {
+  if (!item) return false;
+  const user = getCurrentAuthUser();
+
+  // 1. 관리자 계정은 모든 자료(공용 계정 게시물 포함) 삭제 가능
+  if (user.role === 'ADMIN') return true;
+
+  // 2. 공용 계정(GUEST) 게시물 또는 작성자 미상 자료는 오직 관리자만 삭제 가능
+  const isSharedPost = item.isShared === true || String(item.isShared).toLowerCase() === 'true' || !item.authorId || item.authorId === 'GUEST';
+  if (isSharedPost) return false;
+
+  // 3. 일반 사용자 계정은 본인이 작성한 자료만 삭제 가능
+  return user.role === 'USER' && user.userId === item.authorId;
+}
+
+// ============================================================
 // 1. LocalStorage 하이브리드 캐시 관리 (약 5MB 한도 방어)
 // ============================================================
 const STORAGE_KEYS = {
