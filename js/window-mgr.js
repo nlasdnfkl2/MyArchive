@@ -1,9 +1,29 @@
 // ============================================================
 // MY-ARCHIVE 95 OS — Pure Window Manager & Desktop Shell UI
+// (Multi-Window Focus/Drag, 6-Theme Engine, CRT & Task Manager)
 // ============================================================
 
 window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-window.__MOD_VERSIONS.windowMgr = typeof APP_BUILD_VERSION !== 'undefined' ? APP_BUILD_VERSION : 'v2026.11.17-05';
+window.__MOD_VERSIONS.windowMgr = typeof APP_BUILD_VERSION !== 'undefined' ? APP_BUILD_VERSION : 'v2026.11.22-06';
+
+const ALL_DESKTOP_THEMES = [
+  'theme-teal',
+  'theme-navy',
+  'theme-olive',
+  'theme-plum',
+  'theme-brick',
+  'theme-matrix',
+  'theme-grid'
+];
+
+// 구버전 HTML data-win-title에 이모지가 남아 있어도 작업표시줄에는 95년 규격 텍스트만 표시
+function sanitizeRetroWindowTitle(rawTitle) {
+  return String(rawTitle || '')
+    .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\uFE0F]/gu, '')
+    .replace(/^\[\s*\]\s*/, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
 
 // ============================================================
 // 1. 멀티 윈도우 제어 (포커스, 열기/닫기, 최소화, 작업표시줄 동기화)
@@ -13,7 +33,9 @@ function focusWindow(winEl) {
   document.querySelectorAll('.floating-win').forEach(w => w.classList.remove('focused'));
   winEl.classList.remove('minimized');
   winEl.classList.add('focused');
-  winEl.style.zIndex = String(++topZIndex);
+  if (typeof topZIndex !== 'undefined') {
+    winEl.style.zIndex = String(++topZIndex);
+  }
   syncTaskbar();
 }
 
@@ -24,7 +46,7 @@ function openWindow(winId) {
   winEl.classList.add('open');
   winEl.classList.remove('minimized');
   focusWindow(winEl);
-  if (wasClosed && winId !== 'win-sys-msgbox') {
+  if (wasClosed && winId !== 'win-sys-msgbox' && typeof playRetroTone === 'function') {
     playRetroTone('open');
   }
   window.dispatchEvent(new CustomEvent('window:opened', { detail: { id: winId } }));
@@ -33,11 +55,11 @@ function openWindow(winId) {
 function closeWindow(winId) {
   const winEl = document.getElementById(winId);
   if (!winEl) return;
-  playRetroTone('close');
+  if (typeof playRetroTone === 'function') playRetroTone('close');
   if (winEl.dataset.dynamic === 'true') {
     winEl.remove();
   } else {
-    winEl.classList.remove('open', 'focused', 'minimized');
+    winEl.classList.remove('open', 'focused', 'minimized', 'win-maximized');
   }
   syncTaskbar();
 }
@@ -45,7 +67,7 @@ function closeWindow(winId) {
 function minimizeWindow(winId) {
   const winEl = document.getElementById(winId);
   if (!winEl) return;
-  playRetroTone('click');
+  if (typeof playRetroTone === 'function') playRetroTone('click');
   winEl.classList.add('minimized');
   winEl.classList.remove('focused');
   syncTaskbar();
@@ -60,7 +82,8 @@ function syncTaskbar() {
     const tab = document.createElement('button');
     tab.type = 'button';
     tab.className = 'taskbar-tab' + (winEl.classList.contains('focused') && !winEl.classList.contains('minimized') ? ' active' : '');
-    tab.textContent = winEl.dataset.winTitle || winEl.id;
+    const cleanTitle = sanitizeRetroWindowTitle(winEl.dataset.winTitle || winEl.id);
+    tab.textContent = cleanTitle || winEl.id;
     tab.addEventListener('click', () => {
       if (winEl.classList.contains('minimized') || !winEl.classList.contains('focused')) {
         focusWindow(winEl);
@@ -94,6 +117,7 @@ function enableWindowDrag(winEl) {
   const onStart = (clientX, clientY, target) => {
     if (target.closest('button, a, input, select, textarea')) return;
     if (window.innerWidth <= 768) return; // 모바일 1열 반응형 모드에서는 위치 고정
+    if (winEl.classList.contains('win-maximized')) return;
     isDragging = true;
     focusWindow(winEl);
 
@@ -150,18 +174,38 @@ document.addEventListener('click', e => {
 // ============================================================
 // 3. 바탕화면 테마, CRT 효과, 시스템 시계, BSOD 및 창 런처 바인딩
 // ============================================================
-function applyDesktopPreferences() {
-  const prefs = loadLocalCache(STORAGE_KEYS.PREFS, {
-    theme: 'teal',
-    crt: false,
-    soundEnabled: true
-  });
+function applyTheme(themeName, persist = true) {
+  const safeTheme = String(themeName || 'teal').trim() || 'teal';
+  document.body.classList.remove(...ALL_DESKTOP_THEMES);
+  document.body.classList.add(`theme-${safeTheme}`);
 
-  document.body.classList.remove('theme-teal', 'theme-grid', 'theme-brick');
-  document.body.classList.add(`theme-${prefs.theme || 'teal'}`);
+  if (persist && typeof loadLocalCache === 'function' && typeof saveLocalCache === 'function' && typeof STORAGE_KEYS !== 'undefined') {
+    const prefs = loadLocalCache(STORAGE_KEYS.PREFS, { theme: 'teal', crt: false, soundEnabled: true }) || {};
+    prefs.theme = safeTheme;
+    saveLocalCache(STORAGE_KEYS.PREFS, prefs);
+  }
+}
 
+function applyCrtOverlayState(enabled) {
+  const crtEnabled = Boolean(enabled);
   const crtEl = document.getElementById('crt-overlay');
-  if (crtEl) crtEl.style.display = prefs.crt ? 'block' : 'none';
+  if (crtEl) {
+    crtEl.classList.toggle('hidden', !crtEnabled);
+    crtEl.style.display = crtEnabled ? 'block' : 'none';
+  }
+  const topChk = document.getElementById('chk-crt');
+  if (topChk) topChk.checked = crtEnabled;
+  const dispChk = document.getElementById('chk-crt-scanline');
+  if (dispChk) dispChk.checked = crtEnabled;
+}
+
+function applyDesktopPreferences() {
+  const prefs = (typeof loadLocalCache === 'function' && typeof STORAGE_KEYS !== 'undefined')
+    ? (loadLocalCache(STORAGE_KEYS.PREFS, { theme: 'teal', crt: false, soundEnabled: true }) || {})
+    : { theme: 'teal', crt: false, soundEnabled: true };
+
+  applyTheme(prefs.theme || 'teal', false);
+  applyCrtOverlayState(Boolean(prefs.crt));
 }
 
 function updateTaskbarClock() {
@@ -174,7 +218,7 @@ function updateTaskbarClock() {
 }
 
 function triggerBsodEasterEgg() {
-  playRetroTone('boom');
+  if (typeof playRetroTone === 'function') playRetroTone('boom');
   const existing = document.getElementById('win95-bsod');
   if (existing) existing.remove();
 
@@ -184,8 +228,8 @@ function triggerBsodEasterEgg() {
   bsod.innerHTML = `
     <div style="max-width:620px;line-height:1.7;">
       <div style="background:#c0c0c0;color:#0000aa;display:inline-block;padding:2px 10px;font-weight:900;margin-bottom:18px;">MY-ARCHIVE 95 OS</div>
-      <p style="margin-bottom:14px;">치명적인 취향 과부하 예외 0E가 0028:C0011E36에서 발생했습니다. 현재 실행 중인 감상 기록은 Google Sheets 및 LocalStorage에 안전하게 보호되고 있습니다.</p>
-      <p style="margin-bottom:14px;">* 아무 곳이나 클릭하거나 키를 누르면 데스크톱으로 복귀합니다.</p>
+      <p style="margin-bottom:14px;">치명적인 취향 과부하 예외 0E가 0028:C0011E36에서 발생했습니다. 현재 실행 중인 감상 기록은 중앙 Google Sheets 및 LocalStorage에 안전하게 보호되고 있습니다.</p>
+      <p style="margin-bottom:14px;">* 화면의 아무 곳이나 클릭하거나 키보드의 아무 키나 누르면 데스크톱으로 복귀합니다.</p>
       <p style="text-align:center;margin-top:24px;">Press any key to continue _</p>
     </div>
   `;
@@ -208,21 +252,26 @@ document.addEventListener('DOMContentLoaded', () => {
   // 바탕화면 테마 전환
   document.querySelectorAll('[data-theme-opt]').forEach(btn => {
     btn.addEventListener('click', () => {
-      const prefs = loadLocalCache(STORAGE_KEYS.PREFS, { theme: 'teal', crt: false, soundEnabled: true });
-      prefs.theme = btn.dataset.themeOpt;
-      saveLocalCache(STORAGE_KEYS.PREFS, prefs);
-      applyDesktopPreferences();
-      playRetroTone('click');
+      applyTheme(btn.dataset.themeOpt, true);
+      if (typeof playRetroTone === 'function') playRetroTone('click');
     });
   });
 
-  // CRT 스캔라인 토글
+  // CRT 스캔라인 토글 (메뉴 버튼 및 체크박스 겸용)
   document.getElementById('mnu-toggle-crt')?.addEventListener('click', () => {
     const prefs = loadLocalCache(STORAGE_KEYS.PREFS, { theme: 'teal', crt: false, soundEnabled: true });
     prefs.crt = !prefs.crt;
     saveLocalCache(STORAGE_KEYS.PREFS, prefs);
-    applyDesktopPreferences();
-    playRetroTone('click');
+    applyCrtOverlayState(prefs.crt);
+    if (typeof playRetroTone === 'function') playRetroTone('click');
+  });
+
+  document.getElementById('chk-crt')?.addEventListener('change', e => {
+    const prefs = loadLocalCache(STORAGE_KEYS.PREFS, { theme: 'teal', crt: false, soundEnabled: true });
+    prefs.crt = Boolean(e.target.checked);
+    saveLocalCache(STORAGE_KEYS.PREFS, prefs);
+    applyCrtOverlayState(prefs.crt);
+    if (typeof playRetroTone === 'function') playRetroTone('click');
   });
 
   // 8비트 효과음 음소거 토글
@@ -230,7 +279,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const prefs = loadLocalCache(STORAGE_KEYS.PREFS, { theme: 'teal', crt: false, soundEnabled: true });
     prefs.soundEnabled = prefs.soundEnabled === false ? true : false;
     saveLocalCache(STORAGE_KEYS.PREFS, prefs);
-    if (prefs.soundEnabled) playRetroTone('open');
+    if (prefs.soundEnabled && typeof playRetroTone === 'function') playRetroTone('open');
     if (typeof showWin95MessageBox === 'function') {
       showWin95MessageBox('오디오 설정 — MY-ARCHIVE 95', prefs.soundEnabled ? '8비트 레트로 효과음이 활성화되었습니다.' : '8비트 레트로 효과음이 음소거되었습니다.', 'click');
     }
@@ -257,7 +306,6 @@ document.addEventListener('DOMContentLoaded', () => {
   bindLauncher(['icon-gamepack', 'mnu-open-gamepack'], 'win-gamepack');
 });
 
-
 // ============================================================
 // 4. Windows 95 작업 관리자 (Ctrl+Alt+Delete) & 화면 보호기
 // ============================================================
@@ -275,7 +323,7 @@ function renderTaskManagerList() {
     return;
   }
   listBox.innerHTML = openWins.map(w => {
-    const title = w.dataset.winTitle || w.id;
+    const title = sanitizeRetroWindowTitle(w.dataset.winTitle || w.id) || w.id;
     const status = w.classList.contains('minimized') ? '최소화됨' : '응답 중';
     return `
       <div class="taskmgr-row" data-win-id="${esc(w.id)}">
@@ -318,12 +366,12 @@ function startWin95Screensaver() {
 
   const colors = ['#ff4b4b', '#4be36a', '#4ba3ff', '#ffd83b', '#ff9f43', '#a29bfe'];
   const sprites = Array.from({ length: 14 }, (_, i) => ({
-    x: Math.random() * (canvas.width - 90),
+    x: Math.random() * (canvas.width - 96),
     y: Math.random() * (canvas.height - 50),
     vx: (Math.random() < 0.5 ? -1 : 1) * (1.8 + Math.random() * 2.2),
     vy: (Math.random() < 0.5 ? -1 : 1) * (1.5 + Math.random() * 2.0),
     color: colors[i % colors.length],
-    label: i % 2 === 0 ? 'ARCHIVE 95' : '⊞ WIN95'
+    label: i % 2 === 0 ? 'ARCHIVE 95' : 'WIN95 OS'
   }));
 
   const stopScreensaver = () => {
@@ -381,3 +429,15 @@ document.addEventListener('DOMContentLoaded', () => {
     if (typeof startBiosBootSequence === 'function') startBiosBootSequence();
   });
 });
+
+// 전역 창 관리자 API 노출
+window.focusWindow = focusWindow;
+window.openWindow = openWindow;
+window.closeWindow = closeWindow;
+window.minimizeWindow = minimizeWindow;
+window.syncTaskbar = syncTaskbar;
+window.enableWindowDrag = enableWindowDrag;
+window.applyTheme = applyTheme;
+window.triggerBsodEasterEgg = triggerBsodEasterEgg;
+window.openTaskManager = openTaskManager;
+window.startWin95Screensaver = startWin95Screensaver;
