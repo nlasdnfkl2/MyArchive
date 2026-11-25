@@ -1,13 +1,13 @@
 // ============================================================
 // MY-ARCHIVE 95 OS — Boot Lifecycle Controller (Stage Flow)
-// Flow: Preloader(2s+) -> TV Off -> Wait(Text+Noise)
-//       -> [Click/Key] -> 3D Anim -> BIOS
+// Flow: Preloader(500ms/file + Complete Hold) -> TV Off
+//       -> Wait(Text+Noise) -> [Click/Key] -> 3D Anim -> BIOS
 //       -> [Click/Key] -> Loading Splash -> Logon
 // ============================================================
 
 (function () {
   window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-  window.__MOD_VERSIONS.bootController = 'v2026.11.25-stage-flow-preloader';
+  window.__MOD_VERSIONS.bootController = 'v2026.11.25-stage-flow-preloader-v7';
 
   window.__ARCHIVE_LOGGED_IN = false;
   window.__ARCHIVE_GATE_DISMISSED = false;
@@ -235,8 +235,8 @@
     bindShellActions();
     bindBiosAdvanceFallback();
 
-    // 프리로더가 이미 끝난 상태면 즉시 첫 화면 마운트, 아니면 __onBrutalPreloadReady 대기
-    if (window.__BRUTAL_PRELOAD_DONE || !document.getElementById('brutal-js-preloader')) {
+    const preloaderActive = Boolean(document.getElementById('brutal-js-preloader')) && !window.__BRUTAL_PRELOAD_DONE;
+    if (!preloaderActive) {
       mountWaitScreenAfterPreload();
     }
   });
