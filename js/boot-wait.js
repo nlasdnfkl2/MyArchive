@@ -3,7 +3,7 @@
 // ============================================================
 
 window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-window.__MOD_VERSIONS.bootWait = 'v2026.11.25-ddal-kkak-brutal-rays';
+window.__MOD_VERSIONS.bootWait = 'v2026.11.25-ddal-kkak-forward-parody-loop';
 
 const WAIT_SETUP_KEY = 'myarchive95_setup_v1';
 
@@ -79,38 +79,87 @@ function playButtonClickSound(options = {}) {
   } catch {}
 }
 
-function startSubtleStaticNoise() {
+// 프리로더 역재생 종료 후 순재생으로 반복되는 노스탤직 패러디 루프
+function createForwardParodyBuffer(ctx) {
+  const sr = ctx.sampleRate, stepSec = 0.165;
+  const leadFreqs = [
+    392.00, 392.00, 440.00, 493.88, 587.33, 523.25, 493.88, 440.00,
+    392.00, 440.00, 493.88, 587.33, 659.25, 587.33, 523.25, 493.88,
+    329.63, 329.63, 392.00, 440.00, 493.88, 440.00, 392.00, 329.63,
+    349.23, 392.00, 440.00, 523.25, 493.88, 440.00, 392.00, 349.23
+  ];
+  const bassFreqs = [
+    130.81, 130.81, 196.00, 130.81, 164.81, 164.81, 246.94, 164.81,
+    146.83, 146.83, 220.00, 146.83, 196.00, 196.00, 146.83, 130.81
+  ];
+
+  const len = Math.max(1, Math.floor(sr * leadFreqs.length * stepSec));
+  const buf = ctx.createBuffer(1, len, sr);
+  const ch = buf.getChannelData(0);
+
+  for (let i = 0; i < len; i++) {
+    const t = i / sr;
+    const step = Math.floor(t / stepSec) % leadFreqs.length;
+    const localT = t - step * stepSec;
+    const fLead = leadFreqs[step];
+    const fBass = bassFreqs[step % bassFreqs.length];
+    const env = Math.min(1, localT / 0.014) * Math.exp(-localT * 5.2);
+
+    const leadTone =
+      Math.sin(2 * Math.PI * fLead * t) * 0.52 +
+      Math.sin(2 * Math.PI * fLead * 2 * t) * 0.16 +
+      Math.sin(2 * Math.PI * fLead * 1.5 * t) * 0.08;
+    const bassTone =
+      Math.sin(2 * Math.PI * fBass * t) * 0.34 +
+      Math.sin(2 * Math.PI * (fBass * 1.5) * t) * 0.08;
+    const wow = 1 + 0.005 * Math.sin(2 * Math.PI * 2.2 * t);
+    const sample = (leadTone * 0.65 + bassTone * 0.35) * env;
+    ch[i] = Math.max(-0.95, Math.min(0.95, sample * (0.94 + 0.06 * wow)));
+  }
+  return buf;
+}
+
+function startForwardNostalgicLoop() {
   if (!isWaitSoundEnabled()) return null;
   try {
     const ctx = getWaitAudioContext();
     if (!ctx) return null;
-    const buf = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
-    const ch = buf.getChannelData(0);
-    let last = 0;
-    for (let i = 0; i < ch.length; i++) {
-      const w = Math.random() * 2 - 1, c = Math.random() > 0.9965 ? (Math.random() * 2 - 1) * 0.85 : 0;
-      last = (last + 0.14 * w) / 1.14;
-      ch[i] = last * 0.65 + c * 0.25;
-    }
-    const src = ctx.createBufferSource(); src.buffer = buf; src.loop = true;
-    const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.setValueAtTime(1850, ctx.currentTime); bp.Q.setValueAtTime(0.65, ctx.currentTime);
+    const src = ctx.createBufferSource();
+    src.buffer = createForwardParodyBuffer(ctx);
+    src.loop = true;
+    src.playbackRate.setValueAtTime(1.0, ctx.currentTime);
+
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(2800, ctx.currentTime);
+    filter.Q.setValueAtTime(0.9, ctx.currentTime);
+
     const gain = ctx.createGain(), t0 = ctx.currentTime;
-    gain.gain.setValueAtTime(0.0001, t0); gain.gain.linearRampToValueAtTime(0.022, t0 + 0.16);
-    src.connect(bp); bp.connect(gain); gain.connect(ctx.destination); src.start(t0);
+    gain.gain.setValueAtTime(0.0002, t0);
+    gain.gain.linearRampToValueAtTime(0.16, t0 + 0.12);
+
+    src.connect(filter);
+    filter.connect(gain);
+    gain.connect(ctx.destination);
+    src.start(t0);
 
     return {
       resume: () => {
         try {
           if (ctx.state === 'suspended') ctx.resume().catch(() => {});
           const t = ctx.currentTime;
-          gain.gain.cancelScheduledValues(t); gain.gain.setValueAtTime(Math.max(0.0005, gain.gain.value), t); gain.gain.linearRampToValueAtTime(0.022, t + 0.08);
+          gain.gain.cancelScheduledValues(t);
+          gain.gain.setValueAtTime(Math.max(0.0005, gain.gain.value), t);
+          gain.gain.linearRampToValueAtTime(0.16, t + 0.08);
         } catch {}
       },
       stop: () => {
         try {
           const t = ctx.currentTime;
-          gain.gain.cancelScheduledValues(t); gain.gain.setValueAtTime(Math.max(0.0001, gain.gain.value), t); gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.14);
-          setTimeout(() => { try { src.stop(); } catch {} }, 160);
+          gain.gain.cancelScheduledValues(t);
+          gain.gain.setValueAtTime(Math.max(0.0001, gain.gain.value), t);
+          gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
+          setTimeout(() => { try { src.stop(); src.disconnect(); filter.disconnect(); gain.disconnect(); } catch {} }, 180);
         } catch {}
       }
     };
@@ -187,7 +236,6 @@ function startBlurredBackground3dCrt() {
   };
 }
 
-// 네오 브루탈리즘 스타일 랜덤 라이트 광선 오버레이
 function startBrutalLightRays() {
   document.getElementById('brutal-wait-light-rays')?.remove();
   if (!document.getElementById('brutal-wait-rays-style')) {
@@ -383,7 +431,7 @@ function mountPreClickStartScreen(onStartBoot) {
   const stopRays = startBrutalLightRays();
   const stopTitle = startPreClickNoiseTitleLayer();
   const stopStatic = startFullScreenStaticEffect();
-  const noiseAudio = startSubtleStaticNoise();
+  const forwardLoop = startForwardNostalgicLoop();
 
   let triggered = false;
   const triggerStart = e => {
@@ -394,12 +442,12 @@ function mountPreClickStartScreen(onStartBoot) {
 
     hitLayer.style.pointerEvents = 'none';
     playButtonClickSound({ gapSec: 0.065, volume: 1.05 });
-    noiseAudio?.resume?.();
+    forwardLoop?.resume?.();
     stopRays(); stopTitle(); stopStatic();
     blur3d.focusAndClear();
 
     setTimeout(() => {
-      blur3d.stop(); noiseAudio?.stop?.(); hitLayer.remove();
+      blur3d.stop(); forwardLoop?.stop?.(); hitLayer.remove();
       if (typeof onStartBoot === 'function') onStartBoot();
     }, 360);
   };
@@ -410,12 +458,12 @@ function mountPreClickStartScreen(onStartBoot) {
   return () => {
     triggered = true;
     hitLayer.removeEventListener('click', triggerStart); hitLayer.removeEventListener('keydown', triggerStart);
-    stopRays(); stopTitle(); stopStatic(); blur3d.stop(); noiseAudio?.stop?.();
+    stopRays(); stopTitle(); stopStatic(); blur3d.stop(); forwardLoop?.stop?.();
   };
 }
 
 Object.assign(window, {
-  getWaitAudioContext, playButtonClickSound, startSubtleStaticNoise,
+  getWaitAudioContext, playButtonClickSound, startForwardNostalgicLoop,
   startBlurredBackground3dCrt, startBrutalLightRays, startPreClickNoiseTitleLayer,
   startFullScreenStaticEffect, mountPreClickStartScreen
 });
