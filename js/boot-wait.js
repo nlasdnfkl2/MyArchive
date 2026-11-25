@@ -145,7 +145,22 @@ function startForwardNostalgicLoop() {
     const ctx = getWaitAudioContext();
     if (!ctx) return null;
 
-    let stopped = false, started = false, src = null, filter = null, gain = null, unlockFn = null, launchSeq = 0;
+    const targetGain = 0.16;
+    const minGain = 0.0002;
+    let stopped = false, started = false, unlockFn = null, launchSeq = 0;
+    let loopTimerId = null;
+    let activeSources = [];
+    let currentGainNode = null;
+
+    const cleanupNodes = (entry) => {
+      try { entry.timerId && clearTimeout(entry.timerId); } catch {}
+      try { entry.src?.stop(); } catch {}
+      try {
+        entry.src?.disconnect();
+        entry.filter?.disconnect();
+        entry.gain?.disconnect();
+      } catch {}
+    };
 
     const launchLoop = () => {
       if (stopped || started || !ctx || !__waitScreenMounted) return;
@@ -155,26 +170,68 @@ function startForwardNostalgicLoop() {
 
       resolveForwardBufferAsync(ctx).then((buf) => {
         if (stopped || seq !== launchSeq || !ctx || !__waitScreenMounted || window.__PRELOAD_REWIND_ACTIVE) return;
-        const t0 = ctx.currentTime;
+        if (!buf || !buf.duration || buf.duration <= 0.1) return;
 
-        src = ctx.createBufferSource();
-        src.buffer = buf;
-        src.loop = true;
-        src.playbackRate.setValueAtTime(1.0, t0);
+        const dur = buf.duration;
+        const xfadeSec = Math.min(0.4, Math.max(0.08, dur * 0.12));
+        const stepSec = Math.max(0.15, dur - xfadeSec);
 
-        filter = ctx.createBiquadFilter();
-        filter.type = 'lowpass';
-        filter.frequency.setValueAtTime(2800, t0);
-        filter.Q.setValueAtTime(0.9, t0);
+        const spawnSegment = (startAt, fadeInSec, isFirst) => {
+          if (stopped || seq !== launchSeq || !ctx || !__waitScreenMounted || window.__PRELOAD_REWIND_ACTIVE) return;
 
-        gain = ctx.createGain();
-        gain.gain.setValueAtTime(0.0002, t0);
-        gain.gain.linearRampToValueAtTime(0.16, t0 + 0.12);
+          const t0 = Math.max(ctx.currentTime + 0.005, startAt);
+          const src = ctx.createBufferSource();
+          src.buffer = buf;
+          src.loop = false;
+          src.playbackRate.setValueAtTime(1.0, t0);
 
-        src.connect(filter);
-        filter.connect(gain);
-        gain.connect(ctx.destination);
-        src.start(t0);
+          const filter = ctx.createBiquadFilter();
+          filter.type = 'lowpass';
+          filter.frequency.setValueAtTime(2800, t0);
+          filter.Q.setValueAtTime(0.9, t0);
+
+          const gain = ctx.createGain();
+          gain.gain.setValueAtTime(minGain, t0);
+          const actualFadeIn = isFirst ? Math.min(0.12, fadeInSec) : fadeInSec;
+          gain.gain.linearRampToValueAtTime(targetGain, t0 + actualFadeIn);
+
+          // 루프 끝 구간에서 서서히 볼륨 낮추기
+          const fadeOutStart = t0 + stepSec;
+          const fadeOutEnd = t0 + dur;
+          gain.gain.setValueAtTime(targetGain, fadeOutStart);
+          gain.gain.linearRampToValueAtTime(minGain, fadeOutEnd);
+
+          src.connect(filter);
+          filter.connect(gain);
+          gain.connect(ctx.destination);
+
+          src.start(t0, 0, dur);
+          src.stop(fadeOutEnd + 0.02);
+
+          currentGainNode = gain;
+          const entry = { src, filter, gain, timerId: null };
+          activeSources.push(entry);
+
+          src.onended = () => {
+            activeSources = activeSources.filter((item) => item !== entry);
+            try {
+              src.disconnect();
+              filter.disconnect();
+              gain.disconnect();
+            } catch {}
+          };
+
+          // 끝나기 xfadeSec 전에 미리 다음 루프(첫 부분) 시작
+          const nextStartAt = fadeOutStart;
+          const delayMs = Math.max(10, (nextStartAt - ctx.currentTime) * 1000);
+          loopTimerId = setTimeout(() => {
+            if (stopped || seq !== launchSeq || !__waitScreenMounted || window.__PRELOAD_REWIND_ACTIVE) return;
+            spawnSegment(nextStartAt, xfadeSec, false);
+          }, delayMs);
+          entry.timerId = loopTimerId;
+        };
+
+        spawnSegment(ctx.currentTime, xfadeSec, true);
       }).catch(() => {});
     };
 
@@ -204,11 +261,11 @@ function startForwardNostalgicLoop() {
         if (stopped || !__waitScreenMounted || window.__PRELOAD_REWIND_ACTIVE) return;
         try {
           if (!started) tryWhenUnlocked();
-          if (gain) {
+          if (currentGainNode && ctx) {
             const t = ctx.currentTime;
-            gain.gain.cancelScheduledValues(t);
-            gain.gain.setValueAtTime(Math.max(0.0005, gain.gain.value), t);
-            gain.gain.linearRampToValueAtTime(0.16, t + 0.08);
+            currentGainNode.gain.cancelScheduledValues(t);
+            currentGainNode.gain.setValueAtTime(Math.max(0.0005, currentGainNode.gain.value), t);
+            currentGainNode.gain.linearRampToValueAtTime(targetGain, t + 0.08);
           }
         } catch {}
       },
@@ -216,21 +273,28 @@ function startForwardNostalgicLoop() {
         if (stopped) return;
         stopped = true;
         launchSeq += 1;
+        if (loopTimerId) {
+          clearTimeout(loopTimerId);
+          loopTimerId = null;
+        }
         if (__activeForwardLoop === ctl) __activeForwardLoop = null;
         if (window.__allowWaitForwardLoop === tryWhenUnlocked) window.__allowWaitForwardLoop = null;
         if (unlockFn) {
           window.removeEventListener('pointerdown', unlockFn);
           window.removeEventListener('keydown', unlockFn);
         }
-        try {
-          if (ctx && gain) {
-            const t = ctx.currentTime;
-            gain.gain.cancelScheduledValues(t);
-            gain.gain.setValueAtTime(0.0001, t);
-          }
-          try { src?.stop(); } catch {}
-          try { src?.disconnect(); filter?.disconnect(); gain?.disconnect(); } catch {}
-        } catch {}
+        const list = activeSources.splice(0, activeSources.length);
+        for (const item of list) {
+          try {
+            if (ctx && item.gain) {
+              const t = ctx.currentTime;
+              item.gain.gain.cancelScheduledValues(t);
+              item.gain.gain.setValueAtTime(0.0001, t);
+            }
+          } catch {}
+          cleanupNodes(item);
+        }
+        currentGainNode = null;
       }
     };
 
