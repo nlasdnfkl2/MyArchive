@@ -1,10 +1,10 @@
 // ============================================================
 // MY-ARCHIVE 95 OS — BIOS POST & Authentic Windows 95 Logon
-// (Black Screen -> Wait -> Low-Poly 3D CRT Front/Back/Side Turn & Full-Screen Zoom -> BIOS Screen)
+// (Black Screen -> Wait -> Click Sound -> Low-Poly 3D CRT Front/Back/Side Turn & Full-Screen Zoom -> BIOS Screen)
 // ============================================================
 
 window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-window.__MOD_VERSIONS.bootScreen = 'v2026.11.25-lowpoly-3d-full-zoom-bios';
+window.__MOD_VERSIONS.bootScreen = 'v2026.11.25-lowpoly-3d-full-zoom-bios-click';
 
 const SESSION_USER_KEY = 'myarchive95_current_user_v2';
 const USERS_CACHE_KEY = 'myarchive95_users_cache_v2';
@@ -67,6 +67,47 @@ function safeBootTone(type) {
   if (typeof window.playRetroTone === 'function') {
     try { window.playRetroTone(type); } catch {}
   }
+}
+
+// ============================================================
+// 버튼이 눌리는 '딸깍' 사운드
+// ============================================================
+function playButtonClickSound() {
+  if (!isRetroSoundEnabled()) return;
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    const now = ctx.currentTime;
+
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(1950, now);
+    osc.frequency.exponentialRampToValueAtTime(420, now + 0.018);
+
+    gain.gain.setValueAtTime(0.09, now);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.022);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.025);
+
+    const osc2 = ctx.createOscillator();
+    const gain2 = ctx.createGain();
+    osc2.type = 'square';
+    osc2.frequency.setValueAtTime(1250, now + 0.011);
+    osc2.frequency.exponentialRampToValueAtTime(310, now + 0.028);
+
+    gain2.gain.setValueAtTime(0.035, now + 0.011);
+    gain2.gain.exponentialRampToValueAtTime(0.0001, now + 0.03);
+
+    osc2.connect(gain2);
+    gain2.connect(ctx.destination);
+    osc2.start(now + 0.011);
+    osc2.stop(now + 0.032);
+  } catch {}
 }
 
 // ============================================================
@@ -416,15 +457,15 @@ function play3dCrtMonitorAnimation() {
 
     document.body.appendChild(stage);
 
-    const tickTimer = setTimeout(() => {
-      playDriveSeekTick();
+    const clickStartTimer = setTimeout(() => {
+      playButtonClickSound();
     }, 620);
 
     let finished = false;
     const finishIntro = () => {
       if (finished) return;
       finished = true;
-      clearTimeout(tickTimer);
+      clearTimeout(clickStartTimer);
       stage.classList.add('fade-out');
       setTimeout(() => {
         stage.remove();
@@ -433,7 +474,7 @@ function play3dCrtMonitorAnimation() {
     };
 
     stage.addEventListener('click', () => {
-      safeBootTone('click');
+      playButtonClickSound();
       finishIntro();
     });
 
