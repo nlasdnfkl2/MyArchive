@@ -1,10 +1,10 @@
 // ============================================================
 // MY-ARCHIVE 95 OS — BIOS POST & Authentic Windows 95 Logon
-// (Black Screen -> Louder Click -> Full-Screen Static + Subtle Noise + 3D CRT Turn & Slow Zoom -> BIOS -> Retro Chime Splash -> Logon)
+// (Pre-Rotation Static & Subtle Noise -> Click Triggers Loud Click + 3D CRT Turn & Slow Zoom -> BIOS -> Retro Chime Splash -> Logon)
 // ============================================================
 
 window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-window.__MOD_VERSIONS.bootScreen = 'v2026.11.25-post-bios-retro-chime-sound';
+window.__MOD_VERSIONS.bootScreen = 'v2026.11.25-pre-noise-then-click-starts-3d-turn';
 
 const SESSION_USER_KEY = 'myarchive95_current_user_v2';
 const USERS_CACHE_KEY = 'myarchive95_users_cache_v2';
@@ -72,12 +72,25 @@ function safeBootTone(type) {
 // ============================================================
 // 버튼이 눌리는 '딸깍' 사운드 (볼륨 강화) & 전체 화면 노이즈 사운드
 // ============================================================
+let __sharedAudioCtx = null;
+
+function getSharedAudioContext() {
+  const AudioCtx = window.AudioContext || window.webkitAudioContext;
+  if (!AudioCtx) return null;
+  if (!__sharedAudioCtx || __sharedAudioCtx.state === 'closed') {
+    __sharedAudioCtx = new AudioCtx();
+  }
+  if (__sharedAudioCtx.state === 'suspended') {
+    __sharedAudioCtx.resume().catch(() => {});
+  }
+  return __sharedAudioCtx;
+}
+
 function playButtonClickSound() {
   if (!isRetroSoundEnabled()) return;
   try {
-    const AudioCtx = window.AudioContext || window.webkitAudioContext;
-    if (!AudioCtx) return;
-    const ctx = new AudioCtx();
+    const ctx = getSharedAudioContext();
+    if (!ctx) return;
     const now = ctx.currentTime;
 
     const osc = ctx.createOscillator();
@@ -86,36 +99,35 @@ function playButtonClickSound() {
     osc.frequency.setValueAtTime(2200, now);
     osc.frequency.exponentialRampToValueAtTime(380, now + 0.022);
 
-    gain.gain.setValueAtTime(0.24, now);
-    gain.gain.exponentialRampToValueAtTime(0.0005, now + 0.028);
+    gain.gain.setValueAtTime(0.28, now);
+    gain.gain.exponentialRampToValueAtTime(0.0005, now + 0.03);
 
     osc.connect(gain);
     gain.connect(ctx.destination);
     osc.start(now);
-    osc.stop(now + 0.032);
+    osc.stop(now + 0.035);
 
     const osc2 = ctx.createOscillator();
     const gain2 = ctx.createGain();
     osc2.type = 'square';
     osc2.frequency.setValueAtTime(1480, now + 0.012);
-    osc2.frequency.exponentialRampToValueAtTime(280, now + 0.034);
+    osc2.frequency.exponentialRampToValueAtTime(280, now + 0.036);
 
-    gain2.gain.setValueAtTime(0.11, now + 0.012);
-    gain2.gain.exponentialRampToValueAtTime(0.0005, now + 0.038);
+    gain2.gain.setValueAtTime(0.14, now + 0.012);
+    gain2.gain.exponentialRampToValueAtTime(0.0005, now + 0.04);
 
     osc2.connect(gain2);
     gain2.connect(ctx.destination);
     osc2.start(now + 0.012);
-    osc2.stop(now + 0.042);
+    osc2.stop(now + 0.045);
   } catch {}
 }
 
 function startSubtleStaticNoise() {
   if (!isRetroSoundEnabled()) return null;
   try {
-    const AudioCtx = window.AudioContext || window.webkitAudioContext;
-    if (!AudioCtx) return null;
-    const ctx = new AudioCtx();
+    const ctx = getSharedAudioContext();
+    if (!ctx) return null;
     const bufferSize = ctx.sampleRate * 2;
     const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
     const data = buffer.getChannelData(0);
@@ -140,7 +152,7 @@ function startSubtleStaticNoise() {
     const gain = ctx.createGain();
     const now = ctx.currentTime;
     gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.linearRampToValueAtTime(0.018, now + 0.18);
+    gain.gain.linearRampToValueAtTime(0.022, now + 0.16);
 
     noise.connect(bandpass);
     bandpass.connect(gain);
@@ -148,6 +160,15 @@ function startSubtleStaticNoise() {
     noise.start(now);
 
     return {
+      resume: () => {
+        try {
+          if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+          const t = ctx.currentTime;
+          gain.gain.cancelScheduledValues(t);
+          gain.gain.setValueAtTime(Math.max(0.0005, gain.gain.value), t);
+          gain.gain.linearRampToValueAtTime(0.022, t + 0.08);
+        } catch {}
+      },
       stop: () => {
         try {
           const t = ctx.currentTime;
@@ -157,7 +178,6 @@ function startSubtleStaticNoise() {
           setTimeout(() => {
             try {
               noise.stop();
-              ctx.close();
             } catch {}
           }, 160);
         } catch {}
@@ -182,7 +202,7 @@ function ensureFullScreenStaticStyles() {
       z-index: 1000010;
       pointer-events: none;
       overflow: hidden;
-      opacity: 0.88;
+      opacity: 0.9;
       mix-blend-mode: screen;
       transition: opacity 0.25s ease;
     }
@@ -497,7 +517,7 @@ function play3dCrtMonitorAnimation() {
 
     const stage = document.createElement('div');
     stage.id = 'retro-3d-crt-stage';
-    stage.title = '클릭하면 즉시 BIOS 화면으로 이동합니다';
+    stage.title = '클릭하면 딸깍 소리와 함께 모니터 회전 애니메이션이 시작됩니다';
     stage.style.cssText = `
       position: fixed;
       inset: 0;
@@ -512,9 +532,12 @@ function play3dCrtMonitorAnimation() {
     let finished = false;
     let rafId = 0;
     let renderer = null;
-    let clickSoundFired = false;
-    let stopStaticVisual = null;
-    let stopNoiseAudio = null;
+    let rotationStarted = false;
+    let turnStartTime = 0;
+
+    // 회전 전 단계에서 노이즈 시각 & 사운드를 먼저 재생
+    let stopStaticVisual = startFullScreenStaticEffect();
+    let stopNoiseAudio = startSubtleStaticNoise();
 
     const cleanup = () => {
       if (stopStaticVisual) {
@@ -537,7 +560,6 @@ function play3dCrtMonitorAnimation() {
     const finishIntro = () => {
       if (finished) return;
       finished = true;
-      clearTimeout(fallbackTimer);
       stage.style.opacity = '0';
       stage.style.pointerEvents = 'none';
       setTimeout(() => {
@@ -547,17 +569,23 @@ function play3dCrtMonitorAnimation() {
       }, 240);
     };
 
-    stage.addEventListener('click', () => {
-      if (!clickSoundFired) playButtonClickSound();
-      finishIntro();
-    });
-
-    const preClickWaitMs = 550;
     const turnDurationMs = 2650;
     const zoomDurationMs = 2750;
-    const totalDurationMs = preClickWaitMs + turnDurationMs + zoomDurationMs;
 
-    const fallbackTimer = setTimeout(finishIntro, totalDurationMs + 300);
+    const triggerRotationFromClick = now => {
+      if (rotationStarted) {
+        finishIntro();
+        return;
+      }
+      rotationStarted = true;
+      turnStartTime = now || performance.now();
+      if (stopNoiseAudio?.resume) stopNoiseAudio.resume();
+      playButtonClickSound();
+    };
+
+    stage.addEventListener('click', () => {
+      triggerRotationFromClick(performance.now());
+    });
 
     loadThreeJsLibrary()
       .then(THREE => {
@@ -606,26 +634,20 @@ function play3dCrtMonitorAnimation() {
         };
         window.addEventListener('resize', onResize);
 
-        const startTime = performance.now();
         const animateFrame = now => {
           if (finished) {
             window.removeEventListener('resize', onResize);
             return;
           }
-          const elapsed = now - startTime;
 
-          if (elapsed < preClickWaitMs) {
+          if (!rotationStarted) {
+            // 클릭 전: 노이즈만 재생 중이며 모니터 회전 애니메이션은 대기
             crtModel.visible = false;
           } else {
-            if (!clickSoundFired) {
-              clickSoundFired = true;
-              playButtonClickSound();
-              stopStaticVisual = startFullScreenStaticEffect();
-              stopNoiseAudio = startSubtleStaticNoise();
-            }
-
+            // 클릭 직후: '딸깍' 소리와 함께 회전 및 천천히 확대 애니메이션 진행
             crtModel.visible = true;
-            const turnRaw = Math.min(1, Math.max(0, (elapsed - preClickWaitMs) / turnDurationMs));
+            const elapsedTurn = Math.max(0, now - turnStartTime);
+            const turnRaw = Math.min(1, elapsedTurn / turnDurationMs);
             const tEase = easeInOutCubic(turnRaw);
 
             crtModel.rotation.y = 0.78 * (1 - tEase);
@@ -634,9 +656,9 @@ function play3dCrtMonitorAnimation() {
             crtModel.position.y = -0.05 * (1 - tEase);
             crtModel.position.z = -0.8 * (1 - tEase);
 
-            if (elapsed > preClickWaitMs + turnDurationMs * 0.74) {
-              const zoomStart = preClickWaitMs + turnDurationMs * 0.74;
-              const zoomRaw = Math.min(1, Math.max(0, (elapsed - zoomStart) / zoomDurationMs));
+            if (elapsedTurn > turnDurationMs * 0.74) {
+              const zoomStart = turnDurationMs * 0.74;
+              const zoomRaw = Math.min(1, Math.max(0, (elapsedTurn - zoomStart) / zoomDurationMs));
               const zEase = easeInOutQuart(zoomRaw);
 
               camera.position.x = 0.35 * (1 - tEase);
@@ -1368,9 +1390,8 @@ window.openAccountSettingsModal = openAccountSettingsModal;
 function playBiosPostBeep(freq = 880, dur = 0.14) {
   if (!isRetroSoundEnabled()) return;
   try {
-    const AudioCtx = window.AudioContext || window.webkitAudioContext;
-    if (!AudioCtx) return;
-    const ctx = new AudioCtx();
+    const ctx = getSharedAudioContext();
+    if (!ctx) return;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.type = 'square';
@@ -1387,9 +1408,8 @@ function playBiosPostBeep(freq = 880, dur = 0.14) {
 function playDriveSeekTick() {
   if (!isRetroSoundEnabled()) return;
   try {
-    const AudioCtx = window.AudioContext || window.webkitAudioContext;
-    if (!AudioCtx) return;
-    const ctx = new AudioCtx();
+    const ctx = getSharedAudioContext();
+    if (!ctx) return;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.type = 'square';
@@ -1410,15 +1430,10 @@ function playWin95StartupSound(forceOnce = true) {
   bootState.startupSoundPlayed = true;
 
   try {
-    const AudioCtx = window.AudioContext || window.webkitAudioContext;
-    if (!AudioCtx) return;
-    const ctx = new AudioCtx();
-    if (ctx.state === 'suspended') {
-      ctx.resume().catch(() => {});
-    }
+    const ctx = getSharedAudioContext();
+    if (!ctx) return;
     const now = ctx.currentTime;
 
-    // 마스터 볼륨 및 리버브 공간감을 흉내 내기 위한 딜레이 노드 설정
     const masterGain = ctx.createGain();
     const delay = ctx.createDelay();
     const delayGain = ctx.createGain();
@@ -1434,7 +1449,6 @@ function playWin95StartupSound(forceOnce = true) {
     masterGain.gain.setValueAtTime(0.6, now);
     masterGain.gain.exponentialRampToValueAtTime(0.001, now + 4.5);
 
-    // 1. 배경 패드(Pad) 사운드: 낮고 몽환적인 화음 (C3 - G3 - C4)
     const frequencies = [130.81, 196.00, 261.63];
     frequencies.forEach((freq, index) => {
       const osc = ctx.createOscillator();
@@ -1453,7 +1467,6 @@ function playWin95StartupSound(forceOnce = true) {
       osc.stop(now + 4.5);
     });
 
-    // 2. 반짝이는 차임(Chime) 사운드: E5 - G5 - D5 - C5 순차 재생
     const chimeNotes = [659.25, 783.99, 587.33, 523.25];
     const startTimeOffsets = [0.4, 0.6, 0.9, 1.2];
 
