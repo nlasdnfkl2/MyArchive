@@ -1354,3 +1354,156 @@ body.audio-reactive-on .floating-win.focused {
     position: absolute;
   }
 }
+/* ============================================================
+   [MODULE UI] COMMUNITY95.EXE & GAMEPACK95.EXE 전용 스타일
+   ============================================================ */
+
+/* 1. 전체 공개 자료실 광장 (community-app.js) */
+.sns-avatar-box {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--brutal-yellow);
+  border: 2px solid var(--brutal-ink);
+  flex-shrink: 0;
+}
+
+.sns-post-card {
+  padding: 12px 14px;
+  background: #ffffff;
+  border: 2.5px solid var(--brutal-ink);
+  box-shadow: 4px 4px 0 var(--brutal-ink);
+}
+
+.sns-post-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-bottom: 8px;
+  margin-bottom: 10px;
+  border-bottom: 2px dashed #cccccc;
+}
+
+.sns-role-tag {
+  display: inline-block;
+  padding: 1px 6px;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 900;
+  border: 1.5px solid var(--brutal-ink);
+}
+
+.sns-role-tag.pub {
+  background: var(--brutal-green);
+  color: var(--brutal-ink);
+}
+
+.sns-role-tag.priv {
+  background: var(--brutal-sky);
+  color: var(--brutal-ink);
+}
+
+.sns-post-body {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.sns-post-cover {
+  width: 92px;
+  height: 128px;
+  object-fit: cover;
+  background: #eeeeee;
+  border: 2px solid var(--brutal-ink);
+  box-shadow: 2px 2px 0 var(--brutal-ink);
+  flex-shrink: 0;
+}
+
+.sns-post-review {
+  font-size: 0.83rem;
+  line-height: 1.55;
+  color: #222222;
+  white-space: pre-wrap;
+  word-break: keep-all;
+}
+
+.sns-post-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1.5px solid #e0e0e0;
+}
+
+.sns-cmt-drawer {
+  margin-top: 8px;
+  padding: 10px;
+  background: var(--brutal-paper);
+  border: 2px solid var(--brutal-ink);
+}
+
+/* 2. 오락실 아카이브 12장 카드 짝맞추기 (gamepack.js) */
+.flip-card-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  padding: 4px 0;
+}
+
+.flip-card {
+  height: 68px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  text-align: center;
+  background: var(--win-navy);
+  color: var(--brutal-yellow);
+  border: 2.5px solid var(--brutal-ink);
+  box-shadow: 3px 3px 0 var(--brutal-ink);
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  font-weight: 900;
+  word-break: keep-all;
+  cursor: pointer;
+  transition: transform 0.08s ease;
+}
+
+.flip-card:hover {
+  transform: translate(-1px, -1px);
+}
+
+.flip-card.flipped {
+  background: #ffffff;
+  color: var(--brutal-ink);
+  font-family: var(--font-sans);
+}
+
+.flip-card.matched {
+  background: var(--brutal-green);
+  color: var(--brutal-ink);
+  cursor: default;
+}
+
+/* 3. 주크박스 재생목록 호버 효과 (jukebox.js) */
+.jb-track-row:hover {
+  outline: 2px solid var(--brutal-yellow);
+}
+
+@media (max-width: 600px) {
+  .sns-post-body {
+    flex-direction: column;
+  }
+  .sns-post-cover {
+    width: 100%;
+    height: 160px;
+  }
+  .flip-card-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
