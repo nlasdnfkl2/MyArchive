@@ -4,7 +4,7 @@
 // ============================================================
 
 window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-window.__MOD_VERSIONS.windowMgr = typeof APP_BUILD_VERSION !== 'undefined' ? APP_BUILD_VERSION : 'v2026.11.25-07';
+window.__MOD_VERSIONS.windowMgr = typeof APP_BUILD_VERSION !== 'undefined' ? APP_BUILD_VERSION : 'v2026.11.25-08';
 
 const ALL_DESKTOP_THEMES = [
   'theme-teal',
@@ -205,6 +205,22 @@ function injectDesktopWidgetIcons() {
       }
     },
     {
+      id: 'icon-mood-music',
+      label: 'Mood Music AI',
+      svg: `
+        <svg width="32" height="32" viewBox="0 0 32 32" shape-rendering="crispEdges" aria-hidden="true">
+          <rect x="4" y="5" width="24" height="22" fill="#ffd83b" stroke="#111111" stroke-width="2"/>
+          <circle cx="11" cy="13" r="2" fill="#111111"/>
+          <circle cx="21" cy="13" r="2" fill="#111111"/>
+          <path d="M10 19q6 5 12 0" fill="none" stroke="#111111" stroke-width="2"/>
+          <path d="M23 3h6v8h-2V5h-2v6a2 2 0 1 1-2-2V3z" fill="#ff2e55"/>
+        </svg>`,
+      onOpen: () => {
+        if (window.Win95Widgets?.openMoodMusic) window.Win95Widgets.openMoodMusic();
+        else openWindow('win-mood');
+      }
+    },
+    {
       id: 'icon-clock',
       label: 'Clock 95',
       svg: `
@@ -373,10 +389,16 @@ document.addEventListener('DOMContentLoaded', () => {
   bindLauncher(['icon-visualizer', 'mnu-open-visualizer'], 'win-visualizer');
   bindLauncher(['icon-gamepack', 'mnu-open-gamepack'], 'win-gamepack');
 
-  // 위젯 런처 바인딩 (CD Player, Clock 95 + 작업표시줄 시계 클릭 연동)
+  // 위젯 런처 바인딩 (CD Player, Mood Music AI, Clock 95 + 작업표시줄 시계 클릭 연동)
   ['mnu-open-cdplayer', 'sm-cdplayer'].forEach(sel => {
     document.getElementById(sel)?.addEventListener('click', () => {
       window.Win95Widgets?.openCdPlayer?.();
+    });
+  });
+
+  ['mnu-open-mood-music', 'sm-mood-music'].forEach(sel => {
+    document.getElementById(sel)?.addEventListener('click', () => {
+      window.Win95Widgets?.openMoodMusic?.();
     });
   });
 
