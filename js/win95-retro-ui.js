@@ -12,6 +12,121 @@
   let activeSelectEl = null;
   let highlightedIndex = -1;
 
+  function injectWin95ComboStyles() {
+    if (document.getElementById('w95-retro-ui-styles')) return;
+    const style = document.createElement('style');
+    style.id = 'w95-retro-ui-styles';
+    style.textContent = `
+      .w95-native-select-hidden {
+        display: none !important;
+      }
+      .w95-combo {
+        position: relative;
+        display: inline-flex;
+        align-items: stretch;
+        min-width: 0;
+        vertical-align: middle;
+        box-sizing: border-box;
+      }
+      .w95-combo-btn {
+        width: 100%;
+        min-height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 6px;
+        padding: 2px 3px 2px 7px;
+        background: #ffffff;
+        color: #000000;
+        border-top: 2px solid #808080;
+        border-left: 2px solid #808080;
+        border-right: 2px solid #ffffff;
+        border-bottom: 2px solid #ffffff;
+        box-shadow: inset 1px 1px 0 #000000, inset -1px -1px 0 #dfdfdf;
+        font-family: 'Galmuri11', 'DungGeunMo', sans-serif;
+        font-size: 0.78rem;
+        font-weight: 700;
+        text-align: left;
+        cursor: pointer;
+        box-sizing: border-box;
+      }
+      .w95-combo-btn:focus {
+        outline: none;
+      }
+      .w95-combo-btn:focus .w95-combo-label {
+        background: #000080;
+        color: #ffffff;
+      }
+      .w95-combo-btn:disabled {
+        background: #c0c0c0;
+        color: #666666;
+        cursor: not-allowed;
+      }
+      .w95-combo-label {
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        padding: 1px 3px;
+      }
+      .w95-combo-arrow {
+        flex-shrink: 0;
+        width: 17px;
+        height: 18px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: #c0c0c0;
+        border-top: 1px solid #ffffff;
+        border-left: 1px solid #ffffff;
+        border-right: 1px solid #404040;
+        border-bottom: 1px solid #404040;
+        box-shadow: inset -1px -1px 0 #808080;
+      }
+      .w95-combo-btn.open .w95-combo-arrow {
+        border-top: 1px solid #404040;
+        border-left: 1px solid #404040;
+        border-right: 1px solid #ffffff;
+        border-bottom: 1px solid #ffffff;
+        box-shadow: none;
+        padding-top: 1px;
+        padding-left: 1px;
+      }
+      .w95-combo-popup {
+        position: fixed;
+        z-index: 1000000;
+        max-height: 220px;
+        overflow-y: auto;
+        background: #ffffff;
+        color: #000000;
+        border: 1px solid #000000;
+        box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.45);
+        font-family: 'Galmuri11', 'DungGeunMo', sans-serif;
+        font-size: 0.78rem;
+        font-weight: 700;
+        box-sizing: border-box;
+      }
+      .w95-combo-option {
+        padding: 4px 8px;
+        cursor: pointer;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .w95-combo-option.highlighted,
+      .w95-combo-option.selected {
+        background: #000080;
+        color: #ffffff;
+      }
+      .w95-combo-option.disabled {
+        color: #808080;
+        cursor: not-allowed;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
   function playWin95Click() {
     if (typeof window.playRetroTone === 'function') {
       try { window.playRetroTone('click'); } catch {}
@@ -25,14 +140,13 @@
     selectEl.style.backgroundColor = '#040826';
     selectEl.style.color = '#00ff88';
     selectEl.style.border = '1px solid #55aaff';
-    selectEl.style.padding = '3px 8px';
+    selectEl.style.padding = '4px 8px';
     selectEl.style.fontFamily = "'Galmuri11', 'DungGeunMo', monospace";
-    selectEl.style.fontSize = '0.82rem';
+    selectEl.style.fontSize = '0.84rem';
     selectEl.style.fontWeight = '700';
     selectEl.style.cursor = 'pointer';
   }
 
-  // 1. HTMLSelectElement.prototype.value / selectedIndex 변경 자동 동기화 훅
   function installSelectHooks() {
     const valDesc = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value');
     if (valDesc && valDesc.set && valDesc.get && !valDesc.set.__w95Hooked) {
@@ -65,7 +179,6 @@
     }
   }
 
-  // 2. 열려 있는 Win95 드롭다운 팝업 닫기
   function closeComboPopup() {
     if (activePopupEl) {
       activePopupEl.remove();
@@ -80,7 +193,6 @@
     highlightedIndex = -1;
   }
 
-  // 3. 정통 Windows 95 드롭다운 목록 팝업 열기
   function openComboPopup(selectEl, triggerBtn) {
     if (activeSelectEl === selectEl) {
       closeComboPopup();
@@ -161,16 +273,21 @@
     }
   }
 
-  // 4. 개별 <select> 요소를 Win95 콤보박스로 업그레이드
   function enhanceSelect(selectEl) {
     if (!selectEl || selectEl.dataset.w95Enhanced === 'true') return;
     if (selectEl.multiple || Number(selectEl.size) > 1) return;
 
-    // BIOS 초기 설정 화면 내부의 <select>는 커스텀 Win95 콤보박스로 덮지 않음
     if (selectEl.closest('#bios-text-setup-overlay')) {
       styleBiosSelect(selectEl);
       return;
     }
+
+    injectWin95ComboStyles();
+
+    // 원본 <select>의 레이아웃 속성(flex, width)을 wrapper에 계승
+    const computed = window.getComputedStyle(selectEl);
+    const parentComputed = selectEl.parentElement ? window.getComputedStyle(selectEl.parentElement) : null;
+    const isParentFlex = parentComputed && (parentComputed.display === 'flex' || parentComputed.display === 'inline-flex');
 
     selectEl.dataset.w95Enhanced = 'true';
     selectEl.classList.add('w95-native-select-hidden');
@@ -178,8 +295,14 @@
 
     const wrapper = document.createElement('div');
     wrapper.className = 'w95-combo';
-    if (selectEl.classList.contains('win95-logon-select')) {
+    if (selectEl.classList.contains('win95-logon-select') || selectEl.id === 'login-account-select') {
       wrapper.classList.add('w95-combo-logon');
+      wrapper.style.flex = '1 1 auto';
+      wrapper.style.width = '100%';
+    } else if (selectEl.style.width === '100%' || computed.width === '100%') {
+      wrapper.style.width = '100%';
+    } else if (isParentFlex && (selectEl.style.flex || computed.flexGrow !== '0')) {
+      wrapper.style.flex = selectEl.style.flex || '1 1 auto';
     }
 
     const trigger = document.createElement('button');
@@ -267,7 +390,6 @@
     root.querySelectorAll('select').forEach(enhanceSelect);
   }
 
-  // 5. 정통 Windows 95 팝업 / 확인 / 입력 대화상자 API
   const WIN95_DIALOG_ICONS = {
     info: `<svg width="32" height="32" viewBox="0 0 16 16" shape-rendering="crispEdges"><rect x="4" y="1" width="8" height="14" fill="#000"/><rect x="2" y="3" width="12" height="10" fill="#000"/><rect x="4" y="2" width="8" height="12" fill="#fff"/><rect x="3" y="4" width="10" height="8" fill="#fff"/><rect x="7" y="4" width="2" height="2" fill="#000080"/><rect x="7" y="7" width="2" height="5" fill="#000080"/></svg>`,
     warn: `<svg width="32" height="32" viewBox="0 0 16 16" shape-rendering="crispEdges"><path fill="#000" d="M7 1h2v2h1v2h1v2h1v2h1v2h1v3H2v-3h1V9h1V7h1V5h1V3h1V1z"/><path fill="#ffff00" d="M7 3h2v2h1v2h1v2h1v2h1v2H3v-2h1V9h1V7h1V5h1V3z"/><rect x="7" y="5" width="2" height="5" fill="#000"/><rect x="7" y="11" width="2" height="2" fill="#000"/></svg>`,
@@ -406,6 +528,7 @@
   installSelectHooks();
 
   const init = () => {
+    injectWin95ComboStyles();
     scanAllSelects(document);
     const domObserver = new MutationObserver(mutations => {
       for (const m of mutations) {
