@@ -1,10 +1,10 @@
 // ============================================================
 // MY-ARCHIVE 95 OS — Pure Window Manager & Desktop Shell UI
-// (Multi-Window Focus/Drag, 6-Theme Engine, CRT & Task Manager)
+// (Multi-Window Focus/Drag, 6-Theme Engine, CRT, Widgets & Task Manager)
 // ============================================================
 
 window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-window.__MOD_VERSIONS.windowMgr = typeof APP_BUILD_VERSION !== 'undefined' ? APP_BUILD_VERSION : 'v2026.11.22-06';
+window.__MOD_VERSIONS.windowMgr = typeof APP_BUILD_VERSION !== 'undefined' ? APP_BUILD_VERSION : 'v2026.11.25-07';
 
 const ALL_DESKTOP_THEMES = [
   'theme-teal',
@@ -172,7 +172,74 @@ document.addEventListener('click', e => {
 });
 
 // ============================================================
-// 3. 바탕화면 테마, CRT 효과, 시스템 시계, BSOD 및 창 런처 바인딩
+// 3. 바탕화면 위젯 아이콘 자동 생성 & 런처 연결
+// ============================================================
+function injectDesktopWidgetIcons() {
+  // 기존 바탕화면 아이콘 컨테이너 탐색 (기존 아이콘의 부모 요소 기준)
+  const sampleIcon =
+    document.getElementById('icon-jukebox') ||
+    document.getElementById('icon-main') ||
+    document.getElementById('icon-calendar');
+  const iconContainer = sampleIcon ? sampleIcon.parentElement : document.querySelector('.desktop-icons, .icon-grid');
+
+  if (!iconContainer) return;
+
+  const sampleTag = sampleIcon ? sampleIcon.tagName.toLowerCase() : 'button';
+  const sampleClass = sampleIcon ? sampleIcon.className : 'desktop-icon';
+
+  const widgetDefs = [
+    {
+      id: 'icon-cdplayer',
+      label: 'CD Player',
+      svg: `
+        <svg width="32" height="32" viewBox="0 0 32 32" shape-rendering="crispEdges" aria-hidden="true">
+          <circle cx="16" cy="17" r="11" fill="#e4e4e4" stroke="#111111" stroke-width="2"/>
+          <polygon points="16,17 9,10 14,7" fill="#48dbfb"/>
+          <polygon points="16,17 23,24 18,27" fill="#ff9ff3"/>
+          <circle cx="16" cy="17" r="4" fill="#ffffff" stroke="#111111" stroke-width="2"/>
+          <path d="M21 4h6v10h-2V7h-2v8a2.5 2.5 0 1 1-2-2.4V4z" fill="#111111"/>
+        </svg>`,
+      onOpen: () => {
+        if (window.Win95Widgets?.openCdPlayer) window.Win95Widgets.openCdPlayer();
+        else openWindow('win-jukebox');
+      }
+    },
+    {
+      id: 'icon-clock',
+      label: 'Clock 95',
+      svg: `
+        <svg width="32" height="32" viewBox="0 0 32 32" shape-rendering="crispEdges" aria-hidden="true">
+          <rect x="4" y="4" width="24" height="24" fill="#ffd83b" stroke="#111111" stroke-width="2"/>
+          <rect x="7" y="7" width="18" height="18" fill="#ffffff" stroke="#111111" stroke-width="1.5"/>
+          <rect x="15" y="9" width="2" height="8" fill="#111111"/>
+          <rect x="15" y="15" width="7" height="2" fill="#d63031"/>
+        </svg>`,
+      onOpen: () => {
+        if (window.Win95Widgets?.openClock) window.Win95Widgets.openClock();
+      }
+    }
+  ];
+
+  widgetDefs.forEach(def => {
+    if (document.getElementById(def.id)) return;
+    const el = document.createElement(sampleTag);
+    if (sampleTag === 'button') el.type = 'button';
+    el.id = def.id;
+    el.className = sampleClass;
+    el.innerHTML = `
+      <span class="desktop-icon-art">${def.svg}</span>
+      <span class="desktop-icon-label">${def.label}</span>
+    `;
+    el.addEventListener('click', () => {
+      if (typeof playRetroTone === 'function') playRetroTone('open');
+      def.onOpen();
+    });
+    iconContainer.appendChild(el);
+  });
+}
+
+// ============================================================
+// 4. 바탕화면 테마, CRT 효과, 시스템 시계, BSOD 및 창 런처 바인딩
 // ============================================================
 function applyTheme(themeName, persist = true) {
   const safeTheme = String(themeName || 'teal').trim() || 'teal';
@@ -244,6 +311,7 @@ function triggerBsodEasterEgg() {
 
 document.addEventListener('DOMContentLoaded', () => {
   applyDesktopPreferences();
+  injectDesktopWidgetIcons();
   document.querySelectorAll('.floating-win').forEach(enableWindowDrag);
   syncTaskbar();
   updateTaskbarClock();
@@ -304,10 +372,29 @@ document.addEventListener('DOMContentLoaded', () => {
   bindLauncher(['icon-jukebox', 'mnu-open-jukebox', 'tray-jukebox-mini'], 'win-jukebox');
   bindLauncher(['icon-visualizer', 'mnu-open-visualizer'], 'win-visualizer');
   bindLauncher(['icon-gamepack', 'mnu-open-gamepack'], 'win-gamepack');
+
+  // 위젯 런처 바인딩 (CD Player, Clock 95 + 작업표시줄 시계 클릭 연동)
+  ['mnu-open-cdplayer', 'sm-cdplayer'].forEach(sel => {
+    document.getElementById(sel)?.addEventListener('click', () => {
+      window.Win95Widgets?.openCdPlayer?.();
+    });
+  });
+
+  ['mnu-open-clock', 'sm-clock', 'taskbar-clock'].forEach(sel => {
+    const el = document.getElementById(sel);
+    if (!el) return;
+    if (sel === 'taskbar-clock') {
+      el.style.cursor = 'pointer';
+      el.title = '클릭하여 Clock 95 위젯 열기';
+    }
+    el.addEventListener('click', () => {
+      window.Win95Widgets?.openClock?.();
+    });
+  });
 });
 
 // ============================================================
-// 4. Windows 95 작업 관리자 (Ctrl+Alt+Delete) & 화면 보호기
+// 5. Windows 95 작업 관리자 (Ctrl+Alt+Delete) & 화면 보호기
 // ============================================================
 function openTaskManager() {
   openWindow('win-taskmgr');
