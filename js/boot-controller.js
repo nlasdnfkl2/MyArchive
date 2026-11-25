@@ -1,16 +1,18 @@
 // ============================================================
 // MY-ARCHIVE 95 OS — Boot Lifecycle Controller (Stage Flow)
-// Flow: Wait(Text+Noise) -> [Click/Key] -> 3D Anim -> BIOS
+// Flow: Preloader(2s+) -> TV Off -> Wait(Text+Noise)
+//       -> [Click/Key] -> 3D Anim -> BIOS
 //       -> [Click/Key] -> Loading Splash -> Logon
 // ============================================================
 
 (function () {
   window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-  window.__MOD_VERSIONS.bootController = 'v2026.11.25-stage-flow';
+  window.__MOD_VERSIONS.bootController = 'v2026.11.25-stage-flow-preloader';
 
   window.__ARCHIVE_LOGGED_IN = false;
   window.__ARCHIVE_GATE_DISMISSED = false;
   let __waitBootStarted = false;
+  let __firstScreenMounted = false;
 
   function setPreLoginLock(locked) {
     if (!document.body) return;
@@ -63,6 +65,19 @@
 
   window.__enterBootAfterStartClick = enterBootAfterStartClick;
 
+  function mountWaitScreenAfterPreload() {
+    if (__firstScreenMounted || window.__ARCHIVE_LOGGED_IN || __waitBootStarted) return;
+    __firstScreenMounted = true;
+
+    if (typeof window.mountPreClickStartScreen === 'function') {
+      window.mountPreClickStartScreen(enterBootAfterStartClick);
+    } else {
+      enterBootAfterStartClick();
+    }
+  }
+
+  window.__onBrutalPreloadReady = mountWaitScreenAfterPreload;
+
   function hookBootLifecycle() {
     // boot-animation.js / boot-login.js의 부팅 시퀀스 훅
     if (typeof window.startBiosBootSequence === 'function' && !window.__origStartBiosBootSequence) {
@@ -74,6 +89,7 @@
         }
         // 아직 첫 대기 화면(글자+노이즈)이 닫히지 않았다면 대기 화면부터 먼저 표시
         if (!window.__ARCHIVE_GATE_DISMISSED && typeof window.mountPreClickStartScreen === 'function') {
+          __firstScreenMounted = true;
           window.mountPreClickStartScreen(enterBootAfterStartClick);
           return;
         }
@@ -115,7 +131,6 @@
         // DEL 키는 CMOS 이스터에그용이므로 스킵에서 제외
         if (key === 'DELETE' || key === 'DEL') return;
       }
-      // boot-animation.js 내부의 스킵 함수가 있으면 우선 호출
       if (typeof window.skipBiosPostToSplash === 'function') {
         window.skipBiosPostToSplash();
       }
@@ -220,12 +235,9 @@
     bindShellActions();
     bindBiosAdvanceFallback();
 
-    // 1단계: 첫 글자+노이즈 화면을 먼저 띄우고, 클릭 또는 아무 키 입력 시 enterBootAfterStartClick 호출
-    if (typeof window.mountPreClickStartScreen === 'function') {
-      window.mountPreClickStartScreen(enterBootAfterStartClick);
-    } else {
-      // boot-wait.js가 없는 예외 상황에만 바로 다음 단계로 진입
-      enterBootAfterStartClick();
+    // 프리로더가 이미 끝난 상태면 즉시 첫 화면 마운트, 아니면 __onBrutalPreloadReady 대기
+    if (window.__BRUTAL_PRELOAD_DONE || !document.getElementById('brutal-js-preloader')) {
+      mountWaitScreenAfterPreload();
     }
   });
 
