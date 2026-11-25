@@ -173,7 +173,8 @@ function startForwardNostalgicLoop() {
         if (!buf || !buf.duration || buf.duration <= 0.1) return;
 
         const dur = buf.duration;
-        const xfadeSec = Math.min(0.06, dur * 0.03);
+        // 끝부분에 최대한 가까이 가서 다음 루프를 시작하도록 크로스페이드 구간을 짧게 유지
+        const xfadeSec = Math.min(0.12, Math.max(0.04, dur * 0.04));
         const stepSec = Math.max(0.15, dur - xfadeSec);
 
         const spawnSegment = (startAt, fadeInSec, isFirst) => {
@@ -582,16 +583,15 @@ function mountPreClickStartScreen(onStartBoot) {
 
     hitLayer.style.pointerEvents = 'none';
     playButtonClickSound({ gapSec: 0.065, volume: 1.05 });
-    // 클릭 즉시 순재생 루프 정지(바이오스 화면 진입 시 잔여음 방지)
-    forwardLoop?.stop?.();
-    stopPreClickWaitAudio();
+    // 클릭 직후가 아니라 부팅 애니메이션 시작 시점까지 순재생 루프 유지
     stopRays(); stopTitle(); stopStatic();
     blur3d.focusAndClear();
 
     setTimeout(() => {
-      stopPreClickWaitAudio();
       blur3d.stop(); hitLayer.remove();
       if (typeof onStartBoot === 'function') onStartBoot();
+      forwardLoop?.stop?.();
+      stopPreClickWaitAudio();
     }, 360);
   };
 
