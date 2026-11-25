@@ -3,7 +3,7 @@
 // ============================================================
 
 window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-window.__MOD_VERSIONS.bootLogin = 'v2026.11.25-split-gate';
+window.__MOD_VERSIONS.bootLogin = 'v2026.11.25-setup-after-anim-before-bios';
 
 const SESSION_USER_KEY = 'myarchive95_current_user_v2';
 const USERS_CACHE_KEY = 'myarchive95_users_cache_v2';
@@ -838,10 +838,20 @@ async function startBiosBootSequence(options = {}) {
     if (seqId !== bootState.bootSeqId) return;
   }
 
-  setBootStage('bios');
-  if (typeof window.runBiosPostSequenceOnly === 'function') {
-    window.runBiosPostSequenceOnly(seqId, bootState, setBootStage);
+  const launchBiosStageNow = () => {
+    if (seqId !== bootState.bootSeqId) return;
+    setBootStage('bios');
+    if (typeof window.runBiosPostSequenceOnly === 'function') {
+      window.runBiosPostSequenceOnly(seqId, bootState, setBootStage);
+    }
+  };
+
+  if (typeof window.__runBeforeBiosAfterAnimation === 'function') {
+    window.__runBeforeBiosAfterAnimation(launchBiosStageNow);
+    return;
   }
+
+  launchBiosStageNow();
 }
 
 function finishDesktopLogin(userObj) {
@@ -1201,11 +1211,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const startAfterGate = () => {
     window.__ARCHIVE_GATE_DISMISSED = true;
-    if (typeof window.openInitialSetupScreen === 'function') {
-      window.openInitialSetupScreen(false, () => startBiosBootSequence({ alreadyClicked: true }));
-    } else {
-      startBiosBootSequence({ alreadyClicked: true });
-    }
+    startBiosBootSequence({ alreadyClicked: true });
   };
 
   if (typeof window.mountPreClickStartScreen === 'function') {
