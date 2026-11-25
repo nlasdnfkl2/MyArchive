@@ -3,7 +3,7 @@
 // ============================================================
 
 window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-window.__MOD_VERSIONS.bootAnimation = 'v2026.11.25-auto-boot';
+window.__MOD_VERSIONS.bootAnimation = 'v2026.11.25-auto-boot-retro-vga';
 
 const ANIM_SETUP_KEY = 'myarchive95_setup_v1';
 
@@ -282,6 +282,84 @@ function triggerCrtPowerOnFlash(targetEl) {
     ],
     { duration: 820, easing: 'cubic-bezier(0.16, 1, 0.3, 1)' }
   );
+}
+
+// ============================================================
+// 레트로 VGA 해상도(640x480 스케일업) + 도트/CRT 질감 적용
+// ============================================================
+function applyRetroBiosViewportStyle(biosEl) {
+  if (!biosEl) return;
+
+  biosEl.style.position = 'relative';
+  biosEl.style.overflow = 'hidden';
+  biosEl.style.background = '#050608';
+  biosEl.style.imageRendering = 'pixelated';
+  biosEl.style.fontFamily = "'DungGeunMo', 'Galmuri11', 'Fixedsys', 'Courier New', monospace";
+  biosEl.style.webkitFontSmoothing = 'none';
+  biosEl.style.mozOsxFontSmoothing = 'grayscale';
+  biosEl.style.fontSmooth = 'never';
+
+  let inner = biosEl.querySelector('.retro-bios-vga-inner');
+  if (!inner) {
+    inner = document.createElement('div');
+    inner.className = 'retro-bios-vga-inner';
+    while (biosEl.firstChild) {
+      inner.appendChild(biosEl.firstChild);
+    }
+    biosEl.appendChild(inner);
+  }
+
+  const vgaWidth = 640;
+  const vgaHeight = 480;
+  inner.style.width = `${vgaWidth}px`;
+  inner.style.height = `${vgaHeight}px`;
+  inner.style.position = 'absolute';
+  inner.style.top = '50%';
+  inner.style.left = '50%';
+  inner.style.boxSizing = 'border-box';
+  inner.style.padding = '18px 22px';
+  inner.style.fontSize = '15px';
+  inner.style.lineHeight = '1.38';
+  inner.style.letterSpacing = '0.02em';
+  inner.style.textShadow = '1px 0 0 rgba(255, 255, 255, 0.14), 0 0 5px rgba(180, 220, 255, 0.22)';
+
+  const updateScale = () => {
+    const vw = window.innerWidth || vgaWidth;
+    const vh = window.innerHeight || vgaHeight;
+    const scale = Math.min(vw / vgaWidth, vh / vgaHeight);
+    inner.style.transform = `translate(-50%, -50%) scale(${scale.toFixed(4)})`;
+  };
+
+  updateScale();
+  if (!biosEl.__retroResizeBound) {
+    biosEl.__retroResizeBound = true;
+    window.addEventListener('resize', updateScale);
+  }
+
+  if (!biosEl.querySelector('.retro-bios-crt-mask')) {
+    const mask = document.createElement('div');
+    mask.className = 'retro-bios-crt-mask';
+    mask.style.cssText = `
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 20;
+      background:
+        repeating-linear-gradient(
+          to bottom,
+          rgba(0, 0, 0, 0.34) 0px,
+          rgba(0, 0, 0, 0.34) 2px,
+          rgba(255, 255, 255, 0.02) 2px,
+          rgba(255, 255, 255, 0.02) 4px
+        ),
+        radial-gradient(
+          circle at center,
+          rgba(0, 0, 0, 0) 58%,
+          rgba(0, 0, 0, 0.68) 100%
+        );
+    `;
+    biosEl.appendChild(mask);
+  }
 }
 
 // ============================================================
@@ -811,6 +889,7 @@ function playWin95StartupSound(forceOnce = true, bootState = null) {
 
 function runBiosPostSequenceOnly(seqId, bootState, onSetStage) {
   const biosEl = document.getElementById('boot-stage-bios');
+  applyRetroBiosViewportStyle(biosEl);
   triggerCrtPowerOnFlash(biosEl);
 
   const ramEl = document.getElementById('bios-ram-count');
@@ -888,6 +967,7 @@ window.loadInitialSetup = loadInitialSetup;
 window.applyInitialSetupToSystem = applyInitialSetupToSystem;
 window.openInitialSetupScreen = openInitialSetupScreen;
 window.triggerCrtPowerOnFlash = triggerCrtPowerOnFlash;
+window.applyRetroBiosViewportStyle = applyRetroBiosViewportStyle;
 window.play3dCrtMonitorAnimation = play3dCrtMonitorAnimation;
 window.playBiosPostBeep = playBiosPostBeep;
 window.playDriveSeekTick = playDriveSeekTick;
