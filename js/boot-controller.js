@@ -1,14 +1,16 @@
 // ============================================================
-// MY-ARCHIVE 95 OS — Boot Lifecycle Controller & Fallback Wrappers
+// MY-ARCHIVE 95 OS — Boot Lifecycle Controller (Stage Flow)
+// Flow: Wait(Text+Noise) -> [Click/Key] -> 3D Anim -> BIOS
+//       -> [Click/Key] -> Loading Splash -> Logon
 // ============================================================
 
 (function () {
   window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-  window.__MOD_VERSIONS.bootController = 'v2026.11.25-click-gate-controller';
+  window.__MOD_VERSIONS.bootController = 'v2026.11.25-stage-flow';
 
   window.__ARCHIVE_LOGGED_IN = false;
   window.__ARCHIVE_GATE_DISMISSED = false;
-  let __bootTriggeredOnce = false;
+  let __waitBootStarted = false;
 
   function setPreLoginLock(locked) {
     if (!document.body) return;
@@ -21,45 +23,23 @@
     }
   }
 
-  function removeInitialAsciiArt() {
-    const pre = document.getElementById('ascii-art');
-    if (pre) pre.style.display = 'none';
-  }
-
   function dismissPreClickStartScreen() {
     window.__ARCHIVE_GATE_DISMISSED = true;
-    removeInitialAsciiArt();
     const hitLayer = document.getElementById('pre-click-start-hit-layer');
     if (hitLayer) {
       hitLayer.style.pointerEvents = 'none';
       hitLayer.remove();
     }
-  }
-
-  function showFallbackLoginIfNeeded() {
-    const overlay = document.getElementById('os-boot-overlay');
-    const bios = document.getElementById('boot-stage-bios');
-    const splash = document.getElementById('boot-stage-splash');
-    const login = document.getElementById('boot-stage-login');
-
-    if (!overlay) return;
-    overlay.style.display = 'flex';
-
-    const anyStageVisible =
-      (bios && bios.style.display !== 'none') ||
-      (splash && splash.style.display !== 'none') ||
-      (login && login.style.display !== 'none');
-
-    if (!anyStageVisible && login) {
-      login.style.display = 'flex';
+    const waitScreen = document.getElementById('pre-click-start-screen');
+    if (waitScreen) {
+      waitScreen.remove();
     }
   }
 
-  function runBootTarget() {
-    if (!document.getElementById('os-boot-overlay') && typeof window.mountArchiveShell === 'function') {
-      window.mountArchiveShell();
-    }
-
+  // 1단계(글자+노이즈 화면)에서 클릭 또는 아무 키 입력 시 -> 2단계(애니메이션 -> BIOS) 진입
+  function enterBootAfterStartClick() {
+    if (__waitBootStarted || window.__ARCHIVE_LOGGED_IN) return;
+    __waitBootStarted = true;
     dismissPreClickStartScreen();
 
     const overlay = document.getElementById('os-boot-overlay');
@@ -67,36 +47,35 @@
       overlay.style.display = 'flex';
     }
 
-    let result;
     if (typeof window.__runActualBiosSequence === 'function') {
-      result = window.__runActualBiosSequence();
-    } else if (typeof window.__origStartBiosBootSequence === 'function') {
-      result = window.__origStartBiosBootSequence();
-    } else if (typeof window.startBiosBootSequence === 'function') {
-      result = window.startBiosBootSequence();
-    } else if (typeof window.openInitialSetupScreen === 'function') {
-      result = window.openInitialSetupScreen(false);
+      return window.__runActualBiosSequence();
     }
-
-    setTimeout(showFallbackLoginIfNeeded, 150);
-    return result;
-  }
-
-  function enterBootAfterStartClick() {
-    if (__bootTriggeredOnce || window.__ARCHIVE_LOGGED_IN) return;
-    __bootTriggeredOnce = true;
-    runBootTarget();
+    if (typeof window.__origStartBiosBootSequence === 'function') {
+      return window.__origStartBiosBootSequence();
+    }
+    if (typeof window.startBiosBootSequence === 'function') {
+      return window.startBiosBootSequence();
+    }
+    if (typeof window.openInitialSetupScreen === 'function') {
+      return window.openInitialSetupScreen(false);
+    }
   }
 
   window.__enterBootAfterStartClick = enterBootAfterStartClick;
 
   function hookBootLifecycle() {
+    // boot-animation.js / boot-login.js의 부팅 시퀀스 훅
     if (typeof window.startBiosBootSequence === 'function' && !window.__origStartBiosBootSequence) {
       window.__origStartBiosBootSequence = window.startBiosBootSequence;
 
       window.startBiosBootSequence = function () {
         if (!window.__ARCHIVE_LOGGED_IN) {
           setPreLoginLock(true);
+        }
+        // 아직 첫 대기 화면(글자+노이즈)이 닫히지 않았다면 대기 화면부터 먼저 표시
+        if (!window.__ARCHIVE_GATE_DISMISSED && typeof window.mountPreClickStartScreen === 'function') {
+          window.mountPreClickStartScreen(enterBootAfterStartClick);
+          return;
         }
         const overlay = document.getElementById('os-boot-overlay');
         if (overlay) overlay.style.display = 'flex';
@@ -108,13 +87,12 @@
       };
     }
 
+    // 로그온 완료 시 바탕화면 잠금 해제
     if (typeof window.finishDesktopLogin === 'function' && !window.finishDesktopLogin.__archiveHooked) {
       const origFinish = window.finishDesktopLogin;
       const wrappedFinish = function () {
         window.__ARCHIVE_LOGGED_IN = true;
         dismissPreClickStartScreen();
-        const asciiBanner = document.getElementById('ascii-boot-banner');
-        if (asciiBanner) asciiBanner.remove();
         const res = origFinish.apply(this, arguments);
         setPreLoginLock(false);
         return res;
@@ -122,6 +100,29 @@
       wrappedFinish.__archiveHooked = true;
       window.finishDesktopLogin = wrappedFinish;
     }
+  }
+
+  // 보조: BIOS 화면에서 클릭 또는 아무 키(DEL 제외) 입력 시 로딩 스플래시로 넘어가도록 보장
+  function bindBiosAdvanceFallback() {
+    if (window.__biosAdvanceBound) return;
+    window.__biosAdvanceBound = true;
+
+    const handleBiosAdvance = (e) => {
+      const biosStage = document.getElementById('boot-stage-bios');
+      if (!biosStage || biosStage.style.display === 'none') return;
+      if (e.type === 'keydown') {
+        const key = (e.key || '').toUpperCase();
+        // DEL 키는 CMOS 이스터에그용이므로 스킵에서 제외
+        if (key === 'DELETE' || key === 'DEL') return;
+      }
+      // boot-animation.js 내부의 스킵 함수가 있으면 우선 호출
+      if (typeof window.skipBiosPostToSplash === 'function') {
+        window.skipBiosPostToSplash();
+      }
+    };
+
+    window.addEventListener('keydown', handleBiosAdvance, true);
+    window.addEventListener('pointerdown', handleBiosAdvance, true);
   }
 
   if (typeof window.openCommunityBoard !== 'function') {
@@ -210,15 +211,6 @@
     }
   }
 
-  function bindInitialGateTrigger() {
-    const onFirstInput = () => {
-      if (__bootTriggeredOnce || window.__ARCHIVE_LOGGED_IN) return;
-      enterBootAfterStartClick();
-    };
-    window.addEventListener('pointerdown', onFirstInput, { once: true, capture: true });
-    window.addEventListener('keydown', onFirstInput, { once: true, capture: true });
-  }
-
   document.addEventListener('DOMContentLoaded', () => {
     if (!document.getElementById('os-boot-overlay') && typeof window.mountArchiveShell === 'function') {
       window.mountArchiveShell();
@@ -226,12 +218,14 @@
     setPreLoginLock(true);
     hookBootLifecycle();
     bindShellActions();
-    bindInitialGateTrigger();
+    bindBiosAdvanceFallback();
 
+    // 1단계: 첫 글자+노이즈 화면을 먼저 띄우고, 클릭 또는 아무 키 입력 시 enterBootAfterStartClick 호출
     if (typeof window.mountPreClickStartScreen === 'function') {
-      window.mountPreClickStartScreen(() => {
-        enterBootAfterStartClick();
-      });
+      window.mountPreClickStartScreen(enterBootAfterStartClick);
+    } else {
+      // boot-wait.js가 없는 예외 상황에만 바로 다음 단계로 진입
+      enterBootAfterStartClick();
     }
   });
 
