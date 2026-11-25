@@ -4,7 +4,7 @@
 // ============================================================
 
 window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-window.__MOD_VERSIONS.bootScreen = 'v2026.11.25-pre-noise-then-click-starts-3d-turn';
+window.__MOD_VERSIONS.bootScreen = 'v2026.11.25-bios-after-3d-intro';
 
 const SESSION_USER_KEY = 'myarchive95_current_user_v2';
 const USERS_CACHE_KEY = 'myarchive95_users_cache_v2';
@@ -535,7 +535,6 @@ function play3dCrtMonitorAnimation() {
     let rotationStarted = false;
     let turnStartTime = 0;
 
-    // 회전 전 단계에서 노이즈 시각 & 사운드를 먼저 재생
     let stopStaticVisual = startFullScreenStaticEffect();
     let stopNoiseAudio = startSubtleStaticNoise();
 
@@ -641,10 +640,8 @@ function play3dCrtMonitorAnimation() {
           }
 
           if (!rotationStarted) {
-            // 클릭 전: 노이즈만 재생 중이며 모니터 회전 애니메이션은 대기
             crtModel.visible = false;
           } else {
-            // 클릭 직후: '딸깍' 소리와 함께 회전 및 천천히 확대 애니메이션 진행
             crtModel.visible = true;
             const elapsedTurn = Math.max(0, now - turnStartTime);
             const turnRaw = Math.min(1, elapsedTurn / turnDurationMs);
@@ -1140,7 +1137,7 @@ window.currentOsUser = null;
 window.registeredOsUsers = [...DEFAULT_FALLBACK_USERS];
 
 const bootState = {
-  stage: 'bios',
+  stage: 'intro',
   loginTab: 'signin',
   userSearchOpen: false,
   userSearchQuery: '',
@@ -1667,7 +1664,7 @@ function handleLoginAccountSelectChange() {
 }
 
 // ============================================================
-// 부팅 단계 제어 (BIOS -> SPLASH [레트로 부팅음] -> WIN95 LOGON -> DESKTOP)
+// 부팅 단계 제어 (시작 애니메이션 이후 BIOS -> SPLASH -> WIN95 LOGON -> DESKTOP)
 // ============================================================
 function setBootStage(stageName) {
   bootState.stage = stageName;
@@ -1676,7 +1673,9 @@ function setBootStage(stageName) {
   const splashEl = document.getElementById('boot-stage-splash');
   const loginEl = document.getElementById('boot-stage-login');
 
+  const showOverlay = stageName === 'bios' || stageName === 'splash' || stageName === 'login';
   if (overlay) {
+    overlay.style.display = showOverlay ? 'flex' : 'none';
     overlay.style.background = stageName === 'login' ? '#008080' : '#000000';
     overlay.style.alignItems = 'center';
     overlay.style.justifyContent = 'center';
@@ -1852,10 +1851,12 @@ async function startBiosBootSequence(options = {}) {
   const seqId = ++bootState.bootSeqId;
   bootState.biosBeepPlayed = false;
   bootState.startupSoundPlayed = false;
+  bootState.stage = 'intro';
 
+  // 시작 애니메이션 구간 동안 오버레이와 BIOS/SPLASH/LOGIN 화면은 철저히 숨김
   const overlay = document.getElementById('os-boot-overlay');
   if (overlay) {
-    overlay.style.display = 'flex';
+    overlay.style.display = 'none';
     overlay.style.opacity = '1';
     overlay.style.background = '#000000';
     overlay.classList.remove('boot-fade-out');
@@ -1869,12 +1870,14 @@ async function startBiosBootSequence(options = {}) {
   if (splashEl) splashEl.style.display = 'none';
   if (loginEl) loginEl.style.display = 'none';
 
+  // 1. 시작 애니메이션을 먼저 재생
   const skip3d = Boolean(options.skip3d);
   if (!skip3d) {
     await play3dCrtMonitorAnimation();
     if (seqId !== bootState.bootSeqId) return;
   }
 
+  // 2. 시작 애니메이션 종료 후 바이오스 화면 표시 및 POST 실행
   setBootStage('bios');
   runBiosPostSequenceOnly(seqId);
 }
