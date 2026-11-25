@@ -4,10 +4,11 @@
 
 (function () {
   window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-  window.__MOD_VERSIONS.brutalPreloader = 'v2026.11.25-90bpm-la-sol-re-sol-fa';
+  window.__MOD_VERSIONS.brutalPreloader = 'v2026.11.25-test-txt-binary-audio';
 
   const TARGET_AVG_MS = 4500, HOLD_MS = 1000, WAIT_SETUP_KEY = 'myarchive95_setup_v1';
   const LOADER_ID = 'brutal-js-preloader', STYLE_ID = 'brutal-js-preloader-style';
+  const BINARY_AUDIO_URL = './test.txt';
   const START_TS = performance.now();
 
   const FILE_WEIGHTS = [
@@ -29,6 +30,11 @@
 
   let lastKey = '', bannerShown = false, powerOffQueued = false, done = false, started = false, plannedMs = null;
   let rewindCtl = null, currentRatio = 0;
+
+  let cachedRawBytes = null;
+  let audioLoadPromise = null;
+  const decodedBufferCache = new WeakMap();
+  const reversedBufferCache = new WeakMap();
 
   // 뒤로 감기 구간 동안 순방향 재생이 겹치지 않도록 잠금 플래그 관리
   window.__PRELOAD_REWIND_ACTIVE = true;
@@ -52,15 +58,65 @@
     }
   }
 
-  // 90 BPM / '라--솔---/라--솔---/레솔--파---레솔--파---' (1박 = 1 beat, '-'와 '/' 모두 1박) 순방향 버퍼 생성
-  function createNostalgicParodyForwardBuffer(ctx) {
+  // '01010100 01100101 ...' 또는 연속 8비트 문자열을 Uint8Array로 변환
+  function parseBinaryTextToBytes(rawText) {
+    if (typeof rawText !== 'string' || !rawText.trim()) {
+      throw new Error('test.txt is empty');
+    }
+
+    const tokens = rawText.trim().split(/[^01]+/).filter(Boolean);
+    const hasByteTokens = tokens.length > 0 && tokens.every((t) => t.length <= 8);
+
+    if (hasByteTokens && tokens.length > 1) {
+      const bytes = new Uint8Array(tokens.length);
+      for (let i = 0; i < tokens.length; i++) {
+        bytes[i] = parseInt(tokens[i].padEnd(8, '0'), 2) & 0xff;
+      }
+      return bytes;
+    }
+
+    const bitsOnly = rawText.replace(/[^01]/g, '');
+    if (bitsOnly.length < 8) {
+      throw new Error('Invalid binary stream in test.txt');
+    }
+
+    const usableLen = bitsOnly.length - (bitsOnly.length % 8);
+    const byteLen = usableLen / 8;
+    const bytes = new Uint8Array(byteLen);
+    for (let i = 0; i < byteLen; i++) {
+      const chunk = bitsOnly.slice(i * 8, i * 8 + 8);
+      bytes[i] = parseInt(chunk, 2) & 0xff;
+    }
+    return bytes;
+  }
+
+  function ensureBinaryAudioBytes() {
+    if (cachedRawBytes) return Promise.resolve(cachedRawBytes);
+    if (audioLoadPromise) return audioLoadPromise;
+
+    audioLoadPromise = fetch(BINARY_AUDIO_URL, { cache: 'no-store' })
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.text();
+      })
+      .then((txt) => {
+        const bytes = parseBinaryTextToBytes(txt);
+        cachedRawBytes = bytes;
+        return bytes;
+      })
+      .catch((err) => {
+        audioLoadPromise = null;
+        throw err;
+      });
+
+    return audioLoadPromise;
+  }
+
+  // 폴백용 합성 버퍼 생성
+  function synthesizeFallbackForwardBuffer(ctx) {
     const sr = ctx.sampleRate;
     const bpm = 90;
-    const beatSec = 60 / bpm; // 90 BPM -> 1박 약 0.6667초
-
-    // [주파수(Hz), 박수(beats)]
-    // 라(440) --(2박) 솔(392) ---(3박) / 라(440) --(2박) 솔(392) ---(3박) /
-    // 레(293.66) 솔(392) --(2박) 파(349.23) ---(3박) 레(293.66) 솔(392) --(2박) 파(349.23) ---(3박)
+    const beatSec = 60 / bpm;
     const melodyNotes = [
       [440.00, 3], [392.00, 4],
       [440.00, 3], [392.00, 4],
@@ -69,12 +125,10 @@
     ];
 
     const totalBeats = melodyNotes.reduce((acc, [, b]) => acc + b, 0);
-    const totalSec = totalBeats * beatSec;
-    const len = Math.max(1, Math.floor(sr * totalSec));
+    const len = Math.max(1, Math.floor(sr * totalBeats * beatSec));
     const buf = ctx.createBuffer(1, len, sr);
     const ch = buf.getChannelData(0);
 
-    // 각 노트의 시작/끝 시간(초) 구간 미리 계산
     const segments = [];
     let cursorBeat = 0;
     for (const [freq, beats] of melodyNotes) {
@@ -87,49 +141,89 @@
     let segIdx = 0;
     for (let i = 0; i < len; i++) {
       const t = i / sr;
-      while (segIdx < segments.length - 1 && t >= segments[segIdx].endSec) {
-        segIdx++;
-      }
+      while (segIdx < segments.length - 1 && t >= segments[segIdx].endSec) segIdx++;
       const seg = segments[segIdx];
       const localT = Math.max(0, t - seg.startSec);
       const remainT = Math.max(0, seg.endSec - t);
-
-      // 노스탤직 감성의 부드러운 어택 & 긴 음표의 따뜻한 서스테인/릴리즈
-      const attack = Math.min(1, localT / 0.022);
-      const release = Math.min(1, remainT / 0.045);
-      const decay = 0.68 + 0.32 * Math.exp(-localT * 1.45);
-      const env = attack * release * decay;
-
+      const env = Math.min(1, localT / 0.022) * Math.min(1, remainT / 0.045) * (0.68 + 0.32 * Math.exp(-localT * 1.45));
       const f = seg.freq;
-      // 따뜻한 일렉트릭 피아노/패드 하모닉스
       const leadTone =
         Math.sin(2 * Math.PI * f * t) * 0.56 +
         Math.sin(2 * Math.PI * f * 2 * t) * 0.14 +
         Math.sin(2 * Math.PI * f * 0.5 * t) * 0.22;
-
-      // 노스탤직 테이프 워블(미세한 피치 흔들림)
       const wow = 1 + 0.0045 * Math.sin(2 * Math.PI * 2.1 * t);
-      const sample = leadTone * env;
-      ch[i] = Math.max(-0.95, Math.min(0.95, sample * (0.94 + 0.06 * wow)));
+      ch[i] = Math.max(-0.95, Math.min(0.95, leadTone * env * (0.94 + 0.06 * wow)));
     }
-
     return buf;
   }
 
-  // 뒤로 감기(역재생)용 버퍼 생성
-  function createNostalgicParodyBuffer(ctx) {
-    const fwdBuf = createNostalgicParodyForwardBuffer(ctx);
-    const len = fwdBuf.length;
-    const srcCh = fwdBuf.getChannelData(0);
-    const revBuf = ctx.createBuffer(1, len, ctx.sampleRate);
-    const dstCh = revBuf.getChannelData(0);
-    for (let i = 0; i < len; i++) {
-      dstCh[i] = srcCh[len - 1 - i];
+  function decodeBytesToAudioBuffer(ctx, bytes) {
+    const copy = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
+    return new Promise((resolve, reject) => {
+      try {
+        const p = ctx.decodeAudioData(
+          copy,
+          (decoded) => resolve(decoded),
+          (err) => reject(err || new Error('decodeAudioData failed'))
+        );
+        if (p && typeof p.then === 'function') p.then(resolve, reject);
+      } catch (err) {
+        reject(err);
+      }
+    });
+  }
+
+  // 비동기 순방향 버퍼 로드(test.txt 바이너리 디코딩 -> 실패 시 폴백)
+  function loadTestTxtForwardBuffer(ctx) {
+    const cached = decodedBufferCache.get(ctx);
+    if (cached) return Promise.resolve(cached);
+
+    const job = ensureBinaryAudioBytes()
+      .then((bytes) => decodeBytesToAudioBuffer(ctx, bytes))
+      .catch(() => synthesizeFallbackForwardBuffer(ctx))
+      .then((buf) => {
+        decodedBufferCache.set(ctx, buf);
+        return buf;
+      });
+
+    decodedBufferCache.set(ctx, job);
+    return job;
+  }
+
+  function buildReversedBufferFromForward(ctx, fwdBuf) {
+    const cachedRev = reversedBufferCache.get(fwdBuf);
+    if (cachedRev) return cachedRev;
+
+    const { numberOfChannels, length, sampleRate } = fwdBuf;
+    const revBuf = ctx.createBuffer(numberOfChannels, length, sampleRate);
+    for (let chIdx = 0; chIdx < numberOfChannels; chIdx++) {
+      const srcCh = fwdBuf.getChannelData(chIdx);
+      const dstCh = revBuf.getChannelData(chIdx);
+      for (let i = 0, j = length - 1; i < length; i++, j--) {
+        dstCh[i] = srcCh[j];
+      }
     }
+    reversedBufferCache.set(fwdBuf, revBuf);
     return revBuf;
   }
 
+  // 동기 호출 호환용 순방향 버퍼(이미 캐시된 버퍼가 있으면 반환, 없으면 폴백 반환 후 백그라운드 디코딩)
+  function createNostalgicParodyForwardBuffer(ctx) {
+    const cached = decodedBufferCache.get(ctx);
+    if (cached && typeof cached.getChannelData === 'function') return cached;
+
+    loadTestTxtForwardBuffer(ctx).catch(() => {});
+    return synthesizeFallbackForwardBuffer(ctx);
+  }
+
+  // 동기 호출 호환용 역재생 버퍼
+  function createNostalgicParodyBuffer(ctx) {
+    const fwdBuf = createNostalgicParodyForwardBuffer(ctx);
+    return buildReversedBufferFromForward(ctx, fwdBuf);
+  }
+
   window.createNostalgicParodyForwardBuffer = createNostalgicParodyForwardBuffer;
+  window.loadTestTxtForwardBuffer = loadTestTxtForwardBuffer;
 
   // 카세트 테이프 삽입('달칵') 사운드
   function playTapeInsertDalkak(ctx, startTime) {
@@ -149,9 +243,11 @@
     mkClick(0.068, 1680, 520, 0.026, 0.26);
   }
 
-  // '달칵' 후 노스탤직 패러디 음원을 뒤로 점점 빠르게 감는 컨트롤러
+  // '달칵' 후 test.txt 음원을 뒤로 점점 빠르게 감는 컨트롤러
   function startRewindAudio() {
     window.__PRELOAD_REWIND_ACTIVE = true;
+    ensureBinaryAudioBytes().catch(() => {});
+
     if (rewindCtl || !isSoundAllowed()) {
       if (!isSoundAllowed()) releaseRewindLockOnly();
       return rewindCtl;
@@ -162,48 +258,52 @@
       return null;
     }
 
-    let ctx = null, src = null, filter = null, gain = null, stopped = false, rafAccel = 0, unlockBound = null;
+    let ctx = null, src = null, filter = null, gain = null, stopped = false, rafAccel = 0, unlockBound = null, triggerSeq = 0;
 
     const beginTapeRewind = () => {
       if (stopped || !ctx || src) return;
+      const seq = ++triggerSeq;
       window.__PRELOAD_REWIND_ACTIVE = true;
-      const now = ctx.currentTime;
-      playTapeInsertDalkak(ctx, now);
+      const clickAt = ctx.currentTime;
+      playTapeInsertDalkak(ctx, clickAt);
 
-      const rewindStart = now + 0.11;
-      const revBuf = createNostalgicParodyBuffer(ctx);
+      loadTestTxtForwardBuffer(ctx).then((fwdBuf) => {
+        if (stopped || seq !== triggerSeq || !ctx || src) return;
+        const revBuf = buildReversedBufferFromForward(ctx, fwdBuf);
+        const rewindStart = Math.max(ctx.currentTime + 0.02, clickAt + 0.11);
 
-      src = ctx.createBufferSource();
-      src.buffer = revBuf;
-      src.loop = true;
-      src.playbackRate.setValueAtTime(1.0, rewindStart);
+        src = ctx.createBufferSource();
+        src.buffer = revBuf;
+        src.loop = true;
+        src.playbackRate.setValueAtTime(1.0, rewindStart);
 
-      filter = ctx.createBiquadFilter();
-      filter.type = 'lowpass';
-      filter.frequency.setValueAtTime(2400, rewindStart);
-      filter.Q.setValueAtTime(1.1, rewindStart);
+        filter = ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(2400, rewindStart);
+        filter.Q.setValueAtTime(1.1, rewindStart);
 
-      gain = ctx.createGain();
-      gain.gain.setValueAtTime(0.0002, rewindStart);
-      gain.gain.linearRampToValueAtTime(0.18, rewindStart + 0.05);
+        gain = ctx.createGain();
+        gain.gain.setValueAtTime(0.0002, rewindStart);
+        gain.gain.linearRampToValueAtTime(0.18, rewindStart + 0.05);
 
-      src.connect(filter);
-      filter.connect(gain);
-      gain.connect(ctx.destination);
-      src.start(rewindStart);
+        src.connect(filter);
+        filter.connect(gain);
+        gain.connect(ctx.destination);
+        src.start(rewindStart);
 
-      const tickSpeed = () => {
-        if (stopped || !src || !ctx) return;
-        const p = Math.max(0, Math.min(1, currentRatio));
-        const speed = 1.0 + Math.pow(p, 1.35) * 2.4;
-        const cutoff = 2400 + p * 2600;
-        try {
-          src.playbackRate.setTargetAtTime(speed, ctx.currentTime, 0.04);
-          if (filter) filter.frequency.setTargetAtTime(cutoff, ctx.currentTime, 0.05);
-        } catch {}
+        const tickSpeed = () => {
+          if (stopped || !src || !ctx) return;
+          const p = Math.max(0, Math.min(1, currentRatio));
+          const speed = 1.0 + Math.pow(p, 1.35) * 2.4;
+          const cutoff = 2400 + p * 2600;
+          try {
+            src.playbackRate.setTargetAtTime(speed, ctx.currentTime, 0.04);
+            if (filter) filter.frequency.setTargetAtTime(cutoff, ctx.currentTime, 0.05);
+          } catch {}
+          rafAccel = requestAnimationFrame(tickSpeed);
+        };
         rafAccel = requestAnimationFrame(tickSpeed);
-      };
-      rafAccel = requestAnimationFrame(tickSpeed);
+      }).catch(() => {});
     };
 
     try {
@@ -232,6 +332,7 @@
       stop: () => {
         if (stopped) return;
         stopped = true;
+        triggerSeq += 1;
         if (rafAccel) cancelAnimationFrame(rafAccel);
         if (unlockBound) {
           window.removeEventListener('pointerdown', unlockBound);
@@ -316,7 +417,7 @@
   }
 
   const buildTicker = (files) => {
-    const line = `MY-ARCHIVE 95 WIN95 PRELOADER ★ 90BPM NOSTALGIC REWIND ★ ${files.join(' /// ')} ★ `;
+    const line = `MY-ARCHIVE 95 WIN95 PRELOADER ★ TEST.TXT BINARY REWIND ★ ${files.join(' /// ')} ★ `;
     return `<span class="brutal-ticker-msg">${line}</span><span class="brutal-ticker-msg">${line}</span>`;
   };
 
