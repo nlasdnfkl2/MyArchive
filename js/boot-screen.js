@@ -1,10 +1,10 @@
 // ============================================================
 // MY-ARCHIVE 95 OS — BIOS POST & Authentic Windows 95 Logon
-// (Nostalgic CRT Power-On, POST Sequence, Win95 Splash & Logon)
+// (3D CRT Monitor Entry/Zoom, Nostalgic CRT Power-On, POST Sequence, Win95 Splash & Logon)
 // ============================================================
 
 window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-window.__MOD_VERSIONS.bootScreen = 'v2026.11.25-retro';
+window.__MOD_VERSIONS.bootScreen = 'v2026.11.25-3d-crt';
 
 const SESSION_USER_KEY = 'myarchive95_current_user_v2';
 const USERS_CACHE_KEY = 'myarchive95_users_cache_v2';
@@ -67,6 +67,270 @@ function safeBootTone(type) {
   if (typeof window.playRetroTone === 'function') {
     try { window.playRetroTone(type); } catch {}
   }
+}
+
+// ============================================================
+// 구형 3D CRT 모니터 인트로 스타일 및 모델 생성기
+// ============================================================
+function ensure3dCrtMonitorStyles() {
+  if (document.getElementById('retro-3d-crt-monitor-style')) return;
+  const style = document.createElement('style');
+  style.id = 'retro-3d-crt-monitor-style';
+  style.textContent = `
+    #retro-3d-crt-stage {
+      position: fixed;
+      inset: 0;
+      z-index: 1000000;
+      background: radial-gradient(circle at 50% 45%, #2b2d33 0%, #111317 75%, #07080a 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      perspective: 1150px;
+      overflow: hidden;
+      opacity: 1;
+      transition: opacity 0.36s ease;
+    }
+    #retro-3d-crt-stage.fade-out {
+      opacity: 0;
+      pointer-events: none;
+    }
+    .crt3d-motion-rig {
+      transform-style: preserve-3d;
+      animation: crt3dOrbitAndImmerse 2.15s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+    .crt3d-box {
+      --w: 290px;
+      --h: 244px;
+      --d: 210px;
+      position: relative;
+      width: var(--w);
+      height: var(--h);
+      transform-style: preserve-3d;
+      transform: rotateY(-22deg) rotateX(8deg);
+    }
+    .crt3d-face {
+      position: absolute;
+      box-sizing: border-box;
+      border: 2px solid #23211d;
+    }
+    /* 전면 베젤 (아이보리/그레이) */
+    .crt3d-front {
+      width: var(--w);
+      height: var(--h);
+      background: linear-gradient(165deg, #e7e1d2 0%, #d5cebd 58%, #beb6a3 100%);
+      transform: translateZ(calc(var(--d) * 0.5));
+      box-shadow: inset 2px 2px 0 rgba(255,255,255,0.65), inset -3px -3px 0 rgba(70,64,54,0.35);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 18px 20px 14px;
+    }
+    /* 안으로 들어간 브라운관 화면 & 볼록한 유리 반사 */
+    .crt3d-screen-bezel {
+      position: relative;
+      flex: 1;
+      background: #2b2924;
+      border-top: 3px solid #7d7667;
+      border-left: 3px solid #7d7667;
+      border-right: 3px solid #f5f1e6;
+      border-bottom: 3px solid #f5f1e6;
+      padding: 6px;
+      box-shadow: inset 0 0 12px rgba(0,0,0,0.85);
+    }
+    .crt3d-screen-glass {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle at 50% 48%, #22474b 0%, #0d1a1d 75%, #060b0d 100%);
+      border-radius: 14px / 11px;
+      overflow: hidden;
+      box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.9), inset 3px 3px 10px rgba(185, 245, 255, 0.16);
+    }
+    .crt3d-screen-glass::before {
+      content: '';
+      position: absolute;
+      inset: -12%;
+      background:
+        repeating-linear-gradient(
+          to bottom,
+          rgba(255, 255, 255, 0.04) 0px,
+          rgba(255, 255, 255, 0.04) 1px,
+          transparent 1px,
+          transparent 3px
+        ),
+        radial-gradient(ellipse at 32% 24%, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0.05) 36%, transparent 65%);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+    .crt3d-screen-text {
+      position: relative;
+      z-index: 2;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      font-family: 'Consolas', 'Courier New', monospace;
+      color: #8ef6ff;
+      text-shadow: 0 0 8px rgba(110, 240, 255, 0.65);
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+    }
+    .crt3d-chin {
+      height: 28px;
+      margin-top: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-family: 'Consolas', monospace;
+      font-size: 0.65rem;
+      font-weight: 800;
+      color: #4f4a40;
+    }
+    .crt3d-led {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #38f26c;
+      box-shadow: 0 0 8px #38f26c;
+      border: 1px solid #1b3822;
+      display: inline-block;
+      margin-left: 6px;
+      vertical-align: middle;
+    }
+    /* 후면 (앞뒤가 튀어나온 뭉툭한 브라운관 하우징) */
+    .crt3d-back {
+      width: calc(var(--w) * 0.76);
+      height: calc(var(--h) * 0.74);
+      left: calc(var(--w) * 0.12);
+      top: calc(var(--h) * 0.13);
+      background: linear-gradient(180deg, #cbc3b0 0%, #aba28e 100%);
+      transform: translateZ(calc(var(--d) * -0.56)) rotateY(180deg);
+      box-shadow: inset 0 0 18px rgba(0,0,0,0.35);
+    }
+    /* 좌/우 측면 + 뒤로 좁아지며 돌출되는 테이퍼 면 */
+    .crt3d-left {
+      width: var(--d);
+      height: var(--h);
+      left: calc((var(--w) - var(--d)) * 0.5);
+      background: linear-gradient(180deg, #dcd4c2 0%, #b9b09c 100%);
+      transform: rotateY(-90deg) translateZ(calc(var(--w) * 0.5));
+    }
+    .crt3d-right {
+      width: var(--d);
+      height: var(--h);
+      left: calc((var(--w) - var(--d)) * 0.5);
+      background: linear-gradient(180deg, #cfc6b2 0%, #a99f8b 100%);
+      transform: rotateY(90deg) translateZ(calc(var(--w) * 0.5));
+    }
+    .crt3d-top {
+      width: var(--w);
+      height: var(--d);
+      top: calc((var(--h) - var(--d)) * 0.5);
+      background: linear-gradient(90deg, #efe9da 0%, #d8d0be 100%);
+      transform: rotateX(90deg) translateZ(calc(var(--h) * 0.5));
+    }
+    .crt3d-bottom {
+      width: var(--w);
+      height: var(--d);
+      top: calc((var(--h) - var(--d)) * 0.5);
+      background: #9c9380;
+      transform: rotateX(-90deg) translateZ(calc(var(--h) * 0.5));
+    }
+    /* 하단 받침대 */
+    .crt3d-stand {
+      position: absolute;
+      width: 176px;
+      height: 22px;
+      left: calc((var(--w) - 176px) * 0.5);
+      bottom: -24px;
+      background: linear-gradient(180deg, #c6beaa 0%, #9c937f 100%);
+      border: 2px solid #23211d;
+      transform: translateZ(10px);
+    }
+
+    @keyframes crt3dOrbitAndImmerse {
+      0% {
+        opacity: 0;
+        transform: translate3d(26vw, -12vh, -460px) rotateY(58deg) rotateX(18deg) rotateZ(-8deg) scale(0.72);
+      }
+      42% {
+        opacity: 1;
+        transform: translate3d(0px, 0px, -40px) rotateY(-14deg) rotateX(5deg) rotateZ(0deg) scale(1.04);
+      }
+      66% {
+        opacity: 1;
+        transform: translate3d(0px, 0px, 60px) rotateY(0deg) rotateX(0deg) rotateZ(0deg) scale(1.18);
+      }
+      100% {
+        opacity: 0;
+        transform: translate3d(0px, -6px, 560px) rotateY(0deg) rotateX(0deg) rotateZ(0deg) scale(4.8);
+      }
+    }
+  `;
+  document.head.appendChild(style);
+}
+
+function play3dCrtMonitorAnimation() {
+  return new Promise(resolve => {
+    ensure3dCrtMonitorStyles();
+    const prev = document.getElementById('retro-3d-crt-stage');
+    if (prev) prev.remove();
+
+    const stage = document.createElement('div');
+    stage.id = 'retro-3d-crt-stage';
+    stage.title = '클릭하면 즉시 부팅 화면으로 이동합니다';
+    stage.innerHTML = `
+      <div class="crt3d-motion-rig">
+        <div class="crt3d-box">
+          <div class="crt3d-face crt3d-front">
+            <div class="crt3d-screen-bezel">
+              <div class="crt3d-screen-glass">
+                <div class="crt3d-screen-text">
+                  <span>CRT-95 SIGNAL</span>
+                  <span style="font-size:0.62rem;color:#ffd83b;">POWER ON...</span>
+                </div>
+              </div>
+            </div>
+            <div class="crt3d-chin">
+              <span>ARCHIVE-TRON 15"</span>
+              <span>PWR<span class="crt3d-led"></span></span>
+            </div>
+          </div>
+          <div class="crt3d-face crt3d-back"></div>
+          <div class="crt3d-face crt3d-left"></div>
+          <div class="crt3d-face crt3d-right"></div>
+          <div class="crt3d-face crt3d-top"></div>
+          <div class="crt3d-face crt3d-bottom"></div>
+          <div class="crt3d-stand"></div>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(stage);
+    playDriveSeekTick();
+
+    let finished = false;
+    const finishIntro = () => {
+      if (finished) return;
+      finished = true;
+      stage.classList.add('fade-out');
+      setTimeout(() => {
+        stage.remove();
+        resolve();
+      }, 320);
+    };
+
+    stage.addEventListener('click', () => {
+      safeBootTone('click');
+      finishIntro();
+    });
+
+    const autoTimer = setTimeout(finishIntro, 1950);
+    stage.dataset.autoTimer = String(autoTimer);
+  });
 }
 
 // ============================================================
@@ -530,7 +794,8 @@ const bootState = {
   isSubmitting: false,
   timers: [],
   ramInterval: null,
-  biosBeepPlayed: false
+  biosBeepPlayed: false,
+  bootSeqId: 0
 };
 
 function getPersonalUsersList() {
@@ -1131,21 +1396,7 @@ function showLoginError(msg) {
   errBox.style.display = 'flex';
 }
 
-function startBiosBootSequence() {
-  clearBootTimers();
-  bootState.biosBeepPlayed = false;
-
-  const overlay = document.getElementById('os-boot-overlay');
-  if (!overlay) return;
-
-  overlay.style.display = 'flex';
-  overlay.style.opacity = '1';
-  overlay.style.background = '#000000';
-  overlay.classList.remove('boot-fade-out');
-  document.body.classList.add('boot-locked');
-
-  setBootStage('bios');
-
+function runBiosPostSequenceOnly(seqId) {
   const biosEl = document.getElementById('boot-stage-bios');
   triggerCrtPowerOnFlash(biosEl);
 
@@ -1158,6 +1409,7 @@ function startBiosBootSequence() {
 
   let ramVal = 640;
   bootState.ramInterval = setInterval(() => {
+    if (seqId !== bootState.bootSeqId) return;
     ramVal += 4096;
     if (ramVal >= 65536) {
       ramVal = 65536;
@@ -1182,7 +1434,7 @@ function startBiosBootSequence() {
 
   postSteps.forEach(step => {
     const tid = setTimeout(() => {
-      if (bootState.stage !== 'bios' || !logEl) return;
+      if (seqId !== bootState.bootSeqId || bootState.stage !== 'bios' || !logEl) return;
       if (step.tick) playDriveSeekTick();
 
       const line = document.createElement('div');
@@ -1203,22 +1455,55 @@ function startBiosBootSequence() {
   });
 
   bootState.timers.push(setTimeout(() => {
-    if (bootState.stage === 'bios') setBootStage('splash');
+    if (seqId === bootState.bootSeqId && bootState.stage === 'bios') setBootStage('splash');
   }, 2050));
 
   bootState.timers.push(setTimeout(() => {
-    if (bootState.stage === 'splash') setBootStage('login');
+    if (seqId === bootState.bootSeqId && bootState.stage === 'splash') setBootStage('login');
   }, 3250));
 
   bootState.timers.push(setTimeout(() => {
-    if (bootState.stage === 'bios' || bootState.stage === 'splash') {
+    if (seqId === bootState.bootSeqId && (bootState.stage === 'bios' || bootState.stage === 'splash')) {
       setBootStage('login');
     }
   }, 4700));
 }
 
-function finishDesktopLogin(userObj) {
+async function startBiosBootSequence(options = {}) {
   clearBootTimers();
+  const seqId = ++bootState.bootSeqId;
+  bootState.biosBeepPlayed = false;
+
+  const overlay = document.getElementById('os-boot-overlay');
+  if (overlay) {
+    overlay.style.display = 'flex';
+    overlay.style.opacity = '1';
+    overlay.style.background = '#000000';
+    overlay.classList.remove('boot-fade-out');
+  }
+  document.body.classList.add('boot-locked');
+
+  const biosEl = document.getElementById('boot-stage-bios');
+  const splashEl = document.getElementById('boot-stage-splash');
+  const loginEl = document.getElementById('boot-stage-login');
+  if (biosEl) biosEl.style.display = 'none';
+  if (splashEl) splashEl.style.display = 'none';
+  if (loginEl) loginEl.style.display = 'none';
+
+  const skip3d = Boolean(options.skip3d);
+  if (!skip3d) {
+    await play3dCrtMonitorAnimation();
+    if (seqId !== bootState.bootSeqId) return;
+  }
+
+  setBootStage('bios');
+  runBiosPostSequenceOnly(seqId);
+}
+
+function finishDesktopLogin(userObj) {
+  bootState.bootSeqId += 1;
+  clearBootTimers();
+  document.getElementById('retro-3d-crt-stage')?.remove();
   bootState.stage = 'done';
   setCurrentUser(userObj);
   hookArchiveSyncLifecycle();
@@ -1413,12 +1698,14 @@ async function submitNewUserSignup() {
 function bindBootScreenEvents() {
   document.getElementById('boot-stage-bios')?.addEventListener('click', () => {
     playBiosPostBeep(760, 0.08);
+    bootState.bootSeqId += 1;
     clearBootTimers();
     setBootStage('login');
   });
 
   document.getElementById('boot-stage-splash')?.addEventListener('click', () => {
     safeBootTone('click');
+    bootState.bootSeqId += 1;
     clearBootTimers();
     setBootStage('login');
   });
@@ -1434,12 +1721,14 @@ function bindBootScreenEvents() {
       } else if (e.key === ' ' || e.key === 'Enter' || e.key === 'Escape') {
         e.preventDefault();
         playBiosPostBeep(760, 0.08);
+        bootState.bootSeqId += 1;
         clearBootTimers();
         setBootStage('login');
       }
     } else if (bootState.stage === 'splash' && (e.key === ' ' || e.key === 'Enter' || e.key === 'Escape')) {
       e.preventDefault();
       safeBootTone('click');
+      bootState.bootSeqId += 1;
       clearBootTimers();
       setBootStage('login');
     }
@@ -1544,14 +1833,14 @@ function bindBootScreenEvents() {
 
   document.getElementById('btn-reboot-bios')?.addEventListener('click', () => {
     playBiosPostBeep(880, 0.12);
-    startBiosBootSequence();
+    startBiosBootSequence({ skip3d: true });
   });
 
   document.getElementById('sm-logoff')?.addEventListener('click', () => {
     const sm = document.getElementById('start-menu');
     if (sm) sm.classList.remove('open');
     document.getElementById('btn-start')?.classList.remove('pressed');
-    startBiosBootSequence();
+    startBiosBootSequence({ skip3d: true });
   });
 }
 
