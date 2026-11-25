@@ -4,9 +4,9 @@
 
 (function () {
   window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-  window.__MOD_VERSIONS.brutalPreloader = 'v2026.11.25-win95-ready-4.5s-hold-1s';
+  window.__MOD_VERSIONS.brutalPreloader = 'v2026.11.25-win95-rewind-sfx';
 
-  const TARGET_AVG_MS = 4500, HOLD_MS = 1000;
+  const TARGET_AVG_MS = 4500, HOLD_MS = 1000, WAIT_SETUP_KEY = 'myarchive95_setup_v1';
   const LOADER_ID = 'brutal-js-preloader', STYLE_ID = 'brutal-js-preloader-style';
   const START_TS = performance.now();
 
@@ -28,6 +28,136 @@
   ];
 
   let lastKey = '', bannerShown = false, powerOffQueued = false, done = false, started = false, plannedMs = null;
+  let rewindCtl = null;
+
+  function isSoundAllowed() {
+    if (typeof window.__WIN95_SOUND_ENABLED === 'boolean') return window.__WIN95_SOUND_ENABLED;
+    try {
+      const parsed = JSON.parse(localStorage.getItem(WAIT_SETUP_KEY) || 'null');
+      return typeof parsed?.sound === 'boolean' ? parsed.sound : true;
+    } catch { return true; }
+  }
+
+  // 프리로더 전용 테이프 뒤로 감기(REWIND) 사운드 생성기
+  function startRewindAudio() {
+    if (rewindCtl || !isSoundAllowed()) return rewindCtl;
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return null;
+
+    let ctx = null, motorOsc = null, wobbleOsc = null, wobbleGain = null, motorFilter = null;
+    let tapeSrc = null, tapeBp = null, masterGain = null, stopped = false, unlockBound = null;
+
+    const setupNodes = () => {
+      if (stopped || !ctx || masterGain) return;
+      const now = ctx.currentTime;
+
+      masterGain = ctx.createGain();
+      masterGain.gain.setValueAtTime(0.0001, now);
+      masterGain.gain.linearRampToValueAtTime(0.065, now + 0.14);
+      masterGain.connect(ctx.destination);
+
+      // 1) 고속 릴 회전음 + 역방향 위닝 피치
+      motorOsc = ctx.createOscillator();
+      motorOsc.type = 'sawtooth';
+      motorOsc.frequency.setValueAtTime(215, now);
+      motorOsc.frequency.exponentialRampToValueAtTime(340, now + 0.9);
+
+      wobbleOsc = ctx.createOscillator();
+      wobbleOsc.type = 'sine';
+      wobbleOsc.frequency.setValueAtTime(14.5, now);
+
+      wobbleGain = ctx.createGain();
+      wobbleGain.gain.setValueAtTime(28, now);
+
+      motorFilter = ctx.createBiquadFilter();
+      motorFilter.type = 'bandpass';
+      motorFilter.frequency.setValueAtTime(680, now);
+      motorFilter.Q.setValueAtTime(2.4, now);
+
+      const motorGain = ctx.createGain();
+      motorGain.gain.setValueAtTime(0.42, now);
+
+      wobbleOsc.connect(wobbleGain);
+      wobbleGain.connect(motorOsc.frequency);
+      motorOsc.connect(motorFilter);
+      motorFilter.connect(motorGain);
+      motorGain.connect(masterGain);
+
+      // 2) 테이프 스침 및 고속 프레임 틱 텍스처 (노이즈 대신 규칙적 뒤로 감기 결)
+      const len = ctx.sampleRate * 2;
+      const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+      const ch = buf.getChannelData(0);
+      const tickPeriod = Math.max(18, Math.floor(ctx.sampleRate / 68));
+      for (let i = 0; i < len; i++) {
+        const mod = i % tickPeriod;
+        const pulse = mod < 4 ? (1 - mod / 4) * 0.75 : 0;
+        const flutter = Math.sin((i / ctx.sampleRate) * Math.PI * 2 * 19) * 0.16;
+        ch[i] = pulse + flutter * 0.25;
+      }
+
+      tapeSrc = ctx.createBufferSource();
+      tapeSrc.buffer = buf;
+      tapeSrc.loop = true;
+
+      tapeBp = ctx.createBiquadFilter();
+      tapeBp.type = 'bandpass';
+      tapeBp.frequency.setValueAtTime(2100, now);
+      tapeBp.Q.setValueAtTime(1.5, now);
+
+      const tapeGain = ctx.createGain();
+      tapeGain.gain.setValueAtTime(0.36, now);
+
+      tapeSrc.connect(tapeBp);
+      tapeBp.connect(tapeGain);
+      tapeGain.connect(masterGain);
+
+      motorOsc.start(now);
+      wobbleOsc.start(now);
+      tapeSrc.start(now);
+    };
+
+    try {
+      ctx = typeof window.getWaitAudioContext === 'function' ? window.getWaitAudioContext() : new AudioCtx();
+      if (!ctx) return null;
+      if (ctx.state === 'running') {
+        setupNodes();
+      } else {
+        ctx.resume().then(() => { if (!stopped) setupNodes(); }).catch(() => {});
+        unlockBound = () => {
+          if (stopped) return;
+          ctx.resume().then(() => { if (!stopped) setupNodes(); }).catch(() => {});
+        };
+        window.addEventListener('pointerdown', unlockBound, { once: true, passive: true });
+        window.addEventListener('keydown', unlockBound, { once: true, passive: true });
+      }
+    } catch { return null; }
+
+    rewindCtl = {
+      stop: () => {
+        if (stopped) return;
+        stopped = true;
+        if (unlockBound) {
+          window.removeEventListener('pointerdown', unlockBound);
+          window.removeEventListener('keydown', unlockBound);
+        }
+        try {
+          if (ctx && masterGain) {
+            const t = ctx.currentTime;
+            if (motorOsc) motorOsc.frequency.exponentialRampToValueAtTime(95, t + 0.16);
+            masterGain.gain.cancelScheduledValues(t);
+            masterGain.gain.setValueAtTime(Math.max(0.0001, masterGain.gain.value), t);
+            masterGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
+          }
+          setTimeout(() => {
+            try { motorOsc?.stop(); wobbleOsc?.stop(); tapeSrc?.stop(); } catch {}
+            try { motorOsc?.disconnect(); wobbleOsc?.disconnect(); tapeSrc?.disconnect(); masterGain?.disconnect(); } catch {}
+          }, 210);
+        } catch {}
+        rewindCtl = null;
+      }
+    };
+    return rewindCtl;
+  }
 
   function getShuffledEntries() {
     const arr = FILE_WEIGHTS.slice();
@@ -92,7 +222,7 @@
   }
 
   const buildTicker = (files) => {
-    const line = `MY-ARCHIVE 95 WIN95 PRELOADER ★ INITIALIZING ${files.length} SYSTEM MODULES ★ ${files.join(' /// ')} ★ `;
+    const line = `MY-ARCHIVE 95 WIN95 PRELOADER ★ REWINDING ${files.length} SYSTEM MODULES ★ ${files.join(' /// ')} ★ `;
     return `<span class="brutal-ticker-msg">${line}</span><span class="brutal-ticker-msg">${line}</span>`;
   };
 
@@ -119,7 +249,7 @@
           </div>
           <h1 class="brutal-loader-title" id="brutal-loader-title">WIN95 SYSTEM MODULES LOADING</h1>
           <div class="brutal-bar-stage">
-            <div class="brutal-speech-bubble" id="brutal-speech-bubble">BOOTING MODULE...</div>
+            <div class="brutal-speech-bubble" id="brutal-speech-bubble">REWINDING MODULE...</div>
             <div class="popart-progress-track"><div class="popart-progress-fill" id="brutal-loader-fill"></div></div>
             <div class="brutal-complete-stamp" id="brutal-complete-stamp">★ WIN95 SYSTEM MODULES READY — LAUNCHING MY-ARCHIVE 95 ★</div>
           </div>
@@ -157,7 +287,7 @@
     if (file && key !== lastKey) {
       lastKey = key;
       if (bubbleEl) {
-        bubbleEl.textContent = `⚡ [${idx + 1}/${total}] ${file}`;
+        bubbleEl.textContent = `⏪ [${idx + 1}/${total}] ${file}`;
         reanimate(bubbleEl, 'is-popping');
       }
       if (cardEl && pct < 100) reanimate(cardEl, 'is-punching');
@@ -180,6 +310,7 @@
   function showComplete(count) {
     if (bannerShown) return;
     bannerShown = true;
+    rewindCtl?.stop?.();
     document.getElementById('brutal-loader-card')?.classList.add('is-complete');
     const badge = document.getElementById('brutal-loader-badge');
     const pct = document.getElementById('brutal-loader-pct');
@@ -211,6 +342,7 @@
   function powerOffNow() {
     if (done) return;
     done = true;
+    rewindCtl?.stop?.();
     const el = document.getElementById(LOADER_ID);
     if (!el) return triggerNextScreen();
 
@@ -264,6 +396,7 @@
   const entries = getShuffledEntries();
   const files = entries.map(([name]) => name);
   mount(files);
+  startRewindAudio();
 
   if (!started) {
     started = true;
