@@ -1,43 +1,103 @@
 /* ============================================================
-   MY-ARCHIVE 95 OS — CORE + ADD-ON INTEGRATED STYLESHEET
-   Windows 95 + Neo-Brutalism Design System
+   MY-ARCHIVE 95 OS — AUTHENTIC WINDOWS 95 RETRO STYLESHEET
+   Bitmap Fonts + 3D Bevel Chrome + Dithered UI + Classic Scrollbar
    ============================================================ */
 
+@font-face {
+  font-family: 'Galmuri11';
+  src: url('https://cdn.jsdelivr.net/npm/galmuri@latest/dist/Galmuri11.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Galmuri11';
+  src: url('https://cdn.jsdelivr.net/npm/galmuri@latest/dist/Galmuri11-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'DungGeunMo';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_six@1.2/DungGeunMo.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
-  /* Windows 95 System Palette */
+  /* Authentic Windows 95 System Colors */
   --win-gray: #c0c0c0;
   --win-light: #ffffff;
   --win-mid: #dfdfdf;
   --win-dark: #808080;
-  --win-darker: #404040;
+  --win-darker: #000000;
   --win-navy: #000080;
   --win-navy-light: #1084d0;
   --win-teal: #008080;
 
-  /* Neo-Brutalism Accent Palette */
-  --brutal-ink: #111111;
-  --brutal-paper: #fffef5;
-  --brutal-yellow: #ffd83b;
-  --brutal-sky: #48dbfb;
-  --brutal-green: #2ed573;
-  --brutal-pink: #ff6b81;
-  --brutal-red: #ff4757;
+  /* VGA 16-Color Retro Accents (기존 변수명 호환 유지) */
+  --brutal-ink: #000000;
+  --brutal-paper: #c0c0c0;
+  --brutal-yellow: #ffff00;
+  --brutal-sky: #00ffff;
+  --brutal-green: #008000;
+  --brutal-pink: #800080;
+  --brutal-red: #800000;
 
-  /* Typography */
-  --font-sans: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, 'Malgun Gothic', sans-serif;
-  --font-mono: 'D2Coding', 'Consolas', 'Courier New', monospace;
+  /* Classic 3D Bevel Shadows */
+  --bevel-win:
+    inset 1px 1px 0 #dfdfdf,
+    inset -1px -1px 0 #000000,
+    inset 2px 2px 0 #ffffff,
+    inset -2px -2px 0 #808080;
+
+  --bevel-btn:
+    inset 1px 1px 0 #ffffff,
+    inset -1px -1px 0 #000000,
+    inset 2px 2px 0 #dfdfdf,
+    inset -2px -2px 0 #808080;
+
+  --bevel-btn-pressed:
+    inset 1px 1px 0 #000000,
+    inset -1px -1px 0 #ffffff,
+    inset 2px 2px 0 #808080,
+    inset -2px -2px 0 #dfdfdf;
+
+  --bevel-sunken:
+    inset 1px 1px 0 #808080,
+    inset -1px -1px 0 #ffffff,
+    inset 2px 2px 0 #000000,
+    inset -2px -2px 0 #dfdfdf;
+
+  --bevel-thin-sunken:
+    inset 1px 1px 0 #808080,
+    inset -1px -1px 0 #ffffff;
+
+  /* Windows 95 Dithered Checkerboard Pattern */
+  --dither-bg:
+    linear-gradient(45deg, #ffffff 25%, transparent 25%),
+    linear-gradient(-45deg, #ffffff 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #ffffff 75%),
+    linear-gradient(-45deg, transparent 75%, #ffffff 75%);
+
+  /* Retro Bitmap Typography */
+  --font-sans: 'Galmuri11', 'DungGeunMo', 'Gulim', 'Dotum', 'MS Sans Serif', sans-serif;
+  --font-mono: 'DungGeunMo', 'Galmuri11', 'Fixedsys', 'Consolas', monospace;
 
   /* Layout Safe Area & Audio Reactive Variables */
-  --desktop-safe-left: 204px;   /* 좌측 2열 아이콘(174px) + 여백(30px) */
+  --desktop-safe-left: 204px;
   --desktop-safe-right: 16px;
-  --desktop-safe-top: 40px;
-  --desktop-safe-bottom: 48px;
+  --desktop-safe-top: 38px;
+  --desktop-safe-bottom: 44px;
   --bass-level: 0;
   --audio-energy: 0;
 }
 
 /* ============================================================
-   0. RESET & DESKTOP WALLPAPER THEMES
+   0. RESET, BITMAP RENDERING & CLASSIC SCROLLBARS
    ============================================================ */
 *,
 *::before,
@@ -45,6 +105,7 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+  border-radius: 0 !important;
 }
 
 html,
@@ -53,33 +114,63 @@ body {
   height: 100%;
   overflow: hidden;
   font-family: var(--font-sans);
-  font-size: 14px;
-  color: var(--brutal-ink);
+  font-size: 13px;
+  line-height: 1.45;
+  color: #000000;
   background-color: var(--win-teal);
   user-select: none;
-  -webkit-font-smoothing: antialiased;
+  -webkit-font-smoothing: none;
+  -moz-osx-font-smoothing: grayscale;
+  font-smooth: never;
 }
 
+/* Classic Windows 95 16px Scrollbar */
+::-webkit-scrollbar {
+  width: 16px;
+  height: 16px;
+  background-color: #dfdfdf;
+  background-image: var(--dither-bg);
+  background-size: 2px 2px;
+  background-position: 0 0, 0 1px, 1px -1px, -1px 0;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--win-gray);
+  box-shadow: var(--bevel-btn);
+}
+
+::-webkit-scrollbar-button {
+  width: 16px;
+  height: 16px;
+  background-color: var(--win-gray);
+  box-shadow: var(--bevel-btn);
+}
+
+::-webkit-scrollbar-corner {
+  background-color: var(--win-gray);
+}
+
+/* Desktop Wallpapers */
 body.theme-teal {
   background-color: #008080;
   background-image: none;
 }
 
 body.theme-grid {
-  background-color: #f4f1ea;
+  background-color: #c0c0c0;
   background-image:
-    linear-gradient(to right, rgba(17, 17, 17, 0.08) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(17, 17, 17, 0.08) 1px, transparent 1px);
-  background-size: 24px 24px;
+    linear-gradient(to right, rgba(0, 0, 0, 0.14) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.14) 1px, transparent 1px);
+  background-size: 16px 16px;
 }
 
 body.theme-brick {
-  background-color: #7c3626;
+  background-color: #800000;
   background-image:
-    linear-gradient(335deg, rgba(0, 0, 0, 0.22) 23px, transparent 23px),
-    linear-gradient(155deg, rgba(0, 0, 0, 0.22) 23px, transparent 23px),
-    linear-gradient(335deg, rgba(0, 0, 0, 0.22) 23px, transparent 23px),
-    linear-gradient(155deg, rgba(0, 0, 0, 0.22) 23px, transparent 23px);
+    linear-gradient(335deg, rgba(0, 0, 0, 0.35) 23px, transparent 23px),
+    linear-gradient(155deg, rgba(0, 0, 0, 0.35) 23px, transparent 23px),
+    linear-gradient(335deg, rgba(0, 0, 0, 0.35) 23px, transparent 23px),
+    linear-gradient(155deg, rgba(0, 0, 0, 0.35) 23px, transparent 23px);
   background-size: 58px 58px;
   background-position: 0 2px, 4px 35px, 29px 31px, 34px 6px;
 }
@@ -91,7 +182,7 @@ body.theme-brick {
   pointer-events: none;
   background: linear-gradient(
     rgba(18, 16, 16, 0) 50%,
-    rgba(0, 0, 0, 0.24) 50%
+    rgba(0, 0, 0, 0.25) 50%
   );
   background-size: 100% 3px;
 }
@@ -101,13 +192,13 @@ body.theme-brick {
    ============================================================ */
 #os-boot-overlay {
   font-family: var(--font-mono);
-  color: #dcdcdc;
+  color: #cccccc;
 }
 
 .boot-stage {
   display: flex;
   flex-direction: column;
-  padding: 28px 36px;
+  padding: 24px 32px;
 }
 
 .bios-top-row {
@@ -115,16 +206,16 @@ body.theme-brick {
   justify-content: space-between;
   align-items: flex-start;
   gap: 16px;
-  border-bottom: 1px dashed #666;
-  padding-bottom: 14px;
-  margin-bottom: 16px;
-  font-size: 0.88rem;
+  border-bottom: 1px dashed #666666;
+  padding-bottom: 12px;
+  margin-bottom: 14px;
+  font-size: 0.9rem;
   line-height: 1.5;
 }
 
 .bios-brand {
   color: #ffffff;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .bios-energy-box {
@@ -135,8 +226,8 @@ body.theme-brick {
 }
 
 .bios-spec-block {
-  margin-bottom: 14px;
-  font-size: 0.86rem;
+  margin-bottom: 12px;
+  font-size: 0.88rem;
   line-height: 1.6;
   color: #ffffff;
 }
@@ -144,17 +235,17 @@ body.theme-brick {
 .bios-log-area {
   flex: 1;
   overflow-y: auto;
-  font-size: 0.83rem;
+  font-size: 0.86rem;
   line-height: 1.55;
-  color: #a8ffa8;
+  color: #55ff55;
 }
 
 .bios-cmos-box {
   margin-top: 10px;
   padding: 10px 14px;
   border: 1px solid #ffff55;
-  background: rgba(0, 0, 128, 0.45);
-  font-size: 0.8rem;
+  background: #000080;
+  font-size: 0.84rem;
   line-height: 1.5;
 }
 
@@ -162,10 +253,10 @@ body.theme-brick {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-top: 1px dashed #666;
+  border-top: 1px dashed #666666;
   padding-top: 10px;
   margin-top: 12px;
-  font-size: 0.82rem;
+  font-size: 0.85rem;
   color: #ffffff;
 }
 
@@ -173,18 +264,17 @@ body.theme-brick {
 #boot-stage-splash {
   align-items: center;
   justify-content: center;
-  background: linear-gradient(180deg, #001a4d 0%, #008080 55%, #004d4d 100%);
+  background: linear-gradient(180deg, #000040 0%, #008080 55%, #004040 100%);
   position: relative;
 }
 
 .win95-splash-card {
   background: var(--win-gray);
-  color: var(--brutal-ink);
-  border: 3px solid var(--brutal-ink);
-  box-shadow: 8px 8px 0 var(--brutal-ink);
-  padding: 28px 38px;
+  color: #000000;
+  box-shadow: var(--bevel-win);
+  padding: 26px 36px;
   text-align: center;
-  max-width: 480px;
+  max-width: 470px;
   width: calc(100% - 32px);
 }
 
@@ -192,43 +282,40 @@ body.theme-brick {
   display: grid;
   grid-template-columns: repeat(2, 18px);
   grid-template-rows: repeat(2, 18px);
-  gap: 3px;
+  gap: 2px;
   justify-content: center;
   margin: 0 auto 14px;
 }
 
 .win95-flag-grid span {
   display: block;
-  border: 1.5px solid var(--brutal-ink);
+  border: 1px solid #000000;
 }
 
 .win95-splash-sub {
-  font-size: 0.72rem;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  color: var(--win-darker);
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #404040;
   margin-bottom: 6px;
 }
 
 .win95-splash-title {
   font-family: var(--font-sans);
-  font-size: 2rem;
-  font-weight: 900;
-  letter-spacing: -0.02em;
+  font-size: 1.85rem;
+  font-weight: 700;
   margin-bottom: 10px;
 }
 
 .win95-splash-95 {
   display: inline-block;
-  padding: 0 8px;
-  background: var(--brutal-yellow);
-  border: 2px solid var(--brutal-ink);
+  padding: 0 7px;
+  background: var(--win-navy);
+  color: #ffffff;
 }
 
 .win95-splash-desc {
   font-family: var(--font-sans);
-  font-size: 0.82rem;
-  font-weight: 700;
+  font-size: 0.85rem;
 }
 
 .win95-boot-track {
@@ -236,16 +323,16 @@ body.theme-brick {
   bottom: 0;
   left: 0;
   right: 0;
-  height: 14px;
-  background: #111;
-  border-top: 2px solid #fff;
+  height: 16px;
+  background: #c0c0c0;
+  box-shadow: var(--bevel-thin-sunken);
   overflow: hidden;
 }
 
 .win95-boot-runner {
   width: 35%;
   height: 100%;
-  background: linear-gradient(90deg, #000080, #48dbfb, #000080);
+  background: linear-gradient(90deg, #000080, #1084d0, #000080);
   animation: win95BootSlide 1.4s linear infinite;
 }
 
@@ -264,107 +351,113 @@ body.theme-brick {
   justify-content: center;
   padding: 16px;
   font-family: var(--font-sans);
-  color: var(--brutal-ink);
+  color: #000000;
 }
 
 .win95-login-dialog {
-  width: min(530px, 100%);
+  width: min(510px, 100%);
   background: var(--win-gray);
-  border: 3px solid var(--brutal-ink);
-  box-shadow: 8px 8px 0 var(--brutal-ink);
+  box-shadow: var(--bevel-win);
+  padding: 3px;
 }
 
 .win95-logon-titlebar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 6px 10px;
+  padding: 4px 6px;
   background: linear-gradient(90deg, var(--win-navy), var(--win-navy-light));
   color: #ffffff;
-  font-size: 0.82rem;
-  font-weight: 900;
-  border-bottom: 2px solid var(--brutal-ink);
+  font-size: 0.85rem;
+  font-weight: 700;
 }
 
 .win95-logon-title-left {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 6px;
 }
 
 .win95-title-help-btn {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 16px;
   background: var(--win-gray);
-  color: var(--brutal-ink);
-  border: 2px solid var(--brutal-ink);
-  font-weight: 900;
+  color: #000000;
+  border: none;
+  box-shadow: var(--bevel-btn);
+  font-weight: 700;
   font-size: 0.75rem;
   cursor: pointer;
 }
 
+.win95-title-help-btn:active {
+  box-shadow: var(--bevel-btn-pressed);
+}
+
 .win95-logon-tabs {
   display: flex;
-  gap: 4px;
-  padding: 8px 14px 0;
-  border-bottom: 2px solid var(--brutal-ink);
-  background: #b0b0b0;
+  gap: 2px;
+  padding: 8px 10px 0;
 }
 
 .win95-logon-tab {
-  padding: 6px 13px;
-  font-size: 0.78rem;
-  font-weight: 800;
+  padding: 5px 12px;
+  font-family: var(--font-sans);
+  font-size: 0.82rem;
   background: var(--win-gray);
-  color: var(--brutal-ink);
-  border: 2px solid var(--brutal-ink);
-  border-bottom: none;
+  color: #000000;
+  border: none;
+  box-shadow:
+    inset 1px 1px 0 #ffffff,
+    inset -1px 0 0 #000000,
+    inset 2px 2px 0 #dfdfdf,
+    inset -2px 0 0 #808080;
   cursor: pointer;
-  opacity: 0.85;
   white-space: nowrap;
 }
 
 .win95-logon-tab.active {
-  background: var(--brutal-yellow);
-  opacity: 1;
+  font-weight: 700;
   position: relative;
   top: 2px;
-  padding-bottom: 8px;
+  padding-bottom: 7px;
+  z-index: 2;
 }
 
 .win95-logon-body {
-  padding: 16px 18px;
+  margin: 0 10px 10px;
+  padding: 14px;
+  background: var(--win-gray);
+  box-shadow: var(--bevel-btn);
 }
 
 .win95-login-error {
-  padding: 8px 10px;
+  padding: 7px 10px;
   margin-bottom: 10px;
-  background: var(--brutal-red);
+  background: #800000;
   color: #ffffff;
-  border: 2px solid var(--brutal-ink);
-  font-size: 0.8rem;
-  font-weight: 800;
+  box-shadow: var(--bevel-thin-sunken);
+  font-size: 0.82rem;
 }
 
 .win95-logon-intro {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 14px;
-  font-size: 0.8rem;
+  margin-bottom: 12px;
+  font-size: 0.82rem;
   line-height: 1.45;
 }
 
 .win95-logon-grid {
   display: grid;
-  grid-template-columns: 98px 1fr;
-  gap: 9px 10px;
+  grid-template-columns: 96px 1fr;
+  gap: 8px 10px;
   align-items: center;
 }
 
 .win95-logon-label {
-  font-size: 0.8rem;
-  font-weight: 800;
+  font-size: 0.82rem;
   white-space: nowrap;
 }
 
@@ -381,37 +474,53 @@ body.theme-brick {
 .win95-logon-select,
 .win95-logon-input {
   width: 100%;
-  height: 31px;
-  padding: 4px 8px;
+  height: 27px;
+  padding: 3px 7px;
   background: #ffffff;
-  color: var(--brutal-ink);
-  border: 2px solid var(--brutal-ink);
-  box-shadow: inset 1px 1px 0 var(--win-dark);
+  color: #000000;
+  border: none;
+  box-shadow: var(--bevel-sunken);
   font-family: var(--font-sans);
   font-size: 0.82rem;
-  font-weight: 700;
   appearance: none;
+}
+
+.win95-logon-select:focus,
+.win95-logon-input:focus {
+  outline: none;
 }
 
 .win95-select-arrow {
   position: absolute;
-  right: 8px;
-  top: 50%;
-  transform: translateY(-50%);
+  right: 2px;
+  top: 2px;
+  bottom: 2px;
+  width: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--win-gray);
+  box-shadow: var(--bevel-btn);
   pointer-events: none;
 }
 
 .win95-user-search-btn,
 .win95-mini-btn {
-  height: 31px;
-  padding: 0 9px;
+  height: 27px;
+  padding: 0 8px;
   background: var(--win-gray);
-  border: 2px solid var(--brutal-ink);
-  box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 var(--win-dark);
-  font-size: 0.75rem;
-  font-weight: 800;
+  color: #000000;
+  border: none;
+  box-shadow: var(--bevel-btn);
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
   white-space: nowrap;
   cursor: pointer;
+}
+
+.win95-user-search-btn:active,
+.win95-mini-btn:active {
+  box-shadow: var(--bevel-btn-pressed);
 }
 
 .win95-user-search-row,
@@ -423,57 +532,54 @@ body.theme-brick {
 }
 
 .win95-search-count {
-  font-family: var(--font-mono);
-  font-size: 0.74rem;
-  font-weight: 800;
+  font-size: 0.78rem;
   white-space: nowrap;
 }
 
-/* 이용자 신상 명세 필드셋 & 제목 배지 정렬 */
+/* Windows 95 Etched GroupBox (이용자 신상 명세) */
 .win95-profile-fieldset {
-  margin-top: 14px;
-  padding: 10px 12px 11px;
-  border: 2px solid var(--brutal-ink);
-  background: var(--brutal-paper);
+  margin-top: 12px;
+  padding: 8px 10px 10px;
+  border: 1px solid #808080;
+  box-shadow: inset 1px 1px 0 #ffffff, 1px 1px 0 #ffffff;
+  background: var(--win-gray);
 }
 
 .win95-profile-fieldset legend {
-  padding: 2px 8px;
+  padding: 0 6px;
   margin-left: 2px;
   background: var(--win-gray);
-  color: var(--brutal-ink);
-  border: 1.5px solid var(--brutal-ink);
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-  font-weight: 900;
-  line-height: 1.2;
+  color: #000000;
+  font-size: 0.78rem;
+  font-weight: 700;
 }
 
 .win95-profile-inner {
   display: flex;
   align-items: center;
-  gap: 11px;
+  gap: 10px;
 }
 
 .win95-profile-avatar-box {
-  width: 42px;
-  height: 42px;
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--brutal-yellow);
-  border: 2px solid var(--brutal-ink);
+  background: #ffffff;
+  box-shadow: var(--bevel-sunken);
   flex-shrink: 0;
 }
 
 .win95-profile-name {
-  font-size: 0.85rem;
-  font-weight: 900;
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: var(--win-navy);
 }
 
 .win95-profile-bio {
-  font-size: 0.76rem;
-  color: #444;
+  font-size: 0.78rem;
+  color: #222222;
   margin-top: 2px;
 }
 
@@ -482,19 +588,17 @@ body.theme-brick {
   align-items: center;
   gap: 8px;
   margin-top: 10px;
-  padding: 6px 9px;
-  background: #efefef;
-  border: 2px solid var(--win-dark);
-  font-family: var(--font-mono);
-  font-size: 0.73rem;
+  padding: 4px 8px;
+  background: var(--win-gray);
+  box-shadow: var(--bevel-thin-sunken);
+  font-size: 0.78rem;
 }
 
 .win95-status-led {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  background: var(--brutal-green);
-  border: 1.5px solid var(--brutal-ink);
+  width: 8px;
+  height: 8px;
+  background: #008000;
+  border: 1px solid #000000;
   flex-shrink: 0;
 }
 
@@ -503,7 +607,7 @@ body.theme-brick {
   justify-content: space-between;
   align-items: center;
   gap: 8px;
-  margin-top: 14px;
+  margin-top: 12px;
 }
 
 .win95-dlg-btn {
@@ -511,33 +615,38 @@ body.theme-brick {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  height: 32px;
+  height: 28px;
   padding: 0 14px;
   background: var(--win-gray);
-  color: var(--brutal-ink);
-  border: 2px solid var(--brutal-ink);
-  box-shadow: 2px 2px 0 var(--brutal-ink), inset 1px 1px 0 #fff;
+  color: #000000;
+  border: none;
+  box-shadow: var(--bevel-btn);
   font-family: var(--font-sans);
-  font-size: 0.8rem;
-  font-weight: 900;
+  font-size: 0.82rem;
   white-space: nowrap;
   cursor: pointer;
 }
 
 .win95-dlg-btn.primary {
-  background: var(--brutal-yellow);
+  font-weight: 700;
+  outline: 1px solid #000000;
+}
+
+.win95-dlg-btn:focus-visible {
+  outline: 1px dotted #000000;
+  outline-offset: -4px;
 }
 
 .win95-dlg-btn:active {
-  transform: translate(1px, 1px);
-  box-shadow: 1px 1px 0 var(--brutal-ink);
+  box-shadow: var(--bevel-btn-pressed);
+  padding: 1px 13px 0 15px;
 }
 
-/* 도트 초상화 3x2 균형 그리드 & 버튼 줄바꿈 방지 */
+/* 도트 초상화 3x2 균형 그리드 */
 .win95-avatar-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 6px;
+  gap: 5px;
 }
 
 .win95-avatar-grid button,
@@ -545,15 +654,15 @@ body.theme-brick {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  height: 34px;
-  padding: 4px 8px;
-  background: #ffffff;
-  color: var(--brutal-ink);
-  border: 2px solid var(--brutal-ink);
+  gap: 5px;
+  height: 30px;
+  padding: 2px 6px;
+  background: var(--win-gray);
+  color: #000000;
+  border: none;
+  box-shadow: var(--bevel-btn);
   font-family: var(--font-sans);
   font-size: 0.78rem;
-  font-weight: 800;
   white-space: nowrap;
   cursor: pointer;
 }
@@ -561,9 +670,14 @@ body.theme-brick {
 .win95-avatar-grid button.active,
 .win95-avatar-grid button[aria-checked="true"],
 .win95-avatar-opt.active {
-  background: var(--brutal-yellow);
-  box-shadow: inset 1px 1px 0 var(--win-dark);
+  background-color: #dfdfdf;
+  background-image: var(--dither-bg);
+  background-size: 2px 2px;
+  background-position: 0 0, 0 1px, 1px -1px, -1px 0;
+  box-shadow: var(--bevel-btn-pressed);
+  font-weight: 700;
 }
+
 /* ============================================================
    2. TOP OS SYSTEM MENUBAR
    ============================================================ */
@@ -572,14 +686,14 @@ body.theme-brick {
   top: 0;
   left: 0;
   right: 0;
-  height: 32px;
+  height: 28px;
   z-index: 90000;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 8px;
+  padding: 0 6px;
   background: var(--win-gray);
-  border-bottom: 2.5px solid var(--brutal-ink);
+  box-shadow: inset 0 -1px 0 #808080, 0 1px 0 #ffffff;
 }
 
 .menu-bar-left {
@@ -589,13 +703,12 @@ body.theme-brick {
 }
 
 .os-brand-badge {
-  padding: 2px 8px;
-  margin-right: 6px;
-  background: var(--brutal-ink);
-  color: var(--brutal-yellow);
-  font-family: var(--font-mono);
-  font-size: 0.74rem;
-  font-weight: 900;
+  padding: 2px 7px;
+  margin-right: 4px;
+  background: var(--win-navy);
+  color: #ffffff;
+  font-size: 0.78rem;
+  font-weight: 700;
 }
 
 .menu-item-wrap {
@@ -603,14 +716,13 @@ body.theme-brick {
 }
 
 .menu-root {
-  height: 24px;
-  padding: 0 9px;
+  height: 22px;
+  padding: 0 8px;
   background: transparent;
-  color: var(--brutal-ink);
-  border: 1.5px solid transparent;
+  color: #000000;
+  border: none;
   font-family: var(--font-sans);
-  font-size: 0.78rem;
-  font-weight: 800;
+  font-size: 0.8rem;
   cursor: pointer;
 }
 
@@ -618,7 +730,6 @@ body.theme-brick {
 .menu-item-wrap.open .menu-root {
   background: var(--win-navy);
   color: #ffffff;
-  border-color: var(--brutal-ink);
 }
 
 .menu-dropdown {
@@ -626,11 +737,10 @@ body.theme-brick {
   position: absolute;
   top: 100%;
   left: 0;
-  min-width: 245px;
-  padding: 4px;
+  min-width: 240px;
+  padding: 3px;
   background: var(--win-gray);
-  border: 2.5px solid var(--brutal-ink);
-  box-shadow: 4px 4px 0 var(--brutal-ink);
+  box-shadow: var(--bevel-win);
   z-index: 95000;
 }
 
@@ -643,13 +753,12 @@ body.theme-brick {
   display: block;
   width: 100%;
   text-align: left;
-  padding: 5px 10px;
+  padding: 4px 10px;
   background: transparent;
-  color: var(--brutal-ink);
+  color: #000000;
   border: none;
   font-family: var(--font-sans);
-  font-size: 0.78rem;
-  font-weight: 700;
+  font-size: 0.8rem;
   cursor: pointer;
 }
 
@@ -659,20 +768,29 @@ body.theme-brick {
 }
 
 .menu-sep {
-  height: 1px;
-  margin: 4px 2px;
-  background: var(--win-dark);
+  height: 2px;
+  margin: 3px 2px;
+  border-top: 1px solid #808080;
   border-bottom: 1px solid #ffffff;
 }
 
 .status-pill {
-  padding: 2px 8px;
-  background: #ffffff;
-  color: var(--brutal-ink);
-  border: 2px solid var(--brutal-ink);
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-  font-weight: 900;
+  height: 21px;
+  padding: 1px 7px;
+  background: var(--win-gray) !important;
+  color: #000000 !important;
+  border: none;
+  box-shadow: var(--bevel-thin-sunken);
+  font-family: var(--font-sans);
+  font-size: 0.76rem;
+}
+
+button.status-pill {
+  box-shadow: var(--bevel-btn);
+}
+
+button.status-pill:active {
+  box-shadow: var(--bevel-btn-pressed);
 }
 
 .pixel-svg-14 {
@@ -686,74 +804,92 @@ body.theme-brick {
    ============================================================ */
 .desktop-workspace {
   position: fixed;
-  top: 32px;
+  top: 29px;
   left: 0;
   right: 0;
-  bottom: 38px;
+  bottom: 34px;
   overflow: hidden;
 }
 
 .desktop-icons {
   position: absolute;
-  top: 12px;
-  left: 12px;
+  top: 10px;
+  left: 10px;
   width: 174px;
   display: grid;
   grid-template-columns: repeat(2, 82px);
-  gap: 10px 10px;
+  gap: 8px 8px;
   z-index: 10;
+  max-height: calc(100vh - var(--desktop-safe-top) - var(--desktop-safe-bottom));
+  align-content: start;
 }
 
 .desk-icon {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 5px;
-  padding: 5px 2px;
+  gap: 4px;
+  padding: 4px 2px;
   background: transparent;
-  border: 1.5px solid transparent;
+  border: 1px solid transparent;
   cursor: pointer;
   text-align: center;
 }
 
-.desk-icon:hover,
-.desk-icon:focus-visible {
-  background: rgba(0, 0, 128, 0.28);
-  border-color: rgba(255, 255, 255, 0.7);
+.desk-icon:hover .desk-icon-box,
+.desk-icon:focus-visible .desk-icon-box {
+  filter: brightness(0.92);
+}
+
+.desk-icon:focus-visible span {
+  background: var(--win-navy);
+  outline: 1px dotted #ffff00;
 }
 
 .desk-icon-box {
-  width: 44px;
-  height: 44px;
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 2.5px solid var(--brutal-ink);
-  box-shadow: 3px 3px 0 var(--brutal-ink);
+  background: transparent !important;
+  border: none;
+  box-shadow: none;
+  filter: drop-shadow(1px 1px 0 rgba(0, 0, 0, 0.75));
+}
+
+.desk-icon-box svg {
+  width: 30px;
+  height: 30px;
 }
 
 .desk-icon span {
-  padding: 1px 4px;
-  background: rgba(17, 17, 17, 0.72);
+  padding: 1px 3px;
+  background: transparent;
   color: #ffffff;
-  font-size: 0.71rem;
-  font-weight: 800;
+  text-shadow: 1px 1px 0 #000000;
+  font-size: 0.76rem;
   line-height: 1.25;
   word-break: keep-all;
 }
 
+.desk-icon:hover span {
+  background: var(--win-navy);
+  text-shadow: none;
+}
+
 /* ============================================================
-   4. FLOATING WINDOWS
+   4. FLOATING WINDOWS (CLASSIC WIN95 3D FRAME)
    ============================================================ */
 .floating-win {
   display: none;
   position: absolute;
   flex-direction: column;
-  max-width: calc(100vw - 24px);
-  max-height: calc(100vh - 82px);
+  max-width: calc(100vw - 20px);
+  max-height: calc(100vh - 72px);
+  padding: 3px;
   background: var(--win-gray);
-  border: 3px solid var(--brutal-ink);
-  box-shadow: 6px 6px 0 var(--brutal-ink);
+  box-shadow: var(--bevel-win);
   z-index: 100;
 }
 
@@ -765,76 +901,82 @@ body.theme-brick {
   z-index: 500;
 }
 
+/* Inactive vs Focused Titlebar */
 .win-titlebar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  min-height: 30px;
-  padding: 4px 8px;
-  background: var(--win-navy);
-  color: #ffffff;
-  border-bottom: 2.5px solid var(--brutal-ink);
-  font-family: var(--font-mono);
-  font-size: 0.78rem;
-  font-weight: 900;
+  min-height: 24px;
+  padding: 2px 4px 2px 6px;
+  background: #808080 !important;
+  color: #dfdfdf !important;
+  font-family: var(--font-sans);
+  font-size: 0.82rem;
+  font-weight: 700;
   cursor: move;
   flex-shrink: 0;
 }
 
-.win-titlebar.yellow-bar {
-  background: var(--brutal-yellow);
-  color: var(--brutal-ink);
+.floating-win.focused .win-titlebar {
+  background: linear-gradient(90deg, #000080 0%, #1084d0 100%) !important;
+  color: #ffffff !important;
 }
 
 .win-title-left {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 6px;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
 }
 
 .win-title-dot {
-  width: 10px;
-  height: 10px;
-  background: var(--brutal-yellow);
-  border: 1.5px solid var(--brutal-ink);
+  width: 11px;
+  height: 11px;
+  background: #ffff00 !important;
+  border: 1px solid #000000;
   flex-shrink: 0;
 }
 
 .win-controls {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
   flex-shrink: 0;
 }
 
 .win-ctrl-btn {
-  width: 22px;
-  height: 20px;
+  width: 18px;
+  height: 16px;
   background: var(--win-gray);
-  color: var(--brutal-ink);
-  border: 2px solid var(--brutal-ink);
-  box-shadow: inset 1px 1px 0 #ffffff;
+  color: #000000;
+  border: none;
+  box-shadow: var(--bevel-btn);
   font-family: var(--font-mono);
-  font-size: 0.75rem;
-  font-weight: 900;
+  font-size: 0.72rem;
+  font-weight: 700;
   line-height: 1;
   cursor: pointer;
 }
 
+.win-ctrl-btn:active {
+  box-shadow: var(--bevel-btn-pressed);
+}
+
 .win-ctrl-btn.close {
-  background: var(--brutal-red);
-  color: #ffffff;
+  margin-left: 2px;
+  background: var(--win-gray);
+  color: #000000;
 }
 
 .win-body {
   flex: 1;
   overflow-y: auto;
-  padding: 14px;
-  background: var(--brutal-paper);
+  margin-top: 2px;
+  padding: 10px;
+  background: var(--win-gray);
   user-select: text;
 }
 
@@ -842,12 +984,13 @@ body.theme-brick {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 4px 10px;
+  gap: 4px;
+  margin-top: 3px;
+  padding: 2px 6px;
   background: var(--win-gray);
-  border-top: 2px solid var(--brutal-ink);
-  font-family: var(--font-mono);
-  font-size: 0.73rem;
-  font-weight: 800;
+  box-shadow: var(--bevel-thin-sunken);
+  font-family: var(--font-sans);
+  font-size: 0.76rem;
   flex-shrink: 0;
 }
 
@@ -857,70 +1000,69 @@ body.theme-brick {
 .kpi-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 10px;
-  margin-bottom: 12px;
+  gap: 8px;
+  margin-bottom: 10px;
 }
 
 .kpi-card {
-  padding: 10px 12px;
+  padding: 8px 10px;
   background: #ffffff;
-  border: 2.5px solid var(--brutal-ink);
-  box-shadow: 3px 3px 0 var(--brutal-ink);
+  box-shadow: var(--bevel-sunken);
+  border-top: 4px solid var(--win-navy);
 }
 
-.kpi-card.yellow { background: var(--brutal-yellow); }
-.kpi-card.sky    { background: var(--brutal-sky); }
-.kpi-card.green  { background: var(--brutal-green); }
-.kpi-card.pink   { background: var(--brutal-pink); color: #ffffff; }
+.kpi-card.yellow { border-top-color: #808000; }
+.kpi-card.sky    { border-top-color: #008080; }
+.kpi-card.green  { border-top-color: #008000; }
+.kpi-card.pink   { border-top-color: #800080; color: #000000; }
 
 .kpi-label {
-  font-size: 0.74rem;
-  font-weight: 900;
-  opacity: 0.88;
+  font-size: 0.76rem;
+  color: #404040;
 }
 
 .kpi-val {
-  font-size: 1.35rem;
-  font-weight: 900;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--win-navy);
   margin: 2px 0;
 }
 
 .kpi-sub {
-  font-size: 0.72rem;
-  font-weight: 700;
-  opacity: 0.85;
+  font-size: 0.74rem;
+  color: #555555;
 }
 
 .charts-grid {
   display: grid;
   grid-template-columns: 1fr 1.6fr;
-  gap: 10px;
-  margin-bottom: 12px;
+  gap: 8px;
+  margin-bottom: 10px;
 }
 
 .sunken-box {
-  padding: 10px 12px;
+  padding: 9px 10px;
   background: #ffffff;
-  border: 2.5px solid var(--brutal-ink);
-  box-shadow: inset 2px 2px 0 rgba(0, 0, 0, 0.08);
+  box-shadow: var(--bevel-sunken);
 }
 
 .box-head {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding: 2px 6px;
   margin-bottom: 8px;
+  background: var(--win-gray);
+  box-shadow: var(--bevel-btn);
   font-size: 0.8rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .tag-mini {
-  padding: 1px 6px;
-  background: var(--brutal-ink);
-  color: var(--brutal-yellow);
-  font-family: var(--font-mono);
-  font-size: 0.68rem;
-  font-weight: 900;
+  padding: 1px 5px;
+  background: var(--win-navy);
+  color: #ffffff;
+  font-size: 0.72rem;
 }
 
 .toolbar-box {
@@ -929,10 +1071,10 @@ body.theme-brick {
   justify-content: space-between;
   align-items: center;
   gap: 8px;
-  padding: 9px 10px;
-  margin-bottom: 12px;
+  padding: 6px 8px;
+  margin-bottom: 10px;
   background: var(--win-gray);
-  border: 2.5px solid var(--brutal-ink);
+  box-shadow: var(--bevel-thin-sunken);
 }
 
 .pill-group,
@@ -940,22 +1082,27 @@ body.theme-brick {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
 }
 
 .pill-btn {
   padding: 4px 10px;
-  background: #ffffff;
-  color: var(--brutal-ink);
-  border: 2px solid var(--brutal-ink);
-  font-size: 0.78rem;
-  font-weight: 800;
+  background: var(--win-gray);
+  color: #000000;
+  border: none;
+  box-shadow: var(--bevel-btn);
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
   cursor: pointer;
 }
 
 .pill-btn.active {
-  background: var(--brutal-ink);
-  color: var(--brutal-yellow);
+  background-color: #dfdfdf;
+  background-image: var(--dither-bg);
+  background-size: 2px 2px;
+  background-position: 0 0, 0 1px, 1px -1px, -1px 0;
+  box-shadow: var(--bevel-btn-pressed);
+  font-weight: 700;
 }
 
 .win95-select,
@@ -966,87 +1113,109 @@ body.theme-brick {
 .win-body input[type="url"],
 .win-body select,
 .win-body textarea {
-  padding: 5px 8px;
+  padding: 4px 7px;
   background: #ffffff;
-  color: var(--brutal-ink);
-  border: 2px solid var(--brutal-ink);
+  color: #000000;
+  border: none;
+  box-shadow: var(--bevel-sunken);
   font-family: var(--font-sans);
   font-size: 0.8rem;
-  font-weight: 700;
 }
 
 #filter-keyword {
   min-width: 210px;
 }
 
-/* Neo-Brutalism Win95 Buttons */
+/* Authentic Windows 95 Bevel Buttons */
 .btn95 {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 5px;
-  padding: 6px 12px;
+  padding: 5px 11px;
   background: var(--win-gray);
-  color: var(--brutal-ink);
-  border: 2px solid var(--brutal-ink);
-  box-shadow: 2px 2px 0 var(--brutal-ink), inset 1px 1px 0 #ffffff;
+  color: #000000;
+  border: none;
+  box-shadow: var(--bevel-btn);
   font-family: var(--font-sans);
   font-size: 0.8rem;
-  font-weight: 900;
   cursor: pointer;
 }
 
 .btn95.sm {
-  padding: 4px 9px;
-  font-size: 0.76rem;
+  padding: 3px 8px;
+  font-size: 0.78rem;
 }
 
-.btn95.yellow { background: var(--brutal-yellow); }
-.btn95.sky    { background: var(--brutal-sky); }
-.btn95.green  { background: var(--brutal-green); }
-.btn95.pink   { background: var(--brutal-pink); color: #ffffff; }
-.btn95.red    { background: var(--brutal-red); color: #ffffff; }
+.btn95.yellow {
+  font-weight: 700;
+  border-left: 3px solid #808000;
+}
+
+.btn95.sky {
+  border-left: 3px solid #008080;
+}
+
+.btn95.green {
+  border-left: 3px solid #008000;
+}
+
+.btn95.pink {
+  border-left: 3px solid #800080;
+  color: #000000;
+}
+
+.btn95.red {
+  border-left: 3px solid #800000;
+  color: #000000;
+}
+
+.btn95:focus-visible {
+  outline: 1px dotted #000000;
+  outline-offset: -4px;
+}
 
 .btn95:active {
+  box-shadow: var(--bevel-btn-pressed);
   transform: translate(1px, 1px);
-  box-shadow: 1px 1px 0 var(--brutal-ink);
 }
 
 /* Archive Cards Grid */
 .archive-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(275px, 1fr));
-  gap: 12px;
+  gap: 10px;
+  padding: 8px;
+  background: #ffffff;
+  box-shadow: var(--bevel-sunken);
 }
 
 .archive-card {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  padding: 12px;
-  background: #ffffff;
-  border: 2.5px solid var(--brutal-ink);
-  box-shadow: 4px 4px 0 var(--brutal-ink);
-  transition: transform 0.1s ease;
+  padding: 10px;
+  background: var(--win-gray);
+  box-shadow: var(--bevel-btn);
 }
 
 .archive-card:hover {
-  transform: translate(-1px, -1px);
-  box-shadow: 5px 5px 0 var(--brutal-ink);
+  outline: 1px dotted #000000;
+  outline-offset: -4px;
 }
 
 /* ============================================================
-   6. START MENU & BOTTOM TASKBAR
+   6. START MENU & BOTTOM TASKBAR (CLASSIC WIN95)
    ============================================================ */
 .start-menu-popup {
   display: none;
   position: fixed;
-  left: 4px;
-  bottom: 40px;
-  width: 255px;
+  left: 2px;
+  bottom: 34px;
+  width: 248px;
+  padding: 3px;
   background: var(--win-gray);
-  border: 3px solid var(--brutal-ink);
-  box-shadow: 6px 6px 0 var(--brutal-ink);
+  box-shadow: var(--bevel-win);
   z-index: 98000;
 }
 
@@ -1055,40 +1224,43 @@ body.theme-brick {
 }
 
 .start-banner {
-  width: 30px;
-  background: var(--win-navy);
-  color: #ffffff;
+  width: 26px;
+  background: linear-gradient(180deg, #000080 0%, #000000 100%);
+  color: #c0c0c0;
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  padding-bottom: 10px;
-  border-right: 2px solid var(--brutal-ink);
+  padding-bottom: 8px;
 }
 
 .start-banner span {
   writing-mode: vertical-rl;
   transform: rotate(180deg);
-  font-family: var(--font-mono);
-  font-size: 0.85rem;
-  letter-spacing: 0.08em;
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.start-banner b {
+  color: #ffffff;
 }
 
 .start-list {
   flex: 1;
-  padding: 4px;
+  padding: 2px 3px;
 }
 
 .start-item {
   display: block;
   width: 100%;
   text-align: left;
-  padding: 6px 8px;
+  padding: 5px 8px;
   background: transparent;
-  color: var(--brutal-ink);
+  color: #000000;
   border: none;
   font-family: var(--font-sans);
-  font-size: 0.78rem;
-  font-weight: 800;
+  font-size: 0.8rem;
   cursor: pointer;
 }
 
@@ -1102,37 +1274,41 @@ body.theme-brick {
   left: 0;
   right: 0;
   bottom: 0;
-  height: 38px;
+  height: 34px;
   z-index: 95000;
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 0 6px;
+  gap: 4px;
+  padding: 3px 4px;
   background: var(--win-gray);
-  border-top: 2.5px solid var(--brutal-ink);
+  box-shadow: inset 0 1px 0 #ffffff, inset 0 2px 0 #dfdfdf;
 }
 
 .btn-start {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  height: 28px;
-  padding: 0 10px;
+  gap: 5px;
+  height: 26px;
+  padding: 0 8px;
   background: var(--win-gray);
-  color: var(--brutal-ink);
-  border: 2px solid var(--brutal-ink);
-  box-shadow: 2px 2px 0 var(--brutal-ink), inset 1px 1px 0 #ffffff;
+  color: #000000;
+  border: none;
+  box-shadow: var(--bevel-btn);
   font-family: var(--font-sans);
-  font-size: 0.8rem;
-  font-weight: 900;
+  font-size: 0.82rem;
+  font-weight: 700;
   cursor: pointer;
   flex-shrink: 0;
+}
+
+.btn-start:active {
+  box-shadow: var(--bevel-btn-pressed);
 }
 
 .taskbar-divider {
   width: 2px;
   height: 22px;
-  background: var(--win-dark);
+  border-left: 1px solid #808080;
   border-right: 1px solid #ffffff;
 }
 
@@ -1140,20 +1316,20 @@ body.theme-brick {
   flex: 1;
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
   overflow-x: auto;
 }
 
 .taskbar-win-btn {
-  height: 26px;
-  max-width: 190px;
-  padding: 0 10px;
+  height: 25px;
+  max-width: 185px;
+  padding: 0 8px;
   background: var(--win-gray);
-  color: var(--brutal-ink);
-  border: 2px solid var(--brutal-ink);
+  color: #000000;
+  border: none;
+  box-shadow: var(--bevel-btn);
   font-family: var(--font-sans);
-  font-size: 0.75rem;
-  font-weight: 800;
+  font-size: 0.78rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1161,18 +1337,22 @@ body.theme-brick {
 }
 
 .taskbar-win-btn.active {
-  background: var(--brutal-yellow);
-  box-shadow: inset 1px 1px 0 var(--win-dark);
+  background-color: #dfdfdf;
+  background-image: var(--dither-bg);
+  background-size: 2px 2px;
+  background-position: 0 0, 0 1px, 1px -1px, -1px 0;
+  box-shadow: var(--bevel-btn-pressed);
+  font-weight: 700;
 }
 
 .taskbar-tray {
   display: flex;
   align-items: center;
   gap: 6px;
-  height: 26px;
+  height: 25px;
   padding: 0 8px;
-  background: #dfdfdf;
-  border: 2px solid var(--win-dark);
+  background: var(--win-gray);
+  box-shadow: var(--bevel-thin-sunken);
   flex-shrink: 0;
 }
 
@@ -1186,22 +1366,141 @@ body.theme-brick {
 }
 
 .taskbar-clock {
-  font-family: var(--font-mono);
-  font-size: 0.76rem;
-  font-weight: 900;
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
+}
+
+/* ============================================================
+   [MODULE UI] COMMUNITY95.EXE & GAMEPACK95.EXE 전용 스타일
+   ============================================================ */
+.sns-avatar-box {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  box-shadow: var(--bevel-sunken);
+  flex-shrink: 0;
+}
+
+.sns-post-card {
+  padding: 10px 12px;
+  background: var(--win-gray);
+  box-shadow: var(--bevel-btn);
+}
+
+.sns-post-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-bottom: 7px;
+  margin-bottom: 9px;
+  border-bottom: 1px solid #808080;
+  box-shadow: 0 1px 0 #ffffff;
+}
+
+.sns-role-tag {
+  display: inline-block;
+  padding: 1px 5px;
+  font-size: 0.72rem;
+  box-shadow: var(--bevel-thin-sunken);
+}
+
+.sns-role-tag.pub {
+  background: #008000;
+  color: #ffffff;
+}
+
+.sns-role-tag.priv {
+  background: var(--win-navy);
+  color: #ffffff;
+}
+
+.sns-post-body {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 8px;
+  background: #ffffff;
+  box-shadow: var(--bevel-sunken);
+}
+
+.sns-post-cover {
+  width: 90px;
+  height: 124px;
+  object-fit: cover;
+  background: #dfdfdf;
+  border: 1px solid #000000;
+  flex-shrink: 0;
+}
+
+.sns-post-review {
+  font-size: 0.82rem;
+  line-height: 1.55;
+  color: #000000;
+  white-space: pre-wrap;
+  word-break: keep-all;
+}
+
+.sns-post-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.sns-cmt-drawer {
+  margin-top: 8px;
+  padding: 8px;
+  background: var(--win-gray);
+  box-shadow: var(--bevel-thin-sunken);
+}
+
+.flip-card-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  padding: 4px 0;
+}
+
+.flip-card {
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  text-align: center;
+  background: var(--win-navy);
+  color: #ffff00;
+  box-shadow: var(--bevel-btn);
+  font-size: 0.78rem;
+  word-break: keep-all;
+  cursor: pointer;
+}
+
+.flip-card.flipped {
+  background: #ffffff;
+  color: #000000;
+  box-shadow: var(--bevel-sunken);
+}
+
+.flip-card.matched {
+  background: #008000;
+  color: #ffffff;
+  box-shadow: var(--bevel-sunken);
+  cursor: default;
+}
+
+.jb-track-row:hover {
+  outline: 1px dotted #ffff00;
 }
 
 /* ============================================================
    [ADD-ON] 1~4단계 레이아웃 안전 영역 & OS 혁신 기능 스타일
    ============================================================ */
-
-/* 1. 바탕화면 아이콘 안전 영역 고정 */
-.desktop-icons {
-  max-height: calc(100vh - var(--desktop-safe-top) - var(--desktop-safe-bottom));
-  align-content: start;
-}
-
-/* 2. 통계 창 및 플로팅 창 접기(Collapse) 미니바 상태 */
 .floating-win.win-collapsed .win-body,
 .floating-win.win-collapsed .win-statusbar {
   display: none !important;
@@ -1218,7 +1517,6 @@ body.theme-brick {
   right: var(--desktop-safe-right);
 }
 
-/* 3. 오디오 리액티브 바탕화면 & 활성 창 글로우 (3단계) */
 body.audio-reactive-on::before {
   content: "";
   position: fixed;
@@ -1227,25 +1525,18 @@ body.audio-reactive-on::before {
   z-index: 1;
   background: radial-gradient(
     circle at 50% 50%,
-    rgba(255, 216, 59, calc(var(--bass-level) * 0.22)) 0%,
-    rgba(72, 219, 251, calc(var(--audio-energy) * 0.14)) 45%,
+    rgba(255, 255, 0, calc(var(--bass-level) * 0.18)) 0%,
+    rgba(0, 255, 255, calc(var(--audio-energy) * 0.12)) 45%,
     transparent 78%
   );
   transition: opacity 0.12s linear;
 }
 
-body.audio-reactive-on .floating-win.focused {
-  box-shadow:
-    6px 6px 0px var(--brutal-ink),
-    0 0 calc(8px + var(--bass-level) * 22px) rgba(255, 216, 59, calc(0.25 + var(--bass-level) * 0.65));
-}
-
-/* 4. 스포트라이트 통합 커맨드 팔레트 (Ctrl/Cmd + K) (2단계) */
 #os-spotlight-overlay {
   display: none;
   position: fixed;
   inset: 0;
-  background: rgba(10, 10, 10, 0.45);
+  background: rgba(0, 0, 0, 0.45);
   z-index: 150000;
   align-items: flex-start;
   justify-content: center;
@@ -1257,29 +1548,33 @@ body.audio-reactive-on .floating-win.focused {
 }
 
 .spotlight-dialog {
-  width: min(560px, calc(100vw - 24px));
+  width: min(540px, calc(100vw - 24px));
+  padding: 3px;
   background: var(--win-gray);
-  border: 3px solid var(--brutal-ink);
-  box-shadow: 8px 8px 0px var(--brutal-ink);
+  box-shadow: var(--bevel-win);
 }
 
 .spotlight-input-wrap {
-  padding: 10px;
-  background: var(--brutal-paper);
-  border-bottom: 2px solid var(--brutal-ink);
+  padding: 8px;
+  background: var(--win-gray);
 }
 
 .spotlight-input {
   width: 100%;
-  height: 36px;
-  font-size: 0.95rem !important;
-  font-weight: 800 !important;
+  height: 32px;
+  padding: 4px 8px;
+  background: #ffffff;
+  box-shadow: var(--bevel-sunken);
+  font-family: var(--font-sans);
+  font-size: 0.9rem !important;
 }
 
 .spotlight-results {
-  max-height: 310px;
+  max-height: 300px;
   overflow-y: auto;
+  margin: 0 8px 8px;
   background: #ffffff;
+  box-shadow: var(--bevel-sunken);
 }
 
 .spotlight-item {
@@ -1287,10 +1582,8 @@ body.audio-reactive-on .floating-win.focused {
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  padding: 8px 12px;
-  border-bottom: 1px solid #e2e2e2;
+  padding: 6px 10px;
   font-size: 0.82rem;
-  font-weight: 800;
   cursor: pointer;
 }
 
@@ -1301,49 +1594,47 @@ body.audio-reactive-on .floating-win.focused {
 }
 
 .spotlight-badge {
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
-  padding: 1px 6px;
-  background: var(--brutal-yellow);
-  color: var(--brutal-ink);
-  border: 1.5px solid var(--brutal-ink);
+  font-size: 0.72rem;
+  padding: 1px 5px;
+  background: var(--win-gray);
+  color: #000000;
+  box-shadow: var(--bevel-btn);
 }
 
-/* 5. 타임머신 스크러버 & 로컬 위키 백링크 [[문서명]] (3단계) */
 .timemachine-bar {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 8px 12px;
-  margin-bottom: 12px;
-  background: #111111;
-  color: var(--brutal-yellow);
-  border: 2.5px solid var(--brutal-ink);
+  padding: 6px 10px;
+  margin-bottom: 10px;
+  background: #000000;
+  color: #55ff55;
+  box-shadow: var(--bevel-sunken);
   font-family: var(--font-mono);
-  font-size: 0.78rem;
+  font-size: 0.8rem;
 }
 
 .timemachine-bar input[type="range"] {
   flex: 1;
-  accent-color: var(--brutal-yellow);
+  accent-color: #000080;
   cursor: pointer;
 }
 
 .wiki-backlink {
   display: inline-block;
-  padding: 0 4px;
-  background: #fff4b8;
+  padding: 0 3px;
+  background: #ffffcc;
   color: var(--win-navy);
-  border-bottom: 2px solid var(--win-navy);
-  font-weight: 900;
+  border-bottom: 1px dashed var(--win-navy);
+  font-weight: 700;
   cursor: pointer;
 }
 
 .wiki-backlink:hover {
-  background: var(--brutal-yellow);
+  background: var(--win-navy);
+  color: #ffffff;
 }
 
-/* 6. 바탕화면 포스트잇 / 스티커 레이어 (4단계) */
 .desktop-sticky-layer {
   position: fixed;
   top: var(--desktop-safe-top);
@@ -1357,12 +1648,11 @@ body.audio-reactive-on .floating-win.focused {
 .desktop-postit {
   position: absolute;
   width: 175px;
-  padding: 9px 10px;
-  background: rgba(255, 248, 179, 0.94);
-  color: var(--brutal-ink);
-  border: 2px solid var(--brutal-ink);
-  box-shadow: 3px 3px 0px var(--brutal-ink);
-  font-size: 0.76rem;
+  padding: 8px 9px;
+  background: #ffffc0;
+  color: #000000;
+  box-shadow: var(--bevel-btn);
+  font-size: 0.78rem;
   line-height: 1.4;
   pointer-events: auto;
   cursor: grab;
@@ -1371,10 +1661,9 @@ body.audio-reactive-on .floating-win.focused {
 .desktop-postit-head {
   display: flex;
   justify-content: space-between;
-  font-family: var(--font-mono);
-  font-size: 0.68rem;
-  font-weight: 900;
-  border-bottom: 1px dashed #666666;
+  font-size: 0.72rem;
+  font-weight: 700;
+  border-bottom: 1px solid #808080;
   padding-bottom: 3px;
   margin-bottom: 5px;
 }
@@ -1390,146 +1679,6 @@ body.audio-reactive-on .floating-win.focused {
   .floating-win.stats-docked-right {
     position: absolute;
   }
-}
-/* ============================================================
-   [MODULE UI] COMMUNITY95.EXE & GAMEPACK95.EXE 전용 스타일
-   ============================================================ */
-
-/* 1. 전체 공개 자료실 광장 (community-app.js) */
-.sns-avatar-box {
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--brutal-yellow);
-  border: 2px solid var(--brutal-ink);
-  flex-shrink: 0;
-}
-
-.sns-post-card {
-  padding: 12px 14px;
-  background: #ffffff;
-  border: 2.5px solid var(--brutal-ink);
-  box-shadow: 4px 4px 0 var(--brutal-ink);
-}
-
-.sns-post-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding-bottom: 8px;
-  margin-bottom: 10px;
-  border-bottom: 2px dashed #cccccc;
-}
-
-.sns-role-tag {
-  display: inline-block;
-  padding: 1px 6px;
-  font-family: var(--font-mono);
-  font-size: 0.68rem;
-  font-weight: 900;
-  border: 1.5px solid var(--brutal-ink);
-}
-
-.sns-role-tag.pub {
-  background: var(--brutal-green);
-  color: var(--brutal-ink);
-}
-
-.sns-role-tag.priv {
-  background: var(--brutal-sky);
-  color: var(--brutal-ink);
-}
-
-.sns-post-body {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-}
-
-.sns-post-cover {
-  width: 92px;
-  height: 128px;
-  object-fit: cover;
-  background: #eeeeee;
-  border: 2px solid var(--brutal-ink);
-  box-shadow: 2px 2px 0 var(--brutal-ink);
-  flex-shrink: 0;
-}
-
-.sns-post-review {
-  font-size: 0.83rem;
-  line-height: 1.55;
-  color: #222222;
-  white-space: pre-wrap;
-  word-break: keep-all;
-}
-
-.sns-post-actions {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 10px;
-  padding-top: 8px;
-  border-top: 1.5px solid #e0e0e0;
-}
-
-.sns-cmt-drawer {
-  margin-top: 8px;
-  padding: 10px;
-  background: var(--brutal-paper);
-  border: 2px solid var(--brutal-ink);
-}
-
-/* 2. 오락실 아카이브 12장 카드 짝맞추기 (gamepack.js) */
-.flip-card-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
-  padding: 4px 0;
-}
-
-.flip-card {
-  height: 68px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 6px;
-  text-align: center;
-  background: var(--win-navy);
-  color: var(--brutal-yellow);
-  border: 2.5px solid var(--brutal-ink);
-  box-shadow: 3px 3px 0 var(--brutal-ink);
-  font-family: var(--font-mono);
-  font-size: 0.76rem;
-  font-weight: 900;
-  word-break: keep-all;
-  cursor: pointer;
-  transition: transform 0.08s ease;
-}
-
-.flip-card:hover {
-  transform: translate(-1px, -1px);
-}
-
-.flip-card.flipped {
-  background: #ffffff;
-  color: var(--brutal-ink);
-  font-family: var(--font-sans);
-}
-
-.flip-card.matched {
-  background: var(--brutal-green);
-  color: var(--brutal-ink);
-  cursor: default;
-}
-
-/* 3. 주크박스 재생목록 호버 효과 (jukebox.js) */
-.jb-track-row:hover {
-  outline: 2px solid var(--brutal-yellow);
 }
 
 @media (max-width: 600px) {
