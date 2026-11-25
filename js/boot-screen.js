@@ -1,10 +1,10 @@
 // ============================================================
 // MY-ARCHIVE 95 OS — BIOS POST & Authentic Windows 95 Logon
-// (Black Screen -> Wait -> Click Sound -> Real Three.js 3D Low-Poly CRT Turn & Slow Zoom -> BIOS Screen)
+// (Black Screen -> Louder Click -> Full-Screen Static + Subtle Noise + 3D CRT Turn & Slow Zoom -> BIOS -> Splash -> Logon)
 // ============================================================
 
 window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-window.__MOD_VERSIONS.bootScreen = 'v2026.11.25-threejs-3d-slow-turn-zoom';
+window.__MOD_VERSIONS.bootScreen = 'v2026.11.25-no-pre-bios-loud-click-full-static-noise';
 
 const SESSION_USER_KEY = 'myarchive95_current_user_v2';
 const USERS_CACHE_KEY = 'myarchive95_users_cache_v2';
@@ -70,7 +70,7 @@ function safeBootTone(type) {
 }
 
 // ============================================================
-// 버튼이 눌리는 '딸깍' 사운드
+// 버튼이 눌리는 '딸깍' 사운드 (볼륨 강화) & 전체 화면 노이즈 사운드
 // ============================================================
 function playButtonClickSound() {
   if (!isRetroSoundEnabled()) return;
@@ -83,35 +83,202 @@ function playButtonClickSound() {
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.type = 'triangle';
-    osc.frequency.setValueAtTime(1950, now);
-    osc.frequency.exponentialRampToValueAtTime(420, now + 0.018);
+    osc.frequency.setValueAtTime(2200, now);
+    osc.frequency.exponentialRampToValueAtTime(380, now + 0.022);
 
-    gain.gain.setValueAtTime(0.09, now);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.022);
+    gain.gain.setValueAtTime(0.24, now);
+    gain.gain.exponentialRampToValueAtTime(0.0005, now + 0.028);
 
     osc.connect(gain);
     gain.connect(ctx.destination);
     osc.start(now);
-    osc.stop(now + 0.025);
+    osc.stop(now + 0.032);
 
     const osc2 = ctx.createOscillator();
     const gain2 = ctx.createGain();
     osc2.type = 'square';
-    osc2.frequency.setValueAtTime(1250, now + 0.011);
-    osc2.frequency.exponentialRampToValueAtTime(310, now + 0.028);
+    osc2.frequency.setValueAtTime(1480, now + 0.012);
+    osc2.frequency.exponentialRampToValueAtTime(280, now + 0.034);
 
-    gain2.gain.setValueAtTime(0.035, now + 0.011);
-    gain2.gain.exponentialRampToValueAtTime(0.0001, now + 0.03);
+    gain2.gain.setValueAtTime(0.11, now + 0.012);
+    gain2.gain.exponentialRampToValueAtTime(0.0005, now + 0.038);
 
     osc2.connect(gain2);
     gain2.connect(ctx.destination);
-    osc2.start(now + 0.011);
-    osc2.stop(now + 0.032);
+    osc2.start(now + 0.012);
+    osc2.stop(now + 0.042);
   } catch {}
 }
 
+function startSubtleStaticNoise() {
+  if (!isRetroSoundEnabled()) return null;
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return null;
+    const ctx = new AudioCtx();
+    const bufferSize = ctx.sampleRate * 2;
+    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+
+    let lastOut = 0;
+    for (let i = 0; i < bufferSize; i++) {
+      const white = Math.random() * 2 - 1;
+      // 약간의 스파크/치지직 텍스처를 섞은 부드러운 노이즈
+      const crackle = Math.random() > 0.9965 ? (Math.random() * 2 - 1) * 0.85 : 0;
+      lastOut = (lastOut + 0.14 * white) / 1.14;
+      data[i] = lastOut * 0.65 + crackle * 0.25;
+    }
+
+    const noise = ctx.createBufferSource();
+    noise.buffer = buffer;
+    noise.loop = true;
+
+    const bandpass = ctx.createBiquadFilter();
+    bandpass.type = 'bandpass';
+    bandpass.frequency.setValueAtTime(1850, ctx.currentTime);
+    bandpass.Q.setValueAtTime(0.65, ctx.currentTime);
+
+    const gain = ctx.createGain();
+    const now = ctx.currentTime;
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.linearRampToValueAtTime(0.018, now + 0.18);
+
+    noise.connect(bandpass);
+    bandpass.connect(gain);
+    gain.connect(ctx.destination);
+    noise.start(now);
+
+    return {
+      stop: () => {
+        try {
+          const t = ctx.currentTime;
+          gain.gain.cancelScheduledValues(t);
+          gain.gain.setValueAtTime(Math.max(0.0001, gain.gain.value), t);
+          gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.14);
+          setTimeout(() => {
+            try {
+              noise.stop();
+              ctx.close();
+            } catch {}
+          }, 160);
+        } catch {}
+      }
+    };
+  } catch {
+    return null;
+  }
+}
+
 // ============================================================
-// 실제 3D 로우-폴리 CRT 모델 로더 (Three.js)
+// 전체 화면 '치지직' 시각 효과 오버레이
+// ============================================================
+function ensureFullScreenStaticStyles() {
+  if (document.getElementById('fullscreen-crt-static-style')) return;
+  const style = document.createElement('style');
+  style.id = 'fullscreen-crt-static-style';
+  style.textContent = `
+    #fullscreen-crt-static-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 1000010;
+      pointer-events: none;
+      overflow: hidden;
+      opacity: 0.88;
+      mix-blend-mode: screen;
+      transition: opacity 0.25s ease;
+    }
+    #fullscreen-crt-static-overlay.fade-out {
+      opacity: 0;
+    }
+    #fullscreen-crt-static-canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    #fullscreen-crt-scanlines {
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        rgba(255, 255, 255, 0.045) 0px,
+        rgba(255, 255, 255, 0.045) 1px,
+        rgba(0, 0, 0, 0.24) 1px,
+        rgba(0, 0, 0, 0.24) 3px
+      );
+      animation: staticScanRoll 0.35s linear infinite;
+    }
+    @keyframes staticScanRoll {
+      0% { transform: translateY(0px); }
+      100% { transform: translateY(3px); }
+    }
+  `;
+  document.head.appendChild(style);
+}
+
+function startFullScreenStaticEffect() {
+  ensureFullScreenStaticStyles();
+  const prev = document.getElementById('fullscreen-crt-static-overlay');
+  if (prev) prev.remove();
+
+  const wrap = document.createElement('div');
+  wrap.id = 'fullscreen-crt-static-overlay';
+
+  const canvas = document.createElement('canvas');
+  canvas.id = 'fullscreen-crt-static-canvas';
+  wrap.appendChild(canvas);
+
+  const scanlines = document.createElement('div');
+  scanlines.id = 'fullscreen-crt-scanlines';
+  wrap.appendChild(scanlines);
+
+  document.body.appendChild(wrap);
+
+  const ctx = canvas.getContext('2d');
+  const cw = 256;
+  const ch = 144;
+  canvas.width = cw;
+  canvas.height = ch;
+
+  let rafId = 0;
+  let stopped = false;
+
+  const renderStatic = () => {
+    if (stopped) return;
+    const imgData = ctx.createImageData(cw, ch);
+    const buf = imgData.data;
+
+    for (let i = 0; i < buf.length; i += 4) {
+      const n = Math.random();
+      const spark = n > 0.985 ? 235 : Math.floor(n * 85);
+      buf[i] = spark;
+      buf[i + 1] = spark;
+      buf[i + 2] = spark;
+      buf[i + 3] = n > 0.92 ? 52 : 18;
+    }
+    ctx.putImageData(imgData, 0, 0);
+
+    // 가로 방향 치지직 노이즈 밴드 1~2줄
+    const bandY = Math.floor(Math.random() * ch);
+    const bandH = 1 + Math.floor(Math.random() * 2);
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.16)';
+    ctx.fillRect(0, bandY, cw, bandH);
+
+    rafId = requestAnimationFrame(renderStatic);
+  };
+
+  rafId = requestAnimationFrame(renderStatic);
+
+  return () => {
+    if (stopped) return;
+    stopped = true;
+    if (rafId) cancelAnimationFrame(rafId);
+    wrap.classList.add('fade-out');
+    setTimeout(() => wrap.remove(), 220);
+  };
+}
+
+// ============================================================
+// 실제 3D 로우-폴리 CRT 모델 로더 (Three.js, '>' 각진 폴리곤 + 정면 스크린)
 // ============================================================
 let __threeScriptPromise = null;
 
@@ -137,22 +304,21 @@ function createCrtScreenCanvasTexture(THREE) {
   canvas.height = 384;
   const ctx = canvas.getContext('2d');
 
-  ctx.fillStyle = '#05080b';
+  ctx.fillStyle = '#05080c';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  ctx.fillStyle = '#d8e2ec';
+  ctx.fillStyle = '#d8e4f0';
   ctx.font = 'bold 18px Consolas, monospace';
-  ctx.fillText('AWARD MODULAR BIOS v4.51PG', 24, 38);
+  ctx.fillText('AWARD MODULAR BIOS v4.51PG', 22, 38);
   ctx.fillStyle = '#7cd4ff';
   ctx.font = '15px Consolas, monospace';
-  ctx.fillText('MY-ARCHIVE 95 WORKSTATION SYSTEM', 24, 66);
+  ctx.fillText('MY-ARCHIVE 95 WORKSTATION', 22, 66);
   ctx.fillStyle = '#66ff66';
-  ctx.fillText('CPU: PENTIUM-CLASS 133MHz [OK]', 24, 104);
-  ctx.fillText('MEMORY TEST: 65536K OK', 24, 128);
+  ctx.fillText('CPU: PENTIUM-CLASS 133MHz [OK]', 22, 106);
+  ctx.fillText('MEMORY TEST: 65536K OK', 22, 130);
   ctx.fillStyle = '#ffff66';
-  ctx.fillText('LOADING BIOS POST...', 24, 172);
+  ctx.fillText('BIOS READY...', 22, 174);
 
-  // 스캔라인
   ctx.fillStyle = 'rgba(0, 0, 0, 0.28)';
   for (let y = 0; y < canvas.height; y += 4) {
     ctx.fillRect(0, y, canvas.width, 1.5);
@@ -168,19 +334,25 @@ function buildLowPolyCrt3dGroup(THREE) {
   const root = new THREE.Group();
 
   const bezelMat = new THREE.MeshStandardMaterial({
-    color: 0xcbc7b7,
+    color: 0xd0ccc0,
     roughness: 0.78,
     metalness: 0.04,
     flatShading: true
   });
+  const bevelRidgeMat = new THREE.MeshStandardMaterial({
+    color: 0xc2beb0,
+    roughness: 0.8,
+    metalness: 0.05,
+    flatShading: true
+  });
   const darkTrimMat = new THREE.MeshStandardMaterial({
-    color: 0x6f6c61,
+    color: 0x67645a,
     roughness: 0.85,
     metalness: 0.08,
     flatShading: true
   });
   const backShellMat = new THREE.MeshStandardMaterial({
-    color: 0x9b9789,
+    color: 0x9c988a,
     roughness: 0.82,
     metalness: 0.06,
     flatShading: true
@@ -198,82 +370,115 @@ function buildLowPolyCrt3dGroup(THREE) {
     flatShading: true
   });
 
-  // 1. 앞면 베젤 프레임 (상/하/좌/우 로우-폴리 블록)
-  const topBar = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.34, 0.36), bezelMat);
-  topBar.position.set(0, 1.13, 1.02);
+  const topBar = new THREE.Mesh(new THREE.BoxGeometry(3.24, 0.34, 0.36), bezelMat);
+  topBar.position.set(0, 1.13, 1.04);
   root.add(topBar);
 
-  const bottomChin = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.52, 0.42), bezelMat);
-  bottomChin.position.set(0, -1.04, 1.04);
+  const bottomChin = new THREE.Mesh(new THREE.BoxGeometry(3.24, 0.54, 0.42), bezelMat);
+  bottomChin.position.set(0, -1.03, 1.06);
   root.add(bottomChin);
 
-  const leftPillar = new THREE.Mesh(new THREE.BoxGeometry(0.36, 1.9, 0.36), bezelMat);
-  leftPillar.position.set(-1.42, 0.01, 1.02);
+  const leftPillar = new THREE.Mesh(new THREE.BoxGeometry(0.36, 1.92, 0.36), bezelMat);
+  leftPillar.position.set(-1.44, 0.01, 1.04);
   root.add(leftPillar);
 
-  const rightPillar = new THREE.Mesh(new THREE.BoxGeometry(0.36, 1.9, 0.36), bezelMat);
-  rightPillar.position.set(1.42, 0.01, 1.02);
+  const rightPillar = new THREE.Mesh(new THREE.BoxGeometry(0.36, 1.92, 0.36), bezelMat);
+  rightPillar.position.set(1.44, 0.01, 1.04);
   root.add(rightPillar);
 
-  // 스크린 리세스 테두리
-  const innerRim = new THREE.Mesh(new THREE.BoxGeometry(2.56, 1.96, 0.18), darkTrimMat);
-  innerRim.position.set(0, 0.01, 0.92);
+  const innerRim = new THREE.Mesh(new THREE.BoxGeometry(2.58, 1.96, 0.14), darkTrimMat);
+  innerRim.position.set(0, 0.01, 0.96);
   root.add(innerRim);
 
-  // 볼록 CRT 스크린(로우-폴리 세그먼트 구면 변형)
-  const screenGeo = new THREE.SphereGeometry(1.75, 18, 14, -Math.PI * 0.24, Math.PI * 0.48, Math.PI * 0.31, Math.PI * 0.38);
+  const screenGeo = new THREE.PlaneGeometry(2.44, 1.82, 10, 8);
   const posAttr = screenGeo.attributes.position;
   for (let i = 0; i < posAttr.count; i++) {
-    const x = posAttr.getX(i);
-    const y = posAttr.getY(i);
-    const z = posAttr.getZ(i);
-    posAttr.setXYZ(i, x * 1.38, y * 1.24, z * 0.42);
+    const x = posAttr.getX(i) / 1.22;
+    const y = posAttr.getY(i) / 0.91;
+    const bulge = Math.max(0, 1 - 0.32 * (x * x + y * y)) * 0.08;
+    posAttr.setZ(i, bulge);
   }
   screenGeo.computeVertexNormals();
 
   const screenMat = new THREE.MeshStandardMaterial({
     map: createCrtScreenCanvasTexture(THREE),
     roughness: 0.25,
-    metalness: 0.1,
-    emissive: 0x101c24,
-    emissiveIntensity: 0.45,
+    metalness: 0.05,
+    emissive: 0x16222c,
+    emissiveIntensity: 0.55,
     flatShading: true
   });
   const screenMesh = new THREE.Mesh(screenGeo, screenMat);
-  screenMesh.position.set(0, 0.01, 0.42);
+  screenMesh.position.set(0, 0.01, 1.06);
   root.add(screenMesh);
 
-  // 전원 버튼 & LED
   const pwrBtn = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.12, 8), powerBtnMat);
   pwrBtn.rotation.x = Math.PI / 2;
-  pwrBtn.position.set(1.26, -1.04, 1.24);
+  pwrBtn.position.set(1.28, -1.03, 1.27);
   root.add(pwrBtn);
 
   const ledDot = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.05, 0.06), ledMat);
-  ledDot.position.set(-1.16, -1.04, 1.25);
+  ledDot.position.set(-1.18, -1.03, 1.28);
   root.add(ledDot);
 
-  // 2. 메인 바디 & 돌출된 뒷면 브라운관 하우징 (앞/뒤/옆 입체)
-  const mainBody = new THREE.Mesh(new THREE.BoxGeometry(3.16, 2.54, 1.28), bezelMat);
-  mainBody.position.set(0, 0, 0.24);
+  const chevronShape = new THREE.Shape();
+  chevronShape.moveTo(-0.75, -1.24);
+  chevronShape.lineTo(0.86, -1.24);
+  chevronShape.lineTo(1.06, 0.0);
+  chevronShape.lineTo(0.86, 1.24);
+  chevronShape.lineTo(-0.75, 1.24);
+  chevronShape.closePath();
+
+  const chevronSideGeo = new THREE.ExtrudeGeometry(chevronShape, {
+    depth: 0.24,
+    bevelEnabled: false,
+    steps: 1
+  });
+  chevronSideGeo.rotateY(Math.PI / 2);
+
+  const leftChevronSide = new THREE.Mesh(chevronSideGeo, bevelRidgeMat);
+  leftChevronSide.position.set(-1.58, 0, 0.24);
+  root.add(leftChevronSide);
+
+  const rightChevronSide = new THREE.Mesh(chevronSideGeo, bevelRidgeMat);
+  rightChevronSide.position.set(1.34, 0, 0.24);
+  root.add(rightChevronSide);
+
+  const mainBody = new THREE.Mesh(new THREE.BoxGeometry(3.12, 2.5, 1.22), bezelMat);
+  mainBody.position.set(0, 0, 0.26);
   root.add(mainBody);
 
-  const rearTube = new THREE.Mesh(new THREE.CylinderGeometry(1.08, 0.72, 1.18, 8), backShellMat);
-  rearTube.rotation.x = Math.PI / 2;
-  rearTube.position.set(0, 0.04, -0.92);
-  root.add(rearTube);
+  const rearCone = new THREE.Mesh(new THREE.CylinderGeometry(1.06, 0.68, 1.16, 6), backShellMat);
+  rearCone.rotation.x = Math.PI / 2;
+  rearCone.position.set(0, 0.04, -0.88);
+  root.add(rearCone);
 
-  const rearCap = new THREE.Mesh(new THREE.BoxGeometry(1.36, 1.26, 0.24), darkTrimMat);
-  rearCap.position.set(0, 0.04, -1.52);
+  const rearCap = new THREE.Mesh(new THREE.BoxGeometry(1.32, 1.22, 0.22), darkTrimMat);
+  rearCap.position.set(0, 0.04, -1.48);
   root.add(rearCap);
 
-  // 3. 스탠드 넥 & 로우-폴리 베이스
-  const neck = new THREE.Mesh(new THREE.BoxGeometry(1.18, 0.34, 0.85), darkTrimMat);
-  neck.position.set(0, -1.36, 0.12);
+  const neck = new THREE.Mesh(new THREE.BoxGeometry(1.16, 0.34, 0.84), darkTrimMat);
+  neck.position.set(0, -1.36, 0.14);
   root.add(neck);
 
-  const base = new THREE.Mesh(new THREE.BoxGeometry(2.38, 0.22, 1.86), bezelMat);
-  base.position.set(0, -1.62, 0.18);
+  const baseShape = new THREE.Shape();
+  baseShape.moveTo(-0.92, -0.92);
+  baseShape.lineTo(0.92, -0.92);
+  baseShape.lineTo(1.14, 0.0);
+  baseShape.lineTo(0.92, 0.92);
+  baseShape.lineTo(-0.92, 0.92);
+  baseShape.lineTo(-1.14, 0.0);
+  baseShape.closePath();
+
+  const baseGeo = new THREE.ExtrudeGeometry(baseShape, {
+    depth: 0.22,
+    bevelEnabled: false,
+    steps: 1
+  });
+  baseGeo.rotateX(Math.PI / 2);
+
+  const base = new THREE.Mesh(baseGeo, bezelMat);
+  base.position.set(0, -1.52, 0.16);
   root.add(base);
 
   return root;
@@ -309,8 +514,19 @@ function play3dCrtMonitorAnimation() {
     let finished = false;
     let rafId = 0;
     let renderer = null;
+    let clickSoundFired = false;
+    let stopStaticVisual = null;
+    let stopNoiseAudio = null;
 
     const cleanup = () => {
+      if (stopStaticVisual) {
+        stopStaticVisual();
+        stopStaticVisual = null;
+      }
+      if (stopNoiseAudio) {
+        stopNoiseAudio.stop();
+        stopNoiseAudio = null;
+      }
       if (rafId) cancelAnimationFrame(rafId);
       if (renderer) {
         try {
@@ -323,7 +539,6 @@ function play3dCrtMonitorAnimation() {
     const finishIntro = () => {
       if (finished) return;
       finished = true;
-      clearTimeout(clickTimer);
       clearTimeout(fallbackTimer);
       stage.style.opacity = '0';
       stage.style.pointerEvents = 'none';
@@ -335,21 +550,16 @@ function play3dCrtMonitorAnimation() {
     };
 
     stage.addEventListener('click', () => {
-      playButtonClickSound();
+      if (!clickSoundFired) playButtonClickSound();
       finishIntro();
     });
 
-    // 잠깐 검은 화면 대기 후 '딸깍' 소리와 함께 실제 3D 모델 애니메이션 시작
-    const waitDurationMs = 650;
-    const turnDurationMs = 2450;
-    const zoomDurationMs = 2550;
-    const totalDurationMs = waitDurationMs + turnDurationMs + zoomDurationMs;
+    const preClickWaitMs = 550;
+    const turnDurationMs = 2650;
+    const zoomDurationMs = 2750;
+    const totalDurationMs = preClickWaitMs + turnDurationMs + zoomDurationMs;
 
-    const clickTimer = setTimeout(() => {
-      playButtonClickSound();
-    }, waitDurationMs);
-
-    const fallbackTimer = setTimeout(finishIntro, totalDurationMs + 250);
+    const fallbackTimer = setTimeout(finishIntro, totalDurationMs + 300);
 
     loadThreeJsLibrary()
       .then(THREE => {
@@ -363,7 +573,7 @@ function play3dCrtMonitorAnimation() {
 
         const camera = new THREE.PerspectiveCamera(42, width / height, 0.05, 100);
         camera.position.set(0.35, 0.25, 7.6);
-        camera.lookAt(0, -0.15, 0);
+        camera.lookAt(0, -0.1, 0);
 
         renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
         renderer.setSize(width, height);
@@ -374,16 +584,15 @@ function play3dCrtMonitorAnimation() {
         const ambientLight = new THREE.AmbientLight(0xffffff, 1.15);
         scene.add(ambientLight);
 
-        const keyLight = new THREE.DirectionalLight(0xfff7e6, 1.9);
+        const keyLight = new THREE.DirectionalLight(0xfff7e6, 1.95);
         keyLight.position.set(4.5, 5.5, 6.0);
         scene.add(keyLight);
 
-        const rimLight = new THREE.DirectionalLight(0x9ec5ff, 0.9);
+        const rimLight = new THREE.DirectionalLight(0x9ec5ff, 0.95);
         rimLight.position.set(-5.0, 2.0, -4.0);
         scene.add(rimLight);
 
         const crtModel = buildLowPolyCrt3dGroup(THREE);
-        // 초기 각도: 오른쪽/측면이 보이는 3D 로우-폴리 시점
         crtModel.position.set(0.65, -0.05, -0.8);
         crtModel.rotation.set(0.08, 0.78, 0);
         crtModel.visible = false;
@@ -407,30 +616,36 @@ function play3dCrtMonitorAnimation() {
           }
           const elapsed = now - startTime;
 
-          if (elapsed < waitDurationMs) {
+          if (elapsed < preClickWaitMs) {
             crtModel.visible = false;
           } else {
+            // 회전 애니메이션 시작 직전에 큰 '딸깍' 소리 + 전체 화면 치지직/노이즈 시작
+            if (!clickSoundFired) {
+              clickSoundFired = true;
+              playButtonClickSound();
+              stopStaticVisual = startFullScreenStaticEffect();
+              stopNoiseAudio = startSubtleStaticNoise();
+            }
+
             crtModel.visible = true;
-            const turnRaw = Math.min(1, Math.max(0, (elapsed - waitDurationMs) / turnDurationMs));
+            const turnRaw = Math.min(1, Math.max(0, (elapsed - preClickWaitMs) / turnDurationMs));
             const tEase = easeInOutCubic(turnRaw);
 
-            // 천천히 왼쪽으로 회전하며 정면 정렬
             crtModel.rotation.y = 0.78 * (1 - tEase);
             crtModel.rotation.x = 0.08 * (1 - tEase);
             crtModel.position.x = 0.65 * (1 - tEase);
             crtModel.position.y = -0.05 * (1 - tEase);
             crtModel.position.z = -0.8 * (1 - tEase);
 
-            // 회전이 자리잡힌 뒤 천천히 화면 가득 확대(카메라를 스크린 앞으로 접근)
-            if (elapsed > waitDurationMs + turnDurationMs * 0.72) {
-              const zoomStart = waitDurationMs + turnDurationMs * 0.72;
+            if (elapsed > preClickWaitMs + turnDurationMs * 0.74) {
+              const zoomStart = preClickWaitMs + turnDurationMs * 0.74;
               const zoomRaw = Math.min(1, Math.max(0, (elapsed - zoomStart) / zoomDurationMs));
               const zEase = easeInOutQuart(zoomRaw);
 
               camera.position.x = 0.35 * (1 - tEase);
               camera.position.y = 0.25 * (1 - tEase) + 0.01 * zEase;
               camera.position.z = 7.6 - 5.95 * zEase;
-              camera.lookAt(0, 0.01 * zEase, 0.65 * zEase);
+              camera.lookAt(0, 0.01 * zEase, 0.85 * zEase);
 
               if (zoomRaw >= 1) {
                 window.removeEventListener('resize', onResize);
@@ -1623,6 +1838,7 @@ function finishDesktopLogin(userObj) {
   bootState.bootSeqId += 1;
   clearBootTimers();
   document.getElementById('retro-3d-crt-stage')?.remove();
+  document.getElementById('fullscreen-crt-static-overlay')?.remove();
   bootState.stage = 'done';
   setCurrentUser(userObj);
   hookArchiveSyncLifecycle();
