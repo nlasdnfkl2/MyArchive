@@ -152,7 +152,7 @@ async function loadArchiveData(showFeedback = false) {
     if (json.status === 'success' && Array.isArray(json.items)) {
       archiveItems = json.items;
       saveLocalCache(STORAGE_KEYS.ARCHIVE, archiveItems);
-      updateCacheBadge(true, 'SHEET + CACHE: SYNCED');
+      updateCacheBadge(true, '동기화 완료');
       if (statusLeft) statusLeft.textContent = `통신 접속 완료 [${APP_BUILD_VERSION}] — 각 창의 제목 표시줄을 끌어 위치를 이동할 수 있습니다`;
       if (showFeedback) playRetroTone('open');
     } else {
