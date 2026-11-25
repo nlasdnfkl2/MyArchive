@@ -1,11 +1,10 @@
 // ============================================================
-// MY-ARCHIVE 95 OS — DOM Skeleton & ASCII Art Renderer
+// MY-ARCHIVE 95 OS — DOM Skeleton Builder
 // ============================================================
 
 (function () {
   window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-  window.__MOD_VERSIONS.shellBuilder = 'v2026.11.25-ascii-shell';
-
+  window.__MOD_VERSIONS.shellBuilder = 'v2026.11.25-no-top-ascii';
 
   function buildArchiveShellHtml() {
     return `
@@ -397,11 +396,11 @@
     </nav>
 
     <!-- 1. 메인 탐색기 창 -->
-    <section class="floating-win open focused main-explorer-win" id="win-main" data-win-title="C:\MY-ARCHIVE\EXPLORER.EXE" style="top: 38px; left: 215px; width: 960px;">
+    <section class="floating-win open focused main-explorer-win" id="win-main" data-win-title="C:\\MY-ARCHIVE\\EXPLORER.EXE" style="top: 38px; left: 215px; width: 960px;">
       <div class="win-titlebar draggable">
         <div class="win-title-left">
           <span class="win-title-dot" style="background: var(--brutal-yellow);"></span>
-          <span id="win-main-title-text">C:\MY-ARCHIVE\EXPLORER.EXE — 문화·예술 감상 자료실 관리자</span>
+          <span id="win-main-title-text">C:\\MY-ARCHIVE\\EXPLORER.EXE — 문화·예술 감상 자료실 관리자</span>
         </div>
         <div class="win-controls">
           <button type="button" class="win-ctrl-btn" data-action="minimize" data-target="win-main">_</button>
@@ -727,41 +726,16 @@
   function mountArchiveShell() {
     const root = document.getElementById('app-root');
     if (!root) return;
-
-    const existingPre = document.getElementById('ascii-boot-banner');
-    if (existingPre) existingPre.remove();
-
-    const asciiPre = document.createElement('pre');
-    asciiPre.id = 'ascii-boot-banner';
-    asciiPre.textContent = ASCII_BANNER.trim();
-    asciiPre.style.cssText = [
-      'position:fixed',
-      'top:14px',
-      'left:50%',
-      'transform:translateX(-50%)',
-      'z-index:210000',
-      'margin:0',
-      'padding:8px 14px',
-      'background:rgba(0,0,0,0.82)',
-      'color:#55ffff',
-      'font-family:"DungGeunMo","Galmuri11","Fixedsys",monospace',
-      'font-size:10px',
-      'line-height:1.15',
-      'pointer-events:none',
-      'white-space:pre',
-      'border:1px solid #008080'
-    ].join(';');
-
+    if (document.getElementById('os-boot-overlay')) return;
     root.innerHTML = buildArchiveShellHtml();
-    root.appendChild(asciiPre);
   }
 
   window.buildArchiveShellHtml = buildArchiveShellHtml;
   window.mountArchiveShell = mountArchiveShell;
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', mountArchiveShell, { once: true });
-  } else {
+  if (document.getElementById('app-root')) {
     mountArchiveShell();
+  } else if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', mountArchiveShell, { once: true });
   }
 })();
