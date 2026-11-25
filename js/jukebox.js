@@ -4,9 +4,11 @@
 // ============================================================
 
 window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-window.__MOD_VERSIONS.jukebox = 'v2026.11.25-05';
+window.__MOD_VERSIONS.jukebox = 'v2026.11.25-06-480p-abr';
 
 const JB_CACHE_KEY = 'myarchive95_yt_track_cache_v2';
+const JB_PREFERRED_MAX_QUALITY = 'large'; // 480p 이하 권장 힌트 (tiny:144p, small:240p, medium:360p, large:480p)
+const JB_HIGH_QUALITIES = new Set(['hd720', 'hd1080', 'hd1440', 'highres']);
 
 // 1995년 16x16 도트 픽셀 SVG 아이콘 (이모지 미사용)
 const JUKEBOX_PIXEL_ICONS = {
@@ -116,6 +118,23 @@ function emitJukeboxSyncEvent(type = 'state') {
   );
 }
 
+// 대역폭에 맞춰 480p 이하가 유지되도록 권장 화질 힌트 적용
+function applyLowBandwidthQualityHint(player, forceCapIfHigh = false) {
+  if (!player) return;
+  try {
+    const currentQuality = typeof player.getPlaybackQuality === 'function'
+      ? String(player.getPlaybackQuality() || '').toLowerCase()
+      : '';
+    const isHigh = JB_HIGH_QUALITIES.has(currentQuality);
+
+    if ((forceCapIfHigh && isHigh) || !currentQuality || isHigh) {
+      if (typeof player.setPlaybackQuality === 'function') {
+        player.setPlaybackQuality(JB_PREFERRED_MAX_QUALITY);
+      }
+    }
+  } catch {}
+}
+
 function buildJukeboxUI() {
   const win = document.getElementById('win-jukebox');
   if (!win) return;
@@ -126,7 +145,7 @@ function buildJukeboxUI() {
   body.innerHTML = `
     <div style="background:#19191f; color:#39ff14; border:3px solid #111; padding:10px; box-shadow:inset 2px 2px 0 #000, inset -2px -2px 0 #444; margin-bottom:10px; font-family:var(--font-mono);">
       <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.72rem; color:#ffd83b; margin-bottom:6px; border-bottom:1px solid #333; padding-bottom:4px;">
-        <span>WINAMP / JUKEBOX 95 — STEREO AUDIO ENGINE</span>
+        <span>WINAMP / JUKEBOX 95 — STEREO AUDIO ENGINE (<=480P ABR)</span>
         <span id="jb-status-pill" style="background:#111; border:1px solid #39ff14; color:#39ff14; padding:1px 6px;">READY</span>
       </div>
 
@@ -136,7 +155,7 @@ function buildJukeboxUI() {
           <div id="jb-eq-bars" style="display:flex; align-items:flex-end; justify-content:center; gap:3px; height:26px; margin-top:6px;">
             ${Array.from({ length: 12 }).map((_, i) => `<span class="jb-bar" style="width:5px; height:${6 + (i % 4) * 4}px; background:#39ff14; display:inline-block; transition:height 0.15s;"></span>`).join('')}
           </div>
-          <div style="font-size:0.65rem; color:#88cc99; margin-top:4px;">128 KBPS</div>
+          <div style="font-size:0.65rem; color:#88cc99; margin-top:4px;">480P MAX · ABR</div>
         </div>
 
         <div style="min-width:0;">
@@ -153,9 +172,9 @@ function buildJukeboxUI() {
       </div>
 
       <!-- YouTube IFrame 플레이어 영역 -->
-      <div id="jb-player-frame-wrap" style="margin-top:8px; background:#000; border:2px solid #333; position:relative; aspect-ratio:16/9; max-height:205px; width:100%; overflow:hidden;">
+      <div id="jb-player-frame-wrap" style="margin-top:8px; background:#000; border:2px solid #333; position:relative; aspect-ratio:16/9; max-height:165px; width:100%; overflow:hidden;">
         <div id="jb-player-placeholder" style="width:100%; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#88cc99; font-size:0.8rem; gap:6px; padding:12px; text-align:center;">
-          <span>하단 수록곡을 클릭하면 YouTube 음원/영상을 찾아 재생합니다.</span>
+          <span>하단 수록곡을 클릭하면 YouTube 음원/영상을 480p 이하로 불러옵니다.</span>
         </div>
       </div>
 
@@ -261,7 +280,7 @@ function bindJukeboxControls() {
     jbState.hideVideo = !jbState.hideVideo;
     const wrap = document.getElementById('jb-player-frame-wrap');
     if (wrap) {
-      wrap.style.maxHeight = jbState.hideVideo ? '42px' : '205px';
+      wrap.style.maxHeight = jbState.hideVideo ? '42px' : '165px';
     }
     e.currentTarget.textContent = jbState.hideVideo ? '화면 펼치기' : '화면 접기';
     if (typeof playRetroTone === 'function') playRetroTone('click');
@@ -399,7 +418,6 @@ function startJukeboxTimer() {
   jbState.timerInterval = setInterval(() => {
     if (!jbState.isPlaying) return;
 
-    // YouTube IFrame API가 연결되어 있으면 실제 재생 시각 동기화
     if (jbState.ytPlayer && typeof jbState.ytPlayer.getCurrentTime === 'function') {
       try {
         const cur = Number(jbState.ytPlayer.getCurrentTime());
@@ -461,7 +479,7 @@ function stopJukeboxPlayback() {
   emitJukeboxSyncEvent('stop');
 }
 
-function attachYouTubeIframeApi(videoId) {
+function attachYouTubeIframeApi() {
   const initPlayer = () => {
     if (!window.YT || !window.YT.Player) return;
     const targetEl = document.getElementById(jbState.ytIframeId);
@@ -470,12 +488,17 @@ function attachYouTubeIframeApi(videoId) {
     try {
       jbState.ytPlayer = new window.YT.Player(jbState.ytIframeId, {
         events: {
-          onReady: () => {
+          onReady: ev => {
             window.jukeboxYtPlayer = jbState.ytPlayer;
+            applyLowBandwidthQualityHint(ev?.target || jbState.ytPlayer, true);
             emitJukeboxSyncEvent('player-ready');
           },
           onStateChange: ev => {
             const stateCode = ev?.data;
+            const playerInstance = ev?.target || jbState.ytPlayer;
+            if (stateCode === 1 || stateCode === 3) {
+              applyLowBandwidthQualityHint(playerInstance, true);
+            }
             if (stateCode === 1) {
               jbState.isPlaying = true;
               const pill = document.getElementById('jb-status-pill');
@@ -530,7 +553,19 @@ function mountYouTubeEmbedInJukebox(videoId, labelText) {
   const marquee = document.getElementById('jb-marquee-title');
   if (!wrap) return;
 
-  const embedUrl = `https://www.youtube.com/embed/${encodeURIComponent(cleanId)}?autoplay=1&rel=0&playsinline=1&enablejsapi=1&origin=${encodeURIComponent(window.location.origin)}${jbState.isRepeatOne ? `&loop=1&playlist=${encodeURIComponent(cleanId)}` : ''}`;
+  const params = new URLSearchParams({
+    autoplay: '1',
+    rel: '0',
+    playsinline: '1',
+    vq: JB_PREFERRED_MAX_QUALITY,
+    enablejsapi: '1',
+    origin: window.location.origin
+  });
+  if (jbState.isRepeatOne) {
+    params.set('loop', '1');
+    params.set('playlist', cleanId);
+  }
+  const embedUrl = `https://www.youtube.com/embed/${encodeURIComponent(cleanId)}?${params.toString()}`;
 
   wrap.innerHTML = `
     <iframe
@@ -549,10 +584,10 @@ function mountYouTubeEmbedInJukebox(videoId, labelText) {
     if (marquee && marquee.textContent.includes('버튼을 누르십시오')) {
       marquee.textContent = labelText;
     }
-    if (sub) sub.textContent = `연결된 스트림: ${labelText}`;
+    if (sub) sub.textContent = `연결된 스트림 (480p 이하 ABR): ${labelText}`;
   }
   startJukeboxTimer();
-  attachYouTubeIframeApi(cleanId);
+  attachYouTubeIframeApi();
 }
 
 function renderJukeboxCandidates() {
@@ -711,6 +746,14 @@ async function playJukeboxTrack(indexOrTrack) {
   }
 }
 
+// 주크박스 창이 닫힐 때 플레이어 인스턴스까지 확실히 해제
+window.addEventListener('window:closed', ev => {
+  if (ev?.detail?.id === 'win-jukebox') {
+    stopJukeboxPlayback();
+  }
+});
+
 window.updateJukebox = updateJukebox;
 window.playJukeboxTrack = playJukeboxTrack;
 window.mountYouTubeEmbedInJukebox = mountYouTubeEmbedInJukebox;
+window.stopJukeboxPlayback = stopJukeboxPlayback;
