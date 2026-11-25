@@ -1,10 +1,13 @@
 // ============================================================
 // MY-ARCHIVE 95 OS — Window Manager, Safe-Area Dock, Collapse,
-// Spotlight (Ctrl+K) Command Palette & Workspace Snapshots
+// Spotlight (Ctrl+K), BIOS Text Setup & Workspace Snapshots
 // ============================================================
 
 window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-window.__MOD_VERSIONS.windowMgr = typeof APP_BUILD_VERSION !== 'undefined' ? APP_BUILD_VERSION : 'v2026.11.25-02';
+window.__MOD_VERSIONS.windowMgr =
+  typeof APP_BUILD_VERSION !== 'undefined' ? APP_BUILD_VERSION : 'v2026.11.25-04';
+
+const BIOS_SETUP_STORAGE_KEY = 'MYARCHIVE95_BIOS_CONFIG_V1';
 
 const ALL_DESKTOP_THEMES = [
   'theme-teal',
@@ -19,23 +22,23 @@ const ALL_DESKTOP_THEMES = [
 ];
 
 const TASKBAR_WIN_ICONS = {
-  'win-main': `<svg width="13" height="13" viewBox="0 0 16 16" shape-rendering="crispEdges" style="flex-shrink:0;"><path fill="#ffff00" stroke="#000" d="M1 3h6l1 2h7v9H1V3z"/></svg>`,
-  'win-stats': `<svg width="13" height="13" viewBox="0 0 16 16" shape-rendering="crispEdges" style="flex-shrink:0;"><rect x="1" y="2" width="14" height="12" fill="#ffffff" stroke="#000"/><rect x="3" y="8" width="2" height="4" fill="#000080"/><rect x="7" y="5" width="2" height="7" fill="#008000"/><rect x="11" y="6" width="2" height="6" fill="#800000"/></svg>`,
-  'win-mailbox': `<svg width="13" height="13" viewBox="0 0 16 16" shape-rendering="crispEdges" style="flex-shrink:0;"><rect x="1" y="3" width="14" height="10" fill="#ffff00" stroke="#000"/><polyline points="1,3 8,9 15,3" fill="none" stroke="#000" stroke-width="1.5"/></svg>`,
-  'win-jukebox': `<svg width="13" height="13" viewBox="0 0 16 16" shape-rendering="crispEdges" style="flex-shrink:0;"><path fill="#008000" d="M6 2h7v9h-1v2H9v-2h2V5H7v7H6v2H3v-2h2V2h1z"/></svg>`,
-  'win-browser': `<svg width="13" height="13" viewBox="0 0 16 16" shape-rendering="crispEdges" style="flex-shrink:0;"><rect x="2" y="2" width="12" height="12" fill="#000080" stroke="#000"/><rect x="4" y="4" width="8" height="8" fill="#00ffff"/></svg>`,
-  'win-community': `<svg width="13" height="13" viewBox="0 0 16 16" shape-rendering="crispEdges" style="flex-shrink:0;"><rect x="2" y="2" width="12" height="12" fill="#008000" stroke="#000"/><rect x="4" y="5" width="8" height="6" fill="#ffffff"/></svg>`,
-  'win-visualizer': `<svg width="13" height="13" viewBox="0 0 16 16" shape-rendering="crispEdges" style="flex-shrink:0;"><circle cx="4" cy="4" r="2" fill="#000080"/><circle cx="12" cy="5" r="2" fill="#800080"/><circle cx="8" cy="12" r="2" fill="#008000"/><line x1="4" y1="4" x2="12" y2="5" stroke="#000"/><line x1="4" y1="4" x2="8" y2="12" stroke="#000"/></svg>`,
-  'win-calendar': `<svg width="13" height="13" viewBox="0 0 16 16" shape-rendering="crispEdges" style="flex-shrink:0;"><rect x="2" y="2" width="12" height="12" fill="#ffffff" stroke="#000"/><rect x="2" y="2" width="12" height="3" fill="#800000"/></svg>`,
-  'win-mood': `<svg width="13" height="13" viewBox="0 0 16 16" shape-rendering="crispEdges" style="flex-shrink:0;"><rect x="2" y="2" width="12" height="12" fill="#ffff00" stroke="#000"/><rect x="5" y="5" width="2" height="2" fill="#000"/><rect x="9" y="5" width="2" height="2" fill="#000"/><rect x="5" y="10" width="6" height="2" fill="#000"/></svg>`,
-  'win-quiz': `<svg width="13" height="13" viewBox="0 0 16 16" shape-rendering="crispEdges" style="flex-shrink:0;"><rect x="2" y="2" width="12" height="12" fill="#000080" stroke="#000"/><text x="8" y="12" fill="#ffff00" font-size="10" font-weight="bold" text-anchor="middle">?</text></svg>`,
-  'win-timeline': `<svg width="13" height="13" viewBox="0 0 16 16" shape-rendering="crispEdges" style="flex-shrink:0;"><line x1="2" y1="8" x2="14" y2="8" stroke="#000" stroke-width="2"/><rect x="3" y="5" width="3" height="6" fill="#008080"/><rect x="10" y="4" width="3" height="8" fill="#800080"/></svg>`,
-  'win-stamp': `<svg width="13" height="13" viewBox="0 0 16 16" shape-rendering="crispEdges" style="flex-shrink:0;"><rect x="3" y="3" width="10" height="10" fill="#ffffff" stroke="#800000" stroke-width="2"/><rect x="5" y="5" width="6" height="6" fill="#800000"/></svg>`,
-  'win-gamepack': `<svg width="13" height="13" viewBox="0 0 16 16" shape-rendering="crispEdges" style="flex-shrink:0;"><rect x="1" y="4" width="14" height="8" fill="#dfdfdf" stroke="#000"/><rect x="4" y="6" width="2" height="4" fill="#000"/><rect x="3" y="7" width="4" height="2" fill="#000"/><rect x="10" y="7" width="2" height="2" fill="#800000"/></svg>`,
-  'win-display-props': `<svg width="13" height="13" viewBox="0 0 16 16" shape-rendering="crispEdges" style="flex-shrink:0;"><rect x="2" y="2" width="12" height="9" fill="#008080" stroke="#000"/><rect x="5" y="12" width="6" height="2" fill="#808080"/></svg>`
+  'win-main': `<svg width="14" height="14" viewBox="0 0 16 16" shape-rendering="crispEdges" style="flex-shrink:0;"><path fill="#ffff00" stroke="#000" d="M1 3h6l1 2h7v9H1V3z"/></svg>`,
+  'win-stats': `<svg width="14" height="14" viewBox="0 0 16 16" shape-rendering="crispEdges" style="flex-shrink:0;"><rect x="1" y="2" width="14" height="12" fill="#ffffff" stroke="#000"/><rect x="3" y="8" width="2" height="4" fill="#000080"/><rect x="7" y="5" width="2" height="7" fill="#008000"/><rect x="11" y="6" width="2" height="6" fill="#800000"/></svg>`,
+  'win-mailbox': `<svg width="14" height="14" viewBox="0 0 16 16" shape-rendering="crispEdges" style="flex-shrink:0;"><rect x="1" y="3" width="14" height="10" fill="#ffff00" stroke="#000"/><polyline points="1,3 8,9 15,3" fill="none" stroke="#000" stroke-width="1.5"/></svg>`,
+  'win-jukebox': `<svg width="14" height="14" viewBox="0 0 16 16" shape-rendering="crispEdges" style="flex-shrink:0;"><path fill="#008000" d="M6 2h7v9h-1v2H9v-2h2V5H7v7H6v2H3v-2h2V2h1z"/></svg>`,
+  'win-browser': `<svg width="14" height="14" viewBox="0 0 16 16" shape-rendering="crispEdges" style="flex-shrink:0;"><rect x="2" y="2" width="12" height="12" fill="#000080" stroke="#000"/><rect x="4" y="4" width="8" height="8" fill="#00ffff"/></svg>`,
+  'win-community': `<svg width="14" height="14" viewBox="0 0 16 16" shape-rendering="crispEdges" style="flex-shrink:0;"><rect x="2" y="2" width="12" height="12" fill="#008000" stroke="#000"/><rect x="4" y="5" width="8" height="6" fill="#ffffff"/></svg>`,
+  'win-visualizer': `<svg width="14" height="14" viewBox="0 0 16 16" shape-rendering="crispEdges" style="flex-shrink:0;"><circle cx="4" cy="4" r="2" fill="#000080"/><circle cx="12" cy="5" r="2" fill="#800080"/><circle cx="8" cy="12" r="2" fill="#008000"/><line x1="4" y1="4" x2="12" y2="5" stroke="#000"/><line x1="4" y1="4" x2="8" y2="12" stroke="#000"/></svg>`,
+  'win-calendar': `<svg width="14" height="14" viewBox="0 0 16 16" shape-rendering="crispEdges" style="flex-shrink:0;"><rect x="2" y="2" width="12" height="12" fill="#ffffff" stroke="#000"/><rect x="2" y="2" width="12" height="3" fill="#800000"/></svg>`,
+  'win-mood': `<svg width="14" height="14" viewBox="0 0 16 16" shape-rendering="crispEdges" style="flex-shrink:0;"><rect x="2" y="2" width="12" height="12" fill="#ffff00" stroke="#000"/><rect x="5" y="5" width="2" height="2" fill="#000"/><rect x="9" y="5" width="2" height="2" fill="#000"/><rect x="5" y="10" width="6" height="2" fill="#000"/></svg>`,
+  'win-quiz': `<svg width="14" height="14" viewBox="0 0 16 16" shape-rendering="crispEdges" style="flex-shrink:0;"><rect x="2" y="2" width="12" height="12" fill="#000080" stroke="#000"/><text x="8" y="12" fill="#ffff00" font-size="10" font-weight="bold" text-anchor="middle">?</text></svg>`,
+  'win-timeline': `<svg width="14" height="14" viewBox="0 0 16 16" shape-rendering="crispEdges" style="flex-shrink:0;"><line x1="2" y1="8" x2="14" y2="8" stroke="#000" stroke-width="2"/><rect x="3" y="5" width="3" height="6" fill="#008080"/><rect x="10" y="4" width="3" height="8" fill="#800080"/></svg>`,
+  'win-stamp': `<svg width="14" height="14" viewBox="0 0 16 16" shape-rendering="crispEdges" style="flex-shrink:0;"><rect x="3" y="3" width="10" height="10" fill="#ffffff" stroke="#800000" stroke-width="2"/><rect x="5" y="5" width="6" height="6" fill="#800000"/></svg>`,
+  'win-gamepack': `<svg width="14" height="14" viewBox="0 0 16 16" shape-rendering="crispEdges" style="flex-shrink:0;"><rect x="1" y="4" width="14" height="8" fill="#dfdfdf" stroke="#000"/><rect x="4" y="6" width="2" height="4" fill="#000"/><rect x="3" y="7" width="4" height="2" fill="#000"/><rect x="10" y="7" width="2" height="2" fill="#800000"/></svg>`,
+  'win-display-props': `<svg width="14" height="14" viewBox="0 0 16 16" shape-rendering="crispEdges" style="flex-shrink:0;"><rect x="2" y="2" width="12" height="9" fill="#008080" stroke="#000"/><rect x="5" y="12" width="6" height="2" fill="#808080"/></svg>`
 };
 
-const DEFAULT_TASKBAR_ICON = `<svg width="13" height="13" viewBox="0 0 16 16" shape-rendering="crispEdges" style="flex-shrink:0;"><rect x="1" y="2" width="14" height="12" fill="#c0c0c0" stroke="#000"/><rect x="2" y="3" width="12" height="3" fill="#000080"/></svg>`;
+const DEFAULT_TASKBAR_ICON = `<svg width="14" height="14" viewBox="0 0 16 16" shape-rendering="crispEdges" style="flex-shrink:0;"><rect x="1" y="2" width="14" height="12" fill="#c0c0c0" stroke="#000"/><rect x="2" y="3" width="12" height="3" fill="#000080"/></svg>`;
 
 function sanitizeRetroWindowTitle(rawTitle) {
   return String(rawTitle || '')
@@ -53,19 +56,201 @@ function getShortTaskbarLabel(winEl) {
 }
 
 // ============================================================
-// 0. 바탕화면 안전 영역, 접기(Collapse), 스포트라이트 & 특수 테마 스타일 주입
+// 0. 동기화 상태 배지 제어 (↻ 동기화 중 / ↻ 동기화 오류)
+// ============================================================
+let syncBadgeObserverBound = false;
+let currentSyncErrorState = false;
+
+function applyCleanSyncBadge(isError = false) {
+  currentSyncErrorState = Boolean(isError);
+  const badge = document.getElementById('cache-status-badge');
+  if (!badge) return;
+
+  const expectedHtml = isError
+    ? `<span class="sync-arrow-icon" style="color:#cc0000;font-weight:700;">↻</span><span>동기화 오류</span>`
+    : `<span class="sync-arrow-icon" style="color:#00aa00;font-weight:700;">↻</span><span>동기화 중</span>`;
+
+  if (badge.innerHTML !== expectedHtml) {
+    badge.innerHTML = expectedHtml;
+  }
+  badge.classList.toggle('error', isError);
+  badge.classList.toggle('offline', isError);
+}
+
+function bindSyncBadgeGuard() {
+  const badge = document.getElementById('cache-status-badge');
+  if (!badge) return;
+
+  applyCleanSyncBadge(navigator.onLine === false);
+
+  if (!syncBadgeObserverBound && typeof MutationObserver !== 'undefined') {
+    syncBadgeObserverBound = true;
+    const observer = new MutationObserver(() => {
+      const txt = (badge.textContent || '').trim();
+      if (txt.includes('SHEET') || txt.includes('CACHE') || txt.includes('SYNCED') || txt.includes('OFFLINE')) {
+        applyCleanSyncBadge(currentSyncErrorState || navigator.onLine === false);
+      }
+    });
+    observer.observe(badge, { childList: true, characterData: true, subtree: true });
+  }
+
+  window.addEventListener('offline', () => applyCleanSyncBadge(true));
+  window.addEventListener('online', () => applyCleanSyncBadge(false));
+}
+
+// ============================================================
+// 1. 브라우저 설정 저장 및 BIOS 텍스트 설정 화면
+// ============================================================
+function readBrowserBiosConfig() {
+  try {
+    const raw = localStorage.getItem(BIOS_SETUP_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeBrowserBiosConfig(cfg) {
+  try {
+    localStorage.setItem(BIOS_SETUP_STORAGE_KEY, JSON.stringify(cfg));
+  } catch {}
+  if (typeof saveLocalCache === 'function' && typeof STORAGE_KEYS !== 'undefined' && STORAGE_KEYS.PREFS) {
+    saveLocalCache(STORAGE_KEYS.PREFS, {
+      theme: cfg.theme || 'teal',
+      crt: Boolean(cfg.crt),
+      soundEnabled: cfg.sound !== false,
+      biosConfigured: true
+    });
+  }
+}
+
+function applyBiosConfigToSystem(cfg) {
+  if (!cfg) return;
+  applyTheme(cfg.theme || 'teal', false);
+  applyCrtOverlayState(cfg.crt !== false);
+  const statusLeft = document.getElementById('status-left');
+  if (statusLeft && cfg.userName) {
+    statusLeft.textContent = `BIOS CMOS 로드됨 — 운영자: ${cfg.userName} (${cfg.viewportWidth || 800}px 모드)`;
+  }
+}
+
+function openBiosTextSetupScreen(existingCfg = {}) {
+  let overlay = document.getElementById('bios-text-setup-overlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'bios-text-setup-overlay';
+    overlay.style.cssText = `
+      position: fixed;
+      inset: 0;
+      z-index: 250000;
+      background: #0000a8;
+      color: #f0f0f0;
+      font-family: 'DungGeunMo', 'Fixedsys', monospace;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      overflow-y: auto;
+    `;
+    overlay.innerHTML = `
+      <div style="position:fixed;inset:0;pointer-events:none;background:repeating-linear-gradient(to bottom,rgba(0,0,0,0.32) 0px,rgba(0,0,0,0.32) 2px,transparent 2px,transparent 4px);z-index:1;"></div>
+      <div style="position:relative;z-index:2;width:min(740px,100%);border:3px double #ffffff;background:#000080;box-shadow:0 0 0 2px #0000a8,0 0 24px rgba(0,0,0,0.65);padding:14px 18px;">
+        <div style="background:#c0c0c0;color:#000080;padding:3px 8px;font-weight:700;font-size:0.88rem;display:flex;justify-content:space-between;margin-bottom:12px;">
+          <span>AWARD / ARCHIVE95 BIOS SETUP UTILITY — 초기 환경 설정</span>
+          <span>CMOS v1.95</span>
+        </div>
+        <div style="font-size:0.78rem;color:#ffff55;line-height:1.5;margin-bottom:12px;border-bottom:1px dashed #8080ff;padding-bottom:8px;">
+          * 브라우저 저장소에 초기 설정이 감지되지 않았습니다.<br/>
+          * 아래 텍스트 설정 항목을 구성한 뒤 [F10 / 설정 저장 후 접속]을 눌러 시스템에 진입하십시오.
+        </div>
+        <div style="display:grid;grid-template-columns:180px 1fr;gap:10px 12px;align-items:center;font-size:0.84rem;margin-bottom:14px;">
+          <label for="bios-cfg-user" style="color:#ffffff;font-weight:700;">[01] 사용자 이름</label>
+          <input type="text" id="bios-cfg-user" value="문태양" style="background:#000040;color:#55ff55;border:1px solid #c0c0c0;padding:4px 8px;font-family:inherit;font-size:0.84rem;" />
+
+          <label for="bios-cfg-theme" style="color:#ffffff;font-weight:700;">[02] 바탕화면 테마</label>
+          <select id="bios-cfg-theme" style="background:#000040;color:#55ff55;border:1px solid #c0c0c0;padding:4px 8px;font-family:inherit;font-size:0.84rem;">
+            <option value="teal">TEAL (클래식 청록)</option>
+            <option value="navy">NAVY (딥 네이비)</option>
+            <option value="olive">OLIVE (올리브 그린)</option>
+            <option value="plum">PLUM (플럼 퍼플)</option>
+            <option value="brick">BRICK (레트로 벽돌)</option>
+            <option value="matrix">MATRIX (터미널 그린)</option>
+            <option value="grid">GRID (모눈 그리드)</option>
+          </select>
+
+          <label for="bios-cfg-crt" style="color:#ffffff;font-weight:700;">[03] CRT 스캔라인</label>
+          <select id="bios-cfg-crt" style="background:#000040;color:#55ff55;border:1px solid #c0c0c0;padding:4px 8px;font-family:inherit;font-size:0.84rem;">
+            <option value="on">ENABLED (스캔라인 활성)</option>
+            <option value="off">DISABLED (스캔라인 해제)</option>
+          </select>
+
+          <label for="bios-cfg-sound" style="color:#ffffff;font-weight:700;">[04] 8비트 사운드</label>
+          <select id="bios-cfg-sound" style="background:#000040;color:#55ff55;border:1px solid #c0c0c0;padding:4px 8px;font-family:inherit;font-size:0.84rem;">
+            <option value="on">ENABLED (효과음 켜기)</option>
+            <option value="off">DISABLED (음소거)</option>
+          </select>
+        </div>
+        <div style="background:#000040;border:1px solid #8080ff;padding:8px 10px;font-size:0.76rem;color:#00ffff;margin-bottom:14px;">
+          STORAGE TARGET : BROWSER LOCALSTORAGE (${BIOS_SETUP_STORAGE_KEY})<br/>
+          DISPLAY PROFILE : 800px COMPACT RETRO DESKTOP MODE
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:8px;">
+          <button type="button" id="bios-cfg-save-btn" style="background:#c0c0c0;color:#000000;border:2px solid #ffffff;padding:5px 14px;font-family:inherit;font-size:0.84rem;font-weight:700;cursor:pointer;">
+            [ 설정 저장 후 접속 ]
+          </button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+  }
+
+  document.getElementById('bios-cfg-user').value = existingCfg.userName || '문태양';
+  document.getElementById('bios-cfg-theme').value = existingCfg.theme || 'teal';
+  document.getElementById('bios-cfg-crt').value = existingCfg.crt === false ? 'off' : 'on';
+  document.getElementById('bios-cfg-sound').value = existingCfg.sound === false ? 'off' : 'on';
+
+  overlay.style.display = 'flex';
+
+  const saveBtn = document.getElementById('bios-cfg-save-btn');
+  saveBtn.onclick = () => {
+    const nextCfg = {
+      userName: (document.getElementById('bios-cfg-user').value || '문태양').trim(),
+      theme: document.getElementById('bios-cfg-theme').value || 'teal',
+      crt: document.getElementById('bios-cfg-crt').value === 'on',
+      sound: document.getElementById('bios-cfg-sound').value === 'on',
+      viewportWidth: 800,
+      savedAt: new Date().toISOString()
+    };
+    writeBrowserBiosConfig(nextCfg);
+    applyBiosConfigToSystem(nextCfg);
+    overlay.style.display = 'none';
+    if (typeof playRetroTone === 'function' && nextCfg.sound) playRetroTone('open');
+  };
+}
+
+function checkFirstBootBiosSetup() {
+  const cfg = readBrowserBiosConfig();
+  if (!cfg) {
+    openBiosTextSetupScreen({});
+  } else {
+    applyBiosConfigToSystem(cfg);
+  }
+}
+
+// ============================================================
+// 2. 바탕화면 안전 영역, 접기(Collapse), 스포트라이트 & 특수 테마 스타일 주입
 // ============================================================
 function injectOsEnhancementStyles() {
   if (document.getElementById('os95-enhancement-styles')) return;
   const style = document.createElement('style');
   style.id = 'os95-enhancement-styles';
   style.textContent = `
-    /* 1단계: 바탕화면 아이콘 안전 영역 보호 */
     .desktop-icons {
       z-index: 20 !important;
-      max-height: calc(100vh - 76px);
+      max-height: calc(100vh - 80px);
     }
-    /* 창 접기(Roll-up Collapse) 상태 */
     .floating-win.win-collapsed {
       height: auto !important;
       min-height: 0 !important;
@@ -73,18 +258,15 @@ function injectOsEnhancementStyles() {
     .floating-win.win-collapsed > .win-body {
       display: none !important;
     }
-    /* 오디오 리액티브 활성 창 글로우 (jukebox.js 브로드캐스트 연동) */
     body.audio-reactive-on .floating-win.focused {
       box-shadow: 4px 4px 0px #111111, 0 0 calc(8px + var(--audio-energy, 0) * 18px) rgba(255, 216, 59, calc(0.25 + var(--bass-level, 0) * 0.55)) !important;
     }
-    /* 해금 전용 히든 테마 */
     body.theme-vaporwave {
       background: linear-gradient(135deg, #2b1055 0%, #7597de 100%) !important;
     }
     body.theme-amber-crt {
       background: #1a1100 !important;
     }
-    /* 스포트라이트(Ctrl+K) 커맨드 팔레트 */
     #os95-spotlight-backdrop {
       position: fixed;
       inset: 0;
@@ -113,7 +295,7 @@ function injectOsEnhancementStyles() {
       border-bottom: 1px solid #999;
       background: #ffffff;
       cursor: pointer;
-      font-size: 0.82rem;
+      font-size: 0.84rem;
       font-weight: 800;
       color: #111111;
     }
@@ -123,51 +305,17 @@ function injectOsEnhancementStyles() {
     }
     .spot-item .spot-tag {
       font-family: var(--font-mono, monospace);
-      font-size: 0.7rem;
+      font-size: 0.72rem;
       padding: 1px 6px;
       border: 1px solid currentColor;
       flex-shrink: 0;
-    }
-    /* 바탕화면 포스트잇 스티커 레이어 */
-    #os95-sticker-layer {
-      position: fixed;
-      inset: 30px 0 40px 0;
-      pointer-events: none;
-      z-index: 25;
-    }
-    .desk-sticky-note {
-      position: absolute;
-      width: 215px;
-      background: #fff9a6;
-      border: 2px solid #111111;
-      box-shadow: 3px 3px 0px #111111;
-      pointer-events: auto;
-      font-size: 0.76rem;
-      color: #111111;
-    }
-    .desk-sticky-head {
-      background: #ffd83b;
-      border-bottom: 1.5px solid #111111;
-      padding: 3px 7px;
-      font-weight: 900;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      cursor: move;
-      user-select: none;
-    }
-    .desk-sticky-body {
-      padding: 7px 8px;
-      font-weight: 700;
-      line-height: 1.4;
-      word-break: keep-all;
     }
   `;
   document.head.appendChild(style);
 }
 
 // ============================================================
-// 1. 초기 통계 창 / 우측 창 안전 영역 분리 및 동적 좌표 보정
+// 3. 초기 창 배치 (800px 폭 기준 정렬)
 // ============================================================
 function detectIconColumnSide() {
   const iconWrap = document.querySelector('.desktop-icons');
@@ -182,38 +330,30 @@ function positionInitialWindows() {
 
   const cfg = window.DESKTOP_LAYOUT_CONFIG || {
     TOP_MENUBAR_HEIGHT: 30,
-    ICON_COL_WIDTH: 116,
-    EDGE_MARGIN: 16
+    ICON_COL_WIDTH: 124,
+    EDGE_MARGIN: 14
   };
   const iconSide = detectIconColumnSide();
   const safeLeft = iconSide === 'left' ? cfg.ICON_COL_WIDTH + 12 : cfg.EDGE_MARGIN;
   const safeRight = iconSide === 'right' ? cfg.ICON_COL_WIDTH + 12 : cfg.EDGE_MARGIN;
 
-  // 1) 통계 창(#win-stats 또는 [data-dock="right"]) 우측 안전 영역 끝 고정 배치
   const statsWin = document.getElementById('win-stats') || document.querySelector('.floating-win[data-dock="right"]');
   if (statsWin && !statsWin.dataset.userMoved) {
-    const statsW = statsWin.offsetWidth || 320;
+    const statsW = Math.min(340, statsWin.offsetWidth || 320);
     const targetLeft = Math.max(safeLeft, window.innerWidth - statsW - safeRight);
     statsWin.style.right = 'auto';
     statsWin.style.left = `${targetLeft}px`;
-    statsWin.style.top = `${cfg.TOP_MENUBAR_HEIGHT + 14}px`;
+    statsWin.style.top = `${cfg.TOP_MENUBAR_HEIGHT + 12}px`;
   }
 
-  // 2) 메인 아카이브 창(#win-main)이 바탕화면 아이콘 열 또는 우측 통계 창과 겹치지 않도록 보정
   const mainWin = document.getElementById('win-main');
   if (mainWin && !mainWin.dataset.userMoved) {
     mainWin.style.left = `${safeLeft}px`;
     mainWin.style.top = `${cfg.TOP_MENUBAR_HEIGHT + 12}px`;
-    if (statsWin && statsWin.classList.contains('open')) {
-      const availWidth = window.innerWidth - safeLeft - (statsWin.offsetWidth || 320) - safeRight - 14;
-      if (availWidth >= 520) {
-        mainWin.style.maxWidth = `${availWidth}px`;
-      }
-    } else {
-      const maxAvail = window.innerWidth - safeLeft - safeRight;
-      if (maxAvail >= 520) {
-        mainWin.style.maxWidth = `${maxAvail}px`;
-      }
+    const max800 = Math.min(760, window.innerWidth - safeLeft - safeRight);
+    if (max800 >= 480) {
+      mainWin.style.width = `${max800}px`;
+      mainWin.style.maxWidth = `${max800}px`;
     }
   }
 }
@@ -243,7 +383,7 @@ function toggleCollapseWindow(winId) {
 }
 
 // ============================================================
-// 2. 멀티 윈도우 제어 (포커스, 열기/닫기, 최소화, 정렬, 작업표시줄)
+// 4. 멀티 윈도우 제어 & 작업 표시줄 활성 창 숨김 토글
 // ============================================================
 function focusWindow(winEl) {
   if (!winEl) return;
@@ -295,9 +435,9 @@ function tileOpenWindows() {
   const openWins = Array.from(document.querySelectorAll('.floating-win.open:not(.minimized)'));
   if (!openWins.length) return;
   const iconSide = detectIconColumnSide();
-  const safeLeft = iconSide === 'left' ? 128 : 16;
-  const safeRight = iconSide === 'right' ? 128 : 16;
-  const areaW = Math.max(360, window.innerWidth - safeLeft - safeRight);
+  const safeLeft = iconSide === 'left' ? 132 : 16;
+  const safeRight = iconSide === 'right' ? 132 : 16;
+  const areaW = Math.min(800, Math.max(360, window.innerWidth - safeLeft - safeRight));
   const areaH = Math.max(300, window.innerHeight - 80);
   const cols = openWins.length === 1 ? 1 : 2;
   const rows = Math.ceil(openWins.length / cols);
@@ -319,7 +459,7 @@ function tileOpenWindows() {
 
 function cascadeOpenWindows() {
   const iconSide = detectIconColumnSide();
-  const baseLeft = iconSide === 'left' ? 132 : 24;
+  const baseLeft = iconSide === 'left' ? 136 : 24;
   document.querySelectorAll('.floating-win.open').forEach((w, idx) => {
     w.classList.remove('minimized', 'win-maximized', 'win-collapsed');
     w.dataset.userMoved = 'true';
@@ -357,11 +497,15 @@ function syncTaskbar() {
     tab.appendChild(iconWrap);
     tab.appendChild(textSpan);
 
-    tab.addEventListener('click', () => {
-      if (winEl.classList.contains('minimized') || !winEl.classList.contains('focused')) {
-        focusWindow(winEl);
-      } else {
+    // 작업 표시줄에서 활성 창을 누르면 숨김(최소화), 숨겨진 창을 누르면 다시 표시
+    tab.addEventListener('click', e => {
+      e.preventDefault();
+      e.stopPropagation();
+      const currentlyActive = winEl.classList.contains('focused') && !winEl.classList.contains('minimized');
+      if (currentlyActive) {
         minimizeWindow(winEl.id);
+      } else {
+        openWindow(winEl.id);
       }
     });
     container.appendChild(tab);
@@ -369,7 +513,7 @@ function syncTaskbar() {
 }
 
 // ============================================================
-// 3. 창 타이틀바 드래그 이동 (마우스 및 터치 지원)
+// 5. 창 타이틀바 드래그 이동 (마우스 및 터치 지원)
 // ============================================================
 function enableWindowDrag(winEl) {
   if (!winEl || winEl.dataset.dragBound === 'true') return;
@@ -434,7 +578,6 @@ function enableWindowDrag(winEl) {
   window.addEventListener('touchend', onEnd);
 }
 
-// 창 컨트롤 버튼([_], [-], [X]) 전역 위임
 document.addEventListener('click', e => {
   const ctrlBtn = e.target.closest('[data-action][data-target]');
   if (!ctrlBtn) return;
@@ -448,24 +591,12 @@ document.addEventListener('click', e => {
 });
 
 // ============================================================
-// 4. 작업 공간 프리셋 (Workspace Snapshots)
+// 6. 작업 공간 프리셋 & 스포트라이트 (Ctrl+K)
 // ============================================================
 const BUILTIN_WORKSPACES = [
-  {
-    id: 'ws-listen',
-    name: '감상 모드 (주크박스 + 시각화)',
-    windows: ['win-jukebox', 'win-visualizer']
-  },
-  {
-    id: 'ws-explore',
-    name: '탐색 모드 (아카이브 + 정보바다 탐색기)',
-    windows: ['win-main', 'win-browser']
-  },
-  {
-    id: 'ws-plaza',
-    name: '광장 모드 (커뮤니티 + 주크박스)',
-    windows: ['win-community', 'win-jukebox']
-  }
+  { id: 'ws-listen', name: '감상 모드 (주크박스 + 시각화)', windows: ['win-jukebox', 'win-visualizer'] },
+  { id: 'ws-explore', name: '탐색 모드 (아카이브 + 정보바다 탐색기)', windows: ['win-main', 'win-browser'] },
+  { id: 'ws-plaza', name: '광장 모드 (커뮤니티 + 주크박스)', windows: ['win-community', 'win-jukebox'] }
 ];
 
 function applyWorkspacePreset(presetId) {
@@ -486,22 +617,7 @@ function applyWorkspacePreset(presetId) {
     }
   });
 
-  if (preset.layoutMap) {
-    Object.entries(preset.layoutMap).forEach(([winId, pos]) => {
-      const el = document.getElementById(winId);
-      if (el && pos) {
-        el.dataset.userMoved = 'true';
-        el.style.left = pos.left;
-        el.style.top = pos.top;
-        if (pos.width) el.style.width = pos.width;
-      }
-    });
-  } else {
-    tileOpenWindows();
-  }
-
-  const statusLeft = document.getElementById('status-left');
-  if (statusLeft) statusLeft.textContent = `[WORKSPACE] '${preset.name}' 레이아웃 적용 완료`;
+  tileOpenWindows();
   if (typeof playRetroTone === 'function') playRetroTone('open');
 }
 
@@ -519,22 +635,12 @@ function saveCurrentWorkspaceSnapshot() {
   const saved = typeof loadLocalCache === 'function' ? loadLocalCache(STORAGE_KEYS.WORKSPACES, []) : [];
   const next = [
     ...(Array.isArray(saved) ? saved.filter(x => x.id !== 'ws-custom-latest') : []),
-    {
-      id: 'ws-custom-latest',
-      name: `사용자 저장 배치 (${openWins.length}개 창)`,
-      windows: openWins.map(w => w.id),
-      layoutMap
-    }
+    { id: 'ws-custom-latest', name: `사용자 저장 배치 (${openWins.length}개 창)`, windows: openWins.map(w => w.id), layoutMap }
   ];
   if (typeof saveLocalCache === 'function') saveLocalCache(STORAGE_KEYS.WORKSPACES, next);
-  const statusLeft = document.getElementById('status-left');
-  if (statusLeft) statusLeft.textContent = '[WORKSPACE] 현재 열려 있는 창 배치가 스냅샷으로 저장되었습니다.';
   if (typeof playRetroTone === 'function') playRetroTone('open');
 }
 
-// ============================================================
-// 5. 스포트라이트(Spotlight) 통합 커맨드 팔레트 (Ctrl/Cmd + K)
-// ============================================================
 let spotlightSelectedIndex = 0;
 let spotlightFilteredItems = [];
 
@@ -545,57 +651,33 @@ function ensureSpotlightPalette() {
   backdrop.innerHTML = `
     <div id="os95-spotlight-box" role="dialog" aria-label="SPOTLIGHT 95 커맨드 팔레트">
       <div class="win-titlebar" style="background:#000080; color:#ffffff;">
-        <div class="win-title-left">
-          <span class="win-title-dot" style="background:var(--brutal-yellow, #ffd83b);"></span>
-          <span>SPOTLIGHT95.EXE — 통합 검색 및 빠른 명령 (Ctrl+K)</span>
-        </div>
-        <div class="win-controls">
-          <button type="button" class="win-ctrl-btn close" id="btn-spot-close">X</button>
-        </div>
+        <div class="win-title-left"><span class="win-title-dot"></span><span>SPOTLIGHT95.EXE — 통합 검색 (Ctrl+K)</span></div>
+        <div class="win-controls"><button type="button" class="win-ctrl-btn close" id="btn-spot-close">X</button></div>
       </div>
       <div style="padding:10px;">
-        <input type="text" id="os95-spotlight-input" placeholder="아카이브 제목, 음악, 앱 실행, 창 정렬, 작업 공간 프리셋 검색..." style="width:100%; font-size:0.88rem; font-weight:800; padding:7px 9px; margin-bottom:8px;" />
+        <input type="text" id="os95-spotlight-input" placeholder="아카이브 제목, 앱 실행, 설정 화면 검색..." style="width:100%; font-size:0.88rem; font-weight:800; padding:7px 9px; margin-bottom:8px;" />
         <div id="os95-spotlight-list" style="max-height:290px; overflow-y:auto; border:2px solid #111111; background:#ffffff;"></div>
-        <div style="display:flex; justify-content:space-between; font-size:0.72rem; font-weight:800; color:#333; margin-top:6px;">
-          <span>[↑/↓] 이동 · [Enter] 실행 · [ESC] 닫기</span>
-          <span>MY-ARCHIVE 95 COMMAND</span>
-        </div>
       </div>
     </div>
   `;
   document.body.appendChild(backdrop);
 
-  backdrop.addEventListener('click', e => {
-    if (e.target === backdrop) closeSpotlightPalette();
-  });
+  backdrop.addEventListener('click', e => { if (e.target === backdrop) closeSpotlightPalette(); });
   document.getElementById('btn-spot-close')?.addEventListener('click', closeSpotlightPalette);
 
   const inp = document.getElementById('os95-spotlight-input');
-  inp?.addEventListener('input', () => {
-    spotlightSelectedIndex = 0;
-    renderSpotlightResults(inp.value);
-  });
-
+  inp?.addEventListener('input', () => { spotlightSelectedIndex = 0; renderSpotlightResults(inp.value); });
   inp?.addEventListener('keydown', e => {
     if (e.key === 'ArrowDown') {
       e.preventDefault();
-      if (spotlightFilteredItems.length) {
-        spotlightSelectedIndex = (spotlightSelectedIndex + 1) % spotlightFilteredItems.length;
-        renderSpotlightResults(inp.value);
-      }
+      if (spotlightFilteredItems.length) { spotlightSelectedIndex = (spotlightSelectedIndex + 1) % spotlightFilteredItems.length; renderSpotlightResults(inp.value); }
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
-      if (spotlightFilteredItems.length) {
-        spotlightSelectedIndex = (spotlightSelectedIndex - 1 + spotlightFilteredItems.length) % spotlightFilteredItems.length;
-        renderSpotlightResults(inp.value);
-      }
+      if (spotlightFilteredItems.length) { spotlightSelectedIndex = (spotlightSelectedIndex - 1 + spotlightFilteredItems.length) % spotlightFilteredItems.length; renderSpotlightResults(inp.value); }
     } else if (e.key === 'Enter') {
       e.preventDefault();
       const chosen = spotlightFilteredItems[spotlightSelectedIndex];
-      if (chosen && typeof chosen.run === 'function') {
-        closeSpotlightPalette();
-        chosen.run();
-      }
+      if (chosen && typeof chosen.run === 'function') { closeSpotlightPalette(); chosen.run(); }
     } else if (e.key === 'Escape') {
       e.preventDefault();
       closeSpotlightPalette();
@@ -606,54 +688,20 @@ function ensureSpotlightPalette() {
 function buildSpotlightCatalog() {
   const cmds = [
     { tag: 'APP', label: '아카이브 탐색기 열기 (MY-ARCHIVE)', run: () => openWindow('win-main') },
+    { tag: 'BIOS', label: 'BIOS 텍스트 설정 화면 열기', run: () => openBiosTextSetupScreen(readBrowserBiosConfig() || {}) },
     { tag: 'NEW', label: '새 감상 기록 등록하기 (+)', run: () => { if (typeof openRegisterModal === 'function') openRegisterModal(); } },
     { tag: 'AUD', label: '주크박스 95 열기 (JUKEBOX95.EXE)', run: () => { openWindow('win-jukebox'); if (typeof updateJukebox === 'function') updateJukebox(); } },
-    { tag: 'VIS', label: '지식 그래프 & 키워드 시각화 (VISUALIZER95.EXE)', run: () => openWindow('win-visualizer') },
-    { tag: 'WEB', label: '정보바다 탐색기 95 열기 (EXPLORER95.EXE)', run: () => { if (typeof openVirtualBrowser === 'function') openVirtualBrowser('about:home'); } },
-    { tag: 'SNS', label: '광장 게시판 열기 (COMMUNITY95.EXE)', run: () => { if (typeof openCommunityBoard === 'function') openCommunityBoard(); } },
-    { tag: 'GAM', label: '레트로 미니게임 팩 열기 (GAMEPACK95.EXE)', run: () => openWindow('win-gamepack') },
-    { tag: 'CAL', label: '월별 감상 달력 & D-Day 열기 (CALENDAR95.EXE)', run: () => openWindow('win-calendar') },
-    { tag: 'MOD', label: '감정 상태별 작품 추천기 (MOODPICK.EXE)', run: () => openWindow('win-mood') },
-    { tag: 'QUZ', label: '아카이브 복습 퀴즈 & 초성 챌린지 (QUIZ95.EXE)', run: () => openWindow('win-quiz') },
-    { tag: 'TIM', label: '연대기 가로 연표 & 레이더 차트 (TIMELINE95.EXE)', run: () => openWindow('win-timeline') },
-    { tag: 'STM', label: '전자 직인 생성기 & 문화생활 가계부 (STAMP95.EXE)', run: () => openWindow('win-stamp') },
-    { tag: 'MAL', label: '비밀 추천 우체통 & 모바일 QR (MAILBOX95.EXE)', run: () => openWindow('win-mailbox') },
-    { tag: 'TXT', label: '퀵 메모장 열기 (MEMOPAD.EXE)', run: () => { if (typeof openMemoWindow === 'function') openMemoWindow(); } },
-    { tag: 'WIN', label: '열린 창 바둑판 정렬 (Tile Windows)', run: tileOpenWindows },
-    { tag: 'WIN', label: '열린 창 계단식 정렬 (Cascade Windows)', run: cascadeOpenWindows },
-    { tag: 'WSP', label: '작업 공간: 감상 모드 (주크박스 + 시각화)', run: () => applyWorkspacePreset('ws-listen') },
-    { tag: 'WSP', label: '작업 공간: 탐색 모드 (아카이브 + 탐색기)', run: () => applyWorkspacePreset('ws-explore') },
-    { tag: 'WSP', label: '작업 공간: 광장 모드 (커뮤니티 + 주크박스)', run: () => applyWorkspacePreset('ws-plaza') },
-    { tag: 'WSP', label: '작업 공간: 사용자 저장 배치 불러오기', run: () => applyWorkspacePreset('ws-custom-latest') },
-    { tag: 'WSP', label: '작업 공간: 현재 창 배치 스냅샷 저장', run: saveCurrentWorkspaceSnapshot },
-    { tag: 'STK', label: '바탕화면 포스트잇 스티커 레이어 토글', run: () => { if (typeof window.toggleDesktopStickerLayer === 'function') window.toggleDesktopStickerLayer(); } }
+    { tag: 'WIN', label: '열린 창 바둑판 정렬', run: tileOpenWindows },
+    { tag: 'WIN', label: '열린 창 계단식 정렬', run: cascadeOpenWindows }
   ];
-
   const items = Array.isArray(archiveItems) ? archiveItems : [];
   items.slice(0, 60).forEach(it => {
     cmds.push({
       tag: it.category || 'DAT',
       label: `${it.title} — ${it.creator} (${it.watchDate})`,
-      run: () => {
-        if (typeof spawnDetailWindow === 'function') spawnDetailWindow(it);
-      }
+      run: () => { if (typeof spawnDetailWindow === 'function') spawnDetailWindow(it); }
     });
-    if (it.category === '음악') {
-      cmds.push({
-        tag: 'PLAY',
-        label: `[주크박스 즉시 재생] ${it.title} — ${it.creator}`,
-        run: () => {
-          openWindow('win-jukebox');
-          if (typeof updateJukebox === 'function') updateJukebox();
-          if (typeof playJukeboxTrack === 'function') {
-            const idx = (window.jbState?.playlist || []).findIndex(x => x.id === it.id);
-            playJukeboxTrack(idx >= 0 ? idx : 0);
-          }
-        }
-      });
-    }
   });
-
   return cmds;
 }
 
@@ -662,18 +710,8 @@ function renderSpotlightResults(query = '') {
   if (!listEl) return;
   const q = String(query || '').trim().toLowerCase();
   const catalog = buildSpotlightCatalog();
-  spotlightFilteredItems = q
-    ? catalog.filter(c => `${c.tag} ${c.label}`.toLowerCase().includes(q)).slice(0, 14)
-    : catalog.slice(0, 12);
-
-  if (spotlightSelectedIndex >= spotlightFilteredItems.length) {
-    spotlightSelectedIndex = 0;
-  }
-
-  if (!spotlightFilteredItems.length) {
-    listEl.innerHTML = `<div style="padding:14px; text-align:center; font-size:0.8rem; color:#555;">일치하는 명령이나 아카이브 자료가 없습니다.</div>`;
-    return;
-  }
+  spotlightFilteredItems = q ? catalog.filter(c => `${c.tag} ${c.label}`.toLowerCase().includes(q)).slice(0, 14) : catalog.slice(0, 12);
+  if (spotlightSelectedIndex >= spotlightFilteredItems.length) spotlightSelectedIndex = 0;
 
   listEl.innerHTML = spotlightFilteredItems.map((item, idx) => `
     <div class="spot-item ${idx === spotlightSelectedIndex ? 'selected' : ''}" data-spot-idx="${idx}">
@@ -684,12 +722,8 @@ function renderSpotlightResults(query = '') {
 
   listEl.querySelectorAll('[data-spot-idx]').forEach(row => {
     row.addEventListener('click', () => {
-      const idx = Number(row.dataset.spotIdx);
-      const chosen = spotlightFilteredItems[idx];
-      if (chosen && typeof chosen.run === 'function') {
-        closeSpotlightPalette();
-        chosen.run();
-      }
+      const chosen = spotlightFilteredItems[Number(row.dataset.spotIdx)];
+      if (chosen && typeof chosen.run === 'function') { closeSpotlightPalette(); chosen.run(); }
     });
   });
 }
@@ -703,27 +737,25 @@ function openSpotlightPalette() {
   inp.value = '';
   renderSpotlightResults('');
   backdrop.classList.add('open');
-  if (typeof playRetroTone === 'function') playRetroTone('open');
   setTimeout(() => inp.focus(), 10);
 }
 
 function closeSpotlightPalette() {
-  const backdrop = document.getElementById('os95-spotlight-backdrop');
-  if (backdrop) backdrop.classList.remove('open');
+  document.getElementById('os95-spotlight-backdrop')?.classList.remove('open');
 }
 
 // ============================================================
-// 6. 바탕화면 테마, CRT 효과, 시스템 시계, BSOD 및 창 런처 바인딩
+// 7. 테마, CRT, 시계, 작업 관리자 및 초기화
 // ============================================================
 function applyTheme(themeName, persist = true) {
   const safeTheme = String(themeName || 'teal').trim() || 'teal';
   document.body.classList.remove(...ALL_DESKTOP_THEMES);
   document.body.classList.add(`theme-${safeTheme}`);
 
-  if (persist && typeof loadLocalCache === 'function' && typeof saveLocalCache === 'function' && typeof STORAGE_KEYS !== 'undefined') {
-    const prefs = loadLocalCache(STORAGE_KEYS.PREFS, { theme: 'teal', crt: false, soundEnabled: true }) || {};
-    prefs.theme = safeTheme;
-    saveLocalCache(STORAGE_KEYS.PREFS, prefs);
+  if (persist) {
+    const cur = readBrowserBiosConfig() || {};
+    cur.theme = safeTheme;
+    writeBrowserBiosConfig(cur);
   }
 }
 
@@ -741,92 +773,65 @@ function applyCrtOverlayState(enabled) {
 }
 
 function applyDesktopPreferences() {
-  const prefs = (typeof loadLocalCache === 'function' && typeof STORAGE_KEYS !== 'undefined')
-    ? (loadLocalCache(STORAGE_KEYS.PREFS, { theme: 'teal', crt: false, soundEnabled: true }) || {})
-    : { theme: 'teal', crt: false, soundEnabled: true };
-
-  applyTheme(prefs.theme || 'teal', false);
-  applyCrtOverlayState(Boolean(prefs.crt));
+  const cfg = readBrowserBiosConfig();
+  if (cfg) {
+    applyBiosConfigToSystem(cfg);
+  } else {
+    applyTheme('teal', false);
+    applyCrtOverlayState(true);
+  }
 }
 
 function updateTaskbarClock() {
   const el = document.getElementById('taskbar-clock');
   if (!el) return;
   const now = new Date();
-  const hh = String(now.getHours()).padStart(2, '0');
-  const mm = String(now.getMinutes()).padStart(2, '0');
-  el.textContent = `${hh}:${mm}`;
+  el.textContent = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 }
 
-function triggerBsodEasterEgg() {
-  if (typeof playRetroTone === 'function') playRetroTone('boom');
-  const existing = document.getElementById('win95-bsod');
-  if (existing) existing.remove();
-
-  const bsod = document.createElement('div');
-  bsod.id = 'win95-bsod';
-  bsod.style.cssText = 'position:fixed;inset:0;background:#0000aa;color:#ffffff;font-family:monospace;z-index:20000;display:flex;align-items:center;justify-content:center;padding:24px;cursor:pointer;';
-  bsod.innerHTML = `
-    <div style="max-width:620px;line-height:1.7;">
-      <div style="background:#c0c0c0;color:#0000aa;display:inline-block;padding:2px 10px;font-weight:900;margin-bottom:18px;">MY-ARCHIVE 95 OS</div>
-      <p style="margin-bottom:14px;">치명적인 취향 과부하 예외 0E가 0028:C0011E36에서 발생했습니다. 현재 실행 중인 감상 기록은 중앙 Google Sheets 및 LocalStorage에 안전하게 보호되고 있습니다.</p>
-      <p style="margin-bottom:14px;">* 화면의 아무 곳이나 클릭하거나 키보드의 아무 키나 누르면 데스크톱으로 복귀합니다.</p>
-      <p style="text-align:center;margin-top:24px;">Press any key to continue _</p>
-    </div>
-  `;
-  const closeBsod = () => {
-    bsod.remove();
-    document.removeEventListener('keydown', closeBsod);
-  };
-  bsod.addEventListener('click', closeBsod);
-  document.addEventListener('keydown', closeBsod);
-  document.body.appendChild(bsod);
+function openTaskManager() {
+  openWindow('win-taskmgr');
+  renderTaskManagerList();
 }
 
-function injectTopMenubarQuickControls() {
-  const menubar = document.querySelector('.top-menubar');
-  if (!menubar || document.getElementById('os95-menubar-quick')) return;
-  const bar = document.createElement('div');
-  bar.id = 'os95-menubar-quick';
-  bar.style.cssText = 'margin-left:auto; display:flex; align-items:center; gap:5px; padding-right:8px;';
-  bar.innerHTML = `
-    <button type="button" class="btn95 sm" id="btn-top-spotlight" style="padding:1px 7px; font-size:0.72rem; font-weight:900;" title="통합 검색 및 명령 (Ctrl+K)">[Ctrl+K] 검색</button>
-    <select id="sel-top-workspace" class="win95-select" style="padding:1px 4px; font-size:0.72rem; height:22px;" title="작업 공간 프리셋 전환">
-      <option value="">작업 공간 프리셋...</option>
-      <option value="ws-listen">감상 모드 (주크박스+시각화)</option>
-      <option value="ws-explore">탐색 모드 (아카이브+탐색기)</option>
-      <option value="ws-plaza">광장 모드 (커뮤니티+주크박스)</option>
-      <option value="ws-tile">창 바둑판 정렬</option>
-      <option value="ws-save">+ 현재 창 배치 저장</option>
-      <option value="ws-custom-latest">저장된 배치 복원</option>
-    </select>
-  `;
-  menubar.appendChild(bar);
-
-  document.getElementById('btn-top-spotlight')?.addEventListener('click', openSpotlightPalette);
-  document.getElementById('sel-top-workspace')?.addEventListener('change', e => {
-    const val = e.target.value;
-    e.target.value = '';
-    if (!val) return;
-    if (val === 'ws-tile') tileOpenWindows();
-    else if (val === 'ws-save') saveCurrentWorkspaceSnapshot();
-    else applyWorkspacePreset(val);
-  });
+function renderTaskManagerList() {
+  const listBox = document.getElementById('taskmgr-list');
+  if (!listBox) return;
+  const openWins = Array.from(document.querySelectorAll('.floating-win.open'));
+  if (!openWins.length) {
+    listBox.innerHTML = '<div style="padding:12px;color:#555;font-size:0.8rem;">현재 실행 중인 응용 프로그램이 없습니다.</div>';
+    return;
+  }
+  listBox.innerHTML = openWins.map(w => {
+    const title = sanitizeRetroWindowTitle(w.dataset.winTitle || w.id) || w.id;
+    const status = w.classList.contains('minimized') ? '최소화됨' : '응답 중';
+    return `
+      <div class="taskmgr-row" data-win-id="${esc(w.id)}">
+        <span><b>${esc(title)}</b></span>
+        <span style="font-size:0.74rem;color:#006600;font-weight:800;">[${status}]</span>
+        <div style="display:flex;gap:4px;">
+          <button type="button" class="btn95 sm" data-tm-focus="${esc(w.id)}">전환</button>
+          <button type="button" class="btn95 pink sm" data-tm-kill="${esc(w.id)}">작업 끝내기</button>
+        </div>
+      </div>
+    `;
+  }).join('');
 }
 
 document.addEventListener('DOMContentLoaded', () => {
   injectOsEnhancementStyles();
+  bindSyncBadgeGuard();
   applyDesktopPreferences();
+  checkFirstBootBiosSetup();
+
   document.querySelectorAll('.floating-win').forEach(enableWindowDrag);
   positionInitialWindows();
-  injectTopMenubarQuickControls();
   syncTaskbar();
   updateTaskbarClock();
   setInterval(updateTaskbarClock, 15000);
 
   window.addEventListener('resize', positionInitialWindows);
 
-  // Ctrl+K / Cmd+K 전역 단축키
   document.addEventListener('keydown', e => {
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
       e.preventDefault();
@@ -836,7 +841,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // 바탕화면 테마 전환
   document.querySelectorAll('[data-theme-opt]').forEach(btn => {
     btn.addEventListener('click', () => {
       applyTheme(btn.dataset.themeOpt, true);
@@ -844,35 +848,12 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // CRT 스캔라인 토글
   document.getElementById('mnu-toggle-crt')?.addEventListener('click', () => {
-    const prefs = loadLocalCache(STORAGE_KEYS.PREFS, { theme: 'teal', crt: false, soundEnabled: true });
-    prefs.crt = !prefs.crt;
-    saveLocalCache(STORAGE_KEYS.PREFS, prefs);
-    applyCrtOverlayState(prefs.crt);
-    if (typeof playRetroTone === 'function') playRetroTone('click');
+    const cfg = readBrowserBiosConfig() || { theme: 'teal', crt: true, sound: true };
+    cfg.crt = !cfg.crt;
+    writeBrowserBiosConfig(cfg);
+    applyCrtOverlayState(cfg.crt);
   });
-
-  document.getElementById('chk-crt')?.addEventListener('change', e => {
-    const prefs = loadLocalCache(STORAGE_KEYS.PREFS, { theme: 'teal', crt: false, soundEnabled: true });
-    prefs.crt = Boolean(e.target.checked);
-    saveLocalCache(STORAGE_KEYS.PREFS, prefs);
-    applyCrtOverlayState(prefs.crt);
-    if (typeof playRetroTone === 'function') playRetroTone('click');
-  });
-
-  // 8비트 효과음 음소거 토글
-  document.getElementById('mnu-toggle-sound')?.addEventListener('click', () => {
-    const prefs = loadLocalCache(STORAGE_KEYS.PREFS, { theme: 'teal', crt: false, soundEnabled: true });
-    prefs.soundEnabled = prefs.soundEnabled === false ? true : false;
-    saveLocalCache(STORAGE_KEYS.PREFS, prefs);
-    if (prefs.soundEnabled && typeof playRetroTone === 'function') playRetroTone('open');
-    if (typeof showWin95MessageBox === 'function') {
-      showWin95MessageBox('오디오 설정 — MY-ARCHIVE 95', prefs.soundEnabled ? '8비트 레트로 효과음이 활성화되었습니다.' : '8비트 레트로 효과음이 음소거되었습니다.', 'click');
-    }
-  });
-
-  document.getElementById('mnu-trigger-bsod')?.addEventListener('click', triggerBsodEasterEgg);
 
   const bindLauncher = (selectors, winId) => {
     selectors.forEach(sel => {
@@ -891,130 +872,6 @@ document.addEventListener('DOMContentLoaded', () => {
   bindLauncher(['icon-gamepack', 'mnu-open-gamepack'], 'win-gamepack');
 });
 
-// ============================================================
-// 7. Windows 95 작업 관리자 (Ctrl+Alt+Delete) & 화면 보호기
-// ============================================================
-function openTaskManager() {
-  openWindow('win-taskmgr');
-  renderTaskManagerList();
-}
-
-function renderTaskManagerList() {
-  const listBox = document.getElementById('taskmgr-list');
-  if (!listBox) return;
-  const openWins = Array.from(document.querySelectorAll('.floating-win.open'));
-  if (openWins.length === 0) {
-    listBox.innerHTML = '<div style="padding:12px;color:#555;font-size:0.8rem;">현재 실행 중인 응용 프로그램이 없습니다.</div>';
-    return;
-  }
-  listBox.innerHTML = openWins.map(w => {
-    const title = sanitizeRetroWindowTitle(w.dataset.winTitle || w.id) || w.id;
-    const status = w.classList.contains('minimized') ? '최소화됨' : '응답 중';
-    return `
-      <div class="taskmgr-row" data-win-id="${esc(w.id)}">
-        <span><b>${esc(title)}</b></span>
-        <span style="font-size:0.74rem;color:#006600;font-weight:800;">[${status}]</span>
-        <div style="display:flex;gap:4px;">
-          <button type="button" class="btn95 sm" data-tm-focus="${esc(w.id)}" style="padding:2px 7px;font-size:0.72rem;">전환</button>
-          <button type="button" class="btn95 pink sm" data-tm-kill="${esc(w.id)}" style="padding:2px 7px;font-size:0.72rem;">작업 끝내기</button>
-        </div>
-      </div>
-    `;
-  }).join('');
-
-  listBox.querySelectorAll('[data-tm-focus]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const target = document.getElementById(btn.dataset.tmFocus);
-      if (target) focusWindow(target);
-    });
-  });
-
-  listBox.querySelectorAll('[data-tm-kill]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      closeWindow(btn.dataset.tmKill);
-      renderTaskManagerList();
-    });
-  });
-}
-
-let screensaverAnimId = null;
-
-function startWin95Screensaver() {
-  const scr = document.getElementById('win95-screensaver');
-  const canvas = document.getElementById('screensaver-canvas');
-  if (!scr || !canvas) return;
-
-  scr.style.display = 'block';
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
-  const ctx = canvas.getContext('2d');
-
-  const colors = ['#ff4b4b', '#4be36a', '#4ba3ff', '#ffd83b', '#ff9f43', '#a29bfe'];
-  const sprites = Array.from({ length: 14 }, (_, i) => ({
-    x: Math.random() * (canvas.width - 96),
-    y: Math.random() * (canvas.height - 50),
-    vx: (Math.random() < 0.5 ? -1 : 1) * (1.8 + Math.random() * 2.2),
-    vy: (Math.random() < 0.5 ? -1 : 1) * (1.5 + Math.random() * 2.0),
-    color: colors[i % colors.length],
-    label: i % 2 === 0 ? 'ARCHIVE 95' : 'WIN95 OS'
-  }));
-
-  const stopScreensaver = () => {
-    if (screensaverAnimId) {
-      cancelAnimationFrame(screensaverAnimId);
-      screensaverAnimId = null;
-    }
-    scr.style.display = 'none';
-    document.removeEventListener('keydown', stopScreensaver);
-  };
-
-  scr.onclick = stopScreensaver;
-  document.addEventListener('keydown', stopScreensaver);
-
-  const loop = () => {
-    if (scr.style.display === 'none') return;
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    sprites.forEach(s => {
-      s.x += s.vx;
-      s.y += s.vy;
-      if (s.x <= 0 || s.x + 96 >= canvas.width) s.vx *= -1;
-      if (s.y <= 0 || s.y + 34 >= canvas.height) s.vy *= -1;
-
-      ctx.fillStyle = s.color;
-      ctx.fillRect(s.x, s.y, 96, 34);
-      ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(s.x, s.y, 96, 34);
-      ctx.fillStyle = '#111111';
-      ctx.font = 'bold 12px monospace';
-      ctx.textAlign = 'center';
-      ctx.fillText(s.label, s.x + 48, s.y + 21);
-    });
-
-    screensaverAnimId = requestAnimationFrame(loop);
-  };
-  screensaverAnimId = requestAnimationFrame(loop);
-}
-
-document.addEventListener('keydown', e => {
-  if (e.ctrlKey && e.altKey && (e.key === 'Delete' || e.key === 'Backspace')) {
-    e.preventDefault();
-    openTaskManager();
-  }
-});
-
-document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('mnu-open-taskmgr')?.addEventListener('click', openTaskManager);
-  document.getElementById('mnu-start-screensaver')?.addEventListener('click', startWin95Screensaver);
-  document.getElementById('btn-tm-refresh')?.addEventListener('click', renderTaskManagerList);
-  document.getElementById('btn-tm-reboot')?.addEventListener('click', () => {
-    closeWindow('win-taskmgr');
-    if (typeof startBiosBootSequence === 'function') startBiosBootSequence();
-  });
-});
-
 window.focusWindow = focusWindow;
 window.openWindow = openWindow;
 window.closeWindow = closeWindow;
@@ -1028,6 +885,6 @@ window.applyWorkspacePreset = applyWorkspacePreset;
 window.syncTaskbar = syncTaskbar;
 window.enableWindowDrag = enableWindowDrag;
 window.applyTheme = applyTheme;
-window.triggerBsodEasterEgg = triggerBsodEasterEgg;
 window.openTaskManager = openTaskManager;
-window.startWin95Screensaver = startWin95Screensaver;
+window.openBiosTextSetupScreen = openBiosTextSetupScreen;
+window.applyCleanSyncBadge = applyCleanSyncBadge;
