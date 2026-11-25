@@ -35,7 +35,8 @@
   <script>
     (function () {
       window.__ARCHIVE_LOGGED_IN = false;
-      window.__ARCHIVE_GATE_DISMISSED = false;
+      window.__ARCHIVE_GATE_DISMISSED = true;
+      var __bootTriggeredOnce = false;
 
       function setPreLoginLock(locked) {
         if (!document.body) return;
@@ -79,6 +80,7 @@
 
       function enterBootAfterStartClick() {
         dismissPreClickStartScreen();
+        __bootTriggeredOnce = true;
         runBootTarget();
       }
 
@@ -93,9 +95,8 @@
             if (!window.__ARCHIVE_LOGGED_IN) {
               setPreLoginLock(true);
             }
-            if (!allowDirectCall && !window.__ARCHIVE_GATE_DISMISSED) {
-              return;
-            }
+            var overlay = document.getElementById('os-boot-overlay');
+            if (overlay) overlay.style.display = 'flex';
             return window.__origStartBiosBootSequence.apply(this, arguments);
           };
 
@@ -153,8 +154,18 @@
         if (typeof window.mountPreClickStartScreen === 'function') {
           window.mountPreClickStartScreen(function () {
             window.__ARCHIVE_GATE_DISMISSED = true;
+            __bootTriggeredOnce = true;
             runBootTarget();
           });
+        }
+
+        // 초기 진입 시 클릭 없이 자동 부팅 시작
+        if (!__bootTriggeredOnce && !window.__ARCHIVE_LOGGED_IN) {
+          __bootTriggeredOnce = true;
+          dismissPreClickStartScreen();
+          setTimeout(function () {
+            runBootTarget();
+          }, 60);
         }
 
         // 포트폴리오 가상 창 연동
@@ -203,7 +214,9 @@
 
       window.addEventListener('load', function () {
         hookBootLifecycle();
-        if (window.__ARCHIVE_GATE_DISMISSED && !window.__ARCHIVE_LOGGED_IN) {
+        if (!__bootTriggeredOnce && !window.__ARCHIVE_LOGGED_IN) {
+          __bootTriggeredOnce = true;
+          dismissPreClickStartScreen();
           runBootTarget();
         }
       }, { once: true });
@@ -930,17 +943,17 @@
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  <script src="js/config.js?v=20261125-v2"></script>
-  <script src="js/window-mgr.js?v=20261125-v2"></script>
-  <script src="js/jukebox.js?v=20261125-v2"></script>
-  <script src="js/gamepack.js?v=20261125-v2"></script>
-  <script src="js/visualizer.js?v=20261125-v2"></script>
-  <script src="js/archive-app.js?v=20261125-v2"></script>
-  <script src="js/browser-app.js?v=20261125-v2"></script>
-  <script src="js/community-app.js?v=20261125-v2"></script>
-  <script src="js/boot-wait.js?v=20261125-v2"></script>
-  <script src="js/boot-animation.js?v=20261125-v2"></script>
-  <script src="js/boot-login.js?v=20261125-v2"></script>
-  <script src="js/win95-widgets.js?v=20261125-v2"></script>
+  <script src="js/config.js?v=20261125-v3"></script>
+  <script src="js/window-mgr.js?v=20261125-v3"></script>
+  <script src="js/jukebox.js?v=20261125-v3"></script>
+  <script src="js/gamepack.js?v=20261125-v3"></script>
+  <script src="js/visualizer.js?v=20261125-v3"></script>
+  <script src="js/archive-app.js?v=20261125-v3"></script>
+  <script src="js/browser-app.js?v=20261125-v3"></script>
+  <script src="js/community-app.js?v=20261125-v3"></script>
+  <script src="js/boot-wait.js?v=20261125-v3"></script>
+  <script src="js/boot-animation.js?v=20261125-v3"></script>
+  <script src="js/boot-login.js?v=20261125-v3"></script>
+  <script src="js/win95-widgets.js?v=20261125-v3"></script>
 </body>
 </html>
