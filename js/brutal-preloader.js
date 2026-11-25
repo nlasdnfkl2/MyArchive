@@ -4,9 +4,9 @@
 
 (function () {
   window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-  window.__MOD_VERSIONS.brutalPreloader = 'v2026.11.25-weighted-7.5s';
+  window.__MOD_VERSIONS.brutalPreloader = 'v2026.11.25-weighted-4.5s-hold-1s';
 
-  const TARGET_AVG_MS = 7500, HOLD_MS = 650;
+  const TARGET_AVG_MS = 4500, HOLD_MS = 1000;
   const LOADER_ID = 'brutal-js-preloader', STYLE_ID = 'brutal-js-preloader-style';
   const START_TS = performance.now();
 
@@ -39,12 +39,12 @@
     return arr;
   }
 
-  // 파일 크기 가중치 + 랜덤 지터를 반영해 전체 합이 평균 7.5초가 되도록 산출
+  // 파일 크기 가중치 + 랜덤 지터를 반영해 전체 합이 평균 4.5초(7.5초의 3/5)가 되도록 산출
   function computeWeightedDurations(entries) {
     const raw = entries.map(([, w]) => w * (0.75 + Math.random() * 0.5));
     const sum = raw.reduce((a, b) => a + b, 0) || 1;
     const totalTarget = TARGET_AVG_MS * (0.92 + Math.random() * 0.16);
-    return raw.map((v) => Math.max(180, Math.round((v / sum) * totalTarget)));
+    return raw.map((v) => Math.max(110, Math.round((v / sum) * totalTarget)));
   }
 
   function injectStyle() {
@@ -242,7 +242,7 @@
       if (done || powerOffQueued) return;
       mount(files);
       const file = files[idx] || files[total - 1];
-      const stepMs = durations[idx] || 300;
+      const stepMs = durations[idx] || 200;
       const t0 = performance.now();
 
       const tick = () => {
