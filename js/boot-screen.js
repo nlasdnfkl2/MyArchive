@@ -1,10 +1,10 @@
 // ============================================================
 // MY-ARCHIVE 95 OS — BIOS POST & Authentic Windows 95 Logon
-// (3D CRT Monitor Entry/Zoom, Nostalgic CRT Power-On, POST Sequence, Win95 Splash & Logon)
+// (Low-Poly 3D CRT Left-Turn Align + Radial Edge Stretch Zoom, POST Sequence, Win95 Splash & Logon)
 // ============================================================
 
 window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-window.__MOD_VERSIONS.bootScreen = 'v2026.11.25-3d-crt';
+window.__MOD_VERSIONS.bootScreen = 'v2026.11.25-lowpoly-crt-stretch';
 
 const SESSION_USER_KEY = 'myarchive95_current_user_v2';
 const USERS_CACHE_KEY = 'myarchive95_users_cache_v2';
@@ -70,7 +70,7 @@ function safeBootTone(type) {
 }
 
 // ============================================================
-// 구형 3D CRT 모니터 인트로 스타일 및 모델 생성기
+// 로우폴리 3D CRT 모니터 좌회전 정렬 + 방사형 가장자리 팽창 연출
 // ============================================================
 function ensure3dCrtMonitorStyles() {
   if (document.getElementById('retro-3d-crt-monitor-style')) return;
@@ -81,192 +81,294 @@ function ensure3dCrtMonitorStyles() {
       position: fixed;
       inset: 0;
       z-index: 1000000;
-      background: radial-gradient(circle at 50% 45%, #2b2d33 0%, #111317 75%, #07080a 100%);
+      background: radial-gradient(circle at 50% 38%, #f3f4f6 0%, #dcdedf 68%, #c5c8cc 100%);
       display: flex;
       align-items: center;
       justify-content: center;
-      perspective: 1150px;
+      perspective: 1200px;
       overflow: hidden;
       opacity: 1;
-      transition: opacity 0.36s ease;
+      transition: opacity 0.28s ease;
     }
     #retro-3d-crt-stage.fade-out {
       opacity: 0;
       pointer-events: none;
     }
-    .crt3d-motion-rig {
+
+    /* 느리게 왼쪽으로 회전하며 화면 중앙에 맞추는 3D 리그 */
+    .poly-crt-rig {
+      position: relative;
       transform-style: preserve-3d;
-      animation: crt3dOrbitAndImmerse 2.15s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+      animation: polyCrtTurnLeftCenter 1.85s cubic-bezier(0.22, 0.88, 0.28, 1) forwards;
     }
-    .crt3d-box {
-      --w: 290px;
-      --h: 244px;
+
+    /* 바닥 그림자 (로우폴리 톤) */
+    .poly-crt-shadow {
+      position: absolute;
+      width: 250px;
+      height: 150px;
+      left: 50%;
+      bottom: -88px;
+      transform: translateX(-44%) rotateX(74deg) translateZ(-36px);
+      background: radial-gradient(ellipse at center, rgba(45, 48, 54, 0.34) 0%, rgba(45, 48, 54, 0.08) 65%, transparent 78%);
+      filter: blur(5px);
+      pointer-events: none;
+    }
+
+    .poly-crt-unit {
+      --w: 268px;
+      --h: 236px;
       --d: 210px;
       position: relative;
       width: var(--w);
       height: var(--h);
       transform-style: preserve-3d;
-      transform: rotateY(-22deg) rotateX(8deg);
     }
-    .crt3d-face {
+
+    .poly-face {
       position: absolute;
       box-sizing: border-box;
-      border: 2px solid #23211d;
+      border: 1px solid rgba(72, 74, 72, 0.42);
     }
-    /* 전면 베젤 (아이보리/그레이) */
-    .crt3d-front {
+
+    /* 전면 베젤: 평면적이고 거친 섀딩의 베이지/아이보리 폴리곤 */
+    .poly-front {
       width: var(--w);
       height: var(--h);
-      background: linear-gradient(165deg, #e7e1d2 0%, #d5cebd 58%, #beb6a3 100%);
+      background: linear-gradient(155deg, #dfddd2 0%, #cfccc0 56%, #bdb9ac 100%);
       transform: translateZ(calc(var(--d) * 0.5));
-      box-shadow: inset 2px 2px 0 rgba(255,255,255,0.65), inset -3px -3px 0 rgba(70,64,54,0.35);
+      padding: 16px 18px 12px;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      padding: 18px 20px 14px;
+      box-shadow: inset 2px 2px 0 rgba(255, 255, 255, 0.55), inset -2px -2px 0 rgba(88, 86, 78, 0.35);
     }
-    /* 안으로 들어간 브라운관 화면 & 볼록한 유리 반사 */
-    .crt3d-screen-bezel {
+
+    /* 움푹 들어간 스크린 프레임 */
+    .poly-screen-well {
       position: relative;
       flex: 1;
-      background: #2b2924;
-      border-top: 3px solid #7d7667;
-      border-left: 3px solid #7d7667;
-      border-right: 3px solid #f5f1e6;
-      border-bottom: 3px solid #f5f1e6;
-      padding: 6px;
-      box-shadow: inset 0 0 12px rgba(0,0,0,0.85);
+      background: #8f8c81;
+      border-top: 3px solid #6b685e;
+      border-left: 3px solid #6b685e;
+      border-right: 3px solid #e7e5da;
+      border-bottom: 3px solid #e7e5da;
+      padding: 4px;
+      overflow: hidden;
     }
-    .crt3d-screen-glass {
+
+    .poly-screen-display {
       position: relative;
       width: 100%;
       height: 100%;
-      background: radial-gradient(circle at 50% 48%, #22474b 0%, #0d1a1d 75%, #060b0d 100%);
-      border-radius: 14px / 11px;
+      background: #4e8d84;
       overflow: hidden;
-      box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.9), inset 3px 3px 10px rgba(185, 245, 255, 0.16);
+      font-family: 'Consolas', 'Courier New', monospace;
     }
-    .crt3d-screen-glass::before {
-      content: '';
-      position: absolute;
-      inset: -12%;
-      background:
-        repeating-linear-gradient(
-          to bottom,
-          rgba(255, 255, 255, 0.04) 0px,
-          rgba(255, 255, 255, 0.04) 1px,
-          transparent 1px,
-          transparent 3px
-        ),
-        radial-gradient(ellipse at 32% 24%, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0.05) 36%, transparent 65%);
-      border-radius: 50%;
-      pointer-events: none;
-    }
-    .crt3d-screen-text {
+
+    /* 데스크톱 아이콘/작업표시줄 느낌의 로우폴리 스크린 */
+    .poly-mini-icons {
       position: relative;
-      z-index: 2;
-      height: 100%;
+      z-index: 1;
+      padding: 6px;
       display: flex;
       flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 4px;
-      font-family: 'Consolas', 'Courier New', monospace;
-      color: #8ef6ff;
-      text-shadow: 0 0 8px rgba(110, 240, 255, 0.65);
-      font-size: 0.72rem;
-      font-weight: 700;
-      letter-spacing: 0.06em;
+      gap: 5px;
     }
-    .crt3d-chin {
-      height: 28px;
-      margin-top: 8px;
+    .poly-mini-icon-row {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.46rem;
+      color: #f4f7f5;
+      text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.55);
+      line-height: 1;
+    }
+    .poly-mini-sq {
+      width: 7px;
+      height: 7px;
+      background: #e6d88a;
+      border: 1px solid #2b2d2c;
+      flex-shrink: 0;
+    }
+    .poly-mini-taskbar {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 11px;
+      background: #c4c2b8;
+      border-top: 1px solid #f2f0e6;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      font-family: 'Consolas', monospace;
-      font-size: 0.65rem;
-      font-weight: 800;
-      color: #4f4a40;
-    }
-    .crt3d-led {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: #38f26c;
-      box-shadow: 0 0 8px #38f26c;
-      border: 1px solid #1b3822;
-      display: inline-block;
-      margin-left: 6px;
-      vertical-align: middle;
-    }
-    /* 후면 (앞뒤가 튀어나온 뭉툭한 브라운관 하우징) */
-    .crt3d-back {
-      width: calc(var(--w) * 0.76);
-      height: calc(var(--h) * 0.74);
-      left: calc(var(--w) * 0.12);
-      top: calc(var(--h) * 0.13);
-      background: linear-gradient(180deg, #cbc3b0 0%, #aba28e 100%);
-      transform: translateZ(calc(var(--d) * -0.56)) rotateY(180deg);
-      box-shadow: inset 0 0 18px rgba(0,0,0,0.35);
-    }
-    /* 좌/우 측면 + 뒤로 좁아지며 돌출되는 테이퍼 면 */
-    .crt3d-left {
-      width: var(--d);
-      height: var(--h);
-      left: calc((var(--w) - var(--d)) * 0.5);
-      background: linear-gradient(180deg, #dcd4c2 0%, #b9b09c 100%);
-      transform: rotateY(-90deg) translateZ(calc(var(--w) * 0.5));
-    }
-    .crt3d-right {
-      width: var(--d);
-      height: var(--h);
-      left: calc((var(--w) - var(--d)) * 0.5);
-      background: linear-gradient(180deg, #cfc6b2 0%, #a99f8b 100%);
-      transform: rotateY(90deg) translateZ(calc(var(--w) * 0.5));
-    }
-    .crt3d-top {
-      width: var(--w);
-      height: var(--d);
-      top: calc((var(--h) - var(--d)) * 0.5);
-      background: linear-gradient(90deg, #efe9da 0%, #d8d0be 100%);
-      transform: rotateX(90deg) translateZ(calc(var(--h) * 0.5));
-    }
-    .crt3d-bottom {
-      width: var(--w);
-      height: var(--d);
-      top: calc((var(--h) - var(--d)) * 0.5);
-      background: #9c9380;
-      transform: rotateX(-90deg) translateZ(calc(var(--h) * 0.5));
-    }
-    /* 하단 받침대 */
-    .crt3d-stand {
-      position: absolute;
-      width: 176px;
-      height: 22px;
-      left: calc((var(--w) - 176px) * 0.5);
-      bottom: -24px;
-      background: linear-gradient(180deg, #c6beaa 0%, #9c937f 100%);
-      border: 2px solid #23211d;
-      transform: translateZ(10px);
+      padding: 0 4px;
+      font-size: 0.44rem;
+      font-weight: 700;
+      color: #1c1e1d;
     }
 
-    @keyframes crt3dOrbitAndImmerse {
+    /* 하단 턱: 미니 컨트롤 버튼 + 파란 전원 버튼 + LED */
+    .poly-chin {
+      height: 24px;
+      margin-top: 7px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 4px;
+    }
+    .poly-chin-left {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+    .poly-small-btns {
+      display: flex;
+      gap: 4px;
+    }
+    .poly-small-btn {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #b6b2a4;
+      border: 1px solid #5c5a52;
+      box-shadow: inset 1px 1px 0 #eceae0;
+    }
+    .poly-led {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: #4ce066;
+      box-shadow: 0 0 4px #4ce066;
+    }
+    .poly-power-btn {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 30%, #7aa8ff 0%, #3d6ed6 65%, #274999 100%);
+      border: 1px solid #2d3442;
+      box-shadow: inset 1px 1px 0 rgba(255, 255, 255, 0.5);
+    }
+
+    /* 후면 돌출 하우징 */
+    .poly-back {
+      width: calc(var(--w) * 0.72);
+      height: calc(var(--h) * 0.72);
+      left: calc(var(--w) * 0.14);
+      top: calc(var(--h) * 0.14);
+      background: #aca89b;
+      transform: translateZ(calc(var(--d) * -0.55)) rotateY(180deg);
+    }
+
+    /* 좌/우 측면: 로우폴리 환기구 도트 패턴 */
+    .poly-left,
+    .poly-right {
+      width: var(--d);
+      height: var(--h);
+      left: calc((var(--w) - var(--d)) * 0.5);
+      background-color: #c6c3b6;
+      background-image: radial-gradient(rgba(68, 66, 60, 0.42) 1px, transparent 1.1px);
+      background-size: 7px 7px;
+    }
+    .poly-left {
+      background-color: #cbc8bb;
+      transform: rotateY(-90deg) translateZ(calc(var(--w) * 0.5));
+    }
+    .poly-right {
+      background-color: #b5b1a4;
+      transform: rotateY(90deg) translateZ(calc(var(--w) * 0.5));
+    }
+
+    /* 상/하면 */
+    .poly-top {
+      width: var(--w);
+      height: var(--d);
+      top: calc((var(--h) - var(--d)) * 0.5);
+      background: #dcd9cd;
+      transform: rotateX(90deg) translateZ(calc(var(--h) * 0.5));
+    }
+    .poly-bottom {
+      width: var(--w);
+      height: var(--d);
+      top: calc((var(--h) - var(--d)) * 0.5);
+      background: #9c988b;
+      transform: rotateX(-90deg) translateZ(calc(var(--h) * 0.5));
+    }
+
+    /* 넥 & 사각 베이스 스탠드 */
+    .poly-neck {
+      position: absolute;
+      width: 112px;
+      height: 24px;
+      left: calc((var(--w) - 112px) * 0.5);
+      bottom: -22px;
+      background: #a4a093;
+      border: 1px solid rgba(72, 74, 72, 0.45);
+      transform: translateZ(-6px);
+    }
+    .poly-base {
+      position: absolute;
+      width: 188px;
+      height: 110px;
+      left: calc((var(--w) - 188px) * 0.5);
+      bottom: -76px;
+      background: linear-gradient(180deg, #d5d2c6 0%, #b8b4a7 100%);
+      border: 1px solid rgba(72, 74, 72, 0.45);
+      transform: rotateX(76deg) translateZ(-28px);
+      box-shadow: 0 8px 0 #979386;
+    }
+
+    /* 2번째 이미지 스타일: 방사형 가장자리 스트레치 라인 오버레이 */
+    .edge-stretch-rays {
+      position: fixed;
+      inset: -18vmax;
+      z-index: 1000001;
+      pointer-events: none;
+      opacity: 0;
+      background:
+        repeating-conic-gradient(
+          from 0deg at 50% 50%,
+          rgba(165, 170, 176, 0.85) 0deg 1.1deg,
+          transparent 1.1deg 7.5deg,
+          rgba(145, 150, 156, 0.72) 7.5deg 8.2deg,
+          transparent 8.2deg 18deg,
+          rgba(175, 179, 184, 0.78) 18deg 18.8deg,
+          transparent 18.8deg 30deg
+        ),
+        radial-gradient(circle at 50% 50%, #ffffff 0%, #ffffff 22%, rgba(255, 255, 255, 0.35) 54%, rgba(255, 255, 255, 0) 76%);
+      -webkit-mask-image: radial-gradient(circle at 50% 50%, transparent 0%, transparent 16%, #000 32%, #000 100%);
+      mask-image: radial-gradient(circle at 50% 50%, transparent 0%, transparent 16%, #000 32%, #000 100%);
+      transform: scale(0.32);
+      animation: radialEdgeStretchExpand 0.72s cubic-bezier(0.16, 1, 0.3, 1) 1.52s forwards;
+    }
+
+    @keyframes polyCrtTurnLeftCenter {
       0% {
-        opacity: 0;
-        transform: translate3d(26vw, -12vh, -460px) rotateY(58deg) rotateX(18deg) rotateZ(-8deg) scale(0.72);
+        opacity: 0.92;
+        transform: translate3d(4vw, 4px, -90px) rotateX(6deg) rotateY(34deg) rotateZ(0deg) scale(0.92);
       }
-      42% {
+      58% {
         opacity: 1;
-        transform: translate3d(0px, 0px, -40px) rotateY(-14deg) rotateX(5deg) rotateZ(0deg) scale(1.04);
-      }
-      66% {
-        opacity: 1;
-        transform: translate3d(0px, 0px, 60px) rotateY(0deg) rotateX(0deg) rotateZ(0deg) scale(1.18);
+        transform: translate3d(0px, 0px, 0px) rotateX(4deg) rotateY(0deg) rotateZ(0deg) scale(1.02);
       }
       100% {
+        opacity: 1;
+        transform: translate3d(0px, 0px, 460px) rotateX(0deg) rotateY(0deg) rotateZ(0deg) scale(4.6);
+      }
+    }
+
+    @keyframes radialEdgeStretchExpand {
+      0% {
         opacity: 0;
-        transform: translate3d(0px, -6px, 560px) rotateY(0deg) rotateX(0deg) rotateZ(0deg) scale(4.8);
+        transform: scale(0.28);
+      }
+      28% {
+        opacity: 0.98;
+        transform: scale(0.88);
+      }
+      100% {
+        opacity: 1;
+        transform: scale(2.45);
       }
     }
   `;
@@ -283,30 +385,45 @@ function play3dCrtMonitorAnimation() {
     stage.id = 'retro-3d-crt-stage';
     stage.title = '클릭하면 즉시 부팅 화면으로 이동합니다';
     stage.innerHTML = `
-      <div class="crt3d-motion-rig">
-        <div class="crt3d-box">
-          <div class="crt3d-face crt3d-front">
-            <div class="crt3d-screen-bezel">
-              <div class="crt3d-screen-glass">
-                <div class="crt3d-screen-text">
-                  <span>CRT-95 SIGNAL</span>
-                  <span style="font-size:0.62rem;color:#ffd83b;">POWER ON...</span>
+      <div class="poly-crt-rig">
+        <div class="poly-crt-unit">
+          <div class="poly-face poly-front">
+            <div class="poly-screen-well">
+              <div class="poly-screen-display">
+                <div class="poly-mini-icons">
+                  <div class="poly-mini-icon-row"><span class="poly-mini-sq"></span><span>My Archive</span></div>
+                  <div class="poly-mini-icon-row"><span class="poly-mini-sq"></span><span>Jukebox 95</span></div>
+                  <div class="poly-mini-icon-row"><span class="poly-mini-sq"></span><span>BIOS ROM</span></div>
+                </div>
+                <div class="poly-mini-taskbar">
+                  <span>Start</span>
+                  <span>95</span>
                 </div>
               </div>
             </div>
-            <div class="crt3d-chin">
-              <span>ARCHIVE-TRON 15"</span>
-              <span>PWR<span class="crt3d-led"></span></span>
+            <div class="poly-chin">
+              <div class="poly-chin-left">
+                <div class="poly-small-btns">
+                  <span class="poly-small-btn"></span>
+                  <span class="poly-small-btn"></span>
+                  <span class="poly-small-btn"></span>
+                </div>
+                <span class="poly-led"></span>
+              </div>
+              <span class="poly-power-btn"></span>
             </div>
           </div>
-          <div class="crt3d-face crt3d-back"></div>
-          <div class="crt3d-face crt3d-left"></div>
-          <div class="crt3d-face crt3d-right"></div>
-          <div class="crt3d-face crt3d-top"></div>
-          <div class="crt3d-face crt3d-bottom"></div>
-          <div class="crt3d-stand"></div>
+          <div class="poly-face poly-back"></div>
+          <div class="poly-face poly-left"></div>
+          <div class="poly-face poly-right"></div>
+          <div class="poly-face poly-top"></div>
+          <div class="poly-face poly-bottom"></div>
+          <div class="poly-neck"></div>
+          <div class="poly-base"></div>
         </div>
+        <div class="poly-crt-shadow"></div>
       </div>
+      <div class="edge-stretch-rays"></div>
     `;
 
     document.body.appendChild(stage);
@@ -320,7 +437,7 @@ function play3dCrtMonitorAnimation() {
       setTimeout(() => {
         stage.remove();
         resolve();
-      }, 320);
+      }, 240);
     };
 
     stage.addEventListener('click', () => {
@@ -328,7 +445,7 @@ function play3dCrtMonitorAnimation() {
       finishIntro();
     });
 
-    const autoTimer = setTimeout(finishIntro, 1950);
+    const autoTimer = setTimeout(finishIntro, 2180);
     stage.dataset.autoTimer = String(autoTimer);
   });
 }
