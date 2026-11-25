@@ -3,7 +3,7 @@
 // ============================================================
 
 window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-window.__MOD_VERSIONS.bootWait = 'v2026.11.25-90bpm-wait-after-screen-mount';
+window.__MOD_VERSIONS.bootWait = 'v2026.11.25-test-txt-binary-audio';
 
 const WAIT_SETUP_KEY = 'myarchive95_setup_v1';
 
@@ -69,7 +69,7 @@ function playButtonClickSound(options = {}) {
     bodyIn.type = 'square'; bodyIn.frequency.setValueAtTime(260, now); bodyIn.frequency.exponentialRampToValueAtTime(115, now + 0.022);
     bodyGainIn.gain.setValueAtTime(0.11 * vol, now); bodyGainIn.gain.exponentialRampToValueAtTime(0.0004, now + 0.024);
     gainIn.gain.setValueAtTime(0.0005, now); gainIn.gain.linearRampToValueAtTime(0.26 * vol, now + 0.0025); gainIn.gain.exponentialRampToValueAtTime(0.0004, now + 0.034);
-    oscIn.connect(gainIn); bodyIn.connect(bodyGainIn); bodyGainIn.connect(gainIn); gainIn.connect(ctx.destination);
+    oscIn.connect(gainIn); bodyIn.connect(bodyGainIn); bodyIn.connect(gainIn); gainIn.connect(ctx.destination);
     oscIn.start(now); bodyIn.start(now); oscIn.stop(now + 0.038); bodyIn.stop(now + 0.03);
     createSwitchTransientBurst(ctx, now, 0.028, 980, 0.26 * vol, 380, 1.8, 3.2);
 
@@ -86,7 +86,7 @@ function playButtonClickSound(options = {}) {
   } catch {}
 }
 
-// 클릭 대기 화면 진입 시 순방향으로 반복 재생되는 90 BPM 노스탤직 패러디 음원
+// 클릭 대기 화면 진입 시 순방향으로 반복 재생되는 버퍼 생성
 function createForwardParodyBuffer(ctx) {
   if (typeof window.createNostalgicParodyForwardBuffer === 'function') {
     return window.createNostalgicParodyForwardBuffer(ctx);
@@ -131,6 +131,13 @@ function createForwardParodyBuffer(ctx) {
   return buf;
 }
 
+function resolveForwardBufferAsync(ctx) {
+  if (typeof window.loadTestTxtForwardBuffer === 'function') {
+    return window.loadTestTxtForwardBuffer(ctx).catch(() => createForwardParodyBuffer(ctx));
+  }
+  return Promise.resolve(createForwardParodyBuffer(ctx));
+}
+
 function startForwardNostalgicLoop() {
   stopPreClickWaitAudio();
   if (!isWaitSoundEnabled() || !__waitScreenMounted) return null;
@@ -138,32 +145,37 @@ function startForwardNostalgicLoop() {
     const ctx = getWaitAudioContext();
     if (!ctx) return null;
 
-    let stopped = false, started = false, src = null, filter = null, gain = null, unlockFn = null;
+    let stopped = false, started = false, src = null, filter = null, gain = null, unlockFn = null, launchSeq = 0;
 
     const launchLoop = () => {
       if (stopped || started || !ctx || !__waitScreenMounted) return;
       if (window.__PRELOAD_REWIND_ACTIVE) return;
       started = true;
-      const t0 = ctx.currentTime;
+      const seq = ++launchSeq;
 
-      src = ctx.createBufferSource();
-      src.buffer = createForwardParodyBuffer(ctx);
-      src.loop = true;
-      src.playbackRate.setValueAtTime(1.0, t0);
+      resolveForwardBufferAsync(ctx).then((buf) => {
+        if (stopped || seq !== launchSeq || !ctx || !__waitScreenMounted || window.__PRELOAD_REWIND_ACTIVE) return;
+        const t0 = ctx.currentTime;
 
-      filter = ctx.createBiquadFilter();
-      filter.type = 'lowpass';
-      filter.frequency.setValueAtTime(2800, t0);
-      filter.Q.setValueAtTime(0.9, t0);
+        src = ctx.createBufferSource();
+        src.buffer = buf;
+        src.loop = true;
+        src.playbackRate.setValueAtTime(1.0, t0);
 
-      gain = ctx.createGain();
-      gain.gain.setValueAtTime(0.0002, t0);
-      gain.gain.linearRampToValueAtTime(0.16, t0 + 0.12);
+        filter = ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(2800, t0);
+        filter.Q.setValueAtTime(0.9, t0);
 
-      src.connect(filter);
-      filter.connect(gain);
-      gain.connect(ctx.destination);
-      src.start(t0);
+        gain = ctx.createGain();
+        gain.gain.setValueAtTime(0.0002, t0);
+        gain.gain.linearRampToValueAtTime(0.16, t0 + 0.12);
+
+        src.connect(filter);
+        filter.connect(gain);
+        gain.connect(ctx.destination);
+        src.start(t0);
+      }).catch(() => {});
     };
 
     const tryWhenUnlocked = () => {
@@ -203,6 +215,7 @@ function startForwardNostalgicLoop() {
       stop: () => {
         if (stopped) return;
         stopped = true;
+        launchSeq += 1;
         if (__activeForwardLoop === ctl) __activeForwardLoop = null;
         if (window.__allowWaitForwardLoop === tryWhenUnlocked) window.__allowWaitForwardLoop = null;
         if (unlockFn) {
