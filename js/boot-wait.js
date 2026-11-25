@@ -3,7 +3,7 @@
 // ============================================================
 
 window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-window.__MOD_VERSIONS.bootWait = 'v2026.11.25-ddal-kkak-forward-parody-loop';
+window.__MOD_VERSIONS.bootWait = 'v2026.11.25-auto-forward-on-wait-then-click';
 
 const WAIT_SETUP_KEY = 'myarchive95_setup_v1';
 
@@ -79,7 +79,7 @@ function playButtonClickSound(options = {}) {
   } catch {}
 }
 
-// 프리로더 역재생 종료 후 순재생으로 반복되는 노스탤직 패러디 루프
+// 클릭 대기 화면 진입 시 순방향으로 반복 재생되는 노스탤직 패러디 음원
 function createForwardParodyBuffer(ctx) {
   const sr = ctx.sampleRate, stepSec = 0.165;
   const leadFreqs = [
@@ -124,42 +124,75 @@ function startForwardNostalgicLoop() {
   try {
     const ctx = getWaitAudioContext();
     if (!ctx) return null;
-    const src = ctx.createBufferSource();
-    src.buffer = createForwardParodyBuffer(ctx);
-    src.loop = true;
-    src.playbackRate.setValueAtTime(1.0, ctx.currentTime);
 
-    const filter = ctx.createBiquadFilter();
-    filter.type = 'lowpass';
-    filter.frequency.setValueAtTime(2800, ctx.currentTime);
-    filter.Q.setValueAtTime(0.9, ctx.currentTime);
+    let stopped = false, started = false, src = null, filter = null, gain = null, unlockFn = null;
 
-    const gain = ctx.createGain(), t0 = ctx.currentTime;
-    gain.gain.setValueAtTime(0.0002, t0);
-    gain.gain.linearRampToValueAtTime(0.16, t0 + 0.12);
+    const launchLoop = () => {
+      if (stopped || started || !ctx) return;
+      started = true;
+      const t0 = ctx.currentTime;
 
-    src.connect(filter);
-    filter.connect(gain);
-    gain.connect(ctx.destination);
-    src.start(t0);
+      src = ctx.createBufferSource();
+      src.buffer = createForwardParodyBuffer(ctx);
+      src.loop = true;
+      src.playbackRate.setValueAtTime(1.0, t0);
+
+      filter = ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(2800, t0);
+      filter.Q.setValueAtTime(0.9, t0);
+
+      gain = ctx.createGain();
+      gain.gain.setValueAtTime(0.0002, t0);
+      gain.gain.linearRampToValueAtTime(0.16, t0 + 0.12);
+
+      src.connect(filter);
+      filter.connect(gain);
+      gain.connect(ctx.destination);
+      src.start(t0);
+    };
+
+    if (ctx.state === 'running') {
+      launchLoop();
+    } else {
+      ctx.resume().then(() => { if (!stopped) launchLoop(); }).catch(() => {});
+      unlockFn = () => {
+        if (stopped) return;
+        ctx.resume().then(() => { if (!stopped) launchLoop(); }).catch(() => {});
+      };
+      window.addEventListener('pointerdown', unlockFn, { passive: true });
+      window.addEventListener('keydown', unlockFn, { passive: true });
+    }
 
     return {
       resume: () => {
+        if (stopped) return;
         try {
-          if (ctx.state === 'suspended') ctx.resume().catch(() => {});
-          const t = ctx.currentTime;
-          gain.gain.cancelScheduledValues(t);
-          gain.gain.setValueAtTime(Math.max(0.0005, gain.gain.value), t);
-          gain.gain.linearRampToValueAtTime(0.16, t + 0.08);
+          if (ctx.state === 'suspended') ctx.resume().then(() => { if (!stopped) launchLoop(); }).catch(() => {});
+          else launchLoop();
+          if (gain) {
+            const t = ctx.currentTime;
+            gain.gain.cancelScheduledValues(t);
+            gain.gain.setValueAtTime(Math.max(0.0005, gain.gain.value), t);
+            gain.gain.linearRampToValueAtTime(0.16, t + 0.08);
+          }
         } catch {}
       },
       stop: () => {
+        if (stopped) return;
+        stopped = true;
+        if (unlockFn) {
+          window.removeEventListener('pointerdown', unlockFn);
+          window.removeEventListener('keydown', unlockFn);
+        }
         try {
-          const t = ctx.currentTime;
-          gain.gain.cancelScheduledValues(t);
-          gain.gain.setValueAtTime(Math.max(0.0001, gain.gain.value), t);
-          gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
-          setTimeout(() => { try { src.stop(); src.disconnect(); filter.disconnect(); gain.disconnect(); } catch {} }, 180);
+          if (ctx && gain) {
+            const t = ctx.currentTime;
+            gain.gain.cancelScheduledValues(t);
+            gain.gain.setValueAtTime(Math.max(0.0001, gain.gain.value), t);
+            gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
+          }
+          setTimeout(() => { try { src?.stop(); src?.disconnect(); filter?.disconnect(); gain?.disconnect(); } catch {} }, 180);
         } catch {}
       }
     };
@@ -431,6 +464,7 @@ function mountPreClickStartScreen(onStartBoot) {
   const stopRays = startBrutalLightRays();
   const stopTitle = startPreClickNoiseTitleLayer();
   const stopStatic = startFullScreenStaticEffect();
+  // 화면 진입 즉시 클릭 없이도 순방향 음원 재생 시작
   const forwardLoop = startForwardNostalgicLoop();
 
   let triggered = false;
