@@ -346,17 +346,36 @@ window.loadInitialSetup = loadInitialSetup;
 window.applyInitialSetupToSystem = applyInitialSetupToSystem;
 
 // ============================================================
-// 노스탤직 CRT 전원 켜짐 연출 헬퍼
+// 노스탤직 CRT 전원 켜짐 연출 헬퍼 (발광 잔상 강화)
 // ============================================================
 function triggerCrtPowerOnFlash(targetEl) {
   if (!targetEl) return;
   targetEl.animate(
     [
-      { transform: 'scaleY(0.015) scaleX(0.35)', filter: 'brightness(3.2)', opacity: 0.9 },
-      { transform: 'scaleY(0.03) scaleX(1)', filter: 'brightness(2.2)', opacity: 1, offset: 0.25 },
-      { transform: 'scaleY(1) scaleX(1)', filter: 'brightness(1)', opacity: 1 }
+      {
+        transform: 'scaleY(0.01) scaleX(0.18)',
+        filter: 'brightness(4.2) drop-shadow(0 0 28px #ffffff)',
+        opacity: 0.95
+      },
+      {
+        transform: 'scaleY(0.028) scaleX(1.02)',
+        filter: 'brightness(3.2) drop-shadow(0 0 22px #a8f5ff)',
+        opacity: 1,
+        offset: 0.42
+      },
+      {
+        transform: 'scaleY(1.01) scaleX(1)',
+        filter: 'brightness(1.85) drop-shadow(0 0 12px rgba(255, 255, 255, 0.6))',
+        opacity: 1,
+        offset: 0.72
+      },
+      {
+        transform: 'scaleY(1) scaleX(1)',
+        filter: 'brightness(1) drop-shadow(0 0 0 transparent)',
+        opacity: 1
+      }
     ],
-    { duration: 340, easing: 'cubic-bezier(0.16, 1, 0.3, 1)' }
+    { duration: 820, easing: 'cubic-bezier(0.16, 1, 0.3, 1)' }
   );
 }
 
