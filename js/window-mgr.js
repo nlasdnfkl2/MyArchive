@@ -1,6 +1,6 @@
 // ============================================================
 // MY-ARCHIVE 95 OS — Pure Window Manager & Desktop Shell UI
-// (Multi-Window Focus/Drag, 6-Theme Engine, CRT, Widgets, Task Manager & About/License)
+// (Multi-Window Focus/Drag, 6-Theme Engine, CRT, Widgets, Task Manager, Portfolio & About/License)
 // ============================================================
 
 window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
@@ -15,6 +15,8 @@ const ALL_DESKTOP_THEMES = [
   'theme-matrix',
   'theme-grid'
 ];
+
+const PORTFOLIO_VIRTUAL_URL = 'https://nlasdnfkl2.github.io/my-webpage/';
 
 // 구버전 HTML data-win-title에 이모지가 남아 있어도 작업표시줄에는 95년 규격 텍스트만 표시
 function sanitizeRetroWindowTitle(rawTitle) {
@@ -175,6 +177,60 @@ document.addEventListener('click', e => {
 });
 
 // ============================================================
+// 2-0. 포트폴리오 가상 브라우저 윈도우 (#win-portfolio)
+// ============================================================
+function openPortfolioWindow(forceReload = false) {
+  const winEl = document.getElementById('win-portfolio');
+  const frameEl = document.getElementById('portfolio-frame');
+  const urlBar = document.getElementById('portfolio-url-bar');
+  const extLink = document.getElementById('btn-portfolio-ext');
+  const statusLeft = document.getElementById('portfolio-status-left');
+
+  if (urlBar) urlBar.value = PORTFOLIO_VIRTUAL_URL;
+  if (extLink) extLink.href = PORTFOLIO_VIRTUAL_URL;
+
+  if (frameEl) {
+    const currentSrc = frameEl.getAttribute('src');
+    if (!currentSrc || forceReload) {
+      frameEl.setAttribute('src', PORTFOLIO_VIRTUAL_URL);
+      if (statusLeft) statusLeft.textContent = `불러오는 중: ${PORTFOLIO_VIRTUAL_URL}`;
+    } else if (statusLeft) {
+      statusLeft.textContent = `연결됨: ${PORTFOLIO_VIRTUAL_URL}`;
+    }
+  }
+
+  if (winEl) {
+    openWindow('win-portfolio');
+  }
+}
+
+function bindPortfolioWindow() {
+  const iconPortfolio = document.getElementById('icon-portfolio');
+  const frameEl = document.getElementById('portfolio-frame');
+  const reloadBtn = document.getElementById('btn-portfolio-reload');
+  const statusLeft = document.getElementById('portfolio-status-left');
+
+  if (iconPortfolio) {
+    iconPortfolio.addEventListener('click', e => {
+      e.preventDefault();
+      e.stopPropagation();
+      openPortfolioWindow(false);
+    });
+  }
+
+  reloadBtn?.addEventListener('click', () => {
+    if (typeof playRetroTone === 'function') playRetroTone('click');
+    openPortfolioWindow(true);
+  });
+
+  frameEl?.addEventListener('load', () => {
+    if (frameEl.getAttribute('src') && statusLeft) {
+      statusLeft.textContent = `로드 완료: ${PORTFOLIO_VIRTUAL_URL}`;
+    }
+  });
+}
+
+// ============================================================
 // 2-1. 제작자 소개 및 라이선스 정보 팝업 창 (About & License 95)
 // ============================================================
 function openAboutAndLicenseWindow(initialTab = 'creator') {
@@ -271,8 +327,8 @@ function openAboutAndLicenseWindow(initialTab = 'creator') {
           </p>
           <div style="border-top:1px dashed #808080;padding-top:6px;margin-top:6px;color:#222222;">
             <b>[외부 연동 및 저작권 고지]</b><br/>
-            • 주크박스 및 위젯 내 스트리밍 영상·음원의 저작권은 각 원저작자 및 YouTube 게시자에게 있습니다.<br/>
-            • 본 프로젝트의 UI 스타일은 1995년 클래식 OS 데스크톱 메타포를 오마주한 창작 디자인입니다.
+- 주크박스 및 위젯 내 스트리밍 영상·음원의 저작권은 각 원저작자 및 YouTube 게시자에게 있습니다.<br/>
+- 본 프로젝트의 UI 스타일은 1995년 클래식 OS 데스크톱 메타포를 오마주한 창작 디자인입니다.
           </div>
         </div>
 
@@ -536,6 +592,7 @@ document.addEventListener('DOMContentLoaded', () => {
   applyDesktopPreferences();
   injectDesktopWidgetIcons();
   injectAboutMenuItems();
+  bindPortfolioWindow();
   document.querySelectorAll('.floating-win').forEach(enableWindowDrag);
   syncTaskbar();
   updateTaskbarClock();
@@ -765,3 +822,4 @@ window.triggerBsodEasterEgg = triggerBsodEasterEgg;
 window.openTaskManager = openTaskManager;
 window.startWin95Screensaver = startWin95Screensaver;
 window.openAboutAndLicenseWindow = openAboutAndLicenseWindow;
+window.openPortfolioWindow = openPortfolioWindow;
