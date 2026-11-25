@@ -4,7 +4,7 @@
 // ============================================================
 
 window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-window.__MOD_VERSIONS.bootScreen = 'v2026.11.22-v9';
+window.__MOD_VERSIONS.bootScreen = 'v2026.11.22-v10';
 
 const SESSION_USER_KEY = 'myarchive95_current_user_v2';
 const USERS_CACHE_KEY = 'myarchive95_users_cache_v2';
@@ -64,6 +64,64 @@ function safeBootTone(type) {
 }
 
 // ============================================================
+// 동기화 상태 배지 실시간 업데이트 (동기화 중 / 동기화 실패 / 동기화 완료)
+// ============================================================
+let __syncPollTimer = null;
+
+function setArchiveSyncStatus(mode = 'done', customLabel = '') {
+  const badge = document.getElementById('cache-status-badge');
+  if (!badge) return;
+
+  if (mode === 'syncing') {
+    badge.style.background = '#ecfdf5';
+    badge.style.color = '#14532d';
+    badge.style.borderColor = '#16a34a';
+    badge.innerHTML = `<span id="sync-status-icon" class="archive-sync-spin" style="color:#16a34a;font-weight:900;">↻</span><span id="sync-status-text">${safeEsc(customLabel || '동기화 중')}</span>`;
+  } else if (mode === 'error') {
+    badge.style.background = '#fef2f2';
+    badge.style.color = '#991b1b';
+    badge.style.borderColor = '#dc2626';
+    badge.innerHTML = `<span id="sync-status-icon" style="color:#dc2626;font-weight:900;">✕</span><span id="sync-status-text">${safeEsc(customLabel || '동기화 실패')}</span>`;
+  } else {
+    badge.style.background = '#f0fdf4';
+    badge.style.color = '#166534';
+    badge.style.borderColor = '#16a34a';
+    badge.innerHTML = `<span id="sync-status-icon" style="color:#16a34a;font-weight:900;">✓</span><span id="sync-status-text">${safeEsc(customLabel || '동기화 완료')}</span>`;
+  }
+}
+
+function hookArchiveSyncLifecycle() {
+  if (typeof window.loadArchiveData === 'function' && !window.loadArchiveData.__syncWrapped) {
+    const origLoad = window.loadArchiveData;
+    const wrappedLoad = async function (...args) {
+      setArchiveSyncStatus('syncing', '동기화 중');
+      try {
+        const result = await origLoad.apply(this, args);
+        setArchiveSyncStatus('done', '동기화 완료');
+        return result;
+      } catch (err) {
+        setArchiveSyncStatus('error', '동기화 실패');
+        throw err;
+      }
+    };
+    wrappedLoad.__syncWrapped = true;
+    window.loadArchiveData = wrappedLoad;
+  }
+
+  if (!__syncPollTimer) {
+    __syncPollTimer = setInterval(() => {
+      if (document.hidden || bootState.stage !== 'done') return;
+      if (typeof window.loadArchiveData === 'function') {
+        hookArchiveSyncLifecycle();
+        window.loadArchiveData(true).catch(() => setArchiveSyncStatus('error', '동기화 실패'));
+      }
+    }, 30000);
+  }
+}
+
+window.setArchiveSyncStatus = setArchiveSyncStatus;
+
+// ============================================================
 // 초기 실행 텍스트 기반 SETUP 화면 (저장된 설정 없을 때 1회 표시)
 // ============================================================
 function loadInitialSetup() {
@@ -79,7 +137,6 @@ function loadInitialSetup() {
 function applyInitialSetupToSystem(cfg) {
   const settings = { ...DEFAULT_INITIAL_SETUP, ...(cfg || {}) };
 
-  // 1. 배경화면 테마 적용
   const themeClasses = [
     'theme-teal', 'theme-navy', 'theme-olive',
     'theme-plum', 'theme-brick', 'theme-matrix', 'theme-grid'
@@ -91,7 +148,6 @@ function applyInitialSetupToSystem(cfg) {
     document.body.classList.add('theme-teal');
   }
 
-  // 2. 해상도(배율/여백) 적용
   if (settings.resolution === '90') {
     document.documentElement.style.fontSize = '13px';
   } else if (settings.resolution === '110') {
@@ -100,7 +156,6 @@ function applyInitialSetupToSystem(cfg) {
     document.documentElement.style.fontSize = '14px';
   }
 
-  // 3. CRT 스캔라인 적용
   let crtEl = document.querySelector('.crt-overlay');
   if (!crtEl && settings.crt) {
     crtEl = document.createElement('div');
@@ -111,7 +166,6 @@ function applyInitialSetupToSystem(cfg) {
     crtEl.style.display = settings.crt ? 'block' : 'none';
   }
 
-  // 4. 사운드 플래그 동기화
   window.__WIN95_SOUND_ENABLED = Boolean(settings.sound);
   if (!settings.sound) {
     window.playRetroTone = () => {};
@@ -500,6 +554,177 @@ function updateDesktopUserBadge() {
 }
 
 // ============================================================
+// 메인 화면 계정명 클릭 시 뜨는 계정 설정 팝업
+// ============================================================
+function openAccountSettingsModal() {
+  safeBootTone('click');
+  const prev = document.getElementById('win95-account-settings-modal');
+  if (prev) prev.remove();
+
+  const curUser = getCurrentUser() || DEFAULT_FALLBACK_USERS[1];
+  const isPublic = String(curUser.role || '').toLowerCase() === 'public' || curUser.username === '공용';
+  const curAvatar = normalizePixelAvatarKey(curUser.avatar, curUser.role);
+  const curBio = String(curUser.bio || '').replace(/^\[(SYSOP|USER|PUBLIC)\]\s*/i, '');
+
+  const modal = document.createElement('div');
+  modal.id = 'win95-account-settings-modal';
+  modal.style.cssText = `
+    position: fixed; inset: 0; z-index: 150000;
+    background: rgba(0, 0, 0, 0.45);
+    display: flex; align-items: center; justify-content: center; padding: 16px;
+  `;
+
+  modal.innerHTML = `
+    <div class="win95-login-dialog" style="width: 100%; max-width: 440px; margin: 0;">
+      <div class="win95-logon-titlebar">
+        <div class="win95-logon-title-left">
+          <span>계정 설정 — ${safeEsc(curUser.username)}</span>
+        </div>
+        <button type="button" id="btn-acct-close-x" class="win95-title-help-btn">X</button>
+      </div>
+
+      <div class="win95-logon-body">
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px; padding:8px; background:#fff; border:1.5px solid #808080;">
+          <div id="acct-modal-avatar-preview">${renderPixelAvatarHtml(curAvatar, 32, curUser.role)}</div>
+          <div style="min-width:0; flex:1;">
+            <div style="font-weight:900; font-size:0.9rem;">${safeEsc(curUser.username)}</div>
+            <div style="font-size:0.75rem; color:#555;">${isPublic ? '공용 단말기 세션' : '개인 계정 세션'}</div>
+          </div>
+        </div>
+
+        ${!isPublic ? `
+          <div class="win95-logon-grid">
+            <span class="win95-logon-label" style="align-self:start; padding-top:6px;">초상화:</span>
+            <div>
+              <input type="hidden" id="acct-edit-avatar" value="${safeEsc(curAvatar)}" />
+              <div id="acct-edit-avatar-grid" class="win95-avatar-grid" role="radiogroup"></div>
+            </div>
+
+            <label class="win95-logon-label" for="acct-edit-bio">한줄 소개:</label>
+            <input type="text" id="acct-edit-bio" class="win95-logon-input" maxlength="60" value="${safeEsc(curBio)}" placeholder="한줄 소개를 입력하세요" />
+
+            <label class="win95-logon-label" for="acct-edit-pin">새 PIN(4자리):</label>
+            <input type="password" id="acct-edit-pin" class="win95-logon-input" maxlength="4" inputmode="numeric" pattern="[0-9]{4}" placeholder="변경할 때만 4자리 입력" />
+          </div>
+        ` : `
+          <div style="font-size:0.8rem; color:#333; padding:8px; background:#fff; border:1.5px solid #808080; margin-bottom:10px;">
+            공용 단말기로 접속 중입니다. 개인 계정으로 전환하려면 [로그아웃 / 계정 전환]을 누르십시오.
+          </div>
+        `}
+
+        <div class="win95-logon-actions" style="justify-content:space-between; margin-top:14px; gap:6px; flex-wrap:wrap;">
+          <button type="button" id="btn-acct-logout" class="win95-dlg-btn">로그아웃 / 계정 전환</button>
+          <div style="display:flex; gap:6px;">
+            <button type="button" id="btn-acct-cancel" class="win95-dlg-btn">취소</button>
+            ${!isPublic ? `<button type="button" id="btn-acct-save" class="win95-dlg-btn primary">설정 저장</button>` : ''}
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  const closeModal = () => modal.remove();
+  modal.querySelector('#btn-acct-close-x')?.addEventListener('click', closeModal);
+  modal.querySelector('#btn-acct-cancel')?.addEventListener('click', closeModal);
+  modal.addEventListener('click', e => {
+    if (e.target === modal) closeModal();
+  });
+
+  modal.querySelector('#btn-acct-logout')?.addEventListener('click', () => {
+    closeModal();
+    startBiosBootSequence();
+  });
+
+  if (!isPublic) {
+    const paintAvatarGrid = () => {
+      const hidden = modal.querySelector('#acct-edit-avatar');
+      const grid = modal.querySelector('#acct-edit-avatar-grid');
+      const prevBox = modal.querySelector('#acct-modal-avatar-preview');
+      if (!hidden || !grid) return;
+      const key = normalizePixelAvatarKey(hidden.value || curAvatar, curUser.role);
+      hidden.value = key;
+      if (prevBox) prevBox.innerHTML = renderPixelAvatarHtml(key, 32, curUser.role);
+      grid.innerHTML = PIXEL_AVATAR_OPTIONS.map(opt => {
+        const sel = opt.key === key;
+        return `
+          <button type="button" class="win95-avatar-choice ${sel ? 'selected' : ''}" data-acct-av="${opt.key}">
+            ${renderPixelAvatarHtml(opt.key, 18)}
+            <span>${opt.label}</span>
+          </button>
+        `;
+      }).join('');
+      grid.querySelectorAll('[data-acct-av]').forEach(b => {
+        b.addEventListener('click', () => {
+          safeBootTone('click');
+          hidden.value = b.dataset.acctAv;
+          paintAvatarGrid();
+        });
+      });
+    };
+    paintAvatarGrid();
+
+    modal.querySelector('#acct-edit-pin')?.addEventListener('input', e => {
+      e.target.value = String(e.target.value || '').replace(/\D/g, '').slice(0, 4);
+    });
+
+    modal.querySelector('#btn-acct-save')?.addEventListener('click', async () => {
+      const nextAvatar = normalizePixelAvatarKey(modal.querySelector('#acct-edit-avatar')?.value || curAvatar, curUser.role);
+      const rawBio = (modal.querySelector('#acct-edit-bio')?.value || '').trim();
+      const nextBio = formatRetroBio(rawBio, curUser);
+      const nextPin = (modal.querySelector('#acct-edit-pin')?.value || '').trim();
+
+      if (nextPin && !/^\d{4}$/.test(nextPin)) {
+        safeBootTone('boom');
+        alert('PIN은 숫자 4자리로 입력해 주십시오.');
+        return;
+      }
+
+      const updatedUser = {
+        ...curUser,
+        avatar: nextAvatar,
+        bio: nextBio
+      };
+      setCurrentUser(updatedUser);
+
+      window.registeredOsUsers = (window.registeredOsUsers || []).map(u =>
+        u.username === curUser.username ? { ...u, avatar: nextAvatar, bio: nextBio } : u
+      );
+      safeSaveCache(USERS_CACHE_KEY, window.registeredOsUsers);
+
+      const apiUrl = getGasApiUrl();
+      if (apiUrl) {
+        setArchiveSyncStatus('syncing', '동기화 중');
+        try {
+          const payload = {
+            action: 'update_user',
+            username: curUser.username,
+            avatar: nextAvatar,
+            bio: nextBio
+          };
+          if (nextPin) payload.pin = nextPin;
+          await fetch(apiUrl, {
+            method: 'POST',
+            redirect: 'follow',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify(payload)
+          });
+          setArchiveSyncStatus('done', '동기화 완료');
+        } catch {
+          setArchiveSyncStatus('error', '동기화 실패');
+        }
+      }
+
+      safeBootTone('open');
+      closeModal();
+    });
+  }
+}
+
+window.openAccountSettingsModal = openAccountSettingsModal;
+
+// ============================================================
 // Web Audio API: BIOS 비프음 & Windows 95 시작 화음
 // ============================================================
 function playBiosPostBeep() {
@@ -634,15 +859,9 @@ async function syncRegisteredUsersList() {
 
 function updateLogonStatusLine() {
   const statusEl = document.getElementById('login-cloud-status');
-  const ledEl = document.getElementById('login-cloud-led');
-  if (!statusEl) return;
-
-  const personalCount = getPersonalUsersList().length;
-  const archiveCount = Array.isArray(window.archiveItems) ? window.archiveItems.length : 0;
-  statusEl.textContent = archiveCount > 0
-    ? `중앙 아카이브 서버 접속 완료 (등록 이용자 ${personalCount}명 · 전체 자료 ${archiveCount}건)`
-    : `사용자 인증 및 아카이브 단말기 준비 완료 (등록 이용자 ${personalCount}명)`;
-  if (ledEl) ledEl.style.background = '#008000';
+  const statusBox = statusEl?.closest('.win95-status-bar-box');
+  if (statusEl) statusEl.textContent = '';
+  if (statusBox) statusBox.style.display = 'none';
 }
 
 function populateLoginAccountSelect() {
@@ -916,7 +1135,6 @@ function startBiosBootSequence() {
     if (bootState.stage === 'splash') setBootStage('login');
   }, 3050));
 
-  // 안전장치: 부팅 시퀀스가 지연되더라도 로그인 화면으로 전환
   bootState.timers.push(setTimeout(() => {
     if (bootState.stage === 'bios' || bootState.stage === 'splash') {
       setBootStage('login');
@@ -928,6 +1146,7 @@ function finishDesktopLogin(userObj) {
   clearBootTimers();
   bootState.stage = 'done';
   setCurrentUser(userObj);
+  hookArchiveSyncLifecycle();
 
   const normRole = String(userObj.role || '').trim().toLowerCase();
   const isAdmin = typeof window.isAdminUser === 'function'
@@ -1218,7 +1437,6 @@ function bindBootScreenEvents() {
     populateLoginAccountSelect();
   });
 
-  // 기존 계정 로그인 (Form submit & 버튼 직접 클릭 겸용)
   document.getElementById('win95-login-form')?.addEventListener('submit', e => {
     e.preventDefault();
     submitUserLogin();
@@ -1230,13 +1448,11 @@ function bindBootScreenEvents() {
     }
   });
 
-  // 공용 단말기 접속
   document.getElementById('btn-win95-public-enter')?.addEventListener('click', () => {
     const pubUser = (window.registeredOsUsers || []).find(u => u.username === '공용') || DEFAULT_FALLBACK_USERS[0];
     finishDesktopLogin(pubUser);
   });
 
-  // 신규 이용자 계정 생성 (Form submit & 버튼 직접 클릭 겸용)
   document.getElementById('win95-signup-form')?.addEventListener('submit', e => {
     e.preventDefault();
     submitNewUserSignup();
@@ -1248,13 +1464,11 @@ function bindBootScreenEvents() {
     }
   });
 
-  // [?] BIOS 다시 보기
   document.getElementById('btn-reboot-bios')?.addEventListener('click', () => {
     playBiosPostBeep();
     startBiosBootSequence();
   });
 
-  // 시작 메뉴 로그오프 / 계정 전환
   document.getElementById('sm-logoff')?.addEventListener('click', () => {
     const sm = document.getElementById('start-menu');
     if (sm) sm.classList.remove('open');
@@ -1270,6 +1484,7 @@ window.switchLoginTab = switchLoginTab;
 document.addEventListener('DOMContentLoaded', () => {
   renderSignupAvatarPicker();
   bindBootScreenEvents();
+  hookArchiveSyncLifecycle();
   openInitialSetupScreen(false);
 });
 window.runBootAnimation = window.runBootAnimation || function () {};
