@@ -3,7 +3,7 @@
 // ============================================================
 
 window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-window.__MOD_VERSIONS.bootScreen = 'v2026.11.25-06';
+window.__MOD_VERSIONS.bootScreen = 'v2026.11.25-07';
 
 const SESSION_USER_KEY = 'myarchive95_current_user_v2';
 const USERS_CACHE_KEY = 'myarchive95_users_cache_v2';
@@ -58,9 +58,279 @@ function getGasApiUrl() {
 }
 
 function safeBootTone(type) {
+  const saved = getSavedBiosConfig();
+  if (saved && saved.sound === false) return;
   if (typeof window.playRetroTone === 'function') {
     try { window.playRetroTone(type); } catch {}
   }
+}
+
+// ============================================================
+// 로그온 화면 & 다중 해상도 (640px ~ 1920px+) 스타일 주입
+// ============================================================
+function injectLogonAndResponsiveStyles() {
+  if (document.getElementById('boot-logon-responsive-styles')) return;
+  const style = document.createElement('style');
+  style.id = 'boot-logon-responsive-styles';
+  style.textContent = `
+    #os-boot-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 99990;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: auto;
+      font-family: 'Galmuri11', 'DungGeunMo', monospace;
+      box-sizing: border-box;
+    }
+    #boot-stage-bios {
+      width: 100%;
+      min-height: 100vh;
+      padding: clamp(14px, 3vw, 32px);
+      background: #000000;
+      color: #d8dee9;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      box-sizing: border-box;
+    }
+    #boot-stage-login {
+      width: 100%;
+      min-height: 100vh;
+      padding: clamp(10px, 2.5vw, 28px);
+      background: #008080;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-sizing: border-box;
+    }
+    .win95-logon-window {
+      width: 100%;
+      max-width: 520px;
+      background: #c0c0c0;
+      color: #000000;
+      border-top: 2px solid #ffffff;
+      border-left: 2px solid #ffffff;
+      border-right: 2px solid #404040;
+      border-bottom: 2px solid #404040;
+      box-shadow: inset 1px 1px 0 #dfdfdf, inset -1px -1px 0 #808080, 4px 4px 0 rgba(0, 0, 0, 0.35);
+      padding: 3px;
+      box-sizing: border-box;
+    }
+    .win95-logon-titlebar {
+      background: linear-gradient(90deg, #000080, #1084d0);
+      color: #ffffff;
+      padding: 4px 6px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: clamp(0.74rem, 1.4vw, 0.84rem);
+      font-weight: 700;
+    }
+    .win95-logon-tabs {
+      display: flex;
+      gap: 2px;
+      padding: 6px 6px 0 6px;
+      flex-wrap: wrap;
+    }
+    .win95-logon-tab {
+      background: #c0c0c0;
+      color: #000000;
+      border-top: 2px solid #ffffff;
+      border-left: 2px solid #ffffff;
+      border-right: 2px solid #404040;
+      border-bottom: none;
+      padding: 5px 10px;
+      font-family: inherit;
+      font-size: clamp(0.72rem, 1.3vw, 0.78rem);
+      font-weight: 700;
+      cursor: pointer;
+      position: relative;
+      top: 2px;
+    }
+    .win95-logon-tab.active {
+      background: #c0c0c0;
+      padding-bottom: 7px;
+      top: 0;
+      z-index: 2;
+    }
+    .win95-logon-sheet {
+      margin: 0 6px 6px 6px;
+      padding: clamp(10px, 2vw, 14px);
+      background: #c0c0c0;
+      border-top: 2px solid #ffffff;
+      border-left: 2px solid #ffffff;
+      border-right: 2px solid #404040;
+      border-bottom: 2px solid #404040;
+      box-shadow: inset 1px 1px 0 #dfdfdf, inset -1px -1px 0 #808080;
+    }
+    .win95-logon-intro {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 12px;
+      font-size: clamp(0.74rem, 1.3vw, 0.8rem);
+      line-height: 1.45;
+      font-weight: 700;
+    }
+    .win95-logon-row {
+      display: grid;
+      grid-template-columns: 104px minmax(0, 1fr);
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 9px;
+      font-size: clamp(0.74rem, 1.3vw, 0.8rem);
+      font-weight: 700;
+    }
+    .win95-logon-field-wrap {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      min-width: 0;
+      width: 100%;
+    }
+    .win95-logon-sheet input[type="text"],
+    .win95-logon-sheet input[type="password"] {
+      width: 100%;
+      min-width: 0;
+      padding: 4px 6px;
+      background: #ffffff;
+      color: #000000;
+      border-top: 2px solid #808080;
+      border-left: 2px solid #808080;
+      border-right: 2px solid #ffffff;
+      border-bottom: 2px solid #ffffff;
+      box-shadow: inset 1px 1px 0 #000000;
+      font-family: inherit;
+      font-size: 0.78rem;
+      font-weight: 700;
+      box-sizing: border-box;
+    }
+    .win95-logon-icon-btn {
+      flex-shrink: 0;
+      width: 24px;
+      height: 24px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: #c0c0c0;
+      color: #000000;
+      border-top: 2px solid #ffffff;
+      border-left: 2px solid #ffffff;
+      border-right: 2px solid #404040;
+      border-bottom: 2px solid #404040;
+      cursor: pointer;
+      padding: 0;
+    }
+    .win95-logon-icon-btn.active {
+      border-top: 2px solid #404040;
+      border-left: 2px solid #404040;
+      border-right: 2px solid #ffffff;
+      border-bottom: 2px solid #ffffff;
+      background: #b0b0b0;
+    }
+    .win95-profile-fieldset {
+      margin: 10px 0 8px 0;
+      padding: 8px 10px;
+      border-top: 2px solid #808080;
+      border-left: 2px solid #808080;
+      border-right: 2px solid #ffffff;
+      border-bottom: 2px solid #ffffff;
+      box-shadow: inset 1px 1px 0 #dfdfdf;
+      font-size: 0.75rem;
+    }
+    .win95-profile-fieldset legend {
+      padding: 0 4px;
+      font-weight: 700;
+      font-size: 0.74rem;
+    }
+    .win95-avatar-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 5px;
+      width: 100%;
+    }
+    .win95-avatar-choice {
+      display: inline-flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 6px;
+      padding: 4px 7px;
+      background: #c0c0c0;
+      color: #000000;
+      border-top: 2px solid #ffffff;
+      border-left: 2px solid #ffffff;
+      border-right: 2px solid #404040;
+      border-bottom: 2px solid #404040;
+      font-family: inherit;
+      font-size: 0.74rem;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .win95-avatar-choice.selected {
+      background: #000080;
+      color: #ffffff;
+      border-top: 2px solid #404040;
+      border-left: 2px solid #404040;
+      border-right: 2px solid #ffffff;
+      border-bottom: 2px solid #ffffff;
+    }
+    .win95-logon-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+    .win95-logon-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px 12px;
+      background: #c0c0c0;
+      color: #000000;
+      border-top: 2px solid #ffffff;
+      border-left: 2px solid #ffffff;
+      border-right: 2px solid #404040;
+      border-bottom: 2px solid #404040;
+      box-shadow: inset -1px -1px 0 #808080;
+      font-family: inherit;
+      font-size: 0.76rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .win95-logon-btn:active {
+      border-top: 2px solid #404040;
+      border-left: 2px solid #404040;
+      border-right: 2px solid #ffffff;
+      border-bottom: 2px solid #ffffff;
+    }
+    @media (max-width: 680px) {
+      .win95-logon-row {
+        grid-template-columns: 1fr;
+        gap: 4px;
+      }
+      .win95-avatar-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .win95-logon-actions {
+        justify-content: stretch;
+      }
+      .win95-logon-btn {
+        flex: 1 1 auto;
+        justify-content: center;
+      }
+    }
+    @media (min-width: 1600px) {
+      .win95-logon-window {
+        max-width: 560px;
+      }
+    }
+  `;
+  document.head.appendChild(style);
 }
 
 // ============================================================
@@ -116,6 +386,7 @@ function applyBiosSettingsToSystem(cfg) {
 }
 
 function openBiosTextSetup(onComplete) {
+  injectLogonAndResponsiveStyles();
   const existing = document.getElementById('bios-text-setup-overlay');
   if (existing) existing.remove();
 
@@ -134,19 +405,20 @@ function openBiosTextSetup(onComplete) {
     'background:#030724',
     'color:#e6f0ff',
     'font-family:"Galmuri11","DungGeunMo",monospace',
-    'padding:28px 24px',
+    'padding:clamp(14px, 3vw, 28px)',
     'overflow:auto',
     'display:flex',
     'justify-content:center',
-    'align-items:flex-start'
+    'align-items:flex-start',
+    'box-sizing:border-box'
   ].join(';');
 
   const biosSelectStyle =
-    'background:#040826;color:#00ff88;border:1px solid #55aaff;padding:4px 8px;font-family:inherit;font-size:0.84rem;font-weight:700;cursor:pointer;min-width:290px;';
+    'background:#040826;color:#00ff88;border:1px solid #55aaff;padding:4px 8px;font-family:inherit;font-size:0.82rem;font-weight:700;cursor:pointer;width:100%;max-width:340px;box-sizing:border-box;';
 
   overlay.innerHTML = `
-    <div style="width:100%;max-width:780px;border:2px solid #7ab8ff;padding:18px 20px;background:#050b33;box-shadow:0 0 0 2px #030724,0 0 0 4px #3b6fd8;">
-      <div style="background:#b8bec8;color:#050b33;padding:5px 10px;font-weight:900;font-size:0.86rem;display:flex;justify-content:space-between;margin-bottom:14px;">
+    <div style="width:100%;max-width:780px;border:2px solid #7ab8ff;padding:clamp(12px, 2.5vw, 20px);background:#050b33;box-shadow:0 0 0 2px #030724,0 0 0 4px #3b6fd8;box-sizing:border-box;">
+      <div style="background:#b8bec8;color:#050b33;padding:5px 10px;font-weight:900;font-size:clamp(0.76rem, 1.5vw, 0.86rem);display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:14px;">
         <span>AWARD / ARCHIVE95 BIOS SETUP UTILITY — 초기 환경 설정</span>
         <span>CMOS v1.95</span>
       </div>
@@ -156,7 +428,7 @@ function openBiosTextSetup(onComplete) {
         <div>* 해상도 및 디스플레이 옵션을 선택한 뒤 [설정 저장 후 접속]을 눌러 진행하십시오.</div>
       </div>
 
-      <div style="display:grid;grid-template-columns:190px 1fr;row-gap:12px;column-gap:12px;align-items:center;font-size:0.84rem;margin-bottom:18px;">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(170px, 1fr));row-gap:12px;column-gap:12px;align-items:center;font-size:0.82rem;margin-bottom:18px;">
         <label for="bios-inp-resolution" style="font-weight:900;color:#7fd8ff;">[01] 해상도</label>
         <div>
           <select id="bios-inp-resolution" style="${biosSelectStyle}">
@@ -330,7 +602,7 @@ function normalizePixelAvatarKey(rawAvatar, role = 'user') {
 function renderPixelAvatarHtml(rawAvatar, sizePx = 28, role = 'user') {
   const key = normalizePixelAvatarKey(rawAvatar, role);
   const svg = PIXEL_AVATARS[key] || PIXEL_AVATARS.user;
-  return `<span class="pixel-avatar-wrap" style="width:${sizePx}px;height:${sizePx}px;display:inline-flex;align-items:center;justify-content:center;">${svg}</span>`;
+  return `<span class="pixel-avatar-wrap" style="width:${sizePx}px;height:${sizePx}px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;">${svg}</span>`;
 }
 
 function formatRetroBio(rawBio, userObj = {}) {
@@ -532,6 +804,7 @@ function renderSignupAvatarPicker() {
   const hiddenInput = document.getElementById('signup-avatar');
   if (!grid || !hiddenInput) return;
 
+  grid.classList.add('win95-avatar-grid');
   const currentKey = normalizePixelAvatarKey(hiddenInput.value || 'frog');
   hiddenInput.value = currentKey;
 
@@ -544,7 +817,7 @@ function renderSignupAvatarPicker() {
               role="radio"
               aria-checked="${selected}"
               title="${opt.label}">
-        ${renderPixelAvatarHtml(opt.key, 20)}
+        ${renderPixelAvatarHtml(opt.key, 18)}
         <span>${opt.label}</span>
       </button>
     `;
@@ -706,7 +979,7 @@ function handleLoginAccountSelectChange() {
 }
 
 // ============================================================
-// 컨텍스트 기반 스마트 부팅 로그 생성기
+// 컨텍스트 기반 스마트 부팅 로그 생성기 & BIOS 출력 보장
 // ============================================================
 function buildSmartBiosPostSteps() {
   const hour = new Date().getHours();
@@ -728,13 +1001,29 @@ function buildSmartBiosPostSteps() {
   const unlockCount = (unlocks.themes?.length || 0) + (unlocks.tracks?.length || 0);
 
   return [
-    { delay: 180, text: `System Clock & Profile  ... ${timeBanner} [OK]` },
-    { delay: 420, text: `IDE Primary Master      ... MY-ARCHIVE-HDD (${itemCount} RECORDS CACHED) [OK]` },
-    { delay: 680, text: `IDE Primary Slave       ... JUKEBOX-CDROM 4X + AMBIENT DSP [OK]` },
-    { delay: 940, text: lastUser ? `Session Telemetry       ... Returning User (@${lastUser.username}) Detected [OK]` : 'Initializing User Registry ... Local & Network Accounts [OK]' },
-    { delay: 1220, text: `Verifying DMI & Unlocks ... ${unlockCount} Hidden Extensions Active [OK]` },
-    { delay: 1520, text: 'Starting MY-ARCHIVE 95...' }
+    { delay: 120, text: `System Clock & Profile  ... ${timeBanner} [OK]` },
+    { delay: 320, text: `IDE Primary Master      ... MY-ARCHIVE-HDD (${itemCount} RECORDS CACHED) [OK]` },
+    { delay: 540, text: `IDE Primary Slave       ... JUKEBOX-CDROM 4X + AMBIENT DSP [OK]` },
+    { delay: 780, text: lastUser ? `Session Telemetry       ... Returning User (@${lastUser.username}) Detected [OK]` : 'Initializing User Registry ... Local & Network Accounts [OK]' },
+    { delay: 1020, text: `Verifying DMI & Unlocks ... ${unlockCount} Hidden Extensions Active [OK]` },
+    { delay: 1280, text: 'Starting MY-ARCHIVE 95...' }
   ];
+}
+
+function ensureBiosLogContainer(biosEl) {
+  if (!biosEl) return null;
+  let logEl = document.getElementById('bios-log-lines') || biosEl.querySelector('.bios-log, #bios-post-log, pre');
+  if (!logEl) {
+    logEl = document.createElement('div');
+    logEl.id = 'bios-log-lines';
+    logEl.style.cssText = 'margin:12px 0;font-size:0.84rem;line-height:1.55;color:#7cf29c;white-space:pre-wrap;word-break:break-word;';
+    biosEl.appendChild(logEl);
+  }
+  logEl.style.display = 'block';
+  logEl.style.visibility = 'visible';
+  logEl.style.opacity = '1';
+  logEl.style.color = '#7cf29c';
+  return logEl;
 }
 
 // ============================================================
@@ -840,6 +1129,7 @@ function showLoginError(msg) {
 }
 
 function runPostAndLogonFlow() {
+  injectLogonAndResponsiveStyles();
   clearBootTimers();
   bootState.biosBeepPlayed = false;
 
@@ -859,11 +1149,14 @@ function runPostAndLogonFlow() {
 
   setBootStage('bios');
 
-  const ramEl = document.getElementById('bios-ram-count');
-  const logEl = document.getElementById('bios-log-lines');
+  const biosEl = document.getElementById('boot-stage-bios');
+  const ramEl = document.getElementById('bios-ram-count') || biosEl?.querySelector('.bios-ram');
+  const logEl = ensureBiosLogContainer(biosEl);
   const syncBadge = document.getElementById('bios-sync-badge');
 
-  if (logEl) logEl.innerHTML = '';
+  if (logEl) {
+    logEl.innerHTML = '<div>AWARD MODULAR BIOS v4.51PG — MY-ARCHIVE 95 POST INITIALIZING...</div>';
+  }
   if (ramEl) ramEl.textContent = '640';
 
   let ramVal = 640;
@@ -875,7 +1168,7 @@ function runPostAndLogonFlow() {
       bootState.ramInterval = null;
     }
     if (ramEl) ramEl.textContent = String(ramVal);
-  }, 50);
+  }, 45);
 
   const postSteps = buildSmartBiosPostSteps();
 
@@ -901,14 +1194,15 @@ function runPostAndLogonFlow() {
 
   bootState.timers.push(setTimeout(() => {
     if (bootState.stage === 'bios') setBootStage('splash');
-  }, 1950));
+  }, 1750));
 
   bootState.timers.push(setTimeout(() => {
     if (bootState.stage === 'splash') setBootStage('login');
-  }, 3050));
+  }, 2750));
 }
 
 function startBiosBootSequence() {
+  injectLogonAndResponsiveStyles();
   const savedCfg = getSavedBiosConfig();
   if (!savedCfg) {
     document.body.classList.add('boot-locked');
@@ -1265,6 +1559,7 @@ window.getCurrentUser = getCurrentUser;
 window.switchLoginTab = switchLoginTab;
 
 document.addEventListener('DOMContentLoaded', () => {
+  injectLogonAndResponsiveStyles();
   renderSignupAvatarPicker();
   bindBootScreenEvents();
   startBiosBootSequence();
