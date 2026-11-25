@@ -4,7 +4,7 @@
 
 (function () {
   window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-  window.__MOD_VERSIONS.win95Widgets = 'v2026.11.25-05';
+  window.__MOD_VERSIONS.win95Widgets = 'v2026.11.25-06';
 
   const WIDGET_STATE_KEY = 'myarchive95_widgets_state_v1';
   const FALLBACK_ALBUM_ART =
@@ -18,42 +18,63 @@
       </svg>`
     );
 
-  // 이스터에그: 그라인더·톱·망치질 등 회색소음 랜덤 재생 풀
+  // 그라인더·톱·망치질 등 회색소음 랜덤 재생 풀
   const GRAY_NOISE_POOL = [
     {
       id: 'gn-1',
-      title: '그라인더 · 톱 · 망치질 회색소음 #1',
-      tag: 'GRINDER / SAW / HAMMER',
-      videoId: 'vvbGUFe18ig',
-      sourceUrl: 'https://www.youtube.com/watch?v=vvbGUFe18ig'
+      title: 'Angle Grinder Noise 1 hour ASMR',
+      tag: 'GRINDER',
+      videoId: '2J68ncJd3nA',
+      sourceUrl: 'https://www.youtube.com/watch?v=2J68ncJd3nA&t=2333s&pp=ygUHZ3JpbmRlcg%3D%3D'
     },
     {
       id: 'gn-2',
-      title: 'Angle Grinder Metal Cutting Sound Effect',
+      title: 'ASMR 10 Hours Of Angle Grinder 💕',
       tag: 'GRINDER',
-      videoId: '4T6_1r5z0k8',
-      sourceUrl: 'https://www.youtube.com/watch?v=4T6_1r5z0k8'
+      videoId: 'vvbGUFe18ig',
+      sourceUrl: 'https://www.youtube.com/watch?v=vvbGUFe18ig&t=2061s&pp=ygUHZ3JpbmRlcg%3D%3D'
     },
     {
       id: 'gn-3',
-      title: 'Hand Saw Cutting Wood Sound Effect',
-      tag: 'SAW',
-      videoId: 'y7f0W0s6X6M',
-      sourceUrl: 'https://www.youtube.com/watch?v=y7f0W0s6X6M'
+      title: 'Grass Trimmer Noise 1 Hour ASMR',
+      tag: 'TRIMMER',
+      videoId: 'PcMVl2bWxZw',
+      sourceUrl: 'https://www.youtube.com/watch?v=PcMVl2bWxZw&t=207s'
     },
     {
       id: 'gn-4',
-      title: 'Hammering Nails Sound Effect',
-      tag: 'HAMMER',
-      videoId: 'q6Z6r6n0G7A',
-      sourceUrl: 'https://www.youtube.com/watch?v=q6Z6r6n0G7A'
+      title: '1 hour loop of Electric Saw Sound Effect for Construction',
+      tag: 'ELECTRIC SAW',
+      videoId: 'KKlqK8YptwE',
+      sourceUrl: 'https://www.youtube.com/watch?v=KKlqK8YptwE'
     },
     {
       id: 'gn-5',
-      title: 'Circular Saw & Workshop Noise Ambience',
-      tag: 'WORKSHOP NOISE',
-      videoId: 'f0G9l3m8H2Q',
-      sourceUrl: 'https://www.youtube.com/watch?v=f0G9l3m8H2Q'
+      title: 'Construction Site Sound Effects - 8 HOURS - with Video. Hammering, Hand Sawing Wood, Drilling etc',
+      tag: 'CONSTRUCTION / SAW / DRILL',
+      videoId: 'aJCilj7qMGg',
+      sourceUrl: 'https://www.youtube.com/watch?v=aJCilj7qMGg&t=12932s&pp=0gcJCTcIAYcqIYzv'
+    },
+    {
+      id: 'gn-6',
+      title: '1 Hour Factory Background Ambience Sound',
+      tag: 'FACTORY AMBIENCE',
+      videoId: 'hWBfldtaqBs',
+      sourceUrl: 'https://www.youtube.com/watch?v=hWBfldtaqBs'
+    },
+    {
+      id: 'gn-7',
+      title: 'Abracadabra ASMR - Fan sound 01 Industrial Air Con. Deep Low Rumbling Sound relaxation Study Sleep',
+      tag: 'INDUSTRIAL FAN / AIR CON',
+      videoId: 'RyP9_O4RuSw',
+      sourceUrl: 'https://www.youtube.com/watch?v=RyP9_O4RuSw'
+    },
+    {
+      id: 'gn-8',
+      title: 'Big Industrial Fan With Mid Tone (Long With Fade)',
+      tag: 'INDUSTRIAL FAN',
+      videoId: 'hSvPwz55UdY',
+      sourceUrl: 'https://www.youtube.com/watch?v=hSvPwz55UdY&pp=ygUUaW5kdXN0cmlhbCBmYW4gc291bmQ%3D'
     }
   ];
 
@@ -339,6 +360,22 @@
     return FALLBACK_ALBUM_ART;
   }
 
+  function clampWidgetPos(left, top, width = 280, height = 180) {
+    const vw = window.innerWidth || 1024;
+    const vh = window.innerHeight || 768;
+    const minLeft = 24;
+    const minTop = 52;
+    const maxLeft = Math.max(minLeft, vw - Math.max(120, Number(width) || 280) - 16);
+    const maxTop = Math.max(minTop, vh - Math.max(90, Number(height) || 180) - 44);
+    const safeLeft = Number.isFinite(Number(left))
+      ? Math.min(maxLeft, Math.max(minLeft, Number(left)))
+      : minLeft;
+    const safeTop = Number.isFinite(Number(top))
+      ? Math.min(maxTop, Math.max(minTop, Number(top)))
+      : minTop;
+    return { left: safeLeft, top: safeTop };
+  }
+
   function loadSavedWidgetPositions() {
     try {
       const raw = localStorage.getItem(WIDGET_STATE_KEY);
@@ -373,6 +410,8 @@
         font-family: 'Pretendard Variable', Pretendard, 'Consolas', sans-serif;
         color: #111111;
         user-select: none;
+        pointer-events: auto;
+        touch-action: none;
       }
       .w95-widget.hidden {
         display: none !important;
@@ -388,6 +427,7 @@
         font-size: 0.78rem;
         font-weight: 900;
         cursor: grab;
+        touch-action: none;
       }
       .w95-widget.active .w95-w-titlebar {
         background: linear-gradient(90deg, #000080 0%, #1084d0 100%);
@@ -759,13 +799,20 @@
 
   function makeDraggable(el, id) {
     const bar = el.querySelector('.w95-w-titlebar');
-    if (!bar) return;
+    if (!bar || bar.dataset.dragBound === 'true') return;
+    bar.dataset.dragBound = 'true';
 
     bar.addEventListener('pointerdown', e => {
-      if (e.target.closest('.w95-w-btn')) return;
+      if (e.button !== undefined && e.button !== 0) return;
+      if (e.target.closest('.w95-w-btn, button, a, input')) return;
       e.preventDefault();
+      e.stopPropagation();
       focusWidget(id);
-      bar.setPointerCapture(e.pointerId);
+
+      const pointerId = e.pointerId;
+      try {
+        bar.setPointerCapture(pointerId);
+      } catch {}
 
       const startX = e.clientX;
       const startY = e.clientY;
@@ -774,46 +821,73 @@
       const origTop = rect.top;
 
       const onMove = moveEvent => {
+        if (moveEvent.pointerId !== undefined && moveEvent.pointerId !== pointerId) return;
         const dx = moveEvent.clientX - startX;
         const dy = moveEvent.clientY - startY;
-        const maxLeft = Math.max(4, window.innerWidth - el.offsetWidth - 4);
-        const maxTop = Math.max(32, window.innerHeight - el.offsetHeight - 42);
-        const nextLeft = Math.min(maxLeft, Math.max(4, origLeft + dx));
-        const nextTop = Math.min(maxTop, Math.max(32, origTop + dy));
-        el.style.left = `${nextLeft}px`;
-        el.style.top = `${nextTop}px`;
+        const clamped = clampWidgetPos(
+          origLeft + dx,
+          origTop + dy,
+          el.offsetWidth || 260,
+          el.offsetHeight || 160
+        );
+        el.style.left = `${clamped.left}px`;
+        el.style.top = `${clamped.top}px`;
       };
 
-      const onUp = () => {
-        bar.releasePointerCapture?.(e.pointerId);
-        bar.removeEventListener('pointermove', onMove);
-        bar.removeEventListener('pointerup', onUp);
+      const onUp = upEvent => {
+        if (upEvent.pointerId !== undefined && upEvent.pointerId !== pointerId) return;
+        try {
+          bar.releasePointerCapture(pointerId);
+        } catch {}
+        window.removeEventListener('pointermove', onMove);
+        window.removeEventListener('pointerup', onUp);
+        window.removeEventListener('pointercancel', onUp);
+
         const finalRect = el.getBoundingClientRect();
-        saveWidgetPosition(id, Math.round(finalRect.left), Math.round(finalRect.top), !el.classList.contains('hidden'));
+        const savedPos = clampWidgetPos(
+          Math.round(finalRect.left),
+          Math.round(finalRect.top),
+          el.offsetWidth || 260,
+          el.offsetHeight || 160
+        );
+        saveWidgetPosition(id, savedPos.left, savedPos.top, !el.classList.contains('hidden'));
       };
 
-      bar.addEventListener('pointermove', onMove);
-      bar.addEventListener('pointerup', onUp);
+      window.addEventListener('pointermove', onMove);
+      window.addEventListener('pointerup', onUp);
+      window.addEventListener('pointercancel', onUp);
     });
   }
 
   function createWidgetShell({ id, title, iconSvg, width, defaultLeft, defaultTop, bodyHtml }) {
     ensureWidgetStyles();
+    const w = Number(width) || 260;
+
     if (widgetStore.widgets.has(id)) {
       const existing = widgetStore.widgets.get(id);
       existing.classList.remove('hidden');
+      const curRect = existing.getBoundingClientRect();
+      const safePos = clampWidgetPos(
+        curRect.left || defaultLeft || 120,
+        curRect.top || defaultTop || 80,
+        existing.offsetWidth || w,
+        existing.offsetHeight || 180
+      );
+      existing.style.left = `${safePos.left}px`;
+      existing.style.top = `${safePos.top}px`;
       focusWidget(id);
       return existing;
     }
 
     const saved = loadSavedWidgetPositions()[id] || {};
-    const left = typeof saved.left === 'number' ? saved.left : defaultLeft;
-    const top = typeof saved.top === 'number' ? saved.top : defaultTop;
+    const rawLeft = typeof saved.left === 'number' ? saved.left : (defaultLeft ?? 120);
+    const rawTop = typeof saved.top === 'number' ? saved.top : (defaultTop ?? 80);
+    const { left, top } = clampWidgetPos(rawLeft, rawTop, w, 180);
 
     const el = document.createElement('div');
     el.className = 'w95-widget';
     el.id = id;
-    el.style.width = `${width}px`;
+    el.style.width = `${w}px`;
     el.style.left = `${left}px`;
     el.style.top = `${top}px`;
 
@@ -866,7 +940,10 @@
       const yt = ytCandidates[0];
       return {
         type: 'youtube',
-        isPlaying: () => (typeof yt.getPlayerState === 'function' ? yt.getPlayerState() === 1 : Boolean(window.jbState?.isPlaying)),
+        isPlaying: () =>
+          typeof yt.getPlayerState === 'function'
+            ? yt.getPlayerState() === 1
+            : Boolean(window.jbState?.isPlaying),
         getCurrentTime: () => Number(yt.getCurrentTime?.()) || 0,
         getDuration: () => Number(yt.getDuration?.()) || 0,
         play: () => {
@@ -1347,13 +1424,14 @@
   }
 
   // ------------------------------------------------------------
-  // 3. 로컬 AI 기분별 음악 추천 엔진 & 위젯 + 이스터에그 '회색소음'
+  // 3. 로컬 AI 기분별 음악 추천 엔진 & 위젯 + '회색소음' 팝업
   // ------------------------------------------------------------
   function pickRandomGrayNoiseItem() {
     const pool = GRAY_NOISE_POOL;
-    const candidates = pool.length > 1
-      ? pool.filter(it => it.id !== widgetStore.grayNoise.lastId)
-      : pool;
+    const candidates =
+      pool.length > 1
+        ? pool.filter(it => it.id !== widgetStore.grayNoise.lastId)
+        : pool;
     const chosen = candidates[Math.floor(Math.random() * candidates.length)] || pool[0];
     widgetStore.grayNoise.lastId = chosen.id;
     widgetStore.grayNoise.current = chosen;
@@ -1377,12 +1455,12 @@
       title: `GRAY NOISE — ${item.tag}`,
       iconSvg: noiseIcon,
       width: 320,
-      defaultLeft: Math.min(Math.max(16, window.innerWidth - 344), 460),
+      defaultLeft: Math.min(Math.max(24, (window.innerWidth || 1024) - 348), 460),
       defaultTop: 110,
       bodyHtml: `
         <div style="background:#19191f;color:#d0d0d0;border:2px solid #111;padding:6px 8px;margin-bottom:8px;font-family:'Consolas',monospace;font-size:0.74rem;display:flex;justify-content:space-between;align-items:center;gap:6px;">
           <span id="w95-gn-title" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:900;color:#ffd83b;">${safeEsc(item.title)}</span>
-          <span style="font-size:0.65rem;background:#333;padding:1px 5px;border:1px solid #777;flex-shrink:0;">EASTER EGG</span>
+          <span style="font-size:0.65rem;background:#333;padding:1px 5px;border:1px solid #777;flex-shrink:0;">BONUS</span>
         </div>
         <div id="w95-gn-frame" style="width:100%;aspect-ratio:16/9;background:#000;border:2px solid #111;overflow:hidden;margin-bottom:8px;">
           <iframe
