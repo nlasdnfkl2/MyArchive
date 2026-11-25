@@ -1,11 +1,11 @@
 // ============================================================
 // MY-ARCHIVE 95 OS — Floating Win95 Widgets Controller
-// (CD Player + Live Clock + Mood Music Local AI + Jukebox 95 Sync)
+// (CD Player + Live Clock + Calendar 95 + Mood Music AI + Jukebox 95 Sync + Gray Noise Easter Egg)
 // ============================================================
 
 (function () {
   window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-  window.__MOD_VERSIONS.win95Widgets = 'v2026.11.25-03';
+  window.__MOD_VERSIONS.win95Widgets = 'v2026.11.25-05';
 
   const WIDGET_STATE_KEY = 'myarchive95_widgets_state_v1';
   const FALLBACK_ALBUM_ART =
@@ -18,6 +18,45 @@
         <circle cx="48" cy="48" r="7" fill="#48dbfb"/>
       </svg>`
     );
+
+  // 이스터에그: 그라인더·톱·망치질 등 회색소음 랜덤 재생 풀
+  const GRAY_NOISE_POOL = [
+    {
+      id: 'gn-1',
+      title: '그라인더 · 톱 · 망치질 회색소음 #1',
+      tag: 'GRINDER / SAW / HAMMER',
+      videoId: 'vvbGUFe18ig',
+      sourceUrl: 'https://www.youtube.com/watch?v=vvbGUFe18ig'
+    },
+    {
+      id: 'gn-2',
+      title: 'Angle Grinder Metal Cutting Sound Effect',
+      tag: 'GRINDER',
+      videoId: '4T6_1r5z0k8',
+      sourceUrl: 'https://www.youtube.com/watch?v=4T6_1r5z0k8'
+    },
+    {
+      id: 'gn-3',
+      title: 'Hand Saw Cutting Wood Sound Effect',
+      tag: 'SAW',
+      videoId: 'y7f0W0s6X6M',
+      sourceUrl: 'https://www.youtube.com/watch?v=y7f0W0s6X6M'
+    },
+    {
+      id: 'gn-4',
+      title: 'Hammering Nails Sound Effect',
+      tag: 'HAMMER',
+      videoId: 'q6Z6r6n0G7A',
+      sourceUrl: 'https://www.youtube.com/watch?v=q6Z6r6n0G7A'
+    },
+    {
+      id: 'gn-5',
+      title: 'Circular Saw & Workshop Noise Ambience',
+      tag: 'WORKSHOP NOISE',
+      videoId: 'f0G9l3m8H2Q',
+      sourceUrl: 'https://www.youtube.com/watch?v=f0G9l3m8H2Q'
+    }
+  ];
 
   const DEFAULT_TRACKS = [
     {
@@ -65,7 +104,7 @@
         { word: '행복', weight: 4 },
         { word: '설렘', weight: 4 },
         { word: '신나', weight: 4 },
-        { word: '밝', weight: 3 },
+        { word: '밝은', weight: 3 },
         { word: '사랑', weight: 3 },
         { word: '청량', weight: 3.5 },
         { word: '기분', weight: 2 },
@@ -244,6 +283,15 @@
       customNote: '',
       lastPickedKey: '',
       currentRec: null
+    },
+    calState: {
+      year: new Date().getFullYear(),
+      month: new Date().getMonth(),
+      selectedDay: new Date().getDate()
+    },
+    grayNoise: {
+      lastId: '',
+      current: null
     }
   };
 
@@ -534,6 +582,93 @@
         color: #48dbfb;
         margin-top: 2px;
       }
+      .w95-cal-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 4px;
+        margin-bottom: 6px;
+        background: #000080;
+        color: #ffffff;
+        padding: 3px 5px;
+        font-family: 'Consolas', monospace;
+        font-size: 0.78rem;
+        font-weight: 900;
+      }
+      .w95-cal-nav-btn {
+        background: #c0c0c0;
+        color: #111111;
+        border-top: 1.5px solid #ffffff;
+        border-left: 1.5px solid #ffffff;
+        border-right: 1.5px solid #111111;
+        border-bottom: 1.5px solid #111111;
+        font-family: 'Consolas', monospace;
+        font-size: 0.7rem;
+        font-weight: 900;
+        padding: 1px 6px;
+        cursor: pointer;
+      }
+      .w95-cal-nav-btn:active {
+        border-top: 1.5px solid #111111;
+        border-left: 1.5px solid #111111;
+        border-right: 1.5px solid #ffffff;
+        border-bottom: 1.5px solid #ffffff;
+      }
+      .w95-cal-grid {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 2px;
+        background: #ffffff;
+        border-top: 2px solid #808080;
+        border-left: 2px solid #808080;
+        border-right: 2px solid #ffffff;
+        border-bottom: 2px solid #ffffff;
+        padding: 4px;
+        font-family: 'Consolas', monospace;
+        font-size: 0.72rem;
+        text-align: center;
+      }
+      .w95-cal-dow {
+        font-weight: 900;
+        padding: 2px 0;
+        border-bottom: 1px solid #c0c0c0;
+        color: #222222;
+      }
+      .w95-cal-dow.sun { color: #c00000; }
+      .w95-cal-dow.sat { color: #0000a8; }
+      .w95-cal-day {
+        padding: 3px 0;
+        font-weight: 700;
+        cursor: pointer;
+        border: 1px solid transparent;
+      }
+      .w95-cal-day:hover:not(.empty) {
+        background: #dfdfdf;
+        border: 1px dotted #111111;
+      }
+      .w95-cal-day.sun { color: #c00000; }
+      .w95-cal-day.sat { color: #0000a8; }
+      .w95-cal-day.today {
+        background: #ffd83b;
+        color: #111111 !important;
+        font-weight: 900;
+        border: 1px solid #111111;
+      }
+      .w95-cal-day.selected:not(.today) {
+        background: #000080;
+        color: #ffffff !important;
+        font-weight: 900;
+      }
+      .w95-cal-footer {
+        margin-top: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-family: 'Consolas', monospace;
+        font-size: 0.69rem;
+        font-weight: 800;
+        color: #222222;
+      }
       .w95-mood-chips {
         display: grid;
         grid-template-columns: repeat(2, 1fr);
@@ -569,6 +704,16 @@
       }
       .w95-mini-btn.pink.active {
         background: #ff9ff3;
+      }
+      .w95-mini-btn.gray-noise {
+        background: #a8a8a8;
+        color: #111111;
+        font-family: 'Consolas', monospace;
+        font-size: 0.72rem;
+        letter-spacing: 0.02em;
+      }
+      .w95-mini-btn.gray-noise:hover {
+        background: #969696;
       }
       .w95-mood-input {
         width: 100%;
@@ -710,9 +855,9 @@
   // 1. 주크박스 95 & 유튜브 플레이어 양방향 브리지
   // ------------------------------------------------------------
   function getJukeboxMediaBridge() {
-    // 1) YouTube IFrame API 인스턴스 탐색
     const ytCandidates = [
       window.jukeboxYtPlayer,
+      window.jbState?.ytPlayer,
       window.ytPlayer,
       window.jukeboxPlayer,
       window.player
@@ -722,16 +867,21 @@
       const yt = ytCandidates[0];
       return {
         type: 'youtube',
-        isPlaying: () => (typeof yt.getPlayerState === 'function' ? yt.getPlayerState() === 1 : false),
+        isPlaying: () => (typeof yt.getPlayerState === 'function' ? yt.getPlayerState() === 1 : Boolean(window.jbState?.isPlaying)),
         getCurrentTime: () => Number(yt.getCurrentTime?.()) || 0,
         getDuration: () => Number(yt.getDuration?.()) || 0,
-        play: () => yt.playVideo?.(),
-        pause: () => yt.pauseVideo?.(),
+        play: () => {
+          yt.playVideo?.();
+          if (window.jbState) window.jbState.isPlaying = true;
+        },
+        pause: () => {
+          yt.pauseVideo?.();
+          if (window.jbState) window.jbState.isPlaying = false;
+        },
         seekTo: sec => yt.seekTo?.(sec, true)
       };
     }
 
-    // 2) 주크박스 창 내부 <audio> / <video> 엘리먼트 탐색
     const jukeboxWin = document.getElementById('win-jukebox');
     const htmlMedia = jukeboxWin?.querySelector('audio, video') || document.querySelector('audio');
     if (htmlMedia && htmlMedia.src) {
@@ -794,43 +944,39 @@
     const vid = extractYouTubeVideoId(url);
     const jukeboxWin = document.getElementById('win-jukebox');
 
-    // 주크박스 창이 닫혀 있으면 백그라운드에서도 오디오가 돌 수 있도록 openWindow 호출
     if (jukeboxWin && !jukeboxWin.classList.contains('open') && typeof window.openWindow === 'function') {
       window.openWindow('win-jukebox');
-      // 위젯 포커스 유지
       const cdEl = widgetStore.widgets.get('widget-cd-player');
       if (cdEl && !cdEl.classList.contains('hidden')) focusWidget('widget-cd-player');
     }
 
-    // 1) 전역 주크박스 재생 함수가 있으면 최우선 호출
     if (typeof window.playJukeboxTrack === 'function') {
       try {
         window.playJukeboxTrack(track);
-        widgetStore.cdState.syncStatus = '주크박스 95 연동 재생';
+        widgetStore.cdState.syncStatus = url || vid ? '주크박스 95 연동 재생' : '주크박스 YT 자동검색';
         return true;
       } catch {}
     }
 
     if (typeof window.mountYouTubeEmbedInJukebox === 'function' && (url || vid)) {
       try {
-        window.mountYouTubeEmbedInJukebox(url || `https://www.youtube.com/watch?v=${vid}`, track.title);
+        window.mountYouTubeEmbedInJukebox(vid || url, track.title);
         widgetStore.cdState.syncStatus = 'YouTube 임베드 재생 중';
         return true;
       } catch {}
     }
 
-    // 2) URL이 있으면 주크박스 URL 입력창 또는 iframe에 직접 주입
     if (url || vid) {
       const watchUrl = url || `https://www.youtube.com/watch?v=${vid}`;
       if (jukeboxWin) {
         const urlInput = jukeboxWin.querySelector(
-          '#jukebox-url-input, #jukebox-yt-url, #jukebox-source-url, input[placeholder*="youtu"], input[placeholder*="URL"]'
+          '#jb-manual-yt-inp, #jukebox-url-input, #jukebox-yt-url, #jukebox-source-url, input[placeholder*="youtu"], input[placeholder*="URL"]'
         );
         if (urlInput) {
           urlInput.value = watchUrl;
           urlInput.dispatchEvent(new Event('input', { bubbles: true }));
           const loadBtn = jukeboxWin.querySelector(
-            '#btn-jukebox-load-url, #btn-jukebox-play-url, #btn-load-jukebox, button[data-action="load-url"]'
+            '#jb-btn-bind-yt, #btn-jukebox-load-url, #btn-jukebox-play-url, #btn-load-jukebox, button[data-action="load-url"]'
           );
           if (loadBtn) {
             loadBtn.click();
@@ -839,7 +985,6 @@
           }
         }
 
-        // 3) 주크박스 내 iframe이 있을 경우 autoplay=1로 직접 교체
         const iframe = jukeboxWin.querySelector('iframe');
         if (iframe && vid) {
           iframe.src = `https://www.youtube.com/embed/${vid}?autoplay=1&enablejsapi=1&rel=0`;
@@ -849,7 +994,6 @@
       }
     }
 
-    // 4) URL이 없는 곡이면 주크박스 유튜브 영상 탐색 자동 실행
     const searched = triggerJukeboxYouTubeSearch(`${track.creator} ${track.title}`);
     widgetStore.cdState.syncStatus = searched ? '유튜브 영상 자동 탐색됨' : '로컬 타이머 모드';
     return searched;
@@ -866,6 +1010,55 @@
     if (forceReload) {
       mountUrlInExistingJukebox(track);
     }
+  }
+
+  function bindJukeboxSyncEvents() {
+    if (window.__win95JukeboxSyncBound) return;
+    window.__win95JukeboxSyncBound = true;
+
+    window.addEventListener('jukebox:sync', e => {
+      const detail = e?.detail || {};
+      if (detail.type === 'playlist') {
+        syncTracksFromArchive();
+        renderCdPlayerUI();
+        renderMoodMusicUI();
+        return;
+      }
+
+      if (detail.track && detail.track.title) {
+        syncTracksFromArchive();
+        const foundIdx = widgetStore.cdState.tracks.findIndex(
+          t =>
+            t.title.toLowerCase() === String(detail.track.title).toLowerCase() &&
+            t.creator.toLowerCase() === String(detail.track.creator || '').toLowerCase()
+        );
+        if (foundIdx >= 0) {
+          widgetStore.cdState.index = foundIdx;
+        } else {
+          widgetStore.cdState.tracks.unshift({
+            id: detail.track.id || `jb-${Date.now()}`,
+            title: String(detail.track.title),
+            creator: String(detail.track.creator || 'Unknown Artist'),
+            genre: String(detail.track.genre || '음악'),
+            rating: Number(detail.track.rating) || 4,
+            review: String(detail.track.review || ''),
+            coverUrl: resolveCoverUrl(detail.track.coverUrl, detail.track.sourceUrl),
+            durationSec: Number(detail.track.durationSec) || 225,
+            sourceUrl: String(detail.track.sourceUrl || '').trim()
+          });
+          widgetStore.cdState.index = 0;
+        }
+      }
+
+      if (typeof detail.isPlaying === 'boolean') {
+        widgetStore.cdState.playing = detail.isPlaying;
+      }
+      if (typeof detail.timerSec === 'number') {
+        widgetStore.cdState.elapsedSec = Math.max(0, Math.floor(detail.timerSec));
+      }
+      widgetStore.cdState.syncStatus = detail.isPlaying ? '주크박스 95 재생 중' : '주크박스 95 동기화됨';
+      renderCdPlayerUI();
+    });
   }
 
   // ------------------------------------------------------------
@@ -897,12 +1090,10 @@
       });
     };
 
-    // 1) 주크박스 전역 플레이리스트가 있으면 우선 수집
     if (Array.isArray(window.jukeboxPlaylist)) {
       window.jukeboxPlaylist.forEach((it, idx) => pushTrack(it, idx));
     }
 
-    // 2) 아카이브 항목 중 음악 카테고리 또는 유튜브 URL 보유 항목 수집
     if (Array.isArray(window.archiveItems)) {
       window.archiveItems
         .filter(
@@ -916,7 +1107,6 @@
         .forEach((it, idx) => pushTrack(it, idx + 100));
     }
 
-    // 3) 수집된 항목이 없으면 기본 트랙 사용
     if (!merged.length) {
       DEFAULT_TRACKS.forEach((it, idx) => pushTrack(it, idx + 500));
     }
@@ -1023,7 +1213,6 @@
       const curTrack =
         widgetStore.cdState.tracks[widgetStore.cdState.index] || DEFAULT_TRACKS[0];
 
-      // 실제 유튜브/오디오 플레이어가 연결된 경우 실제 재생 시간과 동기화
       if (bridge) {
         const realDur = bridge.getDuration();
         const realCur = bridge.getCurrentTime();
@@ -1052,6 +1241,7 @@
   }
 
   function openCdPlayerWidget() {
+    bindJukeboxSyncEvents();
     syncTracksFromArchive();
     const cdIcon = `
       <svg width="14" height="14" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true">
@@ -1158,8 +1348,91 @@
   }
 
   // ------------------------------------------------------------
-  // 3. 로컬 AI 기분별 음악 추천 엔진 & 위젯
+  // 3. 로컬 AI 기분별 음악 추천 엔진 & 위젯 + 이스터에그 '회색소음'
   // ------------------------------------------------------------
+  function pickRandomGrayNoiseItem() {
+    const pool = GRAY_NOISE_POOL;
+    const candidates = pool.length > 1
+      ? pool.filter(it => it.id !== widgetStore.grayNoise.lastId)
+      : pool;
+    const chosen = candidates[Math.floor(Math.random() * candidates.length)] || pool[0];
+    widgetStore.grayNoise.lastId = chosen.id;
+    widgetStore.grayNoise.current = chosen;
+    return chosen;
+  }
+
+  function openGrayNoiseEasterEgg() {
+    beep('open');
+    const item = pickRandomGrayNoiseItem();
+    const vid = extractYouTubeVideoId(item.sourceUrl || item.videoId) || 'vvbGUFe18ig';
+    const embedUrl = `https://www.youtube.com/embed/${encodeURIComponent(vid)}?autoplay=1&rel=0&playsinline=1`;
+
+    const noiseIcon = `
+      <svg width="14" height="14" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true">
+        <rect x="2" y="2" width="12" height="12" fill="#808080" stroke="#111111" stroke-width="1.5"/>
+        <path fill="#ffd83b" d="M5 5h6v2H8v4H6V7H5V5z"/>
+      </svg>`;
+
+    const el = createWidgetShell({
+      id: 'widget-gray-noise-popup',
+      title: `GRAY NOISE — ${item.tag}`,
+      iconSvg: noiseIcon,
+      width: 320,
+      defaultLeft: Math.min(Math.max(16, window.innerWidth - 344), 460),
+      defaultTop: 110,
+      bodyHtml: `
+        <div style="background:#19191f;color:#d0d0d0;border:2px solid #111;padding:6px 8px;margin-bottom:8px;font-family:'Consolas',monospace;font-size:0.74rem;display:flex;justify-content:space-between;align-items:center;gap:6px;">
+          <span id="w95-gn-title" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:900;color:#ffd83b;">${safeEsc(item.title)}</span>
+          <span style="font-size:0.65rem;background:#333;padding:1px 5px;border:1px solid #777;flex-shrink:0;">EASTER EGG</span>
+        </div>
+        <div id="w95-gn-frame" style="width:100%;aspect-ratio:16/9;background:#000;border:2px solid #111;overflow:hidden;margin-bottom:8px;">
+          <iframe
+            src="${embedUrl}"
+            title="${safeEsc(item.title)}"
+            style="width:100%;height:100%;border:0;display:block;"
+            allow="autoplay; encrypted-media; picture-in-picture"
+            referrerpolicy="strict-origin-when-cross-origin"
+            allowfullscreen>
+          </iframe>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;">
+          <button type="button" class="w95-mini-btn gray-noise" id="w95-gn-reroll" style="flex:1;">다른 소음 랜덤 재생</button>
+          <a id="w95-gn-ext" href="${safeEsc(item.sourceUrl)}" target="_blank" rel="noopener noreferrer" class="w95-mini-btn" style="text-decoration:none;font-size:0.72rem;">YT 창</a>
+        </div>
+      `
+    });
+
+    const titleBarSpan = el.querySelector('.w95-w-title-left span');
+    if (titleBarSpan) titleBarSpan.textContent = `GRAY NOISE — ${item.tag}`;
+
+    const titleEl = el.querySelector('#w95-gn-title');
+    if (titleEl) titleEl.textContent = item.title;
+
+    const extEl = el.querySelector('#w95-gn-ext');
+    if (extEl) extEl.setAttribute('href', item.sourceUrl);
+
+    const frameEl = el.querySelector('#w95-gn-frame');
+    if (frameEl) {
+      frameEl.innerHTML = `
+        <iframe
+          src="${embedUrl}"
+          title="${safeEsc(item.title)}"
+          style="width:100%;height:100%;border:0;display:block;"
+          allow="autoplay; encrypted-media; picture-in-picture"
+          referrerpolicy="strict-origin-when-cross-origin"
+          allowfullscreen>
+        </iframe>
+      `;
+    }
+
+    if (!el.dataset.gnBound) {
+      el.dataset.gnBound = 'true';
+      el.querySelector('#w95-gn-reroll')?.addEventListener('click', () => {
+        openGrayNoiseEasterEgg();
+      });
+    }
+  }
+
   function buildCandidateMusicPool(moodKey) {
     const profile = MOOD_PROFILES[moodKey] || MOOD_PROFILES.happy;
     const pool = [];
@@ -1356,10 +1629,11 @@
           </div>
           <div id="w95-mood-reason" class="w95-mood-reason">AI 분석 대기 중...</div>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1.25fr;gap:6px;">
+        <div style="display:grid;grid-template-columns:1fr 1.25fr;gap:6px;margin-bottom:6px;">
           <button type="button" class="w95-mini-btn" id="w95-mood-reroll">다른 곡 추천</button>
           <button type="button" class="w95-mini-btn active" id="w95-mood-play">▶ 주크박스 재생</button>
         </div>
+        <button type="button" class="w95-mini-btn gray-noise" id="w95-mood-gray-noise" style="width:100%;" title="그라인더·톱·망치질 랜덤 소음 팝업">회색소음</button>
       `
     });
 
@@ -1400,6 +1674,10 @@
           widgetStore.moodState.currentRec ||
           recommendMusicLocally(widgetStore.moodState.moodKey, widgetStore.moodState.customNote);
         loadAndPlayTrackInCd(rec, true);
+      });
+
+      el.querySelector('#w95-mood-gray-noise')?.addEventListener('click', () => {
+        openGrayNoiseEasterEgg();
       });
     }
 
@@ -1447,10 +1725,147 @@
     }
   }
 
+  // ------------------------------------------------------------
+  // 5. 옛날 캘린더(Calendar 95) 위젯
+  // ------------------------------------------------------------
+  function renderCalendarUI() {
+    const win = widgetStore.widgets.get('widget-calendar');
+    if (!win) return;
+
+    const { year, month, selectedDay } = widgetStore.calState;
+    const now = new Date();
+    const isSameYearMonth = now.getFullYear() === year && now.getMonth() === month;
+    const todayDate = now.getDate();
+
+    const titleEl = win.querySelector('#w95-cal-ym');
+    const gridEl = win.querySelector('#w95-cal-grid');
+    const infoEl = win.querySelector('#w95-cal-selected');
+
+    if (titleEl) {
+      titleEl.textContent = `${year}.${String(month + 1).padStart(2, '0')}`;
+    }
+
+    if (gridEl) {
+      const firstDow = new Date(year, month, 1).getDay();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      const dows = ['일', '월', '화', '수', '목', '금', '토'];
+
+      let html = dows
+        .map((d, idx) => {
+          const cls = idx === 0 ? 'sun' : idx === 6 ? 'sat' : '';
+          return `<div class="w95-cal-dow ${cls}">${d}</div>`;
+        })
+        .join('');
+
+      for (let i = 0; i < firstDow; i++) {
+        html += `<div class="w95-cal-day empty"></div>`;
+      }
+
+      for (let day = 1; day <= daysInMonth; day++) {
+        const dow = (firstDow + day - 1) % 7;
+        const classes = ['w95-cal-day'];
+        if (dow === 0) classes.push('sun');
+        if (dow === 6) classes.push('sat');
+        if (isSameYearMonth && day === todayDate) classes.push('today');
+        if (day === selectedDay) classes.push('selected');
+        html += `<div class="${classes.join(' ')}" data-cal-day="${day}">${day}</div>`;
+      }
+
+      gridEl.innerHTML = html;
+      gridEl.querySelectorAll('[data-cal-day]').forEach(cell => {
+        cell.addEventListener('click', () => {
+          beep('click');
+          widgetStore.calState.selectedDay = Number(cell.dataset.calDay) || 1;
+          renderCalendarUI();
+        });
+      });
+    }
+
+    if (infoEl) {
+      const selDateObj = new Date(year, month, selectedDay || 1);
+      const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
+      infoEl.textContent = `${year}-${String(month + 1).padStart(2, '0')}-${String(
+        selectedDay || 1
+      ).padStart(2, '0')} (${dayNames[selDateObj.getDay()]})`;
+    }
+  }
+
+  function openCalendarWidget() {
+    const calIcon = `
+      <svg width="14" height="14" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true">
+        <rect x="2" y="3" width="12" height="11" fill="#ffffff" stroke="#111111" stroke-width="1.5"/>
+        <rect x="2" y="3" width="12" height="3" fill="#000080"/>
+      </svg>`;
+
+    const el = createWidgetShell({
+      id: 'widget-calendar',
+      title: 'Calendar 95',
+      iconSvg: calIcon,
+      width: 226,
+      defaultLeft: 410,
+      defaultTop: 176,
+      bodyHtml: `
+        <div class="w95-cal-header">
+          <button type="button" class="w95-cal-nav-btn" id="w95-cal-prev" title="이전 달">◀</button>
+          <span id="w95-cal-ym">----.--</span>
+          <button type="button" class="w95-cal-nav-btn" id="w95-cal-next" title="다음 달">▶</button>
+        </div>
+        <div id="w95-cal-grid" class="w95-cal-grid"></div>
+        <div class="w95-cal-footer">
+          <span id="w95-cal-selected">----.--.--</span>
+          <button type="button" class="w95-cal-nav-btn" id="w95-cal-today">오늘</button>
+        </div>
+      `
+    });
+
+    if (!el.dataset.calBound) {
+      el.dataset.calBound = 'true';
+
+      el.querySelector('#w95-cal-prev')?.addEventListener('click', () => {
+        beep('click');
+        if (widgetStore.calState.month === 0) {
+          widgetStore.calState.year -= 1;
+          widgetStore.calState.month = 11;
+        } else {
+          widgetStore.calState.month -= 1;
+        }
+        const maxDay = new Date(widgetStore.calState.year, widgetStore.calState.month + 1, 0).getDate();
+        widgetStore.calState.selectedDay = Math.min(widgetStore.calState.selectedDay || 1, maxDay);
+        renderCalendarUI();
+      });
+
+      el.querySelector('#w95-cal-next')?.addEventListener('click', () => {
+        beep('click');
+        if (widgetStore.calState.month === 11) {
+          widgetStore.calState.year += 1;
+          widgetStore.calState.month = 0;
+        } else {
+          widgetStore.calState.month += 1;
+        }
+        const maxDay = new Date(widgetStore.calState.year, widgetStore.calState.month + 1, 0).getDate();
+        widgetStore.calState.selectedDay = Math.min(widgetStore.calState.selectedDay || 1, maxDay);
+        renderCalendarUI();
+      });
+
+      el.querySelector('#w95-cal-today')?.addEventListener('click', () => {
+        beep('click');
+        const now = new Date();
+        widgetStore.calState.year = now.getFullYear();
+        widgetStore.calState.month = now.getMonth();
+        widgetStore.calState.selectedDay = now.getDate();
+        renderCalendarUI();
+      });
+    }
+
+    renderCalendarUI();
+  }
+
   window.addEventListener('DOMContentLoaded', () => {
+    bindJukeboxSyncEvents();
     const saved = loadSavedWidgetPositions();
     if (saved['widget-cd-player']?.open) openCdPlayerWidget();
     if (saved['widget-clock']?.open) openClockWidget();
+    if (saved['widget-calendar']?.open) openCalendarWidget();
     if (saved['widget-mood-music']?.open) openMoodMusicWidget();
   });
 
@@ -1458,7 +1873,9 @@
     open: openCdPlayerWidget,
     openCdPlayer: openCdPlayerWidget,
     openClock: openClockWidget,
+    openCalendar: openCalendarWidget,
     openMoodMusic: openMoodMusicWidget,
+    openGrayNoise: openGrayNoiseEasterEgg,
     recommendMoodMusic: recommendMusicLocally,
     loadTrackToCd: loadAndPlayTrackInCd,
     searchYouTube: triggerJukeboxYouTubeSearch,
