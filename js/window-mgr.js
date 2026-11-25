@@ -4,7 +4,7 @@
 // ============================================================
 
 window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-window.__MOD_VERSIONS.windowMgr = typeof APP_BUILD_VERSION !== 'undefined' ? APP_BUILD_VERSION : 'v2026.11.25-09';
+window.__MOD_VERSIONS.windowMgr = typeof APP_BUILD_VERSION !== 'undefined' ? APP_BUILD_VERSION : 'v2026.11.25-10';
 
 const ALL_DESKTOP_THEMES = [
   'theme-teal',
@@ -25,6 +25,35 @@ function sanitizeRetroWindowTitle(rawTitle) {
     .replace(/^\[\s*\]\s*/, '')
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+// 상단 메뉴바 및 하단 작업표시줄 영역을 고려한 뷰포트 내 창 위치 보정
+function clampWindowToViewport(winEl) {
+  if (!winEl || window.innerWidth <= 768) return;
+  if (winEl.classList.contains('win-maximized')) return;
+
+  const topbarHeight = document.querySelector('.os-menubar')?.offsetHeight || 32;
+  const taskbarHeight = document.querySelector('.os-taskbar')?.offsetHeight || 36;
+  const minTop = topbarHeight + 4;
+  const maxTop = Math.max(minTop, window.innerHeight - taskbarHeight - 44);
+  const maxLeft = Math.max(0, window.innerWidth - 140);
+
+  const currentLeft = winEl.offsetLeft;
+  const currentTop = winEl.offsetTop;
+
+  if (Number.isFinite(currentLeft)) {
+    const clampedLeft = Math.max(0, Math.min(maxLeft, currentLeft));
+    if (clampedLeft !== currentLeft) {
+      winEl.style.left = `${clampedLeft}px`;
+    }
+  }
+
+  if (Number.isFinite(currentTop)) {
+    const clampedTop = Math.max(minTop, Math.min(maxTop, currentTop));
+    if (clampedTop !== currentTop) {
+      winEl.style.top = `${clampedTop}px`;
+    }
+  }
 }
 
 // ============================================================
@@ -50,6 +79,7 @@ function openWindow(winId) {
   const wasClosed = !winEl.classList.contains('open');
   winEl.classList.add('open');
   winEl.classList.remove('minimized');
+  clampWindowToViewport(winEl);
   focusWindow(winEl);
   if (wasClosed && winId !== 'win-sys-msgbox' && typeof playRetroTone === 'function') {
     playRetroTone('open');
@@ -141,8 +171,10 @@ function enableWindowDrag(winEl) {
 
   const onMove = (clientX, clientY) => {
     if (!isDragging) return;
+    const topbarHeight = document.querySelector('.os-menubar')?.offsetHeight || 32;
+    const taskbarHeight = document.querySelector('.os-taskbar')?.offsetHeight || 36;
     const nextLeft = Math.max(0, Math.min(window.innerWidth - 120, origLeft + (clientX - startX)));
-    const nextTop = Math.max(30, Math.min(window.innerHeight - 60, origTop + (clientY - startY)));
+    const nextTop = Math.max(topbarHeight + 2, Math.min(window.innerHeight - taskbarHeight - 36, origTop + (clientY - startY)));
     winEl.style.left = `${nextLeft}px`;
     winEl.style.top = `${nextTop}px`;
   };
@@ -361,7 +393,6 @@ function openAboutAndLicenseWindow(initialTab = 'creator') {
     });
   }
 
-  // 탭 초기 상태 전환
   const targetTabBtn = winEl.querySelector(`[data-about-tab="${initialTab}"]`);
   if (targetTabBtn) targetTabBtn.click();
 
@@ -467,14 +498,12 @@ function injectDesktopWidgetIcons() {
 }
 
 function injectAboutMenuItems() {
-  // 1) 이미 HTML에 #mnu-open-about-license가 있다면 이벤트만 연결
   const existingMenuBtn = document.getElementById('mnu-open-about-license');
   if (existingMenuBtn && !existingMenuBtn.dataset.bound) {
     existingMenuBtn.dataset.bound = 'true';
     existingMenuBtn.addEventListener('click', () => openAboutAndLicenseWindow('creator'));
   }
 
-  // 2) 상단 메뉴바의 드롭다운 목록 끝에 '제작자 및 라이선스 정보' 자동 삽입
   if (!document.getElementById('mnu-open-about-license')) {
     const dropdownLists = document.querySelectorAll(
       '.top-menubar .menu-dropdown, .menubar .menu-dropdown, .win-menubar .menu-dropdown, .menu-list, [role="menu"]'
@@ -501,7 +530,6 @@ function injectAboutMenuItems() {
     }
   }
 
-  // 3) 시작 메뉴가 있을 경우 하단에도 연결
   const startMenuList = document.querySelector('#start-menu .start-menu-items, #start-menu-list, .start-menu-list');
   if (startMenuList && !document.getElementById('sm-about-license')) {
     const smBtn = document.createElement('button');
@@ -593,10 +621,17 @@ document.addEventListener('DOMContentLoaded', () => {
   injectDesktopWidgetIcons();
   injectAboutMenuItems();
   bindPortfolioWindow();
-  document.querySelectorAll('.floating-win').forEach(enableWindowDrag);
+  document.querySelectorAll('.floating-win').forEach(winEl => {
+    enableWindowDrag(winEl);
+    clampWindowToViewport(winEl);
+  });
   syncTaskbar();
   updateTaskbarClock();
   setInterval(updateTaskbarClock, 15000);
+
+  window.addEventListener('resize', () => {
+    document.querySelectorAll('.floating-win.open').forEach(clampWindowToViewport);
+  });
 
   // 바탕화면 테마 전환
   document.querySelectorAll('[data-theme-opt]').forEach(btn => {
@@ -823,3 +858,4 @@ window.openTaskManager = openTaskManager;
 window.startWin95Screensaver = startWin95Screensaver;
 window.openAboutAndLicenseWindow = openAboutAndLicenseWindow;
 window.openPortfolioWindow = openPortfolioWindow;
+window.clampWindowToViewport = clampWindowToViewport;
