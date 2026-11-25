@@ -107,7 +107,7 @@ function injectLogonAndResponsiveStyles() {
     }
     .win95-logon-window {
       width: 100%;
-      max-width: 520px;
+      max-width: 540px;
       background: #c0c0c0;
       color: #000000;
       border-top: 2px solid #ffffff;
@@ -149,6 +149,7 @@ function injectLogonAndResponsiveStyles() {
       cursor: pointer;
       position: relative;
       top: 2px;
+      white-space: nowrap;
     }
     .win95-logon-tab.active {
       background: #c0c0c0;
@@ -177,12 +178,15 @@ function injectLogonAndResponsiveStyles() {
     }
     .win95-logon-row {
       display: grid;
-      grid-template-columns: 104px minmax(0, 1fr);
+      grid-template-columns: 126px minmax(0, 1fr);
       align-items: center;
       gap: 8px;
       margin-bottom: 9px;
       font-size: clamp(0.74rem, 1.3vw, 0.8rem);
       font-weight: 700;
+    }
+    .win95-logon-row > label {
+      white-space: nowrap;
     }
     .win95-logon-field-wrap {
       display: flex;
