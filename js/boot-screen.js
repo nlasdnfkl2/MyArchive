@@ -4,7 +4,7 @@
 // ============================================================
 
 window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-window.__MOD_VERSIONS.bootScreen = 'v2026.11.25-bios-after-3d-intro-noise-title';
+window.__MOD_VERSIONS.bootScreen = 'v2026.11.25-no-desktop-flash-on-boot-end';
 
 const SESSION_USER_KEY = 'myarchive95_current_user_v2';
 const USERS_CACHE_KEY = 'myarchive95_users_cache_v2';
@@ -1021,6 +1021,7 @@ function applyInitialSetupToSystem(cfg) {
 }
 
 function openInitialSetupScreen(forceOpen = false) {
+  document.body.classList.add('boot-locked');
   const existingCfg = loadInitialSetup();
   if (existingCfg && !forceOpen) {
     applyInitialSetupToSystem(existingCfg);
@@ -1028,7 +1029,6 @@ function openInitialSetupScreen(forceOpen = false) {
     return;
   }
 
-  document.body.classList.add('boot-locked');
   const current = existingCfg || { ...DEFAULT_INITIAL_SETUP };
 
   const prevOverlay = document.getElementById('bios-text-setup-overlay');
@@ -1514,7 +1514,7 @@ function openAccountSettingsModal() {
 
   modal.querySelector('#btn-acct-logout')?.addEventListener('click', () => {
     closeModal();
-    startBiosBootSequence();
+    startBiosBootSequence({ skip3d: true });
   });
 
   if (!isPublic) {
@@ -1890,6 +1890,10 @@ function handleLoginAccountSelectChange() {
 // 부팅 단계 제어 (시작 애니메이션 이후 BIOS -> SPLASH -> WIN95 LOGON -> DESKTOP)
 // ============================================================
 function setBootStage(stageName) {
+  if (bootState.stage === 'done' && stageName !== 'bios' && stageName !== 'intro') {
+    return;
+  }
+  clearBootTimers();
   bootState.stage = stageName;
   const overlay = document.getElementById('os-boot-overlay');
   const biosEl = document.getElementById('boot-stage-bios');
@@ -1897,7 +1901,13 @@ function setBootStage(stageName) {
   const loginEl = document.getElementById('boot-stage-login');
 
   const showOverlay = stageName === 'bios' || stageName === 'splash' || stageName === 'login';
+  if (showOverlay) {
+    document.body.classList.add('boot-locked');
+  }
   if (overlay) {
+    overlay.classList.remove('boot-fade-out');
+    overlay.style.opacity = '1';
+    overlay.style.pointerEvents = showOverlay ? 'auto' : 'none';
     overlay.style.display = showOverlay ? 'flex' : 'none';
     overlay.style.background = stageName === 'login' ? '#008080' : '#000000';
     overlay.style.alignItems = 'center';
@@ -2076,7 +2086,8 @@ async function startBiosBootSequence(options = {}) {
   bootState.startupSoundPlayed = false;
   bootState.stage = 'intro';
 
-  // 시작 애니메이션 구간 동안 오버레이와 BIOS/SPLASH/LOGIN 화면은 철저히 숨김
+  // 시작 애니메이션 구간 동안 오버레이와 BIOS/SPLASH/LOGIN 화면은 철저히 숨기고 바탕화면은 잠금
+  document.body.classList.add('boot-locked');
   const overlay = document.getElementById('os-boot-overlay');
   if (overlay) {
     overlay.style.display = 'none';
@@ -2084,7 +2095,6 @@ async function startBiosBootSequence(options = {}) {
     overlay.style.background = '#000000';
     overlay.classList.remove('boot-fade-out');
   }
-  document.body.classList.add('boot-locked');
 
   const biosEl = document.getElementById('boot-stage-bios');
   const splashEl = document.getElementById('boot-stage-splash');
@@ -2139,8 +2149,10 @@ function finishDesktopLogin(userObj) {
 
   const overlay = document.getElementById('os-boot-overlay');
   if (overlay) {
+    overlay.style.pointerEvents = 'none';
     overlay.classList.add('boot-fade-out');
     setTimeout(() => {
+      if (bootState.stage !== 'done') return;
       overlay.style.display = 'none';
       document.body.classList.remove('boot-locked');
     }, 380);
@@ -2306,14 +2318,12 @@ function bindBootScreenEvents() {
   document.getElementById('boot-stage-bios')?.addEventListener('click', () => {
     playBiosPostBeep(760, 0.08);
     bootState.bootSeqId += 1;
-    clearBootTimers();
     setBootStage('login');
   });
 
   document.getElementById('boot-stage-splash')?.addEventListener('click', () => {
     safeBootTone('click');
     bootState.bootSeqId += 1;
-    clearBootTimers();
     setBootStage('login');
   });
 
@@ -2329,14 +2339,12 @@ function bindBootScreenEvents() {
         e.preventDefault();
         playBiosPostBeep(760, 0.08);
         bootState.bootSeqId += 1;
-        clearBootTimers();
         setBootStage('login');
       }
     } else if (bootState.stage === 'splash' && (e.key === ' ' || e.key === 'Enter' || e.key === 'Escape')) {
       e.preventDefault();
       safeBootTone('click');
       bootState.bootSeqId += 1;
-      clearBootTimers();
       setBootStage('login');
     }
   });
@@ -2456,6 +2464,7 @@ window.getCurrentUser = getCurrentUser;
 window.switchLoginTab = switchLoginTab;
 
 document.addEventListener('DOMContentLoaded', () => {
+  document.body.classList.add('boot-locked');
   renderSignupAvatarPicker();
   bindBootScreenEvents();
   hookArchiveSyncLifecycle();
