@@ -47,17 +47,25 @@ function getWaitAudioContext() {
   return __waitAudioCtx;
 }
 
-/**
- * 스위치 반동 노이즈 버스트 생성 ('딸' 또는 '깍' 타격감용)
- */
-function createSwitchTransientBurst(ctx, startTime, durationSec, centerFreq, peakGain, highpassHz = 600) {
+function createSwitchTransientBurst(
+  ctx,
+  startTime,
+  durationSec,
+  centerFreq,
+  peakGain,
+  highpassHz = 600,
+  qFactor = 2.6,
+  decayPow = 2.8
+) {
   const sampleCount = Math.max(32, Math.floor(ctx.sampleRate * durationSec));
   const buffer = ctx.createBuffer(1, sampleCount, ctx.sampleRate);
   const data = buffer.getChannelData(0);
 
   for (let i = 0; i < sampleCount; i++) {
-    const env = Math.pow(1 - i / sampleCount, 2.4);
-    data[i] = (Math.random() * 2 - 1) * env;
+    const progress = i / sampleCount;
+    const env = Math.pow(1 - progress, decayPow);
+    const spike = i < ctx.sampleRate * 0.002 ? 1.35 : 1.0;
+    data[i] = (Math.random() * 2 - 1) * env * spike;
   }
 
   const src = ctx.createBufferSource();
@@ -70,10 +78,11 @@ function createSwitchTransientBurst(ctx, startTime, durationSec, centerFreq, pea
   const bp = ctx.createBiquadFilter();
   bp.type = 'bandpass';
   bp.frequency.setValueAtTime(centerFreq, startTime);
-  bp.Q.setValueAtTime(2.6, startTime);
+  bp.Q.setValueAtTime(qFactor, startTime);
 
   const gain = ctx.createGain();
-  gain.gain.setValueAtTime(peakGain, startTime);
+  gain.gain.setValueAtTime(0.0005, startTime);
+  gain.gain.linearRampToValueAtTime(peakGain, startTime + 0.0018);
   gain.gain.exponentialRampToValueAtTime(0.0004, startTime + durationSec);
 
   src.connect(hp);
@@ -82,65 +91,87 @@ function createSwitchTransientBurst(ctx, startTime, durationSec, centerFreq, pea
   gain.connect(ctx.destination);
 
   src.start(startTime);
-  src.stop(startTime + durationSec + 0.005);
+  src.stop(startTime + durationSec + 0.006);
 }
 
-/**
- * 1단계: "딸" (버튼이 들어가는 소리 — 하강 피치 + 둔탁한 접촉)
- * 2단계: "깍" (버튼이 나오는 소리 — 상승/스냅 피치 + 날카로운 복귀)
- */
 function playButtonClickSound(options = {}) {
   if (!isWaitSoundEnabled()) return;
   try {
     const ctx = getWaitAudioContext();
     if (!ctx) return;
     const now = ctx.currentTime;
-    const releaseGapSec = typeof options.gapSec === 'number' ? options.gapSec : 0.065;
+    const releaseGapSec = typeof options.gapSec === 'number' ? options.gapSec : 0.072;
     const volumeScale = typeof options.volume === 'number' ? options.volume : 1.0;
 
-    // [1] 들어가는 소리 ("딸"): 1550Hz -> 310Hz
     const tIn = now;
     const oscIn = ctx.createOscillator();
+    const bodyOscIn = ctx.createOscillator();
     const gainIn = ctx.createGain();
+
     oscIn.type = 'triangle';
-    oscIn.frequency.setValueAtTime(1550, tIn);
-    oscIn.frequency.exponentialRampToValueAtTime(310, tIn + 0.026);
+    oscIn.frequency.setValueAtTime(520, tIn);
+    oscIn.frequency.exponentialRampToValueAtTime(175, tIn + 0.028);
+
+    bodyOscIn.type = 'square';
+    bodyOscIn.frequency.setValueAtTime(260, tIn);
+    bodyOscIn.frequency.exponentialRampToValueAtTime(115, tIn + 0.022);
+
+    const bodyGainIn = ctx.createGain();
+    bodyGainIn.gain.setValueAtTime(0.11 * volumeScale, tIn);
+    bodyGainIn.gain.exponentialRampToValueAtTime(0.0004, tIn + 0.024);
 
     gainIn.gain.setValueAtTime(0.0005, tIn);
-    gainIn.gain.linearRampToValueAtTime(0.28 * volumeScale, tIn + 0.003);
-    gainIn.gain.exponentialRampToValueAtTime(0.0004, tIn + 0.032);
+    gainIn.gain.linearRampToValueAtTime(0.26 * volumeScale, tIn + 0.0025);
+    gainIn.gain.exponentialRampToValueAtTime(0.0004, tIn + 0.034);
 
     oscIn.connect(gainIn);
+    bodyOscIn.connect(bodyGainIn);
+    bodyGainIn.connect(gainIn);
     gainIn.connect(ctx.destination);
+
     oscIn.start(tIn);
-    oscIn.stop(tIn + 0.036);
+    bodyOscIn.start(tIn);
+    oscIn.stop(tIn + 0.038);
+    bodyOscIn.stop(tIn + 0.03);
 
-    createSwitchTransientBurst(ctx, tIn, 0.024, 1450, 0.22 * volumeScale, 550);
+    createSwitchTransientBurst(ctx, tIn, 0.028, 980, 0.26 * volumeScale, 380, 1.8, 3.2);
 
-    // [2] 나오는 소리 ("깍"): 920Hz -> 2480Hz
     const tOut = now + releaseGapSec;
     const oscOut = ctx.createOscillator();
+    const snapOscOut = ctx.createOscillator();
     const gainOut = ctx.createGain();
+
     oscOut.type = 'square';
-    oscOut.frequency.setValueAtTime(920, tOut);
-    oscOut.frequency.exponentialRampToValueAtTime(2480, tOut + 0.022);
+    oscOut.frequency.setValueAtTime(1450, tOut);
+    oscOut.frequency.exponentialRampToValueAtTime(3650, tOut + 0.018);
+
+    snapOscOut.type = 'triangle';
+    snapOscOut.frequency.setValueAtTime(2950, tOut);
+    snapOscOut.frequency.exponentialRampToValueAtTime(4200, tOut + 0.014);
 
     const outFilter = ctx.createBiquadFilter();
     outFilter.type = 'bandpass';
-    outFilter.frequency.setValueAtTime(2100, tOut);
-    outFilter.Q.setValueAtTime(1.4, tOut);
+    outFilter.frequency.setValueAtTime(2850, tOut);
+    outFilter.Q.setValueAtTime(1.9, tOut);
 
     gainOut.gain.setValueAtTime(0.0005, tOut);
-    gainOut.gain.linearRampToValueAtTime(0.24 * volumeScale, tOut + 0.0025);
-    gainOut.gain.exponentialRampToValueAtTime(0.0004, tOut + 0.03);
+    gainOut.gain.linearRampToValueAtTime(0.25 * volumeScale, tOut + 0.002);
+    gainOut.gain.exponentialRampToValueAtTime(0.0004, tOut + 0.026);
 
     oscOut.connect(outFilter);
+    snapOscOut.connect(outFilter);
     outFilter.connect(gainOut);
     gainOut.connect(ctx.destination);
-    oscOut.start(tOut);
-    oscOut.stop(tOut + 0.034);
 
-    createSwitchTransientBurst(ctx, tOut, 0.022, 2650, 0.25 * volumeScale, 1100);
+    oscOut.start(tOut);
+    snapOscOut.start(tOut);
+    oscOut.stop(tOut + 0.03);
+    snapOscOut.stop(tOut + 0.022);
+
+    createSwitchTransientBurst(ctx, tOut, 0.022, 3250, 0.32 * volumeScale, 1400, 2.4, 3.6);
+
+    const tBounce = tOut + 0.024;
+    createSwitchTransientBurst(ctx, tBounce, 0.014, 2400, 0.09 * volumeScale, 1200, 3.0, 4.2);
   } catch {}
 }
 
