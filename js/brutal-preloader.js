@@ -4,7 +4,7 @@
 
 (function () {
   window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-  window.__MOD_VERSIONS.brutalPreloader = 'v2026.11.25-win95-rewind-sfx';
+  window.__MOD_VERSIONS.brutalPreloader = 'v2026.11.25-cc0-tape-rewind-accel';
 
   const TARGET_AVG_MS = 4500, HOLD_MS = 1000, WAIT_SETUP_KEY = 'myarchive95_setup_v1';
   const LOADER_ID = 'brutal-js-preloader', STYLE_ID = 'brutal-js-preloader-style';
@@ -28,104 +28,117 @@
   ];
 
   let lastKey = '', bannerShown = false, powerOffQueued = false, done = false, started = false, plannedMs = null;
-  let rewindCtl = null;
+  let rewindCtl = null, currentRatio = 0;
 
-  function isSoundAllowed() {
+  const isSoundAllowed = () => {
     if (typeof window.__WIN95_SOUND_ENABLED === 'boolean') return window.__WIN95_SOUND_ENABLED;
     try {
       const parsed = JSON.parse(localStorage.getItem(WAIT_SETUP_KEY) || 'null');
       return typeof parsed?.sound === 'boolean' ? parsed.sound : true;
     } catch { return true; }
+  };
+
+  // 저작권 없는(CC0/자체 합성) 카세트 트랙 3종 생성 후 역방향 버퍼 반환
+  function createReversedTrackBuffer(ctx, trackIdx) {
+    const sr = ctx.sampleRate, bpm = 124, beatSec = 60 / bpm, stepSec = beatSec / 2;
+    const notes = trackIdx === 0
+      ? [261.63, 329.63, 392.00, 523.25, 440.00, 392.00, 329.63, 293.66, 349.23, 440.00, 587.33, 523.25, 493.88, 440.00, 392.00, 329.63]
+      : trackIdx === 1
+        ? [196.00, 196.00, 246.94, 293.66, 220.00, 220.00, 261.63, 329.63, 246.94, 246.94, 293.66, 369.99, 293.66, 261.63, 246.94, 196.00]
+        : [220.00, 261.63, 329.63, 392.00, 349.23, 293.66, 261.63, 220.00, 196.00, 246.94, 293.66, 392.00, 329.63, 293.66, 261.63, 246.94];
+
+    const totalSec = notes.length * stepSec;
+    const len = Math.max(1, Math.floor(sr * totalSec));
+    const forward = new Float32Array(len);
+
+    for (let i = 0; i < len; i++) {
+      const t = i / sr;
+      const step = Math.floor(t / stepSec) % notes.length;
+      const localT = t - step * stepSec;
+      const freq = notes[step];
+      const env = Math.min(1, localT / 0.012) * Math.exp(-localT * 6.5);
+      const wave = trackIdx === 1
+        ? Math.sin(2 * Math.PI * freq * t) * 0.55 + Math.sin(2 * Math.PI * freq * 2 * t) * 0.2
+        : (2 * ((freq * t) % 1) - 1) * 0.35 + Math.sin(2 * Math.PI * freq * t) * 0.45;
+      forward[i] = wave * env;
+    }
+
+    // 시간 역방향(뒤로 감기용) 버퍼 변환
+    forward.reverse();
+    const buf = ctx.createBuffer(1, len, sr);
+    buf.getChannelData(0).set(forward);
+    return buf;
   }
 
-  // 프리로더 전용 테이프 뒤로 감기(REWIND) 사운드 생성기
+  // 카세트 테이프 삽입('달칵') 사운드
+  function playTapeInsertDalkak(ctx, startTime) {
+    const mkClick = (offset, freqStart, freqEnd, dur, peak) => {
+      const t0 = startTime + offset;
+      const osc = ctx.createOscillator(), gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freqStart, t0);
+      osc.frequency.exponentialRampToValueAtTime(freqEnd, t0 + dur);
+      gain.gain.setValueAtTime(0.0004, t0);
+      gain.gain.linearRampToValueAtTime(peak, t0 + 0.002);
+      gain.gain.exponentialRampToValueAtTime(0.0003, t0 + dur);
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.start(t0); osc.stop(t0 + dur + 0.008);
+    };
+    // "달" (낮은 묵직한 쉘 안착) + "칵" (약 68ms 뒤 또렷한 래치 체결)
+    mkClick(0, 340, 115, 0.036, 0.24);
+    mkClick(0.068, 1680, 520, 0.026, 0.26);
+  }
+
+  // '달칵' 후 랜덤 CC0 음원을 뒤로 점점 빠르게 감는 컨트롤러
   function startRewindAudio() {
     if (rewindCtl || !isSoundAllowed()) return rewindCtl;
     const AudioCtx = window.AudioContext || window.webkitAudioContext;
     if (!AudioCtx) return null;
 
-    let ctx = null, motorOsc = null, wobbleOsc = null, wobbleGain = null, motorFilter = null;
-    let tapeSrc = null, tapeBp = null, masterGain = null, stopped = false, unlockBound = null;
+    let ctx = null, src = null, gain = null, stopped = false, rafAccel = 0, unlockBound = null;
 
-    const setupNodes = () => {
-      if (stopped || !ctx || masterGain) return;
+    const beginTapeRewind = () => {
+      if (stopped || !ctx || src) return;
       const now = ctx.currentTime;
+      playTapeInsertDalkak(ctx, now);
 
-      masterGain = ctx.createGain();
-      masterGain.gain.setValueAtTime(0.0001, now);
-      masterGain.gain.linearRampToValueAtTime(0.065, now + 0.14);
-      masterGain.connect(ctx.destination);
+      const rewindStart = now + 0.11;
+      const trackIdx = Math.floor(Math.random() * 3);
+      const revBuf = createReversedTrackBuffer(ctx, trackIdx);
 
-      // 1) 고속 릴 회전음 + 역방향 위닝 피치
-      motorOsc = ctx.createOscillator();
-      motorOsc.type = 'sawtooth';
-      motorOsc.frequency.setValueAtTime(215, now);
-      motorOsc.frequency.exponentialRampToValueAtTime(340, now + 0.9);
+      src = ctx.createBufferSource();
+      src.buffer = revBuf;
+      src.loop = true;
+      src.playbackRate.setValueAtTime(0.95, rewindStart);
 
-      wobbleOsc = ctx.createOscillator();
-      wobbleOsc.type = 'sine';
-      wobbleOsc.frequency.setValueAtTime(14.5, now);
+      gain = ctx.createGain();
+      gain.gain.setValueAtTime(0.0002, rewindStart);
+      gain.gain.linearRampToValueAtTime(0.16, rewindStart + 0.05);
 
-      wobbleGain = ctx.createGain();
-      wobbleGain.gain.setValueAtTime(28, now);
+      src.connect(gain);
+      gain.connect(ctx.destination);
+      src.start(rewindStart);
 
-      motorFilter = ctx.createBiquadFilter();
-      motorFilter.type = 'bandpass';
-      motorFilter.frequency.setValueAtTime(680, now);
-      motorFilter.Q.setValueAtTime(2.4, now);
-
-      const motorGain = ctx.createGain();
-      motorGain.gain.setValueAtTime(0.42, now);
-
-      wobbleOsc.connect(wobbleGain);
-      wobbleGain.connect(motorOsc.frequency);
-      motorOsc.connect(motorFilter);
-      motorFilter.connect(motorGain);
-      motorGain.connect(masterGain);
-
-      // 2) 테이프 스침 및 고속 프레임 틱 텍스처 (노이즈 대신 규칙적 뒤로 감기 결)
-      const len = ctx.sampleRate * 2;
-      const buf = ctx.createBuffer(1, len, ctx.sampleRate);
-      const ch = buf.getChannelData(0);
-      const tickPeriod = Math.max(18, Math.floor(ctx.sampleRate / 68));
-      for (let i = 0; i < len; i++) {
-        const mod = i % tickPeriod;
-        const pulse = mod < 4 ? (1 - mod / 4) * 0.75 : 0;
-        const flutter = Math.sin((i / ctx.sampleRate) * Math.PI * 2 * 19) * 0.16;
-        ch[i] = pulse + flutter * 0.25;
-      }
-
-      tapeSrc = ctx.createBufferSource();
-      tapeSrc.buffer = buf;
-      tapeSrc.loop = true;
-
-      tapeBp = ctx.createBiquadFilter();
-      tapeBp.type = 'bandpass';
-      tapeBp.frequency.setValueAtTime(2100, now);
-      tapeBp.Q.setValueAtTime(1.5, now);
-
-      const tapeGain = ctx.createGain();
-      tapeGain.gain.setValueAtTime(0.36, now);
-
-      tapeSrc.connect(tapeBp);
-      tapeBp.connect(tapeGain);
-      tapeGain.connect(masterGain);
-
-      motorOsc.start(now);
-      wobbleOsc.start(now);
-      tapeSrc.start(now);
+      // 로딩 진행률에 따라 뒤로 감기 속도(0.95x -> 3.4x)를 점점 가속
+      const tickSpeed = () => {
+        if (stopped || !src || !ctx) return;
+        const speed = 0.95 + Math.pow(Math.max(0, Math.min(1, currentRatio)), 1.35) * 2.45;
+        try { src.playbackRate.setTargetAtTime(speed, ctx.currentTime, 0.04); } catch {}
+        rafAccel = requestAnimationFrame(tickSpeed);
+      };
+      rafAccel = requestAnimationFrame(tickSpeed);
     };
 
     try {
       ctx = typeof window.getWaitAudioContext === 'function' ? window.getWaitAudioContext() : new AudioCtx();
       if (!ctx) return null;
       if (ctx.state === 'running') {
-        setupNodes();
+        beginTapeRewind();
       } else {
-        ctx.resume().then(() => { if (!stopped) setupNodes(); }).catch(() => {});
+        ctx.resume().then(() => { if (!stopped) beginTapeRewind(); }).catch(() => {});
         unlockBound = () => {
           if (stopped) return;
-          ctx.resume().then(() => { if (!stopped) setupNodes(); }).catch(() => {});
+          ctx.resume().then(() => { if (!stopped) beginTapeRewind(); }).catch(() => {});
         };
         window.addEventListener('pointerdown', unlockBound, { once: true, passive: true });
         window.addEventListener('keydown', unlockBound, { once: true, passive: true });
@@ -136,22 +149,21 @@
       stop: () => {
         if (stopped) return;
         stopped = true;
+        if (rafAccel) cancelAnimationFrame(rafAccel);
         if (unlockBound) {
           window.removeEventListener('pointerdown', unlockBound);
           window.removeEventListener('keydown', unlockBound);
         }
         try {
-          if (ctx && masterGain) {
+          if (ctx && gain) {
             const t = ctx.currentTime;
-            if (motorOsc) motorOsc.frequency.exponentialRampToValueAtTime(95, t + 0.16);
-            masterGain.gain.cancelScheduledValues(t);
-            masterGain.gain.setValueAtTime(Math.max(0.0001, masterGain.gain.value), t);
-            masterGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
+            gain.gain.cancelScheduledValues(t);
+            gain.gain.setValueAtTime(Math.max(0.0001, gain.gain.value), t);
+            gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.14);
           }
           setTimeout(() => {
-            try { motorOsc?.stop(); wobbleOsc?.stop(); tapeSrc?.stop(); } catch {}
-            try { motorOsc?.disconnect(); wobbleOsc?.disconnect(); tapeSrc?.disconnect(); masterGain?.disconnect(); } catch {}
-          }, 210);
+            try { src?.stop(); src?.disconnect(); gain?.disconnect(); } catch {}
+          }, 170);
         } catch {}
         rewindCtl = null;
       }
@@ -273,7 +285,9 @@
   };
 
   function updateProgress(ratio, file, idx, total) {
-    const pct = Math.round(Math.max(0, Math.min(1, ratio)) * 100);
+    const clamped = Math.max(0, Math.min(1, ratio));
+    currentRatio = clamped;
+    const pct = Math.round(clamped * 100);
     const pctEl = document.getElementById('brutal-loader-pct');
     const fillEl = document.getElementById('brutal-loader-fill');
     const bubbleEl = document.getElementById('brutal-speech-bubble');
@@ -310,6 +324,7 @@
   function showComplete(count) {
     if (bannerShown) return;
     bannerShown = true;
+    currentRatio = 1;
     rewindCtl?.stop?.();
     document.getElementById('brutal-loader-card')?.classList.add('is-complete');
     const badge = document.getElementById('brutal-loader-badge');
