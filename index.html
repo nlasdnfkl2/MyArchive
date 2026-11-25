@@ -14,6 +14,16 @@
   <link rel="manifest" href='data:application/manifest+json,{"name":"MY-ARCHIVE 95 OS","short_name":"ARCHIVE95","start_url":"./index.html","display":"standalone","background_color":"%23008080","theme_color":"%23000080","description":"Windows 95 + Neo-Brutalism 개인 문화 감상 자료실 OS"}'>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
   <link rel="stylesheet" href="./css/style.css" />
+  <style>
+    @keyframes archiveSyncSpin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    .archive-sync-spin {
+      display: inline-block;
+      animation: archiveSyncSpin 0.9s linear infinite;
+    }
+  </style>
 </head>
 <body class="theme-teal">
 
@@ -156,12 +166,7 @@
                 </div>
               </fieldset>
 
-              <div class="win95-status-bar-box">
-                <span id="login-cloud-led" class="win95-status-led"></span>
-                <span id="login-cloud-status">[READY] 중앙 전산실 인증 및 자료실 단말기 준비 완료</span>
-              </div>
-
-              <div class="win95-logon-actions">
+              <div class="win95-logon-actions" style="margin-top: 14px;">
                 <button type="button" id="btn-win95-public-enter" class="win95-dlg-btn">
                   <svg width="14" height="14" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true">
                     <rect x="3" y="2" width="10" height="12" fill="#0000ff" stroke="#111"/>
@@ -290,8 +295,8 @@
     </nav>
 
     <div class="menu-bar-right" style="display:flex;align-items:center;gap:6px;">
-      <button type="button" id="active-user-badge" class="status-pill" style="background:var(--brutal-yellow);color:#111;cursor:pointer;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;" onclick="startBiosBootSequence()" title="클릭하여 이용자 전환 / 접속 종료"><svg class="pixel-svg-14" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true"><path fill="#000000" d="M3 1h3v1h1v2h2V2h1V1h3v1h1v3h-1v1h1v5h-1v2h1v2h-3v-1H5v1H2v-2h1v-2H2V6h1V5H2V2h1V1z"/><path fill="#008000" d="M3 2h3v3h4V2h3v3h-1v1h1v5h-1v2H4v-2H3V6h1V5H3V2z"/><path fill="#00ff00" d="M4 5h2v2H4V5zm6 0h2v2h-2V5zM5 10h6v2H5v-2z"/><path fill="#ffffff" d="M4 2h2v2H4V2zm6 0h2v2h-2V2z"/><path fill="#000000" d="M5 3h1v1H5V3zm6 0h1v1h-1V3zM4 8h8v1H4V8zM3 7h1v1H3V7zm9 0h1v1h-1V7z"/></svg><span>문태양 (시삽)</span></button>
-      <span id="cache-status-badge" class="status-pill" style="white-space:nowrap;" title="보조기억장치 동기화 상태">DISK: READY</span>
+      <button type="button" id="active-user-badge" class="status-pill" style="background:var(--brutal-yellow);color:#111;cursor:pointer;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;" onclick="openAccountSettingsModal()" title="클릭하여 계정 설정 열기"><svg class="pixel-svg-14" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true"><path fill="#000000" d="M3 1h3v1h1v2h2V2h1V1h3v1h1v3h-1v1h1v5h-1v2h1v2h-3v-1H5v1H2v-2h1v-2H2V6h1V5H2V2h1V1z"/><path fill="#008000" d="M3 2h3v3h4V2h3v3h-1v1h1v5h-1v2H4v-2H3V6h1V5H3V2z"/><path fill="#00ff00" d="M4 5h2v2H4V5zm6 0h2v2h-2V5zM5 10h6v2H5v-2z"/><path fill="#ffffff" d="M4 2h2v2H4V2zm6 0h2v2h-2V2z"/><path fill="#000000" d="M5 3h1v1H5V3zm6 0h1v1h-1V3zM4 8h8v1H4V8zM3 7h1v1H3V7zm9 0h1v1h-1V7z"/></svg><span>문태양 (시삽)</span></button>
+      <span id="cache-status-badge" class="status-pill" style="background:#ecfdf5;color:#14532d;border-color:#16a34a;white-space:nowrap;display:inline-flex;align-items:center;gap:4px;" title="실시간 동기화 상태"><span id="sync-status-icon" class="archive-sync-spin" style="color:#16a34a;font-weight:900;">↻</span><span id="sync-status-text">동기화 중</span></span>
     </div>
   </header>
 
