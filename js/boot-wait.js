@@ -3,7 +3,7 @@
 // ============================================================
 
 window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-window.__MOD_VERSIONS.bootWait = 'v2026.11.25-stop-audio-on-bios';
+window.__MOD_VERSIONS.bootWait = 'v2026.11.25-wait-after-rewind-stop-on-bios';
 
 const WAIT_SETUP_KEY = 'myarchive95_setup_v1';
 
@@ -136,6 +136,8 @@ function startForwardNostalgicLoop() {
 
     const launchLoop = () => {
       if (stopped || started || !ctx) return;
+      // 프리로더의 뒤로 감기(역재생)가 끝난 뒤에만 순방향 재생을 시작
+      if (window.__PRELOAD_REWIND_ACTIVE) return;
       started = true;
       const t0 = ctx.currentTime;
 
@@ -159,24 +161,32 @@ function startForwardNostalgicLoop() {
       src.start(t0);
     };
 
-    if (ctx.state === 'running') {
-      launchLoop();
-    } else {
-      ctx.resume().then(() => { if (!stopped) launchLoop(); }).catch(() => {});
-      unlockFn = () => {
-        if (stopped) return;
-        ctx.resume().then(() => { if (!stopped) launchLoop(); }).catch(() => {});
-      };
-      window.addEventListener('pointerdown', unlockFn, { passive: true });
-      window.addEventListener('keydown', unlockFn, { passive: true });
+    const tryWhenUnlocked = () => {
+      if (stopped || started || window.__PRELOAD_REWIND_ACTIVE) return;
+      if (ctx.state === 'running') {
+        launchLoop();
+      } else {
+        ctx.resume().then(() => { if (!stopped && !window.__PRELOAD_REWIND_ACTIVE) launchLoop(); }).catch(() => {});
+      }
+    };
+
+    window.__allowWaitForwardLoop = tryWhenUnlocked;
+
+    if (!window.__PRELOAD_REWIND_ACTIVE) {
+      tryWhenUnlocked();
     }
+
+    unlockFn = () => {
+      if (!stopped && !window.__PRELOAD_REWIND_ACTIVE) tryWhenUnlocked();
+    };
+    window.addEventListener('pointerdown', unlockFn, { passive: true });
+    window.addEventListener('keydown', unlockFn, { passive: true });
 
     const ctl = {
       resume: () => {
-        if (stopped) return;
+        if (stopped || window.__PRELOAD_REWIND_ACTIVE) return;
         try {
-          if (ctx.state === 'suspended') ctx.resume().then(() => { if (!stopped) launchLoop(); }).catch(() => {});
-          else launchLoop();
+          if (!started) tryWhenUnlocked();
           if (gain) {
             const t = ctx.currentTime;
             gain.gain.cancelScheduledValues(t);
@@ -189,6 +199,7 @@ function startForwardNostalgicLoop() {
         if (stopped) return;
         stopped = true;
         if (__activeForwardLoop === ctl) __activeForwardLoop = null;
+        if (window.__allowWaitForwardLoop === tryWhenUnlocked) window.__allowWaitForwardLoop = null;
         if (unlockFn) {
           window.removeEventListener('pointerdown', unlockFn);
           window.removeEventListener('keydown', unlockFn);
@@ -475,7 +486,7 @@ function mountPreClickStartScreen(onStartBoot) {
   const stopRays = startBrutalLightRays();
   const stopTitle = startPreClickNoiseTitleLayer();
   const stopStatic = startFullScreenStaticEffect();
-  // 화면 진입 즉시 클릭 없이도 순방향 음원 재생 시작
+  // 역재생 잠금이 해제된 뒤 순방향 루프가 시작되도록 예약
   const forwardLoop = startForwardNostalgicLoop();
 
   let triggered = false;
@@ -487,8 +498,9 @@ function mountPreClickStartScreen(onStartBoot) {
 
     hitLayer.style.pointerEvents = 'none';
     playButtonClickSound({ gapSec: 0.065, volume: 1.05 });
-    // 클릭 즉시 순재생 루프 정지 예약(바이오스 화면 진입 시 잔여음 방지)
+    // 클릭 즉시 순재생 루프 정지(바이오스 화면 진입 시 잔여음 방지)
     forwardLoop?.stop?.();
+    stopPreClickWaitAudio();
     stopRays(); stopTitle(); stopStatic();
     blur3d.focusAndClear();
 
