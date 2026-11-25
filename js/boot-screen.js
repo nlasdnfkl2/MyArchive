@@ -1,10 +1,10 @@
 // ============================================================
 // MY-ARCHIVE 95 OS — BIOS POST & Authentic Windows 95 Logon
-// (Black Screen -> Louder Click -> Full-Screen Static + Subtle Noise + 3D CRT Turn & Slow Zoom -> BIOS -> Splash -> Logon)
+// (Black Screen -> Louder Click -> Full-Screen Static + Subtle Noise + 3D CRT Turn & Slow Zoom -> BIOS -> Retro Chime Splash -> Logon)
 // ============================================================
 
 window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-window.__MOD_VERSIONS.bootScreen = 'v2026.11.25-no-pre-bios-loud-click-full-static-noise';
+window.__MOD_VERSIONS.bootScreen = 'v2026.11.25-post-bios-retro-chime-sound';
 
 const SESSION_USER_KEY = 'myarchive95_current_user_v2';
 const USERS_CACHE_KEY = 'myarchive95_users_cache_v2';
@@ -123,7 +123,6 @@ function startSubtleStaticNoise() {
     let lastOut = 0;
     for (let i = 0; i < bufferSize; i++) {
       const white = Math.random() * 2 - 1;
-      // 약간의 스파크/치지직 텍스처를 섞은 부드러운 노이즈
       const crackle = Math.random() > 0.9965 ? (Math.random() * 2 - 1) * 0.85 : 0;
       lastOut = (lastOut + 0.14 * white) / 1.14;
       data[i] = lastOut * 0.65 + crackle * 0.25;
@@ -257,7 +256,6 @@ function startFullScreenStaticEffect() {
     }
     ctx.putImageData(imgData, 0, 0);
 
-    // 가로 방향 치지직 노이즈 밴드 1~2줄
     const bandY = Math.floor(Math.random() * ch);
     const bandH = 1 + Math.floor(Math.random() * 2);
     ctx.fillStyle = 'rgba(255, 255, 255, 0.16)';
@@ -619,7 +617,6 @@ function play3dCrtMonitorAnimation() {
           if (elapsed < preClickWaitMs) {
             crtModel.visible = false;
           } else {
-            // 회전 애니메이션 시작 직전에 큰 '딸깍' 소리 + 전체 화면 치지직/노이즈 시작
             if (!clickSoundFired) {
               clickSoundFired = true;
               playButtonClickSound();
@@ -1129,6 +1126,7 @@ const bootState = {
   timers: [],
   ramInterval: null,
   biosBeepPlayed: false,
+  startupSoundPlayed: false,
   bootSeqId: 0
 };
 
@@ -1365,7 +1363,7 @@ function openAccountSettingsModal() {
 window.openAccountSettingsModal = openAccountSettingsModal;
 
 // ============================================================
-// Web Audio API: BIOS 비프음, 드라이브 틱음 & Windows 95 시작 화음
+// Web Audio API: BIOS 비프음, 드라이브 틱음 & 레트로 부팅음 (패드 + 차임 + 딜레이)
 // ============================================================
 function playBiosPostBeep(freq = 880, dur = 0.14) {
   if (!isRetroSoundEnabled()) return;
@@ -1406,44 +1404,76 @@ function playDriveSeekTick() {
   } catch {}
 }
 
-function playWin95StartupSound() {
+function playWin95StartupSound(forceOnce = true) {
   if (!isRetroSoundEnabled()) return;
+  if (forceOnce && bootState.startupSoundPlayed) return;
+  bootState.startupSoundPlayed = true;
+
   try {
     const AudioCtx = window.AudioContext || window.webkitAudioContext;
     if (!AudioCtx) return;
     const ctx = new AudioCtx();
+    if (ctx.state === 'suspended') {
+      ctx.resume().catch(() => {});
+    }
     const now = ctx.currentTime;
 
-    const filter = ctx.createBiquadFilter();
-    filter.type = 'lowpass';
-    filter.frequency.setValueAtTime(1400, now);
-    filter.frequency.exponentialRampToValueAtTime(2600, now + 1.1);
-    filter.connect(ctx.destination);
+    // 마스터 볼륨 및 리버브 공간감을 흉내 내기 위한 딜레이 노드 설정
+    const masterGain = ctx.createGain();
+    const delay = ctx.createDelay();
+    const delayGain = ctx.createGain();
 
-    const notes = [
-      { freq: 349.23, start: 0.00, dur: 1.05, vol: 0.055 },
-      { freq: 466.16, start: 0.05, dur: 1.05, vol: 0.050 },
-      { freq: 622.25, start: 0.10, dur: 1.10, vol: 0.050 },
-      { freq: 783.99, start: 0.16, dur: 1.15, vol: 0.045 },
-      { freq: 311.13, start: 0.95, dur: 1.85, vol: 0.065 },
-      { freq: 392.00, start: 1.00, dur: 1.80, vol: 0.050 },
-      { freq: 466.16, start: 1.05, dur: 1.75, vol: 0.050 },
-      { freq: 587.33, start: 1.12, dur: 1.70, vol: 0.045 },
-      { freq: 698.46, start: 1.18, dur: 1.65, vol: 0.045 }
-    ];
+    delay.delayTime.value = 0.3;
+    delayGain.gain.value = 0.4;
 
-    notes.forEach(n => {
+    masterGain.connect(ctx.destination);
+    masterGain.connect(delay);
+    delay.connect(delayGain);
+    delayGain.connect(masterGain);
+
+    masterGain.gain.setValueAtTime(0.6, now);
+    masterGain.gain.exponentialRampToValueAtTime(0.001, now + 4.5);
+
+    // 1. 배경 패드(Pad) 사운드: 낮고 몽환적인 화음 (C3 - G3 - C4)
+    const frequencies = [130.81, 196.00, 261.63];
+    frequencies.forEach((freq, index) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(n.freq, now + n.start);
-      gain.gain.setValueAtTime(0.0001, now + n.start);
-      gain.gain.linearRampToValueAtTime(n.vol, now + n.start + 0.18);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + n.start + n.dur);
+
+      osc.type = index === 1 ? 'triangle' : 'sine';
+      osc.frequency.setValueAtTime(freq, now);
+
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.linearRampToValueAtTime(0.2, now + 1.2);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 4.0);
+
       osc.connect(gain);
-      gain.connect(filter);
-      osc.start(now + n.start);
-      osc.stop(now + n.start + n.dur + 0.05);
+      gain.connect(masterGain);
+      osc.start(now);
+      osc.stop(now + 4.5);
+    });
+
+    // 2. 반짝이는 차임(Chime) 사운드: E5 - G5 - D5 - C5 순차 재생
+    const chimeNotes = [659.25, 783.99, 587.33, 523.25];
+    const startTimeOffsets = [0.4, 0.6, 0.9, 1.2];
+
+    chimeNotes.forEach((freq, index) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = 'sine';
+      const toneStart = now + startTimeOffsets[index];
+      osc.frequency.setValueAtTime(freq, toneStart);
+
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.setValueAtTime(0.0001, toneStart);
+      gain.gain.linearRampToValueAtTime(0.25, toneStart + 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.001, toneStart + 1.5);
+
+      osc.connect(gain);
+      gain.connect(masterGain);
+      osc.start(now);
+      osc.stop(toneStart + 1.6);
     });
   } catch {}
 }
@@ -1624,7 +1654,7 @@ function handleLoginAccountSelectChange() {
 }
 
 // ============================================================
-// 부팅 단계 제어 (BIOS -> SPLASH -> WIN95 LOGON -> DESKTOP)
+// 부팅 단계 제어 (BIOS -> SPLASH [레트로 부팅음] -> WIN95 LOGON -> DESKTOP)
 // ============================================================
 function setBootStage(stageName) {
   bootState.stage = stageName;
@@ -1656,6 +1686,7 @@ function setBootStage(stageName) {
 
   if (stageName === 'splash' && splashEl) {
     triggerCrtPowerOnFlash(splashEl.querySelector('.win95-splash-card'));
+    playWin95StartupSound(true);
   }
 
   if (stageName === 'login') {
@@ -1807,6 +1838,7 @@ async function startBiosBootSequence(options = {}) {
   clearBootTimers();
   const seqId = ++bootState.bootSeqId;
   bootState.biosBeepPlayed = false;
+  bootState.startupSoundPlayed = false;
 
   const overlay = document.getElementById('os-boot-overlay');
   if (overlay) {
@@ -1859,7 +1891,7 @@ function finishDesktopLogin(userObj) {
     }
   }
 
-  playWin95StartupSound();
+  playWin95StartupSound(true);
 
   if (typeof window.refreshAllViews === 'function') {
     window.refreshAllViews();
