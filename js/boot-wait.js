@@ -1,5 +1,5 @@
 // ============================================================
-// MY-ARCHIVE 95 OS — Pre-Click Wait Screen, Double-Click ("Ddal-Kkak") & Noise
+// MY-ARCHIVE 95 OS — Pre-Click Wait Screen
 // ============================================================
 
 window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
