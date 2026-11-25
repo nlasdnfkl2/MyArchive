@@ -52,16 +52,42 @@ body.cursor-wait * {
    ============================================================ */
 body,
 body.theme-teal,
+body.theme-solid-teal,
 body[data-os-wallpaper="teal"],
-body[data-wallpaper="teal"] {
+body[data-os-wallpaper="solid-teal"],
+body[data-wallpaper="teal"],
+body[data-wallpaper="solid-teal"] {
   background-color: #008080;
   background-image: none;
 }
 
 body.theme-navy,
+body.theme-solid-navy,
 body[data-os-wallpaper="navy"],
-body[data-wallpaper="navy"] {
+body[data-os-wallpaper="solid-navy"],
+body[data-wallpaper="navy"],
+body[data-wallpaper="solid-navy"] {
   background-color: #102542;
+  background-image: none;
+}
+
+body.theme-paper,
+body.theme-solid-paper,
+body[data-os-wallpaper="paper"],
+body[data-os-wallpaper="solid-paper"],
+body[data-wallpaper="paper"],
+body[data-wallpaper="solid-paper"] {
+  background-color: #f4f1ea;
+  background-image: none;
+}
+
+body.theme-charcoal,
+body.theme-solid-charcoal,
+body[data-os-wallpaper="charcoal"],
+body[data-os-wallpaper="solid-charcoal"],
+body[data-wallpaper="charcoal"],
+body[data-wallpaper="solid-charcoal"] {
+  background-color: #141416;
   background-image: none;
 }
 
@@ -82,24 +108,25 @@ body[data-wallpaper="plum"] {
 body.theme-grid,
 body[data-os-wallpaper="grid"],
 body[data-wallpaper="grid"] {
-  background-color: #f3efe4;
+  background-color: #16324f;
   background-image:
-    linear-gradient(to right, rgba(17, 17, 17, 0.12) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(17, 17, 17, 0.12) 1px, transparent 1px);
-  background-size: 26px 26px;
+    linear-gradient(to right, rgba(255, 255, 255, 0.16) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.16) 1px, transparent 1px);
+  background-size: 24px 24px;
+  background-position: 0 0;
 }
 
 body.theme-brick,
 body[data-os-wallpaper="brick"],
 body[data-wallpaper="brick"] {
-  background-color: #8b3a3a;
+  background-color: #6e2626;
   background-image:
-    linear-gradient(335deg, rgba(0, 0, 0, 0.25) 23px, transparent 23px),
-    linear-gradient(155deg, rgba(0, 0, 0, 0.25) 23px, transparent 23px),
-    linear-gradient(335deg, rgba(0, 0, 0, 0.25) 23px, transparent 23px),
-    linear-gradient(155deg, rgba(0, 0, 0, 0.25) 23px, transparent 23px);
+    linear-gradient(335deg, rgba(17, 17, 17, 0.42) 23px, transparent 23px),
+    linear-gradient(155deg, rgba(17, 17, 17, 0.42) 23px, transparent 23px),
+    linear-gradient(335deg, rgba(17, 17, 17, 0.42) 23px, transparent 23px),
+    linear-gradient(155deg, rgba(17, 17, 17, 0.42) 23px, transparent 23px);
   background-size: 58px 58px;
-  background-position: 0px 2px, 4px 35px, 29px 31px, 34px 6px;
+  background-position: 0px 2px, 4px 35px, 29px 31px, 33px 6px;
 }
 
 .desktop-workspace {
@@ -356,8 +383,10 @@ body[data-wallpaper="brick"] {
   word-break: keep-all;
 }
 
-body.theme-grid .desk-icon,
-body[data-wallpaper="grid"] .desk-icon {
+body.theme-paper .desk-icon,
+body.theme-solid-paper .desk-icon,
+body[data-wallpaper="paper"] .desk-icon,
+body[data-wallpaper="solid-paper"] .desk-icon {
   color: #111111;
   text-shadow: none;
 }
@@ -367,8 +396,10 @@ body[data-wallpaper="grid"] .desk-icon {
   background: rgba(0, 0, 128, 0.25);
 }
 
-body.theme-grid .desk-icon:hover,
-body[data-wallpaper="grid"] .desk-icon:hover {
+body.theme-paper .desk-icon:hover,
+body.theme-solid-paper .desk-icon:hover,
+body[data-wallpaper="paper"] .desk-icon:hover,
+body[data-wallpaper="solid-paper"] .desk-icon:hover {
   border-color: #111111;
   background: rgba(255, 216, 59, 0.35);
 }
