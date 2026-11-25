@@ -4,10 +4,10 @@
 
 (function () {
   window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-  window.__MOD_VERSIONS.bootController = 'v2026.11.25-split-controller';
+  window.__MOD_VERSIONS.bootController = 'v2026.11.25-click-gate-controller';
 
   window.__ARCHIVE_LOGGED_IN = false;
-  window.__ARCHIVE_GATE_DISMISSED = true;
+  window.__ARCHIVE_GATE_DISMISSED = false;
   let __bootTriggeredOnce = false;
 
   function setPreLoginLock(locked) {
@@ -21,8 +21,14 @@
     }
   }
 
+  function removeInitialAsciiArt() {
+    const pre = document.getElementById('ascii-art');
+    if (pre) pre.style.display = 'none';
+  }
+
   function dismissPreClickStartScreen() {
     window.__ARCHIVE_GATE_DISMISSED = true;
+    removeInitialAsciiArt();
     const hitLayer = document.getElementById('pre-click-start-hit-layer');
     if (hitLayer) {
       hitLayer.style.pointerEvents = 'none';
@@ -30,31 +36,54 @@
     }
   }
 
+  function showFallbackLoginIfNeeded() {
+    const overlay = document.getElementById('os-boot-overlay');
+    const bios = document.getElementById('boot-stage-bios');
+    const splash = document.getElementById('boot-stage-splash');
+    const login = document.getElementById('boot-stage-login');
+
+    if (!overlay) return;
+    overlay.style.display = 'flex';
+
+    const anyStageVisible =
+      (bios && bios.style.display !== 'none') ||
+      (splash && splash.style.display !== 'none') ||
+      (login && login.style.display !== 'none');
+
+    if (!anyStageVisible && login) {
+      login.style.display = 'flex';
+    }
+  }
+
   function runBootTarget() {
-    if (typeof window.mountArchiveShell === 'function') {
+    if (!document.getElementById('os-boot-overlay') && typeof window.mountArchiveShell === 'function') {
       window.mountArchiveShell();
     }
+
+    dismissPreClickStartScreen();
+
     const overlay = document.getElementById('os-boot-overlay');
     if (overlay) {
       overlay.style.display = 'flex';
     }
 
+    let result;
     if (typeof window.__runActualBiosSequence === 'function') {
-      return window.__runActualBiosSequence();
+      result = window.__runActualBiosSequence();
+    } else if (typeof window.__origStartBiosBootSequence === 'function') {
+      result = window.__origStartBiosBootSequence();
+    } else if (typeof window.startBiosBootSequence === 'function') {
+      result = window.startBiosBootSequence();
+    } else if (typeof window.openInitialSetupScreen === 'function') {
+      result = window.openInitialSetupScreen(false);
     }
-    if (typeof window.__origStartBiosBootSequence === 'function') {
-      return window.__origStartBiosBootSequence();
-    }
-    if (typeof window.startBiosBootSequence === 'function') {
-      return window.startBiosBootSequence();
-    }
-    if (typeof window.openInitialSetupScreen === 'function') {
-      return window.openInitialSetupScreen(false);
-    }
+
+    setTimeout(showFallbackLoginIfNeeded, 150);
+    return result;
   }
 
   function enterBootAfterStartClick() {
-    dismissPreClickStartScreen();
+    if (__bootTriggeredOnce || window.__ARCHIVE_LOGGED_IN) return;
     __bootTriggeredOnce = true;
     runBootTarget();
   }
@@ -64,7 +93,6 @@
   function hookBootLifecycle() {
     if (typeof window.startBiosBootSequence === 'function' && !window.__origStartBiosBootSequence) {
       window.__origStartBiosBootSequence = window.startBiosBootSequence;
-      let allowDirectCall = false;
 
       window.startBiosBootSequence = function () {
         if (!window.__ARCHIVE_LOGGED_IN) {
@@ -76,12 +104,7 @@
       };
 
       window.__runActualBiosSequence = function () {
-        allowDirectCall = true;
-        try {
-          return window.__origStartBiosBootSequence.apply(window, arguments);
-        } finally {
-          allowDirectCall = false;
-        }
+        return window.__origStartBiosBootSequence.apply(window, arguments);
       };
     }
 
@@ -187,38 +210,33 @@
     }
   }
 
+  function bindInitialGateTrigger() {
+    const onFirstInput = () => {
+      if (__bootTriggeredOnce || window.__ARCHIVE_LOGGED_IN) return;
+      enterBootAfterStartClick();
+    };
+    window.addEventListener('pointerdown', onFirstInput, { once: true, capture: true });
+    window.addEventListener('keydown', onFirstInput, { once: true, capture: true });
+  }
+
   document.addEventListener('DOMContentLoaded', () => {
-    if (typeof window.mountArchiveShell === 'function') {
+    if (!document.getElementById('os-boot-overlay') && typeof window.mountArchiveShell === 'function') {
       window.mountArchiveShell();
     }
     setPreLoginLock(true);
     hookBootLifecycle();
     bindShellActions();
+    bindInitialGateTrigger();
 
     if (typeof window.mountPreClickStartScreen === 'function') {
       window.mountPreClickStartScreen(() => {
-        window.__ARCHIVE_GATE_DISMISSED = true;
-        __bootTriggeredOnce = true;
-        runBootTarget();
+        enterBootAfterStartClick();
       });
-    }
-
-    if (!__bootTriggeredOnce && !window.__ARCHIVE_LOGGED_IN) {
-      __bootTriggeredOnce = true;
-      dismissPreClickStartScreen();
-      setTimeout(() => {
-        runBootTarget();
-      }, 60);
     }
   });
 
   window.addEventListener('load', () => {
     hookBootLifecycle();
     bindShellActions();
-    if (!__bootTriggeredOnce && !window.__ARCHIVE_LOGGED_IN) {
-      __bootTriggeredOnce = true;
-      dismissPreClickStartScreen();
-      runBootTarget();
-    }
   }, { once: true });
 })();
