@@ -1,13 +1,22 @@
 // ============================================================
-// MY-ARCHIVE 95 OS — Context-Aware BIOS POST & Windows 95 Logon
-// (Smart Telemetry Boot Log, Self-Contained Helpers & Logon)
+// MY-ARCHIVE 95 OS — Context-Aware BIOS POST, Setup & Logon
 // ============================================================
 
 window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-window.__MOD_VERSIONS.bootScreen = 'v2026.11.25-01';
+window.__MOD_VERSIONS.bootScreen = 'v2026.11.25-06';
 
 const SESSION_USER_KEY = 'myarchive95_current_user_v2';
 const USERS_CACHE_KEY = 'myarchive95_users_cache_v2';
+const BIOS_CONFIG_KEY = 'MYARCHIVE95_BIOS_CONFIG_V1';
+
+const BIOS_RESOLUTION_OPTIONS = [
+  { value: '640x480', label: '640x480 (VGA 4:3 — 가로 640 레트로 표준)' },
+  { value: '800x600', label: '800x600 (SVGA 4:3 — 가로 800 클래식)' },
+  { value: '1024x768', label: '1024x768 (XGA 4:3 — 가로 1024 표준)' },
+  { value: '1280x800', label: '1280x800 (WXGA 16:10 — 가로 1280 와이드)' },
+  { value: '1440x900', label: '1440x900 (WXGA+ 16:10 — 가로 1440 데스크톱)' },
+  { value: '1920x1080', label: '1920x1080 (FHD 16:9 — 가로 1920 고해상도)' }
+];
 
 function safeEsc(str) {
   if (typeof window.esc === 'function') return window.esc(str);
@@ -54,7 +63,185 @@ function safeBootTone(type) {
   }
 }
 
+// ============================================================
+// BIOS 환경 설정 저장·적용 & 첫 진입 텍스트 Setup 화면
+// ============================================================
+function getSavedBiosConfig() {
+  return safeLoadCache(BIOS_CONFIG_KEY, null);
+}
+
+function saveBiosConfig(cfg) {
+  safeSaveCache(BIOS_CONFIG_KEY, cfg);
+}
+
+function applyBiosResolutionProfile(resolutionValue) {
+  const res = String(resolutionValue || '1024x768');
+  const widthNum = Number(res.split('x')[0]) || 1024;
+  document.documentElement.dataset.biosResolution = res;
+
+  const desktopEl = document.getElementById('desktop') || document.querySelector('.desktop-area') || document.body;
+  if (widthNum <= 640) {
+    desktopEl.style.maxWidth = '640px';
+    desktopEl.style.margin = '0 auto';
+  } else if (widthNum <= 800) {
+    desktopEl.style.maxWidth = '800px';
+    desktopEl.style.margin = '0 auto';
+  } else if (widthNum <= 1024) {
+    desktopEl.style.maxWidth = '1024px';
+    desktopEl.style.margin = '0 auto';
+  } else if (widthNum <= 1280) {
+    desktopEl.style.maxWidth = '1280px';
+    desktopEl.style.margin = '0 auto';
+  } else if (widthNum <= 1440) {
+    desktopEl.style.maxWidth = '1440px';
+    desktopEl.style.margin = '0 auto';
+  } else {
+    desktopEl.style.maxWidth = '1920px';
+    desktopEl.style.margin = '0 auto';
+  }
+}
+
+function applyBiosSettingsToSystem(cfg) {
+  if (!cfg || typeof cfg !== 'object') return;
+  if (cfg.resolution) applyBiosResolutionProfile(cfg.resolution);
+  if (cfg.theme && typeof window.applyWallpaperTheme === 'function') {
+    try { window.applyWallpaperTheme(cfg.theme); } catch {}
+  }
+  if (cfg.crt !== undefined && typeof window.setCrtScanlinesEnabled === 'function') {
+    try { window.setCrtScanlinesEnabled(Boolean(cfg.crt)); } catch {}
+  }
+  if (cfg.sound !== undefined && typeof window.setRetroSoundEnabled === 'function') {
+    try { window.setRetroSoundEnabled(Boolean(cfg.sound)); } catch {}
+  }
+}
+
+function openBiosTextSetup(onComplete) {
+  const existing = document.getElementById('bios-text-setup-overlay');
+  if (existing) existing.remove();
+
+  const saved = getSavedBiosConfig() || {};
+  const currentRes = saved.resolution || '1024x768';
+  const currentTheme = saved.theme || 'teal';
+  const currentCrt = saved.crt !== undefined ? String(Boolean(saved.crt)) : 'true';
+  const currentSound = saved.sound !== undefined ? String(Boolean(saved.sound)) : 'true';
+
+  const overlay = document.createElement('div');
+  overlay.id = 'bios-text-setup-overlay';
+  overlay.style.cssText = [
+    'position:fixed',
+    'inset:0',
+    'z-index:999999',
+    'background:#030724',
+    'color:#e6f0ff',
+    'font-family:"Galmuri11","DungGeunMo",monospace',
+    'padding:28px 24px',
+    'overflow:auto',
+    'display:flex',
+    'justify-content:center',
+    'align-items:flex-start'
+  ].join(';');
+
+  const biosSelectStyle =
+    'background:#040826;color:#00ff88;border:1px solid #55aaff;padding:4px 8px;font-family:inherit;font-size:0.84rem;font-weight:700;cursor:pointer;min-width:290px;';
+
+  overlay.innerHTML = `
+    <div style="width:100%;max-width:780px;border:2px solid #7ab8ff;padding:18px 20px;background:#050b33;box-shadow:0 0 0 2px #030724,0 0 0 4px #3b6fd8;">
+      <div style="background:#b8bec8;color:#050b33;padding:5px 10px;font-weight:900;font-size:0.86rem;display:flex;justify-content:space-between;margin-bottom:14px;">
+        <span>AWARD / ARCHIVE95 BIOS SETUP UTILITY — 초기 환경 설정</span>
+        <span>CMOS v1.95</span>
+      </div>
+
+      <div style="color:#ffd83b;font-size:0.8rem;line-height:1.6;margin-bottom:14px;border-bottom:1px dashed #4a6fb8;padding-bottom:10px;">
+        <div>* 브라우저 저장소에 초기 환경 설정이 감지되지 않았습니다.</div>
+        <div>* 해상도 및 디스플레이 옵션을 선택한 뒤 [설정 저장 후 접속]을 눌러 진행하십시오.</div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:190px 1fr;row-gap:12px;column-gap:12px;align-items:center;font-size:0.84rem;margin-bottom:18px;">
+        <label for="bios-inp-resolution" style="font-weight:900;color:#7fd8ff;">[01] 해상도</label>
+        <div>
+          <select id="bios-inp-resolution" style="${biosSelectStyle}">
+            ${BIOS_RESOLUTION_OPTIONS.map(opt =>
+              `<option value="${opt.value}" ${currentRes === opt.value ? 'selected' : ''}>${opt.label}</option>`
+            ).join('')}
+          </select>
+        </div>
+
+        <label for="bios-inp-theme" style="font-weight:900;color:#7fd8ff;">[02] 바탕화면 테마</label>
+        <div>
+          <select id="bios-inp-theme" style="${biosSelectStyle}">
+            <option value="teal" ${currentTheme === 'teal' ? 'selected' : ''}>TEAL (클래식 청록)</option>
+            <option value="navy" ${currentTheme === 'navy' ? 'selected' : ''}>NAVY (딥 네이비)</option>
+            <option value="olive" ${currentTheme === 'olive' ? 'selected' : ''}>OLIVE (올리브 그린)</option>
+            <option value="plum" ${currentTheme === 'plum' ? 'selected' : ''}>PLUM (레트로 플럼)</option>
+            <option value="brick" ${currentTheme === 'brick' ? 'selected' : ''}>BRICK (테라코타 브릭)</option>
+            <option value="matrix" ${currentTheme === 'matrix' ? 'selected' : ''}>MATRIX (터미널 그린)</option>
+            <option value="grid" ${currentTheme === 'grid' ? 'selected' : ''}>GRID (도트 그리드)</option>
+          </select>
+        </div>
+
+        <label for="bios-inp-crt" style="font-weight:900;color:#7fd8ff;">[03] CRT 스캔라인</label>
+        <div>
+          <select id="bios-inp-crt" style="${biosSelectStyle}">
+            <option value="true" ${currentCrt === 'true' ? 'selected' : ''}>ENABLED (스캔라인 활성)</option>
+            <option value="false" ${currentCrt === 'false' ? 'selected' : ''}>DISABLED (스캔라인 끔)</option>
+          </select>
+        </div>
+
+        <label for="bios-inp-sound" style="font-weight:900;color:#7fd8ff;">[04] 8비트 사운드</label>
+        <div>
+          <select id="bios-inp-sound" style="${biosSelectStyle}">
+            <option value="true" ${currentSound === 'true' ? 'selected' : ''}>ENABLED (효과음 켜기)</option>
+            <option value="false" ${currentSound === 'false' ? 'selected' : ''}>DISABLED (효과음 끄기)</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="background:#03061c;border:1px solid #3c5ea6;padding:8px 10px;font-size:0.74rem;color:#7cf29c;line-height:1.5;margin-bottom:16px;">
+        <div>STORAGE TARGET : BROWSER LOCALSTORAGE (MYARCHIVE95_BIOS_CONFIG_V1)</div>
+        <div>USER SESSION   : HANDLED BY LOGON SCREEN</div>
+      </div>
+
+      <div style="display:flex;justify-content:flex-end;">
+        <button type="button" id="btn-bios-save-enter" style="background:#c0c7d0;color:#000;border-top:2px solid #fff;border-left:2px solid #fff;border-right:2px solid #333;border-bottom:2px solid #333;padding:6px 14px;font-family:inherit;font-size:0.82rem;font-weight:900;cursor:pointer;">
+          [ 설정 저장 후 접속 ]
+        </button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+
+  const commitAndProceed = () => {
+    const selectedRes = document.getElementById('bios-inp-resolution')?.value || '1024x768';
+    const selectedTheme = document.getElementById('bios-inp-theme')?.value || 'teal';
+    const selectedCrt = document.getElementById('bios-inp-crt')?.value === 'true';
+    const selectedSound = document.getElementById('bios-inp-sound')?.value === 'true';
+
+    const nextCfg = {
+      resolution: selectedRes,
+      theme: selectedTheme,
+      crt: selectedCrt,
+      sound: selectedSound
+    };
+    saveBiosConfig(nextCfg);
+    applyBiosSettingsToSystem(nextCfg);
+
+    overlay.remove();
+    if (typeof onComplete === 'function') onComplete(nextCfg);
+  };
+
+  document.getElementById('btn-bios-save-enter')?.addEventListener('click', commitAndProceed);
+  overlay.addEventListener('keydown', e => {
+    if (e.key === 'F10' || (e.key === 'Enter' && e.target.tagName !== 'SELECT')) {
+      e.preventDefault();
+      commitAndProceed();
+    }
+  });
+}
+
+// ============================================================
 // 1995년 16색 도트 픽셀 SVG 아바타 라이브러리
+// ============================================================
 const PIXEL_AVATARS = {
   frog: `
     <svg class="pixel-avatar-svg" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true">
@@ -273,6 +460,8 @@ function updateDesktopUserBadge() {
 // Web Audio API: BIOS 비프음 & Windows 95 시작 화음
 // ============================================================
 function playBiosPostBeep() {
+  const saved = getSavedBiosConfig();
+  if (saved && saved.sound === false) return;
   if (bootState.biosBeepPlayed) return;
   bootState.biosBeepPlayed = true;
   try {
@@ -293,6 +482,8 @@ function playBiosPostBeep() {
 }
 
 function playWin95StartupSound() {
+  const saved = getSavedBiosConfig();
+  if (saved && saved.sound === false) return;
   try {
     const AudioCtx = window.AudioContext || window.webkitAudioContext;
     if (!AudioCtx) return;
@@ -515,7 +706,7 @@ function handleLoginAccountSelectChange() {
 }
 
 // ============================================================
-// 컨텍스트 기반 스마트 부팅 로그 생성기 (시간대·보관 수·재방문 연동)
+// 컨텍스트 기반 스마트 부팅 로그 생성기
 // ============================================================
 function buildSmartBiosPostSteps() {
   const hour = new Date().getHours();
@@ -648,9 +839,14 @@ function showLoginError(msg) {
   errBox.style.display = 'flex';
 }
 
-function startBiosBootSequence() {
+function runPostAndLogonFlow() {
   clearBootTimers();
   bootState.biosBeepPlayed = false;
+
+  const savedCfg = getSavedBiosConfig();
+  if (savedCfg) {
+    applyBiosSettingsToSystem(savedCfg);
+  }
 
   const overlay = document.getElementById('os-boot-overlay');
   if (!overlay) return;
@@ -710,6 +906,20 @@ function startBiosBootSequence() {
   bootState.timers.push(setTimeout(() => {
     if (bootState.stage === 'splash') setBootStage('login');
   }, 3050));
+}
+
+function startBiosBootSequence() {
+  const savedCfg = getSavedBiosConfig();
+  if (!savedCfg) {
+    document.body.classList.add('boot-locked');
+    const overlay = document.getElementById('os-boot-overlay');
+    if (overlay) overlay.style.display = 'none';
+    openBiosTextSetup(() => {
+      runPostAndLogonFlow();
+    });
+    return;
+  }
+  runPostAndLogonFlow();
 }
 
 function finishDesktopLogin(userObj) {
@@ -920,6 +1130,7 @@ function bindBootScreenEvents() {
   });
 
   document.addEventListener('keydown', e => {
+    if (document.getElementById('bios-text-setup-overlay')) return;
     if (bootState.stage === 'bios') {
       playBiosPostBeep();
       if (e.key === 'Delete') {
@@ -1049,6 +1260,7 @@ function bindBootScreenEvents() {
 }
 
 window.startBiosBootSequence = startBiosBootSequence;
+window.openBiosTextSetup = openBiosTextSetup;
 window.getCurrentUser = getCurrentUser;
 window.switchLoginTab = switchLoginTab;
 
