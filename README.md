@@ -2,7 +2,7 @@
 
 > **Windows 95 + Neo-Brutalism 데스크톱 감성과 Google Apps Script 서버리스 아키텍처를 결합한 개인 문화·예술 감상 기록 웹 OS**
 
-도서, 음악, 영화·시리즈 및 웹에서 발견한 콘텐츠를 한곳에 기록하고, 페이지 내부의 가상 브라우저(`EXPLORER95.EXE`), 주크박스(`JUKEBOX 95`), 커뮤니티 피드(`COMMUNITY95.EXE`), 포트폴리오 창(`PORTFOLIO95.EXE`)을 통해 탐색부터 재생·감상 저장·공유까지 레트로 OS 환경에서 완결할 수 있는 아카이브 워크스테이션입니다.
+도서, 음악, 영화·시리즈 및 웹에서 발견한 콘텐츠를 한곳에 기록하고, 페이지 내부의 가상 브라우저(`EXPLORER95.EXE`), 주크박스(`JUKEBOX 95`), 커뮤니티 피드(`COMMUNITY95.EXE`), 포트폴리오 창(`PORTFOLIO95.EXE`)를 통해 탐색부터 재생·감상 저장·공유까지 레트로 OS 환경에서 완결할 수 있는 아카이브 워크스테이션입니다.
 
 - **배포 URL:** <https://nlasdnfkl2.github.io/MyArchive/>
 
@@ -11,11 +11,13 @@
 ## 주요 구현 기능 (최종 버전)
 
 ### 1. Windows 95 + Neo-Brutalism 멀티 윈도우 데스크톱 셸 & 부팅 시퀀스
-- **대기 화면, 3D/BIOS 애니메이션 & 로그온 (`js/boot-wait.js`, `js/boot-animation.js`, `js/boot-login.js`, `index.html`):**
+- **ASCII 셸 마운트, 부팅 컨트롤러 & 로그온 (`js/shell-builder.js`, `js/boot-controller.js`, `js/boot-wait.js`, `js/boot-animation.js`, `js/boot-login.js`, `index.html`):**
+  - `index.html`은 중앙 아스키 아트(`#ascii-art`)와 `#app-root` 컨테이너, 외부/내부 스크립트 로더 중심으로 구성하고, `js/shell-builder.js`가 부팅/로그온 오버레이, 메뉴바, 바탕화면 아이콘, 창 레이아웃, 시작 메뉴, 화면 보호기, 작업표시줄 DOM을 동적으로 마운트합니다.
+  - `js/boot-controller.js`가 로그인 전 화면 잠금(`pre-login-lock`), 부팅 시퀀스 진입 및 훅(`startBiosBootSequence`, `finishDesktopLogin`), 커뮤니티/계정 설정/포트폴리오 가상 창 연결 및 폴백 래퍼를 담당합니다.
   - 첫 클릭 전 신호 대기 노이즈·마키·3D 타이틀 레이어 및 "딸-깍" 이중 클릭 사운드(`js/boot-wait.js`)
   - 3D CRT 회전/줌 애니메이션, 최초 실행 텍스트 SETUP 화면, BIOS POST(메모리 체크, 드라이브 인식, CMOS 이스터에그) 및 부팅 스플래시(`js/boot-animation.js`)
   - 개인 계정 로그인(4자리 PIN), 신규 계정 가입, 비밀번호 없는 **공용 단말기** 접속 모드, 유저 검색, 상단 계정 배지 클릭을 통한 **계정 설정** 및 로그아웃/재시동(`js/boot-login.js`)
-- **멀티 태스킹 창 관리 & 위젯 (`index.html`, `css/style.css`, `js/window-mgr.js`, `js/win95-widgets.js`):**
+- **멀티 태스킹 창 관리 & 위젯 (`js/shell-builder.js`, `css/style.css`, `js/window-mgr.js`, `js/win95-widgets.js`):**
   - 플로팅 창 드래그 이동, 포커스 전환, 최소화/닫기, 시작 메뉴·하단 작업표시줄 창 전환 및 계단식 배열(Cascade)
   - `Ctrl+Alt+Delete` **Windows 95 작업 관리자**, 화면 보호기, 블루스크린(BSOD) 시연 및 Web Audio API 기반 8비트 시스템 효과음 지원
   - 포트폴리오 가상 창(`#win-portfolio`), 제작자 및 라이선스 정보 창(`openAboutAndLicenseWindow`, `LICENSE` 연계), 바탕화면 위젯 연동
@@ -66,6 +68,7 @@ MyArchive/
 ├── js/
 │   ├── archive-app.js         # 감상 기록 CRUD, 다중 소스 검색, 월력·기분추천·퀴즈·연대기·인장·메모장·우체통
 │   ├── boot-animation.js      # 3D CRT 애니메이션, 초기 SETUP, BIOS POST 부팅 시퀀스, 스플래시
+│   ├── boot-controller.js     # 부팅 잠금 제어, BIOS/로그인 훅, 커뮤니티/계정/포트폴리오 창 연결 및 폴백
 │   ├── boot-login.js          # 로그인/회원가입, 유저 검색, 계정 설정 모달, 동기화 훅 및 부팅 진입점
 │   ├── boot-wait.js           # 신호 대기 노이즈·마키·3D 타이틀 및 "딸-깍" 이중 클릭 사운드
 │   ├── browser-app.js         # EXPLORER95.EXE 가상 브라우저, 북마크, DISPLAY95.EXE, 우클릭 메뉴
@@ -73,9 +76,11 @@ MyArchive/
 │   ├── config.js              # GAS Web App URL 설정, 로컬 스토리지 캐시, 권한 판별 및 공통 유틸리티
 │   ├── gamepack.js            # 내장 레트로 미니게임 팩 (솔리테어 95, 지뢰찾기 95, 카드 뒤집기, 하이로우)
 │   ├── jukebox.js             # JUKEBOX 95 (YouTube 자동 검색·캐싱·후보 전환 스테레오 플레이어)
+│   ├── shell-builder.js       # 아스키 배너 및 OS 셸/오버레이/윈도우/태스크바 DOM 생성·마운트
 │   ├── visualizer.js          # Canvas 물리 데이터 노드 맵, 워드클라우드, 편중도 통계 진단
 │   ├── win95-widgets.js       # 바탕화면 위젯(CD Player, Mood Music AI, Clock 95, Calendar 95 등) 모듈
 │   └── window-mgr.js          # 창 드래그·포커스·최소화, 포트폴리오 가상 창, 제작자·라이선스 창, 7종 테마, 작업 관리자, BSOD
 ├── LICENSE                    # 프로젝트 라이선스 정보
 ├── README.md                  # 프로젝트 개요 및 주요 구현 기능 문서
-└── index.html                 # 메인 OS 데스크톱 셸 (바탕화면 아이콘, 플로팅 창, 태스크바, 스크립트 로더)
+└── index.html                 # 아스키 아트 중심 진입점, #app-root 컨테이너 및 스크립트 로더
+```
