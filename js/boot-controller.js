@@ -7,9 +7,10 @@
 
 (function () {
   window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-  window.__MOD_VERSIONS.bootController = 'v2026.11.25-setup-strictly-after-anim-before-bios';
+  window.__MOD_VERSIONS.bootController = 'v2026.11.26-boot-controller-responsive-mobile-guard';
 
   const SETUP_STORAGE_KEY = 'myarchive95_setup_v1';
+  const RESPONSIVE_STYLE_ID = 'myarchive95-responsive-guard-style';
 
   window.__ARCHIVE_LOGGED_IN = false;
   window.__ARCHIVE_GATE_DISMISSED = false;
@@ -19,6 +20,151 @@
   let __postAnimSetupShown = false;
   let __postAnimSetupResumed = false;
   let __continueToBiosFn = null;
+
+  function applyResponsiveViewportGuard() {
+    if (document.getElementById(RESPONSIVE_STYLE_ID)) return;
+    const parent = document.head || document.documentElement;
+    if (!parent) return;
+
+    const style = document.createElement('style');
+    style.id = RESPONSIVE_STYLE_ID;
+    style.textContent = `
+      html, body {
+        max-width: 100%;
+        overflow-x: hidden;
+        box-sizing: border-box;
+      }
+      *, *::before, *::after {
+        box-sizing: border-box;
+      }
+      #os-boot-overlay,
+      #boot-stage-bios,
+      #boot-stage-splash,
+      #boot-stage-login,
+      #bios-text-setup-overlay,
+      #win95-account-settings-modal {
+        max-width: 100vw;
+        overflow-y: auto;
+        overflow-x: hidden;
+        -webkit-overflow-scrolling: touch;
+      }
+      #boot-stage-bios pre,
+      #boot-stage-bios .bios-screen,
+      #boot-stage-bios .bios-panel,
+      #bios-text-setup-overlay > div,
+      .win95-login-dialog,
+      .win95-splash-card {
+        max-width: 100%;
+        min-width: 0;
+      }
+      .win95-logon-grid {
+        min-width: 0;
+      }
+      .win95-logon-input,
+      .win95-login-dialog select,
+      .win95-login-dialog input {
+        max-width: 100%;
+        min-width: 0;
+      }
+      #desktop-area,
+      .os-window,
+      .os-window-body,
+      .os-menubar,
+      .os-taskbar {
+        max-width: 100vw;
+      }
+      .os-window {
+        min-width: 0;
+      }
+      .os-window-body {
+        overflow: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+      .os-window-body table,
+      .os-window-body ul,
+      .os-window-body ol {
+        max-width: 100%;
+      }
+      @media (max-width: 768px) {
+        #os-boot-overlay {
+          align-items: flex-start !important;
+          padding: 8px;
+        }
+        #boot-stage-login,
+        #boot-stage-bios,
+        #boot-stage-splash {
+          padding: 8px;
+          height: auto !important;
+          min-height: 100% !important;
+          align-items: flex-start !important;
+        }
+        .win95-login-dialog,
+        .win95-splash-card {
+          width: 100% !important;
+          max-width: 100% !important;
+          margin: 4px auto !important;
+        }
+        .win95-logon-grid {
+          grid-template-columns: 1fr !important;
+          gap: 6px !important;
+        }
+        .win95-avatar-grid {
+          grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+        }
+        .os-window:not(.minimized).open {
+          left: 4px !important;
+          right: 4px !important;
+          width: calc(100vw - 8px) !important;
+          max-width: calc(100vw - 8px) !important;
+          max-height: calc(100dvh - 88px) !important;
+        }
+        .os-taskbar {
+          flex-wrap: wrap;
+          height: auto !important;
+          min-height: 36px;
+          gap: 4px;
+          padding: 4px;
+        }
+      }
+      @media (max-width: 480px) {
+        .win95-avatar-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        }
+        .win95-logon-actions {
+          flex-direction: column;
+          align-items: stretch !important;
+        }
+        .win95-logon-actions button {
+          width: 100%;
+        }
+        #boot-stage-bios {
+          font-size: 11px !important;
+          line-height: 1.35 !important;
+        }
+      }
+      @media (max-height: 620px) and (orientation: landscape) {
+        #os-boot-overlay {
+          align-items: flex-start !important;
+        }
+        .win95-login-dialog {
+          margin-top: 8px !important;
+          margin-bottom: 16px !important;
+        }
+      }
+    `;
+    parent.appendChild(style);
+  }
+
+  function syncViewportLayoutMetrics() {
+    applyResponsiveViewportGuard();
+    const vv = window.visualViewport;
+    const vh = vv && typeof vv.height === 'number' && vv.height > 0
+      ? Math.round(vv.height)
+      : window.innerHeight;
+    if (vh > 0) {
+      document.documentElement.style.setProperty('--app-vh', `${vh}px`);
+    }
+  }
 
   function hasSavedSetupData() {
     try {
@@ -56,6 +202,7 @@
 
   function observeBiosAndSetupAppearance() {
     const checkStages = () => {
+      syncViewportLayoutMetrics();
       const biosStage = document.getElementById('boot-stage-bios');
       const setupStage = document.getElementById('bios-text-setup-overlay');
       if ((biosStage && isElementVisible(biosStage)) || (setupStage && isElementVisible(setupStage))) {
@@ -374,7 +521,14 @@
     }
   }
 
+  window.addEventListener('resize', syncViewportLayoutMetrics, { passive: true });
+  window.addEventListener('orientationchange', syncViewportLayoutMetrics, { passive: true });
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', syncViewportLayoutMetrics, { passive: true });
+  }
+
   document.addEventListener('DOMContentLoaded', () => {
+    syncViewportLayoutMetrics();
     if (!document.getElementById('os-boot-overlay') && typeof window.mountArchiveShell === 'function') {
       window.mountArchiveShell();
     }
@@ -391,6 +545,7 @@
   });
 
   window.addEventListener('load', () => {
+    syncViewportLayoutMetrics();
     hookBootLifecycle();
     bindShellActions();
     observeBiosAndSetupAppearance();
