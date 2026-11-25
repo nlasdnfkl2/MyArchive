@@ -110,9 +110,14 @@ function injectLogonAndResponsiveStyles() {
       box-sizing: border-box;
     }
 
+    .win95-logon-window,
+    .win95-logon-window * {
+      box-sizing: border-box;
+    }
+
     .win95-logon-window {
       width: 100%;
-      max-width: 560px;
+      max-width: 540px;
       background: #c0c0c0;
       color: #000000;
       border-top: 2px solid #ffffff;
@@ -121,7 +126,7 @@ function injectLogonAndResponsiveStyles() {
       border-bottom: 2px solid #404040;
       box-shadow: inset 1px 1px 0 #dfdfdf, inset -1px -1px 0 #808080, 4px 4px 0 rgba(0, 0, 0, 0.35);
       padding: 3px;
-      box-sizing: border-box;
+      overflow: hidden;
     }
 
     .win95-logon-titlebar {
@@ -169,20 +174,21 @@ function injectLogonAndResponsiveStyles() {
 
     .win95-logon-sheet {
       margin: 0 6px 6px 6px;
-      padding: clamp(12px, 2vw, 15px);
+      padding: clamp(10px, 2vw, 14px);
       background: #c0c0c0;
       border-top: 2px solid #ffffff;
       border-left: 2px solid #ffffff;
       border-right: 2px solid #404040;
       border-bottom: 2px solid #404040;
       box-shadow: inset 1px 1px 0 #dfdfdf, inset -1px -1px 0 #808080;
+      overflow: hidden;
     }
 
     .win95-logon-intro {
       display: flex;
       align-items: flex-start;
       gap: 10px;
-      margin-bottom: 13px;
+      margin-bottom: 12px;
       font-size: clamp(0.74rem, 1.25vw, 0.8rem);
       line-height: 1.45;
       font-weight: 700;
@@ -190,12 +196,14 @@ function injectLogonAndResponsiveStyles() {
 
     .win95-logon-row {
       display: grid;
-      grid-template-columns: 128px minmax(0, 1fr);
+      grid-template-columns: 120px minmax(0, 1fr);
       align-items: center;
       gap: 8px;
-      margin-bottom: 10px;
+      margin-bottom: 9px;
       font-size: clamp(0.74rem, 1.25vw, 0.8rem);
       font-weight: 700;
+      width: 100%;
+      min-width: 0;
     }
 
     .win95-logon-row > label {
@@ -207,17 +215,26 @@ function injectLogonAndResponsiveStyles() {
       display: flex;
       align-items: center;
       gap: 5px;
-      min-width: 0;
       width: 100%;
+      min-width: 0;
+    }
+
+    .win95-logon-field-wrap > .w95-combo,
+    .win95-logon-field-wrap > .w95-combo-logon {
+      flex: 1 1 0% !important;
+      width: auto !important;
+      min-width: 0 !important;
     }
 
     #login-user-search-row {
       display: none;
+      grid-column: 2;
       align-items: center;
       gap: 6px;
       width: 100%;
       min-width: 0;
-      margin-top: 6px;
+      margin-top: -4px;
+      margin-bottom: 9px;
     }
 
     #login-user-search-row[style*="display: flex"] {
@@ -225,8 +242,8 @@ function injectLogonAndResponsiveStyles() {
     }
 
     #login-user-search-input {
-      flex: 1 1 auto;
-      min-width: 140px;
+      flex: 1 1 0%;
+      min-width: 0;
       width: 100%;
       height: 25px;
       padding: 3px 6px;
@@ -240,21 +257,21 @@ function injectLogonAndResponsiveStyles() {
       font-family: inherit;
       font-size: 0.78rem;
       font-weight: 700;
-      box-sizing: border-box;
     }
 
     #login-user-search-count {
       flex-shrink: 0;
       white-space: nowrap;
-      font-size: 0.74rem;
+      font-size: 0.72rem;
       font-weight: 700;
       color: #000000;
     }
 
     .win95-logon-sheet input[type="text"],
     .win95-logon-sheet input[type="password"] {
-      width: 100%;
-      min-width: 0;
+      width: 100% !important;
+      max-width: 100% !important;
+      min-width: 0 !important;
       min-height: 25px;
       padding: 3px 6px;
       background: #ffffff;
@@ -267,7 +284,6 @@ function injectLogonAndResponsiveStyles() {
       font-family: inherit;
       font-size: 0.78rem;
       font-weight: 700;
-      box-sizing: border-box;
     }
 
     .win95-logon-sheet input[type="text"]:focus,
@@ -306,40 +322,44 @@ function injectLogonAndResponsiveStyles() {
 
     .win95-profile-fieldset,
     #win95-pane-signin fieldset {
-      margin: 10px 0 10px 0;
-      padding: 9px 11px;
+      margin: 8px 0;
+      padding: 8px 10px;
       background: #c0c0c0;
       border-top: 2px solid #808080;
       border-left: 2px solid #808080;
       border-right: 2px solid #ffffff;
       border-bottom: 2px solid #ffffff;
       box-shadow: inset 1px 1px 0 #dfdfdf;
-      font-size: 0.76rem;
-      box-sizing: border-box;
+      font-size: 0.75rem;
+      width: 100%;
+      max-width: 100%;
     }
 
     .win95-profile-fieldset legend,
     #win95-pane-signin fieldset legend {
       padding: 0 5px;
       font-weight: 700;
-      font-size: 0.75rem;
+      font-size: 0.74rem;
       white-space: nowrap;
     }
 
     .w95-profile-card-clean {
-      display: grid;
-      grid-template-columns: 44px minmax(0, 1fr);
-      align-items: center;
+      display: flex;
+      align-items: flex-start;
       gap: 10px;
+      width: 100%;
+      min-width: 0;
     }
 
     .w95-profile-meta-clean {
       display: flex;
       flex-direction: column;
       gap: 3px;
+      flex: 1 1 0%;
       min-width: 0;
       line-height: 1.35;
       font-weight: 700;
+      word-break: break-word;
     }
 
     #login-cloud-status,
@@ -390,7 +410,7 @@ function injectLogonAndResponsiveStyles() {
       justify-content: flex-end;
       gap: 6px;
       flex-wrap: wrap;
-      margin-top: 12px;
+      margin-top: 10px;
     }
 
     .win95-logon-btn {
@@ -425,6 +445,10 @@ function injectLogonAndResponsiveStyles() {
         grid-template-columns: 1fr;
         gap: 4px;
       }
+      #login-user-search-row {
+        grid-column: 1;
+        margin-top: 0;
+      }
       .win95-avatar-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
@@ -439,13 +463,12 @@ function injectLogonAndResponsiveStyles() {
 
     @media (min-width: 1600px) {
       .win95-logon-window {
-        max-width: 600px;
+        max-width: 580px;
       }
     }
   `;
   document.head.appendChild(style);
 }
-
 function reconcileLogonScreenLayout() {
   injectLogonAndResponsiveStyles();
 
@@ -460,13 +483,17 @@ function reconcileLogonScreenLayout() {
   }
   if (ledEl) ledEl.style.display = 'none';
 
+  // 검색 박스를 이용자명 행 바로 다음(그리드 2열 위치)에 두어 창 밖으로 넘치지 않게 정렬
   const searchRow = document.getElementById('login-user-search-row');
   const accountSelect = document.getElementById('login-account-select');
-  const rightCol = accountSelect?.closest('.win95-logon-field-wrap')?.parentElement || accountSelect?.parentElement;
-  if (searchRow && rightCol && searchRow.parentElement !== rightCol) {
-    rightCol.appendChild(searchRow);
+  const accountRow = accountSelect?.closest('.win95-logon-row') || accountSelect?.closest('div');
+  if (searchRow && accountRow && accountRow.parentElement) {
+    if (searchRow.parentElement !== accountRow.parentElement || searchRow.previousElementSibling !== accountRow) {
+      accountRow.parentElement.insertBefore(searchRow, accountRow.nextSibling);
+    }
   }
 
+  // 이용자 신상 명세(USER PROFILE) 정렬
   const avatarBox = document.getElementById('login-profile-avatar');
   const nameBox = document.getElementById('login-profile-name');
   const hintBox = document.getElementById('login-account-hint');
