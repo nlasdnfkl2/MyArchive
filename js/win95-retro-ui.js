@@ -18,6 +18,20 @@
     }
   }
 
+  function styleBiosSelect(selectEl) {
+    if (!selectEl || selectEl.dataset.biosStyled === 'true') return;
+    selectEl.dataset.biosStyled = 'true';
+    selectEl.style.display = 'inline-block';
+    selectEl.style.backgroundColor = '#040826';
+    selectEl.style.color = '#00ff88';
+    selectEl.style.border = '1px solid #55aaff';
+    selectEl.style.padding = '3px 8px';
+    selectEl.style.fontFamily = "'Galmuri11', 'DungGeunMo', monospace";
+    selectEl.style.fontSize = '0.82rem';
+    selectEl.style.fontWeight = '700';
+    selectEl.style.cursor = 'pointer';
+  }
+
   // 1. HTMLSelectElement.prototype.value / selectedIndex 변경 자동 동기화 훅
   function installSelectHooks() {
     const valDesc = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value');
@@ -116,7 +130,6 @@
     document.body.appendChild(popup);
     activePopupEl = popup;
 
-    // 위치 계산 (화면 하단 공간 부족 시 위로 펼침)
     const rect = triggerBtn.getBoundingClientRect();
     const popRect = popup.getBoundingClientRect();
     const spaceBelow = window.innerHeight - rect.bottom - 6;
@@ -153,8 +166,15 @@
     if (!selectEl || selectEl.dataset.w95Enhanced === 'true') return;
     if (selectEl.multiple || Number(selectEl.size) > 1) return;
 
+    // BIOS 초기 설정 화면 내부의 <select>는 커스텀 Win95 콤보박스로 덮지 않음
+    if (selectEl.closest('#bios-text-setup-overlay')) {
+      styleBiosSelect(selectEl);
+      return;
+    }
+
     selectEl.dataset.w95Enhanced = 'true';
     selectEl.classList.add('w95-native-select-hidden');
+    selectEl.style.display = 'none';
 
     const wrapper = document.createElement('div');
     wrapper.className = 'w95-combo';
@@ -376,7 +396,6 @@
       ]
     });
 
-  // 전역 클릭 / 창 크기 변경 시 드롭다운 닫기
   document.addEventListener('mousedown', e => {
     if (activePopupEl && !activePopupEl.contains(e.target) && (!activeTriggerEl || !activeTriggerEl.contains(e.target))) {
       closeComboPopup();
@@ -384,7 +403,6 @@
   });
   window.addEventListener('resize', closeComboPopup);
 
-  // 초기화 및 동적 DOM 감시
   installSelectHooks();
 
   const init = () => {
