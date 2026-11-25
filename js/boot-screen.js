@@ -1,14 +1,15 @@
 // ============================================================
-// MY-ARCHIVE 95 OS — Context-Aware BIOS POST & Windows 95 Logon
-// (Smart Telemetry Boot Log, Self-Contained Helpers & Logon)
+// MY-ARCHIVE 95 OS — BIOS POST & Authentic Windows 95 Logon
+// (Self-Contained Safe Helpers, Full-Viewport Logon & Signup)
 // ============================================================
 
 window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-window.__MOD_VERSIONS.bootScreen = 'v2026.11.25-01';
+window.__MOD_VERSIONS.bootScreen = 'v2026.11.22-v8';
 
 const SESSION_USER_KEY = 'myarchive95_current_user_v2';
 const USERS_CACHE_KEY = 'myarchive95_users_cache_v2';
 
+// 외부 config.js 의존성 오류 방지용 안전 유틸리티
 function safeEsc(str) {
   if (typeof window.esc === 'function') return window.esc(str);
   return String(str ?? '')
@@ -54,7 +55,7 @@ function safeBootTone(type) {
   }
 }
 
-// 1995년 16색 도트 픽셀 SVG 아바타 라이브러리
+// 1995년 16색 도트 픽셀 SVG 아바타 라이브러리 (이모지 미사용)
 const PIXEL_AVATARS = {
   frog: `
     <svg class="pixel-avatar-svg" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true">
@@ -515,38 +516,6 @@ function handleLoginAccountSelectChange() {
 }
 
 // ============================================================
-// 컨텍스트 기반 스마트 부팅 로그 생성기 (시간대·보관 수·재방문 연동)
-// ============================================================
-function buildSmartBiosPostSteps() {
-  const hour = new Date().getHours();
-  const timeBanner = hour < 6
-    ? 'LATE-NIGHT DEEP ARCHIVE MODE'
-    : hour < 12
-      ? 'MORNING CATALOGING SESSION'
-      : hour < 19
-        ? 'DAYTIME WORKSTATION SESSION'
-        : 'EVENING LOUNGE & JUKEBOX MODE';
-
-  const cachedArchive = safeLoadCache(
-    typeof STORAGE_KEYS !== 'undefined' ? STORAGE_KEYS.ARCHIVE : 'my_archive_95_items_cache_v1',
-    []
-  );
-  const itemCount = Array.isArray(cachedArchive) ? cachedArchive.length : 0;
-  const lastUser = safeLoadCache(SESSION_USER_KEY, null);
-  const unlocks = typeof window.getOsUnlocks === 'function' ? window.getOsUnlocks() : { themes: [], tracks: [] };
-  const unlockCount = (unlocks.themes?.length || 0) + (unlocks.tracks?.length || 0);
-
-  return [
-    { delay: 180, text: `System Clock & Profile  ... ${timeBanner} [OK]` },
-    { delay: 420, text: `IDE Primary Master      ... MY-ARCHIVE-HDD (${itemCount} RECORDS CACHED) [OK]` },
-    { delay: 680, text: `IDE Primary Slave       ... JUKEBOX-CDROM 4X + AMBIENT DSP [OK]` },
-    { delay: 940, text: lastUser ? `Session Telemetry       ... Returning User (@${lastUser.username}) Detected [OK]` : 'Initializing User Registry ... Local & Network Accounts [OK]' },
-    { delay: 1220, text: `Verifying DMI & Unlocks ... ${unlockCount} Hidden Extensions Active [OK]` },
-    { delay: 1520, text: 'Starting MY-ARCHIVE 95...' }
-  ];
-}
-
-// ============================================================
 // 부팅 단계 제어 (BIOS -> SPLASH -> WIN95 LOGON -> DESKTOP)
 // ============================================================
 function setBootStage(stageName) {
@@ -637,6 +606,7 @@ function showLoginError(msg) {
     activePane.insertBefore(errBox, activePane.firstChild);
   }
 
+  // 텍스트와 아이콘을 먼저 채운 뒤 화면에 표시
   errBox.innerHTML = `
     <svg class="pixel-svg-14" style="flex-shrink:0;width:14px;height:14px;" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true">
       <path fill="#000000" d="M7 1h2v2h1v2h1v2h1v2h1v2h1v3H2v-3h1V9h1V7h1V5h1V3h1V1z"/>
@@ -681,7 +651,14 @@ function startBiosBootSequence() {
     if (ramEl) ramEl.textContent = String(ramVal);
   }, 50);
 
-  const postSteps = buildSmartBiosPostSteps();
+  const postSteps = [
+    { delay: 200, text: 'Detecting IDE Primary Master   ... MY-ARCHIVE-HDD [OK]' },
+    { delay: 440, text: 'Detecting IDE Primary Slave    ... JUKEBOX-CDROM 4X [OK]' },
+    { delay: 700, text: 'Initializing User Registry     ... Local & Network Accounts [OK]' },
+    { delay: 980, text: 'Connecting Archive Host        ... Network Drive Mounted [OK]' },
+    { delay: 1280, text: 'Verifying DMI Pool Data ........ Update Success' },
+    { delay: 1560, text: 'Starting MY-ARCHIVE 95...' }
+  ];
 
   postSteps.forEach(step => {
     const tid = setTimeout(() => {
@@ -695,8 +672,8 @@ function startBiosBootSequence() {
       }
       logEl.appendChild(line);
 
-      if (syncBadge && step.text.includes('MY-ARCHIVE-HDD')) {
-        syncBadge.textContent = 'ARCHIVE HOST: READY';
+      if (syncBadge && step.text.includes('Archive Host')) {
+        syncBadge.textContent = 'ARCHIVE HOST: CONNECTED';
         syncBadge.style.color = '#55ff55';
       }
     }, step.delay);
@@ -727,9 +704,9 @@ function finishDesktopLogin(userObj) {
     if (normRole === 'public') {
       statusLeft.textContent = '[GUEST] 공용 단말기 접속 중 — 광장 게시판 및 공용 자료 열람 활성화';
     } else if (isAdmin) {
-      statusLeft.textContent = `[SYSOP] 관리자(${userObj.username}) 접속 완료 — [Ctrl+K] 통합 검색 지원`;
+      statusLeft.textContent = `[SYSOP] 관리자(${userObj.username}) 접속 완료 — 개인 보관함 및 광장 게시판 전체 관리 권한`;
     } else {
-      statusLeft.textContent = `[LOGIN] ${userObj.username}님 환영합니다 — [Ctrl+K] 통합 검색 지원`;
+      statusLeft.textContent = `[LOGIN] ${userObj.username}님 환영합니다 — 개인 감상 보관함 및 광장 게시판 준비 완료`;
     }
   }
 
@@ -737,9 +714,6 @@ function finishDesktopLogin(userObj) {
 
   if (typeof window.refreshAllViews === 'function') {
     window.refreshAllViews();
-  }
-  if (typeof window.positionInitialWindows === 'function') {
-    window.positionInitialWindows();
   }
 
   const overlay = document.getElementById('os-boot-overlay');
@@ -1008,6 +982,7 @@ function bindBootScreenEvents() {
     populateLoginAccountSelect();
   });
 
+  // 기존 계정 로그인 (Form submit & 버튼 직접 클릭 겸용)
   document.getElementById('win95-login-form')?.addEventListener('submit', e => {
     e.preventDefault();
     submitUserLogin();
@@ -1019,11 +994,13 @@ function bindBootScreenEvents() {
     }
   });
 
+  // 공용 단말기 접속
   document.getElementById('btn-win95-public-enter')?.addEventListener('click', () => {
     const pubUser = (window.registeredOsUsers || []).find(u => u.username === '공용') || DEFAULT_FALLBACK_USERS[0];
     finishDesktopLogin(pubUser);
   });
 
+  // 신규 이용자 계정 생성 (Form submit & 버튼 직접 클릭 겸용)
   document.getElementById('win95-signup-form')?.addEventListener('submit', e => {
     e.preventDefault();
     submitNewUserSignup();
@@ -1035,11 +1012,13 @@ function bindBootScreenEvents() {
     }
   });
 
+  // [?] BIOS 다시 보기
   document.getElementById('btn-reboot-bios')?.addEventListener('click', () => {
     playBiosPostBeep();
     startBiosBootSequence();
   });
 
+  // 시작 메뉴 로그오프 / 계정 전환
   document.getElementById('sm-logoff')?.addEventListener('click', () => {
     const sm = document.getElementById('start-menu');
     if (sm) sm.classList.remove('open');

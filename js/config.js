@@ -1,33 +1,12 @@
 // ============================================================
-// MY-ARCHIVE 95 OS — Global Config, Layout Safe-Area, Storage Cache & Core Utils
+// MY-ARCHIVE 95 OS — Global Config, Storage Cache & Core Utils
 // ============================================================
 
-const APP_BUILD_VERSION = 'v2026.11.25-01';
+const APP_BUILD_VERSION = 'v2026.11.22-06';
 
 // Google Apps Script 웹 앱 배포 URL (/exec)
 const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwH-hzWi2Z3_oTFt0PWBhzYMP10VEx4e-32E9EW7d5SMF2k_bwxQL0_3ONaQ8Ze3sdKUQ/exec';
 window.GAS_WEB_APP_URL = GAS_WEB_APP_URL;
-
-// ============================================================
-// 0-A. 바탕화면 안전 영역(Safe Area) 및 창 기본 레이아웃 상수
-// ============================================================
-const DESKTOP_LAYOUT_CONFIG = {
-  TOP_MENUBAR_HEIGHT: 30,
-  TASKBAR_HEIGHT: 40,
-  ICON_COL_WIDTH: 116, // 우측/좌측 바탕화면 아이콘 열이 차지하는 안전 보호 폭(px)
-  EDGE_MARGIN: 16,
-  ICON_SIDE: 'auto', // 'auto' | 'left' | 'right' (DOM 위치 자동 감지 후 보호)
-  WINDOW_DEFAULTS: {
-    'win-stats': { dock: 'right', top: 44, width: 320 },
-    'win-main': { left: 132, top: 42 },
-    'win-jukebox': { left: 170, top: 64 },
-    'win-visualizer': { left: 150, top: 54 },
-    'win-community': { left: 140, top: 48 },
-    'win-browser': { left: 136, top: 44 },
-    'win-gamepack': { left: 190, top: 68 }
-  }
-};
-window.DESKTOP_LAYOUT_CONFIG = DESKTOP_LAYOUT_CONFIG;
 
 // 외부 폴더 의존성 없는 인라인 SVG 기본 표지 이미지
 const FALLBACK_COVER = 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
@@ -52,10 +31,9 @@ var categoryChart = null;
 var monthlyChart = null;
 var topZIndex = 120;
 var detailWindowCount = 0;
-window.nowPlayingTrack = null;
 
 // ============================================================
-// 0-B. Windows 95 + Neo-Brutalism 16x16 도트 SVG 아이콘 맵
+// 0. Windows 95 + Neo-Brutalism 16x16 도트 SVG 아이콘 맵
 // ============================================================
 const PIXEL_ICONS = {
   ALL: `<svg class="px-icon" width="14" height="14" viewBox="0 0 16 16" shape-rendering="crispEdges" style="vertical-align:-2px;"><rect x="1" y="3" width="6" height="2" fill="#ffd83b" stroke="#111"/><rect x="1" y="5" width="14" height="9" fill="#ffd83b" stroke="#111"/></svg>`,
@@ -81,13 +59,11 @@ const PIXEL_ICONS = {
   MAILBOX: `<svg class="px-icon" width="14" height="14" viewBox="0 0 16 16" shape-rendering="crispEdges" style="vertical-align:-2px;"><rect x="1" y="3" width="14" height="10" fill="#ffd83b" stroke="#111"/><polyline points="1,3 8,9 15,3" fill="none" stroke="#111" stroke-width="1.5"/></svg>`,
   LINK: `<svg class="px-icon" width="14" height="14" viewBox="0 0 16 16" shape-rendering="crispEdges" style="vertical-align:-2px;"><rect x="1" y="5" width="6" height="6" fill="none" stroke="#111" stroke-width="2"/><rect x="9" y="5" width="6" height="6" fill="none" stroke="#111" stroke-width="2"/><rect x="5" y="7" width="6" height="2" fill="#000080"/></svg>`,
   USER_BADGE: `<svg class="px-icon" width="16" height="16" viewBox="0 0 16 16" shape-rendering="crispEdges"><rect x="5" y="2" width="6" height="5" fill="#000080"/><rect x="2" y="9" width="12" height="6" fill="#000080"/></svg>`,
-  PUB_BADGE: `<svg class="px-icon" width="16" height="16" viewBox="0 0 16 16" shape-rendering="crispEdges"><rect x="1" y="3" width="14" height="9" fill="#008080" stroke="#111"/><rect x="5" y="12" width="6" height="2" fill="#111"/></svg>`,
-  PIN: `<svg class="px-icon" width="14" height="14" viewBox="0 0 16 16" shape-rendering="crispEdges" style="vertical-align:-2px;"><rect x="4" y="2" width="8" height="4" fill="#ff4757" stroke="#111"/><rect x="6" y="6" width="4" height="4" fill="#ffd83b" stroke="#111"/><rect x="7" y="10" width="2" height="5" fill="#111"/></svg>`,
-  SEARCH: `<svg class="px-icon" width="14" height="14" viewBox="0 0 16 16" shape-rendering="crispEdges" style="vertical-align:-2px;"><rect x="2" y="2" width="8" height="8" fill="#fff" stroke="#111" stroke-width="2"/><rect x="10" y="10" width="4" height="4" fill="#ffd83b" stroke="#111"/></svg>`
+  PUB_BADGE: `<svg class="px-icon" width="16" height="16" viewBox="0 0 16 16" shape-rendering="crispEdges"><rect x="1" y="3" width="14" height="9" fill="#008080" stroke="#111"/><rect x="5" y="12" width="6" height="2" fill="#111"/></svg>`
 };
 
 // ============================================================
-// 0-C. 계정 권한 판별 유틸리티
+// 0-1. 계정 권한 판별 유틸리티 (boot-screen.js의 getCurrentUser 연동)
 // ============================================================
 function isAdminUser(user) {
   if (!user) return false;
@@ -108,13 +84,18 @@ function canDeleteArchiveItem(item, user = null) {
   const me = user || (typeof getCurrentUser === 'function' ? getCurrentUser() : null);
   if (!me || !me.username) return false;
 
+  // 1. 관리자 계정은 모든 게시물(공용 계정 게시물 포함) 삭제 가능
   if (isAdminUser(me)) return true;
 
+  // 2. 공용 계정으로 접속 중인 상태에서는 어떠한 게시물도 삭제 불가
   const role = String(me.role || '').trim().toLowerCase();
   const myName = String(me.username || '').trim();
   if (role === 'public' || myName === '공용') return false;
+
+  // 3. 공용 계정 게시물은 오직 관리자 계정으로만 삭제 가능
   if (isPublicArchiveItem(item)) return false;
 
+  // 4. 일반 개인 계정은 본인이 작성한 게시물만 삭제 가능
   return String(item.owner || '').trim() === myName;
 }
 
@@ -128,16 +109,14 @@ const STORAGE_KEYS = {
   MAILBOX: 'my_archive_95_mailbox_cache_v1',
   PREFS: 'my_archive_95_prefs_v1',
   BUDGET: 'my_archive_95_budget_v1',
-  DDAYS: 'my_archive_95_ddays_v1',
-  WORKSPACES: 'my_archive_95_workspaces_v1',
-  STICKERS: 'my_archive_95_stickers_v1',
-  UNLOCKS: 'my_archive_95_unlocks_v1'
+  DDAYS: 'my_archive_95_ddays_v1'
 };
 
 function saveLocalCache(key, value) {
   try {
     let payloadToStore = value;
 
+    // 아카이브 저장 시 Base64(data:) 이미지는 별도 LRU 캐시(최대 6개)로 분리해 5MB 한도 초과 방지
     if (key === STORAGE_KEYS.ARCHIVE && Array.isArray(value)) {
       const coverEntries = [];
       payloadToStore = value.map(item => {
@@ -185,7 +164,7 @@ function loadLocalCache(key, fallbackValue = null) {
     }
 
     return parsed.data;
-  } catch {
+  } catch (err) {
     return fallbackValue;
   }
 }
@@ -200,37 +179,6 @@ function getCacheTimestamp(key) {
     return '';
   }
 }
-
-// ============================================================
-// 1-B. 게이미피케이션 & 숨겨진 테마/트랙 해금 엔진
-// ============================================================
-function getOsUnlocks() {
-  return loadLocalCache(STORAGE_KEYS.UNLOCKS, {
-    inspectedIds: [],
-    themes: [],
-    tracks: [],
-    badges: []
-  }) || { inspectedIds: [], themes: [], tracks: [], badges: [] };
-}
-
-function grantOsUnlock(category, id, label) {
-  const state = getOsUnlocks();
-  state[category] = Array.isArray(state[category]) ? state[category] : [];
-  if (state[category].includes(id)) return false;
-  state[category].push(id);
-  saveLocalCache(STORAGE_KEYS.UNLOCKS, state);
-
-  const statusLeft = document.getElementById('status-left');
-  if (statusLeft && label) {
-    statusLeft.textContent = `[UNLOCK] 숨겨진 특전 해금 완료: ${label}`;
-  }
-  playRetroTone('fanfare');
-  window.dispatchEvent(new CustomEvent('os:unlock-granted', { detail: { category, id, label } }));
-  return true;
-}
-
-window.getOsUnlocks = getOsUnlocks;
-window.grantOsUnlock = grantOsUnlock;
 
 // ============================================================
 // 2. 데이터 정규화 & 문자열/초성 유틸리티

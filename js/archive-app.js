@@ -3,30 +3,7 @@
 // ============================================================
 
 window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-window.__MOD_VERSIONS.archiveApp =
-  typeof APP_BUILD_VERSION !== 'undefined' ? APP_BUILD_VERSION : 'v2026.11.25-01';
-
-// 타 모듈 함수 미로드 시 방어용 권한 헬퍼
-function checkCanEditItem(item) {
-  if (typeof canEditArchiveItem === 'function') return canEditArchiveItem(item);
-  if (typeof canDeleteArchiveItem === 'function') return canDeleteArchiveItem(item);
-  const me = typeof getCurrentUser === 'function' ? getCurrentUser() : { username: '문태양', role: 'owner' };
-  if (!me) return false;
-  if (typeof isAdminUser === 'function' && isAdminUser(me)) return true;
-  const owner = String(item?.owner || '문태양').trim();
-  return owner === String(me.username || '').trim();
-}
-
-function checkCanDeleteItem(item) {
-  if (typeof canDeleteArchiveItem === 'function') return canDeleteArchiveItem(item);
-  return checkCanEditItem(item);
-}
-
-function checkIsPublicItem(item) {
-  if (typeof isPublicArchiveItem === 'function') return isPublicArchiveItem(item);
-  const owner = String(item?.owner || '').trim();
-  return owner === '공용' || owner === 'public';
-}
+window.__MOD_VERSIONS.archiveApp = typeof APP_BUILD_VERSION !== 'undefined' ? APP_BUILD_VERSION : 'v2026.11.17-06';
 
 // ============================================================
 // 1. 상단 메뉴바 & 바탕화면·시작 메뉴 이벤트 바인딩
@@ -54,7 +31,7 @@ document.getElementById('mnu-export-csv')?.addEventListener('click', () => {
     showWin95MessageBox('데이터 백업 오류 — MY-ARCHIVE 95', '내보낼 감상 기록 데이터가 없습니다.', 'boom');
     return;
   }
-  const headers = ['ID', '매체', '제목', '제작자', '장르', '평점', '감상일', '한줄평', '원본링크', '작성자', '공개여부'];
+  const headers = ['ID', '매체', '제목', '제작자', '장르', '평점', '감상일', '한줄평', '원본링크'];
   const rows = archiveItems.map(i => [
     i.id,
     i.category,
@@ -64,9 +41,7 @@ document.getElementById('mnu-export-csv')?.addEventListener('click', () => {
     i.rating,
     i.watchDate,
     `"${String(i.review || '').replace(/"/g, '""')}"`,
-    i.sourceUrl || '',
-    `"${String(i.owner || '문태양').replace(/"/g, '""')}"`,
-    String(i.shared || 'Y').toUpperCase()
+    i.sourceUrl || ''
   ]);
   const csv = '\uFEFF' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -143,7 +118,7 @@ function selectCategoryFilter(cat) {
 // 2. 초기 부팅 & Google Sheets + LocalStorage 하이브리드 동기화
 // ============================================================
 document.addEventListener('DOMContentLoaded', () => {
-  if (typeof runBootAnimation === 'function') runBootAnimation();
+  runBootAnimation();
   ensureRegisterWindowExists();
 
   // 캐시 우선 즉시 렌더링 후 백그라운드 시트 동기화
@@ -169,7 +144,7 @@ function updateCacheBadge(isOnline, labelText) {
 async function loadArchiveData(showFeedback = false) {
   setLoadingCursor(true);
   const statusLeft = document.getElementById('status-left');
-  if (statusLeft) statusLeft.textContent = `중앙 데이터 서버 접속 중... (${window.__MOD_VERSIONS.archiveApp})`;
+  if (statusLeft) statusLeft.textContent = `중앙 데이터 서버 접속 중... (${APP_BUILD_VERSION})`;
 
   try {
     const res = await fetch(`${GAS_WEB_APP_URL}?action=list`);
@@ -178,9 +153,7 @@ async function loadArchiveData(showFeedback = false) {
       archiveItems = json.items;
       saveLocalCache(STORAGE_KEYS.ARCHIVE, archiveItems);
       updateCacheBadge(true, 'SHEET + CACHE: SYNCED');
-      if (statusLeft) {
-        statusLeft.textContent = `통신 접속 완료 [${window.__MOD_VERSIONS.archiveApp}] — 각 창의 제목 표시줄을 끌어 위치를 이동할 수 있습니다`;
-      }
+      if (statusLeft) statusLeft.textContent = `통신 접속 완료 [${APP_BUILD_VERSION}] — 각 창의 제목 표시줄을 끌어 위치를 이동할 수 있습니다`;
       if (showFeedback) playRetroTone('open');
     } else {
       throw new Error('Invalid response');
@@ -189,9 +162,7 @@ async function loadArchiveData(showFeedback = false) {
     const fallback = loadLocalCache(STORAGE_KEYS.ARCHIVE, []);
     archiveItems = Array.isArray(fallback) ? fallback : [];
     updateCacheBadge(false, 'OFFLINE CACHE MODE');
-    if (statusLeft) {
-      statusLeft.textContent = `오프라인 디스크 모드 [${window.__MOD_VERSIONS.archiveApp}] — 중앙 서버 회선 대기 중`;
-    }
+    if (statusLeft) statusLeft.textContent = `오프라인 디스크 모드 [${APP_BUILD_VERSION}] — 중앙 서버 회선 대기 중`;
   } finally {
     setLoadingCursor(false);
   }
@@ -225,50 +196,39 @@ function refreshAllViews() {
 // ============================================================
 function getMyVisibleArchiveItems() {
   const me = typeof getCurrentUser === 'function' ? getCurrentUser() : { username: '문태양', role: 'owner' };
-  const adminFlag = typeof isAdminUser === 'function' ? isAdminUser(me) : false;
-  if (!me || me.role === 'public' || adminFlag) return archiveItems;
+  if (!me || me.role === 'public' || isAdminUser(me)) return archiveItems;
   return archiveItems.filter(it => (it.owner || '문태양') === me.username);
 }
 
 function updateKPIs() {
   const myItems = getMyVisibleArchiveItems();
   const total = myItems.length;
-  const kpiTotalEl = document.getElementById('kpi-total');
-  if (kpiTotalEl) kpiTotalEl.textContent = `${total}건`;
-
+  document.getElementById('kpi-total').textContent = `${total}건`;
   if (!total) {
-    if (document.getElementById('kpi-recent-sub')) document.getElementById('kpi-recent-sub').textContent = '첫 감상 자료를 등록해 보십시오';
-    if (document.getElementById('kpi-avg-rating')) document.getElementById('kpi-avg-rating').textContent = '0.0점';
-    if (document.getElementById('kpi-top-cat')) document.getElementById('kpi-top-cat').textContent = '-';
-    if (document.getElementById('kpi-top-cat-sub')) document.getElementById('kpi-top-cat-sub').textContent = '기록 없음';
-    if (document.getElementById('kpi-top-genre')) document.getElementById('kpi-top-genre').textContent = '-';
-    if (document.getElementById('kpi-top-genre-sub')) document.getElementById('kpi-top-genre-sub').textContent = '기록 없음';
+    document.getElementById('kpi-recent-sub').textContent = '첫 감상 자료를 등록해 보십시오';
+    document.getElementById('kpi-avg-rating').textContent = '0.0점';
+    document.getElementById('kpi-top-cat').textContent = '-';
+    document.getElementById('kpi-top-cat-sub').textContent = '기록 없음';
+    document.getElementById('kpi-top-genre').textContent = '-';
+    document.getElementById('kpi-top-genre-sub').textContent = '기록 없음';
     return;
   }
 
-  if (document.getElementById('kpi-recent-sub')) {
-    document.getElementById('kpi-recent-sub').textContent = `최근 수록: 「${myItems[0].title}」`;
-  }
+  document.getElementById('kpi-recent-sub').textContent = `최근 수록: 「${myItems[0].title}」`;
   const avg = myItems.reduce((s, c) => s + (Number(c.rating) || 0), 0) / total;
-  if (document.getElementById('kpi-avg-rating')) {
-    document.getElementById('kpi-avg-rating').textContent = `${avg.toFixed(1)}점`;
-  }
+  document.getElementById('kpi-avg-rating').textContent = `${avg.toFixed(1)}점`;
 
   const catMap = {};
   myItems.forEach(i => { catMap[i.category] = (catMap[i.category] || 0) + 1; });
   const topCat = Object.entries(catMap).sort((a, b) => b[1] - a[1])[0];
-  if (document.getElementById('kpi-top-cat')) document.getElementById('kpi-top-cat').textContent = topCat[0];
-  if (document.getElementById('kpi-top-cat-sub')) {
-    document.getElementById('kpi-top-cat-sub').textContent = `전체 중 ${topCat[1]}건 (${Math.round((topCat[1] / total) * 100)}%)`;
-  }
+  document.getElementById('kpi-top-cat').textContent = topCat[0];
+  document.getElementById('kpi-top-cat-sub').textContent = `전체 중 ${topCat[1]}건 (${Math.round((topCat[1] / total) * 100)}%)`;
 
   const gMap = {};
   myItems.forEach(i => { const g = (i.genre || '일반').trim(); gMap[g] = (gMap[g] || 0) + 1; });
   const topG = Object.entries(gMap).sort((a, b) => b[1] - a[1])[0];
-  if (document.getElementById('kpi-top-genre')) document.getElementById('kpi-top-genre').textContent = topG[0];
-  if (document.getElementById('kpi-top-genre-sub')) {
-    document.getElementById('kpi-top-genre-sub').textContent = `누적 ${topG[1]}건 수록`;
-  }
+  document.getElementById('kpi-top-genre').textContent = topG[0];
+  document.getElementById('kpi-top-genre-sub').textContent = `누적 ${topG[1]}건 수록`;
 }
 
 function renderCharts() {
@@ -332,9 +292,7 @@ function renderCharts() {
   }
 }
 
-document.querySelectorAll('#cat-filter-group .pill-btn').forEach(btn => {
-  btn.addEventListener('click', () => selectCategoryFilter(btn.dataset.cat));
-});
+document.querySelectorAll('#cat-filter-group .pill-btn').forEach(btn => btn.addEventListener('click', () => selectCategoryFilter(btn.dataset.cat)));
 document.getElementById('filter-rating')?.addEventListener('change', renderArchiveGrid);
 document.getElementById('filter-keyword')?.addEventListener('input', renderArchiveGrid);
 
@@ -363,10 +321,9 @@ function renderArchiveGrid() {
   filtered.forEach(item => {
     const catCls = item.category === '음악' ? 'music' : item.category === '영상' ? 'video' : item.category === '기타' ? 'etc' : '';
     const catIcon = item.category === '도서' ? PIXEL_ICONS.BOOK : item.category === '음악' ? PIXEL_ICONS.MUSIC : item.category === '영상' ? PIXEL_ICONS.MOVIE : PIXEL_ICONS.ETC;
-    const ratingNum = Math.max(1, Math.min(5, Number(item.rating) || 5));
-    const stars = '★'.repeat(ratingNum) + '☆'.repeat(5 - ratingNum);
+    const stars = '★'.repeat(item.rating) + '☆'.repeat(5 - item.rating);
     const coverSrc = item.coverUrl ? esc(item.coverUrl) : FALLBACK_COVER;
-    const ownerLabel = checkIsPublicItem(item) ? '공용' : esc(item.owner || '문태양');
+    const ownerLabel = isPublicArchiveItem(item) ? '공용' : esc(item.owner || '문태양');
 
     const card = document.createElement('article');
     card.className = 'item-card';
@@ -465,17 +422,14 @@ async function spawnDetailWindow(item) {
       : `${item.title} ${item.creator}`;
   const ytUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(ytQuery)}`;
 
-  const editable = checkCanEditItem(item);
-  const deletable = checkCanDeleteItem(item);
-  const isPublicPost = checkIsPublicItem(item);
+  const deletable = canDeleteArchiveItem(item);
+  const isPublicPost = isPublicArchiveItem(item);
   const authorBadgeText = isPublicPost
-    ? '등록 계정: 공용 계정 (관리자 전용 편집·삭제)'
+    ? '등록 계정: 공용 계정 (관리자 전용 삭제)'
     : `등록 계정: @${item.owner || '문태양'}`;
-  const permDenyMsg = isPublicPost
-    ? '공용 계정 게시물은 관리자 계정으로만 편집·삭제할 수 있습니다.'
-    : '자료 편집 및 삭제는 작성자 본인 또는 관리자 계정으로만 가능합니다.';
-
-  const ratingNum = Math.max(1, Math.min(5, Number(item.rating) || 5));
+  const deleteDenyMsg = isPublicPost
+    ? '공용 계정 게시물은 관리자 계정으로만 삭제할 수 있습니다.'
+    : '감상평 삭제는 작성자 본인 또는 관리자 계정으로만 가능합니다.';
 
   const winEl = document.createElement('div');
   winEl.className = 'floating-win open focused';
@@ -502,24 +456,21 @@ async function spawnDetailWindow(item) {
           <div>
             <div style="display:flex; gap:6px; margin-bottom:8px; flex-wrap:wrap;">
               <span style="padding:2px 8px; border:2px solid #111; background:var(--brutal-yellow); font-size:0.75rem; font-weight:900;">${esc(item.category)}</span>
-              <span style="padding:2px 8px; border:2px solid #111; background:#fff; font-size:0.75rem; font-weight:900;">${'★'.repeat(ratingNum)}${'☆'.repeat(5 - ratingNum)}</span>
+              <span style="padding:2px 8px; border:2px solid #111; background:#fff; font-size:0.75rem; font-weight:900;">${'★'.repeat(item.rating)}${'☆'.repeat(5 - item.rating)}</span>
               <span style="padding:2px 8px; border:2px solid #111; background:var(--win-gray); font-size:0.75rem; font-weight:800;">${esc(item.watchDate)}</span>
               <span style="padding:2px 8px; border:2px solid #111; background:${isPublicPost ? '#d0f0fd' : '#fffdf2'}; font-size:0.74rem; font-weight:800;">${esc(authorBadgeText)}</span>
             </div>
             <h2 style="font-size:1.25rem; font-weight:900; margin-bottom:4px;">${esc(item.title)}</h2>
             <div style="font-size:0.86rem; font-weight:700; color:#4a4a4a; margin-bottom:10px;">${esc(item.creator)} · ${esc(item.genre || '일반')}</div>
-            <p style="background:var(--brutal-paper); border:2px solid #111; padding:10px; font-size:0.86rem; font-weight:600; white-space:pre-wrap; word-break:break-word;">${esc(item.review)}</p>
+            <p style="background:var(--brutal-paper); border:2px solid #111; padding:10px; font-size:0.86rem; font-weight:600;">${esc(item.review)}</p>
             <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:12px; align-items:center;">
               <a class="btn95 pink sm" href="${ytUrl}" target="_blank" rel="noopener noreferrer">[PLAY] 영상관(YouTube) 연결</a>
               ${item.sourceUrl ? `<a class="btn95 sky sm" href="${esc(item.sourceUrl)}" target="_blank" rel="noopener noreferrer">원본 자료실 &gt;&gt;</a>` : ''}
-              ${editable
-                ? `<button type="button" class="btn95 sm btn-toggle-share" style="background:${String(item.shared || 'Y').toUpperCase() !== 'N' ? 'var(--brutal-green)' : '#e0e0e0'};">${String(item.shared || 'Y').toUpperCase() !== 'N' ? `${PIXEL_ICONS.SPEAKER} 광장 게시판 공개중` : `${PIXEL_ICONS.LOCK} 개인 보관함 (공개 전환)`}</button>
-                   <button type="button" class="btn95 yellow sm btn-toggle-edit">[EDIT] 자료 편집</button>`
-                : `<button type="button" class="btn95 sm" disabled style="opacity:0.55; cursor:not-allowed;" title="${esc(permDenyMsg)}">${PIXEL_ICONS.LOCK} 편집 불가</button>`
-              }
+              <button type="button" class="btn95 sm btn-toggle-share" style="background:${String(item.shared || 'Y').toUpperCase() !== 'N' ? 'var(--brutal-green)' : '#e0e0e0'};">${String(item.shared || 'Y').toUpperCase() !== 'N' ? `${PIXEL_ICONS.SPEAKER} 광장 게시판 공개중` : `${PIXEL_ICONS.LOCK} 개인 보관함 (공개 전환)`}</button>
+              <button type="button" class="btn95 yellow sm btn-toggle-edit">[EDIT] 자료 편집</button>
               ${deletable
                 ? `<button type="button" class="btn95 sm btn-delete-item" style="background:#111; color:#fff;">[DEL] 자료 삭제</button>`
-                : `<button type="button" class="btn95 sm" disabled style="opacity:0.55; cursor:not-allowed;" title="${esc(permDenyMsg)}">${PIXEL_ICONS.LOCK} 삭제 불가</button>`
+                : `<button type="button" class="btn95 sm" disabled style="opacity:0.55; cursor:not-allowed;" title="${esc(deleteDenyMsg)}">${PIXEL_ICONS.LOCK} 삭제 불가</button>`
               }
             </div>
             ${deletable ? `
@@ -568,7 +519,7 @@ async function spawnDetailWindow(item) {
             <div class="win95-radio-group">
               ${[1, 2, 3, 4, 5].map(r => `
                 <label class="win95-radio">
-                  <input type="radio" name="editRating" value="${r}" ${ratingNum === r ? 'checked' : ''} />
+                  <input type="radio" name="editRating" value="${r}" ${Number(item.rating) === r ? 'checked' : ''} />
                   <span>${r}점</span>
                 </label>
               `).join('')}
@@ -577,16 +528,10 @@ async function spawnDetailWindow(item) {
         </div>
         <div style="margin-bottom:10px;"><label style="display:block; font-size:0.78rem; font-weight:800; margin-bottom:3px;">표지 이미지 URL</label><input type="text" name="coverUrl" value="${esc(item.coverUrl)}" style="width:100%;" /></div>
         <div style="margin-bottom:10px;"><label style="display:block; font-size:0.78rem; font-weight:800; margin-bottom:3px;">원본 자료 URL</label><input type="text" name="sourceUrl" value="${esc(item.sourceUrl)}" style="width:100%;" /></div>
-        <div style="margin-bottom:10px;"><label style="display:block; font-size:0.78rem; font-weight:800; margin-bottom:3px;">감상 비평문 *</label><textarea name="review" rows="3" required style="width:100%;">${esc(item.review)}</textarea></div>
-        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
-          <label style="display:flex; align-items:center; gap:6px; font-size:0.78rem; font-weight:900; cursor:pointer; background:#fffdf2; border:1.5px solid #111; padding:4px 8px;">
-            <input type="checkbox" name="shared" ${String(item.shared || 'Y').toUpperCase() !== 'N' ? 'checked' : ''} />
-            <span>${PIXEL_ICONS.SPEAKER} 광장 게시판 공개</span>
-          </label>
-          <div style="display:flex; gap:8px;">
-            <button type="button" class="btn95 sm btn-cancel-edit">편집 취소</button>
-            <button type="submit" class="btn95 yellow sm btn-save-edit">편집 내용 저장(S)</button>
-          </div>
+        <div style="margin-bottom:12px;"><label style="display:block; font-size:0.78rem; font-weight:800; margin-bottom:3px;">감상 비평문 *</label><textarea name="review" rows="3" required style="width:100%;">${esc(item.review)}</textarea></div>
+        <div style="display:flex; justify-content:flex-end; gap:8px;">
+          <button type="button" class="btn95 sm btn-cancel-edit">편집 취소</button>
+          <button type="submit" class="btn95 yellow sm btn-save-edit">편집 내용 저장(S)</button>
         </div>
       </form>
     </div>
@@ -653,7 +598,7 @@ async function spawnDetailWindow(item) {
   } catch { statusEl.textContent = '연관 자료 조회 중 통신 오류가 발생했습니다.'; }
 }
 
-// 상세 창 수정/삭제/공개전환 버튼 전역 위임 처리 (작성자·관리자·공용 권한 검증 포함)
+// 상세 창 수정/삭제 버튼 전역 위임 처리 (작성자·관리자·공용 권한 검증 포함)
 document.addEventListener('click', async e => {
   const winEl = e.target.closest('.floating-win[data-item-key]');
   if (!winEl) return;
@@ -668,10 +613,6 @@ document.addEventListener('click', async e => {
     e.preventDefault();
     e.stopPropagation();
     if (!item || !item.id) return;
-    if (!checkCanEditItem(item)) {
-      showWin95MessageBox('공개 전환 권한 없음 — MY-ARCHIVE 95', '작성자 본인 또는 관리자 계정만 공개 상태를 변경할 수 있습니다.', 'boom');
-      return;
-    }
     const shareBtn = e.target.closest('.btn-toggle-share');
     shareBtn.disabled = true;
     try {
@@ -683,17 +624,13 @@ document.addEventListener('click', async e => {
       const json = await res.json();
       if (json.status === 'success' && json.item) {
         playRetroTone('open');
-        const idx = archiveItems.findIndex(x => String(x.id) === String(item.id));
+        const idx = archiveItems.findIndex(x => x.id === item.id);
         if (idx !== -1) archiveItems[idx] = json.item;
         saveLocalCache(STORAGE_KEYS.ARCHIVE, archiveItems);
         refreshAllViews();
         closeWindow(winEl.id);
         spawnDetailWindow(json.item);
-      } else {
-        showWin95MessageBox('상태 변경 오류 — MY-ARCHIVE 95', json.message || '공개 상태 변경에 실패했습니다.', 'boom');
       }
-    } catch {
-      showWin95MessageBox('통신 오류 — MY-ARCHIVE 95', '서버 통신 중 회선 오류가 발생했습니다.', 'boom');
     } finally {
       shareBtn.disabled = false;
     }
@@ -703,16 +640,6 @@ document.addEventListener('click', async e => {
   if (e.target.closest('.btn-toggle-edit')) {
     e.preventDefault();
     e.stopPropagation();
-    if (!checkCanEditItem(item)) {
-      showWin95MessageBox(
-        '편집 권한 없음 — MY-ARCHIVE 95',
-        checkIsPublicItem(item)
-          ? '공용 계정 게시물은 관리자 계정으로만 편집할 수 있습니다.'
-          : '자료 편집은 작성자 본인 또는 관리자 계정으로만 가능합니다.',
-        'boom'
-      );
-      return;
-    }
     playRetroTone('click');
     if (viewBox) viewBox.style.display = 'none';
     if (editForm) editForm.style.display = 'block';
@@ -731,10 +658,10 @@ document.addEventListener('click', async e => {
   if (e.target.closest('.btn-delete-item')) {
     e.preventDefault();
     e.stopPropagation();
-    if (!checkCanDeleteItem(item)) {
+    if (!canDeleteArchiveItem(item)) {
       showWin95MessageBox(
         '삭제 권한 없음 — MY-ARCHIVE 95',
-        checkIsPublicItem(item)
+        isPublicArchiveItem(item)
           ? '공용 계정 게시물은 관리자 계정으로만 삭제할 수 있습니다.'
           : '감상평 삭제는 작성자 본인 또는 관리자 계정으로만 가능합니다.',
         'boom'
@@ -761,10 +688,10 @@ document.addEventListener('click', async e => {
       showWin95MessageBox('삭제 불가 — MY-ARCHIVE 95', '본 자료에는 고유 식별번호(ID)가 없어 삭제할 수 없습니다.', 'boom');
       return;
     }
-    if (!checkCanDeleteItem(item)) {
+    if (!canDeleteArchiveItem(item)) {
       showWin95MessageBox(
         '삭제 권한 없음 — MY-ARCHIVE 95',
-        checkIsPublicItem(item)
+        isPublicArchiveItem(item)
           ? '공용 계정 게시물은 관리자 계정으로만 삭제할 수 있습니다.'
           : '감상평 삭제는 작성자 본인 또는 관리자 계정으로만 가능합니다.',
         'boom'
@@ -791,7 +718,7 @@ document.addEventListener('click', async e => {
       const json = await res.json();
       if (json.status === 'success') {
         playRetroTone('boom');
-        archiveItems = archiveItems.filter(x => String(x.id) !== String(item.id));
+        archiveItems = archiveItems.filter(x => x.id !== item.id);
         saveLocalCache(STORAGE_KEYS.ARCHIVE, archiveItems);
         delete detailItemRegistry[itemKey];
         refreshAllViews();
@@ -809,131 +736,13 @@ document.addEventListener('click', async e => {
   }
 });
 
-// 상세 탐색기 창 인라인 편집 폼(.det-edit-form) 저장 핸들러
-document.addEventListener('submit', async e => {
-  const editForm = e.target.closest('.det-edit-form');
-  if (!editForm) return;
-
-  e.preventDefault();
-  e.stopPropagation();
-
-  const winEl = editForm.closest('.floating-win[data-item-key]');
-  if (!winEl) return;
-
-  const itemKey = winEl.dataset.itemKey;
-  const item = detailItemRegistry[itemKey];
-  if (!item || !item.id) {
-    showWin95MessageBox('편집 불가 — MY-ARCHIVE 95', '고유 식별번호(ID)가 없는 자료는 수정할 수 없습니다.', 'boom');
-    return;
-  }
-
-  if (!checkCanEditItem(item)) {
-    showWin95MessageBox('편집 권한 없음 — MY-ARCHIVE 95', '작성자 본인 또는 관리자 계정만 수정할 수 있습니다.', 'boom');
-    return;
-  }
-
-  const categoryVal = (editForm.category?.value || item.category || '도서').trim();
-  const titleVal = (editForm.title?.value || '').trim();
-  const creatorVal = (editForm.creator?.value || '').trim();
-  const genreVal = (editForm.genre?.value || '').trim() || '일반';
-  const coverUrlVal = (editForm.coverUrl?.value || '').trim();
-  const sourceUrlVal = (editForm.sourceUrl?.value || '').trim();
-  const reviewVal = (editForm.review?.value || '').trim();
-  const checkedRating = editForm.querySelector('input[name="editRating"]:checked');
-  const ratingVal = checkedRating ? Number(checkedRating.value) : (Number(item.rating) || 5);
-  const sharedVal = editForm.shared ? (editForm.shared.checked ? 'Y' : 'N') : (item.shared || 'Y');
-
-  const watchDateVal =
-    editForm.dateY && editForm.dateM && editForm.dateD && typeof getWin95DateValue === 'function'
-      ? getWin95DateValue(editForm.dateY, editForm.dateM, editForm.dateD)
-      : item.watchDate || normalizeDateString('');
-
-  if (!titleVal || !creatorVal || !reviewVal) {
-    showWin95MessageBox('입력 오류 — MY-ARCHIVE 95', '작품 제목, 저작·제작자, 감상 비평문은 필수 항목입니다.', 'boom');
-    return;
-  }
-
-  const isLocalDup = archiveItems.some(other => {
-    if (String(other.id).trim() === String(item.id).trim()) return false;
-    return other.category === categoryVal && String(other.title || '').trim().toLowerCase() === titleVal.toLowerCase();
-  });
-
-  if (isLocalDup) {
-    showWin95MessageBox(
-      '중복 수정 오류 — MY-ARCHIVE 95',
-      `이미 ${categoryVal} 목록에 동일한 이름(「${titleVal}」)의 다른 기록이 존재합니다.`,
-      'boom'
-    );
-    return;
-  }
-
-  const me = typeof getCurrentUser === 'function' ? getCurrentUser() : { username: '', role: '' };
-  const saveBtn = editForm.querySelector('.btn-save-edit');
-  if (saveBtn) {
-    saveBtn.disabled = true;
-    saveBtn.textContent = '저장 중...';
-  }
-  setLoadingCursor(true);
-
-  try {
-    const payload = {
-      action: 'update',
-      id: item.id,
-      category: categoryVal,
-      title: titleVal,
-      creator: creatorVal,
-      genre: genreVal,
-      rating: ratingVal,
-      watchDate: watchDateVal,
-      review: reviewVal,
-      coverUrl: coverUrlVal,
-      sourceUrl: sourceUrlVal,
-      owner: item.owner || me.username || '문태양',
-      shared: sharedVal,
-      requester: me.username,
-      requesterRole: me.role
-    };
-
-    const res = await fetch(GAS_WEB_APP_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify(payload)
-    });
-    const json = await res.json();
-
-    if (json.status === 'duplicate') {
-      showWin95MessageBox('중복 수정 오류 — MY-ARCHIVE 95', json.message || '동일한 제목의 자료가 이미 존재합니다.', 'boom');
-      return;
-    }
-
-    if (json.status === 'success' && json.item) {
-      playRetroTone('open');
-      const idx = archiveItems.findIndex(x => String(x.id) === String(item.id));
-      if (idx !== -1) archiveItems[idx] = json.item;
-      detailItemRegistry[itemKey] = json.item;
-      saveLocalCache(STORAGE_KEYS.ARCHIVE, archiveItems);
-      refreshAllViews();
-      closeWindow(winEl.id);
-      spawnDetailWindow(json.item);
-    } else {
-      showWin95MessageBox('편집 저장 오류 — MY-ARCHIVE 95', json.message || '자료 수정 저장 중 오류가 발생했습니다.', 'boom');
-    }
-  } catch {
-    showWin95MessageBox('통신 오류 — MY-ARCHIVE 95', '서버 통신 중 회선 오류가 발생했습니다.', 'boom');
-  } finally {
-    if (saveBtn) {
-      saveBtn.disabled = false;
-      saveBtn.textContent = '편집 내용 저장(S)';
-    }
-    setLoadingCursor(false);
-  }
-});
-
 // ============================================================
 // 6. 새 감상 기록 등록 모달 (카테고리 선선택 + 타임아웃 검색 + 1MB 압축)
 // ============================================================
 
+// ============================================================
 // 공식 음원 사이트 앨범아트 조회 유틸리티 (유튜브 썸네일 대체용)
+// ============================================================
 function isYoutubeAssetUrl(url) {
   return /(youtube\.com|youtu\.be|ytimg\.com|ggpht\.com)/i.test(String(url || ''));
 }
@@ -1242,10 +1051,7 @@ function ensureRegisterWindowExists() {
     document.getElementById('btn-cancel-reg')?.addEventListener('click', e => {
       e.preventDefault();
       e.stopPropagation();
-      if (regSearchAbortCtrl) {
-        regSearchAbortCtrl.abort();
-        regSearchAbortCtrl = null;
-      }
+      if (regSearchAbortCtrl) regSearchAbortCtrl.abort();
       closeWindow('win-register');
     });
     document.getElementById('archive-form')?.addEventListener('submit', handleRegisterSubmit);
@@ -1264,12 +1070,6 @@ function openRegisterModal(forceShare = false) {
   if (form) {
     form.reset();
     delete form.dataset.editId;
-  }
-
-  const submitBtn = document.getElementById('btn-submit-reg');
-  if (submitBtn) {
-    submitBtn.disabled = false;
-    submitBtn.textContent = '확인 및 시트 저장';
   }
 
   // 열릴 때마다 카테고리 미선택 상태로 초기화하여 STEP 1 선선택 유도
@@ -1292,10 +1092,7 @@ function openRegisterModal(forceShare = false) {
   if (prevImg) prevImg.src = FALLBACK_COVER;
 
   const rankList = document.getElementById('rank-list');
-  if (rankList) {
-    rankList.innerHTML = '';
-    rankList.style.display = 'none';
-  }
+  if (rankList) rankList.style.display = 'none';
 
   const shareChk = document.getElementById('inp-share-board');
   if (shareChk) shareChk.checked = true;
@@ -1523,11 +1320,7 @@ async function handleRegisterSubmit(e) {
   const btn = document.getElementById('btn-submit-reg');
   btn.disabled = true; btn.textContent = '저장 중...'; setLoadingCursor(true);
   try {
-    const res = await fetch(GAS_WEB_APP_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify(payload)
-    });
+    const res = await fetch(GAS_WEB_APP_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload) });
     const json = await res.json();
     if (json.status === 'duplicate') {
       const dupMsg = json.message || `이미 ${categoryVal} 목록에 동일한 이름이 존재합니다.`;
@@ -1538,7 +1331,7 @@ async function handleRegisterSubmit(e) {
     if (json.status === 'success' && json.item) {
       playRetroTone('boot');
       if (editingId) {
-        const idx = archiveItems.findIndex(x => String(x.id) === String(editingId));
+        const idx = archiveItems.findIndex(x => x.id === editingId);
         if (idx !== -1) archiveItems[idx] = json.item;
       } else {
         archiveItems.unshift(json.item);
@@ -1599,11 +1392,7 @@ document.getElementById('memo-form')?.addEventListener('submit', async e => {
   const btn = document.getElementById('btn-save-memo');
   btn.disabled = true; btn.textContent = '저장 중...'; setLoadingCursor(true);
   try {
-    const res = await fetch(GAS_WEB_APP_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action: 'note', title, content })
-    });
+    const res = await fetch(GAS_WEB_APP_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: 'note', title, content }) });
     const json = await res.json();
     if (json.status === 'success' && json.note) {
       playRetroTone('open');
@@ -1612,11 +1401,7 @@ document.getElementById('memo-form')?.addEventListener('submit', async e => {
       renderNotesList();
       document.getElementById('memo-form').reset();
     }
-  } finally {
-    btn.disabled = false;
-    btn.textContent = '메모 시트에 저장';
-    setLoadingCursor(false);
-  }
+  } finally { btn.disabled = false; btn.textContent = '메모 시트에 저장'; setLoadingCursor(false); }
 });
 
 // ============================================================
@@ -1995,7 +1780,7 @@ function renderTimelineAndRadarApp() {
 
   body.querySelectorAll('[data-tl-id]').forEach(node => {
     node.addEventListener('click', () => {
-      const target = archiveItems.find(x => String(x.id) === String(node.dataset.tlId));
+      const target = archiveItems.find(x => x.id === node.dataset.tlId);
       if (target) spawnDetailWindow(target);
     });
   });
@@ -2342,13 +2127,3 @@ async function renderMailboxAndQrApp() {
     }
   });
 }
-
-// ============================================================
-// 9. 타 모듈(os-core.js / community / jukebox) 연동 전역 노출
-// ============================================================
-window.openRegisterModal = openRegisterModal;
-window.spawnDetailWindow = spawnDetailWindow;
-window.loadArchiveData = loadArchiveData;
-window.refreshAllViews = refreshAllViews;
-window.showWin95MessageBox = showWin95MessageBox;
-window.selectCategoryFilter = selectCategoryFilter;
