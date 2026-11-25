@@ -4,7 +4,7 @@
 // ============================================================
 
 window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-window.__MOD_VERSIONS.bootScreen = 'v2026.11.25-bios-after-3d-intro';
+window.__MOD_VERSIONS.bootScreen = 'v2026.11.25-bios-after-3d-intro-noise-title';
 
 const SESSION_USER_KEY = 'myarchive95_current_user_v2';
 const USERS_CACHE_KEY = 'myarchive95_users_cache_v2';
@@ -186,6 +186,220 @@ function startSubtleStaticNoise() {
   } catch {
     return null;
   }
+}
+
+// ============================================================
+// 첫 클릭 전 노이즈 뒤 중앙 50% 타이틀 레이어 (3D 시선 이동 + 흔들림 + 좌우 노이즈 번짐)
+// ============================================================
+function ensurePreClickNoiseTitleStyles() {
+  if (document.getElementById('pre-click-noise-title-style')) return;
+  const style = document.createElement('style');
+  style.id = 'pre-click-noise-title-style';
+  style.textContent = `
+    #pre-click-noise-title-layer {
+      position: fixed;
+      inset: 0;
+      z-index: 1000005;
+      pointer-events: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      perspective: 920px;
+      overflow: hidden;
+      opacity: 1;
+      transition: opacity 0.24s ease;
+    }
+    #pre-click-noise-title-layer.fade-out {
+      opacity: 0;
+    }
+    #pre-click-noise-title-box {
+      width: 54vw;
+      max-width: 780px;
+      min-width: 280px;
+      max-height: 54vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      color: #ffffff;
+      font-family: 'DungGeunMo', 'Galmuri11', 'Consolas', monospace;
+      transform-style: preserve-3d;
+      will-change: transform;
+      animation: noiseTitleMicroJitter 0.18s steps(2, end) infinite;
+    }
+    .noise-bleed-text {
+      position: relative;
+      color: #ffffff;
+      text-shadow:
+        -6px 0 6px rgba(255, 255, 255, 0.42),
+        6px 0 6px rgba(255, 255, 255, 0.42),
+        -14px 0 12px rgba(210, 235, 255, 0.2),
+        14px 0 12px rgba(255, 220, 220, 0.2);
+      animation: horizontalNoiseSmear 2.4s infinite;
+    }
+    .noise-bleed-text::before,
+    .noise-bleed-text::after {
+      content: attr(data-text);
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      color: #ffffff;
+      opacity: 0.62;
+    }
+    .noise-bleed-text::before {
+      transform: translateX(-4px);
+      clip-path: inset(18% 0 52% 0);
+      text-shadow: -8px 0 5px rgba(255, 255, 255, 0.65);
+      animation: smearSliceLeft 1.35s infinite steps(2, end);
+    }
+    .noise-bleed-text::after {
+      transform: translateX(4px);
+      clip-path: inset(58% 0 14% 0);
+      text-shadow: 8px 0 5px rgba(255, 255, 255, 0.65);
+      animation: smearSliceRight 1.55s infinite steps(2, end);
+    }
+    .noise-main-title {
+      font-size: clamp(2.1rem, 4.4vw, 4.2rem);
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      line-height: 1.12;
+      margin-bottom: clamp(8px, 1.4vh, 18px);
+    }
+    .noise-maker-line {
+      font-size: clamp(1.05rem, 2.0vw, 1.85rem);
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      line-height: 1.3;
+      margin-bottom: clamp(12px, 2vh, 24px);
+    }
+    .noise-retrace-cta {
+      font-size: clamp(1.2rem, 2.35vw, 2.15rem);
+      font-weight: 900;
+      letter-spacing: 0.12em;
+      line-height: 1.25;
+      margin-bottom: clamp(12px, 2vh, 22px);
+    }
+    .noise-copyleft-row {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-size: clamp(0.85rem, 1.55vw, 1.35rem);
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      line-height: 1.25;
+      opacity: 0.92;
+    }
+    .flipped-copyright-symbol {
+      display: inline-block;
+      transform: scale(-1, -1);
+      font-weight: 900;
+      text-shadow:
+        -4px 0 5px rgba(255, 255, 255, 0.5),
+        4px 0 5px rgba(255, 255, 255, 0.5);
+    }
+    @keyframes noiseTitleMicroJitter {
+      0% { margin-left: 0px; margin-top: 0px; }
+      25% { margin-left: -1.5px; margin-top: 1px; }
+      50% { margin-left: 1.5px; margin-top: -1px; }
+      75% { margin-left: -1px; margin-top: -1px; }
+      100% { margin-left: 1px; margin-top: 1px; }
+    }
+    @keyframes horizontalNoiseSmear {
+      0%, 84%, 100% {
+        transform: skewX(0deg) scaleX(1);
+      }
+      86% {
+        transform: skewX(-7deg) scaleX(1.03);
+      }
+      89% {
+        transform: skewX(6deg) scaleX(0.98);
+      }
+      92% {
+        transform: skewX(-4deg) scaleX(1.02);
+      }
+    }
+    @keyframes smearSliceLeft {
+      0%, 78%, 100% { transform: translateX(-3px); }
+      82% { transform: translateX(-11px); }
+      86% { transform: translateX(4px); }
+    }
+    @keyframes smearSliceRight {
+      0%, 80%, 100% { transform: translateX(3px); }
+      84% { transform: translateX(12px); }
+      88% { transform: translateX(-5px); }
+    }
+  `;
+  document.head.appendChild(style);
+}
+
+function startPreClickNoiseTitleLayer() {
+  ensurePreClickNoiseTitleStyles();
+  const prev = document.getElementById('pre-click-noise-title-layer');
+  if (prev) prev.remove();
+
+  const layer = document.createElement('div');
+  layer.id = 'pre-click-noise-title-layer';
+  layer.innerHTML = `
+    <div id="pre-click-noise-title-box">
+      <div class="noise-bleed-text noise-main-title" data-text="MY-ARCHIVE 95">MY-ARCHIVE 95</div>
+      <div class="noise-bleed-text noise-maker-line" data-text="만든 이: TAEYANG MUN (nlasdnfkl2)">만든 이: TAEYANG MUN (nlasdnfkl2)</div>
+      <div class="noise-bleed-text noise-retrace-cta" data-text="CLICK TO RETRACE">CLICK TO RETRACE</div>
+      <div class="noise-copyleft-row">
+        <span class="flipped-copyright-symbol" aria-hidden="true">©</span>
+        <span class="noise-bleed-text" data-text="COPYLEFT TAEYANG MUN (nlasdnfkl2)">COPYLEFT TAEYANG MUN (nlasdnfkl2)</span>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(layer);
+  const box = layer.querySelector('#pre-click-noise-title-box');
+
+  let pointerTargetX = 0;
+  let pointerTargetY = 0;
+  let curRotX = 0;
+  let curRotY = 0;
+  let rafId = 0;
+  let stopped = false;
+
+  const onPointerMove = e => {
+    const w = window.innerWidth || 1280;
+    const h = window.innerHeight || 720;
+    const nx = (e.clientX / w) * 2 - 1;
+    const ny = (e.clientY / h) * 2 - 1;
+    pointerTargetY = nx * 9;
+    pointerTargetX = -ny * 7;
+  };
+
+  window.addEventListener('pointermove', onPointerMove, { passive: true });
+
+  const tick3dGaze = now => {
+    if (stopped) return;
+    const idleYaw = Math.sin(now * 0.0014) * 3.2;
+    const idlePitch = Math.cos(now * 0.0011) * 2.2;
+    const goalY = pointerTargetY + idleYaw;
+    const goalX = pointerTargetX + idlePitch;
+
+    curRotY += (goalY - curRotY) * 0.09;
+    curRotX += (goalX - curRotX) * 0.09;
+
+    if (box) {
+      box.style.transform = `rotateX(${curRotX.toFixed(2)}deg) rotateY(${curRotY.toFixed(2)}deg) translate3d(${(curRotY * 1.1).toFixed(1)}px, ${(-curRotX * 0.9).toFixed(1)}px, 0)`;
+    }
+    rafId = requestAnimationFrame(tick3dGaze);
+  };
+
+  rafId = requestAnimationFrame(tick3dGaze);
+
+  return () => {
+    if (stopped) return;
+    stopped = true;
+    window.removeEventListener('pointermove', onPointerMove);
+    if (rafId) cancelAnimationFrame(rafId);
+    layer.classList.add('fade-out');
+    setTimeout(() => layer.remove(), 250);
+  };
 }
 
 // ============================================================
@@ -517,7 +731,7 @@ function play3dCrtMonitorAnimation() {
 
     const stage = document.createElement('div');
     stage.id = 'retro-3d-crt-stage';
-    stage.title = '클릭하면 딸깍 소리와 함께 모니터 회전 애니메이션이 시작됩니다';
+    stage.title = 'CLICK TO RETRACE';
     stage.style.cssText = `
       position: fixed;
       inset: 0;
@@ -535,10 +749,15 @@ function play3dCrtMonitorAnimation() {
     let rotationStarted = false;
     let turnStartTime = 0;
 
+    let stopNoiseTitleLayer = startPreClickNoiseTitleLayer();
     let stopStaticVisual = startFullScreenStaticEffect();
     let stopNoiseAudio = startSubtleStaticNoise();
 
     const cleanup = () => {
+      if (stopNoiseTitleLayer) {
+        stopNoiseTitleLayer();
+        stopNoiseTitleLayer = null;
+      }
       if (stopStaticVisual) {
         stopStaticVisual();
         stopStaticVisual = null;
@@ -578,6 +797,10 @@ function play3dCrtMonitorAnimation() {
       }
       rotationStarted = true;
       turnStartTime = now || performance.now();
+      if (stopNoiseTitleLayer) {
+        stopNoiseTitleLayer();
+        stopNoiseTitleLayer = null;
+      }
       if (stopNoiseAudio?.resume) stopNoiseAudio.resume();
       playButtonClickSound();
     };
@@ -1885,6 +2108,7 @@ async function startBiosBootSequence(options = {}) {
 function finishDesktopLogin(userObj) {
   bootState.bootSeqId += 1;
   clearBootTimers();
+  document.getElementById('pre-click-noise-title-layer')?.remove();
   document.getElementById('retro-3d-crt-stage')?.remove();
   document.getElementById('fullscreen-crt-static-overlay')?.remove();
   bootState.stage = 'done';
