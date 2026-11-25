@@ -4,7 +4,7 @@
 
 window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
 window.__MOD_VERSIONS.archiveApp =
-  typeof APP_BUILD_VERSION !== 'undefined' ? APP_BUILD_VERSION : 'v2026.11.25-03';
+  typeof APP_BUILD_VERSION !== 'undefined' ? APP_BUILD_VERSION : 'v2026.11.25-05';
 
 function checkCanEditItem(item) {
   if (typeof canEditArchiveItem === 'function') return canEditArchiveItem(item);
@@ -28,19 +28,39 @@ function checkIsPublicItem(item) {
 }
 
 // ============================================================
-// 1. 동기화 상태 배지 & 우측 상단 계정 설정 창 연결
+// 1. 동기화 상태 배지 (↻ 동기화 중 / ↻ 동기화 오류) & 계정 설정 창
 // ============================================================
-function renderSyncBadge(isOnline, isSyncing = false) {
+let __lastSyncIsError = false;
+let __isSyncingInFlight = false;
+
+function formatSyncBadgeHtml(isError, isSyncing) {
+  if (isError) {
+    return `<span class="sync-arrow-icon" style="color:#cc0000;font-weight:700;">↻</span><span>동기화 오류</span>`;
+  }
+  const spinClass = isSyncing ? ' spinning' : '';
+  return `<span class="sync-arrow-icon${spinClass}" style="color:#00aa00;font-weight:700;">↻</span><span>동기화 중</span>`;
+}
+
+function renderSyncBadge(isOnline, isSyncing = __isSyncingInFlight) {
   const badge = document.getElementById('cache-status-badge');
   if (!badge) return;
 
+  const isError = !Boolean(isOnline);
+  __lastSyncIsError = isError;
+  __isSyncingInFlight = Boolean(isSyncing);
+
   badge.classList.add('sync-status-badge');
-  if (isOnline) {
-    badge.classList.remove('error', 'offline');
-    badge.innerHTML = `<span class="sync-arrow-icon${isSyncing ? ' spinning' : ''}">↻</span><span>동기화 중</span>`;
-  } else {
-    badge.classList.add('error', 'offline');
-    badge.innerHTML = `<span class="sync-arrow-icon">↻</span><span>동기화 오류</span>`;
+  badge.classList.toggle('error', isError);
+  badge.classList.toggle('offline', isError);
+  badge.innerHTML = formatSyncBadgeHtml(isError, __isSyncingInFlight);
+}
+
+function enforceSyncBadgeText() {
+  const badge = document.getElementById('cache-status-badge');
+  if (!badge) return;
+  const txt = (badge.textContent || '').trim();
+  if (txt.includes('SHEET') || txt.includes('CACHE') || txt.includes('SYNCED') || txt.includes('OFFLINE') || !txt.includes('동기화')) {
+    badge.innerHTML = formatSyncBadgeHtml(__lastSyncIsError, __isSyncingInFlight);
   }
 }
 
@@ -106,15 +126,6 @@ function openAccountSettingsWindow() {
 }
 
 function bindAccountSettingsTrigger() {
-  const candidates = [
-    document.getElementById('btn-account-menu'),
-    document.getElementById('btn-user-account'),
-    document.getElementById('account-badge-btn'),
-    document.querySelector('.menu-bar-right .account-btn'),
-    document.querySelector('[data-open-account]')
-  ].filter(Boolean);
-
-  // 기존 바로 로그아웃 바인딩을 가로채 계정 설정 창을 띄우도록 캡처 단계에서 처리
   document.addEventListener('click', e => {
     const btn = e.target.closest(
       '#btn-account-menu, #btn-user-account, #account-badge-btn, .account-chip-btn, [data-open-account]'
@@ -126,7 +137,6 @@ function bindAccountSettingsTrigger() {
       return;
     }
 
-    // 우측 상단 메뉴바 내 계정 이름 텍스트가 포함된 버튼 fallback
     const menuRightBtn = e.target.closest('.menu-bar-right button, .os-menubar button');
     if (menuRightBtn && !menuRightBtn.closest('.menu-item-wrap') && menuRightBtn.id !== 'cache-status-badge') {
       const txt = (menuRightBtn.textContent || '').trim();
@@ -137,8 +147,6 @@ function bindAccountSettingsTrigger() {
       }
     }
   }, true);
-
-  void candidates;
 }
 
 // ============================================================
@@ -252,11 +260,13 @@ function selectCategoryFilter(cat) {
 }
 
 // ============================================================
-// 3. 초기 부팅 & Google Sheets + LocalStorage 하이브리드 동기화
+// 3. 초기 부팅 & 동기화 상태 관리
 // ============================================================
 document.addEventListener('DOMContentLoaded', () => {
   bindAccountSettingsTrigger();
   renderSyncBadge(navigator.onLine !== false, true);
+  enforceSyncBadgeText();
+  setInterval(enforceSyncBadgeText, 800);
 
   if (typeof runBootAnimation === 'function') runBootAnimation();
   ensureRegisterWindowExists();
@@ -264,7 +274,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const cachedItems = loadLocalCache(STORAGE_KEYS.ARCHIVE, null);
   if (Array.isArray(cachedItems) && cachedItems.length > 0) {
     archiveItems = cachedItems;
-    updateCacheBadge(true);
+    updateCacheBadge(navigator.onLine !== false, false);
     refreshAllViews();
   }
 
@@ -272,7 +282,7 @@ document.addEventListener('DOMContentLoaded', () => {
   loadNotesData();
   initExtensionApps();
 
-  window.addEventListener('offline', () => updateCacheBadge(false));
+  window.addEventListener('offline', () => updateCacheBadge(false, false));
   window.addEventListener('online', () => loadArchiveData(false));
 });
 
@@ -284,7 +294,7 @@ async function loadArchiveData(showFeedback = false) {
   setLoadingCursor(true);
   updateCacheBadge(navigator.onLine !== false, true);
   const statusLeft = document.getElementById('status-left');
-  if (statusLeft) statusLeft.textContent = `중앙 데이터 서버 접속 중... (${window.__MOD_VERSIONS.archiveApp})`;
+  if (statusLeft) statusLeft.textContent = `중앙 데이터 서버 동기화 중... (${window.__MOD_VERSIONS.archiveApp})`;
 
   try {
     const res = await fetch(`${GAS_WEB_APP_URL}?action=list`);
@@ -294,7 +304,7 @@ async function loadArchiveData(showFeedback = false) {
       saveLocalCache(STORAGE_KEYS.ARCHIVE, archiveItems);
       updateCacheBadge(true, false);
       if (statusLeft) {
-        statusLeft.textContent = `통신 접속 완료 [${window.__MOD_VERSIONS.archiveApp}] — 제목 표시줄을 끌어 창 이동`;
+        statusLeft.textContent = `동기화 완료 [${window.__MOD_VERSIONS.archiveApp}] — 제목 표시줄을 끌어 창 이동`;
       }
       if (showFeedback) playRetroTone('open');
     } else {
@@ -305,7 +315,7 @@ async function loadArchiveData(showFeedback = false) {
     archiveItems = Array.isArray(fallback) ? fallback : [];
     updateCacheBadge(false, false);
     if (statusLeft) {
-      statusLeft.textContent = `동기화 오류 [${window.__MOD_VERSIONS.archiveApp}] — 캐시 데이터 표시 중`;
+      statusLeft.textContent = `동기화 오류 [${window.__MOD_VERSIONS.archiveApp}]`;
     }
   } finally {
     setLoadingCursor(false);
@@ -939,7 +949,6 @@ document.addEventListener('submit', async e => {
 // 7. 새 감상 기록 등록 모달 & 메모장 & 미니 앱
 // ============================================================
 let regEventsBound = false;
-let regSearchAbortCtrl = null;
 
 function syncRegisterCategoryState(cat) {
   const cleanCat = ['도서', '음악', '영상', '기타'].includes(cat) ? cat : '';
