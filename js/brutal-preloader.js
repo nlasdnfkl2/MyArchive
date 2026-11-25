@@ -4,7 +4,7 @@
 
 (function () {
   window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-  window.__MOD_VERSIONS.brutalPreloader = 'v2026.11.25-rewind-exclusive-lock';
+  window.__MOD_VERSIONS.brutalPreloader = 'v2026.11.25-90bpm-la-sol-re-sol-fa';
 
   const TARGET_AVG_MS = 4500, HOLD_MS = 1000, WAIT_SETUP_KEY = 'myarchive95_setup_v1';
   const LOADER_ID = 'brutal-js-preloader', STYLE_ID = 'brutal-js-preloader-style';
@@ -48,54 +48,88 @@
     }
   }
 
-  // 원곡 전주(00:00~00:16)의 통통 튀는 동기를 패러디한 노스탤직 음원 생성 후 역방향 버퍼 반환
-  function createNostalgicParodyBuffer(ctx) {
-    const sr = ctx.sampleRate, stepSec = 0.165;
-    const leadFreqs = [
-      392.00, 392.00, 440.00, 493.88, 587.33, 523.25, 493.88, 440.00,
-      392.00, 440.00, 493.88, 587.33, 659.25, 587.33, 523.25, 493.88,
-      329.63, 329.63, 392.00, 440.00, 493.88, 440.00, 392.00, 329.63,
-      349.23, 392.00, 440.00, 523.25, 493.88, 440.00, 392.00, 349.23
-    ];
-    const bassFreqs = [
-      130.81, 130.81, 196.00, 130.81, 164.81, 164.81, 246.94, 164.81,
-      146.83, 146.83, 220.00, 146.83, 196.00, 196.00, 146.83, 130.81
+  // 90 BPM / '라--솔---/라--솔---/레솔--파---레솔--파---' (1박 = 1 beat, '-'와 '/' 모두 1박) 순방향 버퍼 생성
+  function createNostalgicParodyForwardBuffer(ctx) {
+    const sr = ctx.sampleRate;
+    const bpm = 90;
+    const beatSec = 60 / bpm; // 90 BPM -> 1박 약 0.6667초
+
+    // [주파수(Hz), 박수(beats)] — 총 22박
+    // 라(440) --(2박) 솔(392) ---(3박) / 라(440) --(2박) 솔(392) ---(3박) /
+    // 레(293.66) 솔(392) --(2박) 파(349.23) ---(3박) 레(293.66) 솔(392) --(2박) 파(349.23) ---(3박)
+    const melodyNotes = [
+      // 마디 1: 라--솔--- (3 + 4 = 7박)
+      [440.00, 3], [392.00, 4],
+      // 마디 2: 라--솔--- (3 + 4 = 7박)
+      [440.00, 3], [392.00, 4],
+      // 마디 3: 레솔--파--- (1 + 3 + 4 = 8박)
+      [293.66, 1], [392.00, 3], [349.23, 4],
+      // 마디 4: 레솔--파--- (1 + 3 + 4 = 8박) -> 총 30박
+      [293.66, 1], [392.00, 3], [349.23, 4]
     ];
 
-    const totalSec = leadFreqs.length * stepSec;
+    const totalBeats = melodyNotes.reduce((acc, [, b]) => acc + b, 0);
+    const totalSec = totalBeats * beatSec;
     const len = Math.max(1, Math.floor(sr * totalSec));
-    const forward = new Float32Array(len);
+    const buf = ctx.createBuffer(1, len, sr);
+    const ch = buf.getChannelData(0);
 
-    for (let i = 0; i < len; i++) {
-      const t = i / sr;
-      const step = Math.floor(t / stepSec) % leadFreqs.length;
-      const localT = t - step * stepSec;
-      const fLead = leadFreqs[step];
-      const fBass = bassFreqs[step % bassFreqs.length];
-
-      const attack = Math.min(1, localT / 0.014);
-      const decay = Math.exp(-localT * 5.2);
-      const env = attack * decay;
-
-      const leadTone =
-        Math.sin(2 * Math.PI * fLead * t) * 0.52 +
-        Math.sin(2 * Math.PI * fLead * 2 * t) * 0.16 +
-        Math.sin(2 * Math.PI * fLead * 1.5 * t) * 0.08;
-
-      const bassTone =
-        Math.sin(2 * Math.PI * fBass * t) * 0.34 +
-        Math.sin(2 * Math.PI * (fBass * 1.5) * t) * 0.08;
-
-      const wow = 1 + 0.006 * Math.sin(2 * Math.PI * 2.4 * t);
-      const sample = (leadTone * 0.65 + bassTone * 0.35) * env;
-      forward[i] = Math.max(-0.95, Math.min(0.95, sample * (0.92 + 0.08 * wow)));
+    // 각 노트의 시작/끝 시간(초) 구간 미리 계산
+    const segments = [];
+    let cursorBeat = 0;
+    for (const [freq, beats] of melodyNotes) {
+      const startSec = cursorBeat * beatSec;
+      const durSec = beats * beatSec;
+      segments.push({ freq, startSec, endSec: startSec + durSec, durSec });
+      cursorBeat += beats;
     }
 
-    forward.reverse();
-    const buf = ctx.createBuffer(1, len, sr);
-    buf.getChannelData(0).set(forward);
+    let segIdx = 0;
+    for (let i = 0; i < len; i++) {
+      const t = i / sr;
+      while (segIdx < segments.length - 1 && t >= segments[segIdx].endSec) {
+        segIdx++;
+      }
+      const seg = segments[segIdx];
+      const localT = Math.max(0, t - seg.startSec);
+      const remainT = Math.max(0, seg.endSec - t);
+
+      // 노스탤직 감성의 부드러운 어택 & 긴 음표의 따뜻한 서스테인/릴리즈
+      const attack = Math.min(1, localT / 0.022);
+      const release = Math.min(1, remainT / 0.045);
+      const decay = 0.68 + 0.32 * Math.exp(-localT * 1.45);
+      const env = attack * release * decay;
+
+      const f = seg.freq;
+      // 따뜻한 일렉트릭 피아노/패드 하모닉스
+      const leadTone =
+        Math.sin(2 * Math.PI * f * t) * 0.56 +
+        Math.sin(2 * Math.PI * f * 2 * t) * 0.14 +
+        Math.sin(2 * Math.PI * f * 0.5 * t) * 0.22;
+
+      // 노스탤직 테이프 워블(미세한 피치 흔들림)
+      const wow = 1 + 0.0045 * Math.sin(2 * Math.PI * 2.1 * t);
+      const sample = leadTone * env;
+      ch[i] = Math.max(-0.95, Math.min(0.95, sample * (0.94 + 0.06 * wow)));
+    }
+
     return buf;
   }
+
+  // 뒤로 감기(역재생)용 버퍼 생성
+  function createNostalgicParodyBuffer(ctx) {
+    const fwdBuf = createNostalgicParodyForwardBuffer(ctx);
+    const len = fwdBuf.length;
+    const srcCh = fwdBuf.getChannelData(0);
+    const revBuf = ctx.createBuffer(1, len, ctx.sampleRate);
+    const dstCh = revBuf.getChannelData(0);
+    for (let i = 0; i < len; i++) {
+      dstCh[i] = srcCh[len - 1 - i];
+    }
+    return revBuf;
+  }
+
+  window.createNostalgicParodyForwardBuffer = createNostalgicParodyForwardBuffer;
 
   // 카세트 테이프 삽입('달칵') 사운드
   function playTapeInsertDalkak(ctx, startTime) {
@@ -142,7 +176,7 @@
       src = ctx.createBufferSource();
       src.buffer = revBuf;
       src.loop = true;
-      src.playbackRate.setValueAtTime(0.95, rewindStart);
+      src.playbackRate.setValueAtTime(1.0, rewindStart);
 
       filter = ctx.createBiquadFilter();
       filter.type = 'lowpass';
@@ -161,7 +195,7 @@
       const tickSpeed = () => {
         if (stopped || !src || !ctx) return;
         const p = Math.max(0, Math.min(1, currentRatio));
-        const speed = 0.95 + Math.pow(p, 1.35) * 2.5;
+        const speed = 1.0 + Math.pow(p, 1.35) * 2.4;
         const cutoff = 2400 + p * 2600;
         try {
           src.playbackRate.setTargetAtTime(speed, ctx.currentTime, 0.04);
@@ -282,7 +316,7 @@
   }
 
   const buildTicker = (files) => {
-    const line = `MY-ARCHIVE 95 WIN95 PRELOADER ★ REWINDING NOSTALGIC INTRO PARODY ★ ${files.join(' /// ')} ★ `;
+    const line = `MY-ARCHIVE 95 WIN95 PRELOADER ★ 90BPM NOSTALGIC REWIND ★ ${files.join(' /// ')} ★ `;
     return `<span class="brutal-ticker-msg">${line}</span><span class="brutal-ticker-msg">${line}</span>`;
   };
 
