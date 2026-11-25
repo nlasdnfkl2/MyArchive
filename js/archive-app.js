@@ -4,8 +4,9 @@
 
 window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
 window.__MOD_VERSIONS.archiveApp =
-  typeof APP_BUILD_VERSION !== 'undefined' ? APP_BUILD_VERSION : 'v2026.11.25-05';
+  typeof APP_BUILD_VERSION !== 'undefined' ? APP_BUILD_VERSION : 'v2026.11.25-01';
 
+// 타 모듈 함수 미로드 시 방어용 권한 헬퍼
 function checkCanEditItem(item) {
   if (typeof canEditArchiveItem === 'function') return canEditArchiveItem(item);
   if (typeof canDeleteArchiveItem === 'function') return canDeleteArchiveItem(item);
@@ -28,129 +29,7 @@ function checkIsPublicItem(item) {
 }
 
 // ============================================================
-// 1. 동기화 상태 배지 (↻ 동기화 중 / ↻ 동기화 오류) & 계정 설정 창
-// ============================================================
-let __lastSyncIsError = false;
-let __isSyncingInFlight = false;
-
-function formatSyncBadgeHtml(isError, isSyncing) {
-  if (isError) {
-    return `<span class="sync-arrow-icon" style="color:#cc0000;font-weight:700;">↻</span><span>동기화 오류</span>`;
-  }
-  const spinClass = isSyncing ? ' spinning' : '';
-  return `<span class="sync-arrow-icon${spinClass}" style="color:#00aa00;font-weight:700;">↻</span><span>동기화 중</span>`;
-}
-
-function renderSyncBadge(isOnline, isSyncing = __isSyncingInFlight) {
-  const badge = document.getElementById('cache-status-badge');
-  if (!badge) return;
-
-  const isError = !Boolean(isOnline);
-  __lastSyncIsError = isError;
-  __isSyncingInFlight = Boolean(isSyncing);
-
-  badge.classList.add('sync-status-badge');
-  badge.classList.toggle('error', isError);
-  badge.classList.toggle('offline', isError);
-  badge.innerHTML = formatSyncBadgeHtml(isError, __isSyncingInFlight);
-}
-
-function enforceSyncBadgeText() {
-  const badge = document.getElementById('cache-status-badge');
-  if (!badge) return;
-  const txt = (badge.textContent || '').trim();
-  if (txt.includes('SHEET') || txt.includes('CACHE') || txt.includes('SYNCED') || txt.includes('OFFLINE') || !txt.includes('동기화')) {
-    badge.innerHTML = formatSyncBadgeHtml(__lastSyncIsError, __isSyncingInFlight);
-  }
-}
-
-function openAccountSettingsWindow() {
-  let win = document.getElementById('win-account-settings');
-  const me = typeof getCurrentUser === 'function'
-    ? getCurrentUser()
-    : { username: '문태양', role: 'owner' };
-
-  if (!win) {
-    win = document.createElement('div');
-    win.className = 'floating-win';
-    win.id = 'win-account-settings';
-    win.dataset.dynamic = 'true';
-    win.dataset.winTitle = '[계정] 계정 설정';
-    win.style.top = '56px';
-    win.style.right = '24px';
-    win.style.left = 'auto';
-    win.style.width = '380px';
-
-    win.innerHTML = `
-      <div class="win-titlebar draggable">
-        <div class="win-title-left"><span class="win-title-dot"></span><span>계정 설정</span></div>
-        <div class="win-controls">
-          <button type="button" class="win-ctrl-btn" data-action="close" data-target="win-account-settings">X</button>
-        </div>
-      </div>
-      <div class="win-body">
-        <div class="sunken-box" style="margin-bottom: 10px;">
-          <div class="box-head"><span>현재 접속 계정</span><span class="tag-mini">PROFILE</span></div>
-          <div style="font-size: 0.82rem; margin-bottom: 4px;"><b>사용자:</b> <span id="acc-set-name"></span></div>
-          <div style="font-size: 0.8rem; color: #333;"><b>권한:</b> <span id="acc-set-role"></span></div>
-        </div>
-        <div style="display: flex; justify-content: space-between; gap: 6px; flex-wrap: wrap;">
-          <button type="button" class="btn95 yellow sm" id="btn-acc-switch">계정 전환 / 로그인 화면</button>
-          <button type="button" class="btn95 red sm" id="btn-acc-logout">로그아웃</button>
-        </div>
-      </div>
-    `;
-    (document.getElementById('dynamic-windows-container') || document.body).appendChild(win);
-    enableWindowDrag(win);
-
-    document.getElementById('btn-acc-switch')?.addEventListener('click', () => {
-      closeWindow('win-account-settings');
-      if (typeof openLoginDialog === 'function') openLoginDialog();
-      else if (typeof showLoginScreen === 'function') showLoginScreen();
-    });
-
-    document.getElementById('btn-acc-logout')?.addEventListener('click', () => {
-      closeWindow('win-account-settings');
-      if (typeof logoutCurrentUser === 'function') logoutCurrentUser();
-      else if (typeof handleLogout === 'function') handleLogout();
-      else location.reload();
-    });
-  }
-
-  const nameEl = document.getElementById('acc-set-name');
-  const roleEl = document.getElementById('acc-set-role');
-  if (nameEl) nameEl.textContent = me?.username || '문태양';
-  if (roleEl) roleEl.textContent = me?.role || '사용자';
-
-  openWindow('win-account-settings');
-}
-
-function bindAccountSettingsTrigger() {
-  document.addEventListener('click', e => {
-    const btn = e.target.closest(
-      '#btn-account-menu, #btn-user-account, #account-badge-btn, .account-chip-btn, [data-open-account]'
-    );
-    if (btn) {
-      e.preventDefault();
-      e.stopImmediatePropagation();
-      openAccountSettingsWindow();
-      return;
-    }
-
-    const menuRightBtn = e.target.closest('.menu-bar-right button, .os-menubar button');
-    if (menuRightBtn && !menuRightBtn.closest('.menu-item-wrap') && menuRightBtn.id !== 'cache-status-badge') {
-      const txt = (menuRightBtn.textContent || '').trim();
-      if (txt.includes('TAEYANG') || txt.includes('관리자') || txt.includes('계정')) {
-        e.preventDefault();
-        e.stopImmediatePropagation();
-        openAccountSettingsWindow();
-      }
-    }
-  }, true);
-}
-
-// ============================================================
-// 2. 상단 메뉴바 & 바탕화면·시작 메뉴 이벤트 바인딩
+// 1. 상단 메뉴바 & 바탕화면·시작 메뉴 이벤트 바인딩
 // ============================================================
 document.querySelectorAll('.menu-item-wrap').forEach(wrap => {
   wrap.querySelector('.menu-root')?.addEventListener('click', e => {
@@ -211,8 +90,8 @@ document.getElementById('mnu-toggle-charts')?.addEventListener('click', () => {
 document.getElementById('mnu-cascade')?.addEventListener('click', () => {
   document.querySelectorAll('.floating-win.open').forEach((w, idx) => {
     w.classList.remove('minimized');
-    w.style.top = `${46 + idx * 24}px`;
-    w.style.left = `${132 + idx * 24}px`;
+    w.style.top = `${48 + idx * 30}px`;
+    w.style.left = `${130 + idx * 30}px`;
     focusWindow(w);
   });
 });
@@ -234,6 +113,7 @@ if (startBtn && startMenu) {
   });
 }
 
+// 새 기록 등록 트리거 전역 위임
 document.addEventListener('click', e => {
   const trigger = e.target.closest('#icon-new, #sm-new, #btn-open-register, #mnu-new-archive');
   if (trigger) {
@@ -260,41 +140,36 @@ function selectCategoryFilter(cat) {
 }
 
 // ============================================================
-// 3. 초기 부팅 & 동기화 상태 관리
+// 2. 초기 부팅 & Google Sheets + LocalStorage 하이브리드 동기화
 // ============================================================
 document.addEventListener('DOMContentLoaded', () => {
-  bindAccountSettingsTrigger();
-  renderSyncBadge(navigator.onLine !== false, true);
-  enforceSyncBadgeText();
-  setInterval(enforceSyncBadgeText, 800);
-
   if (typeof runBootAnimation === 'function') runBootAnimation();
   ensureRegisterWindowExists();
 
+  // 캐시 우선 즉시 렌더링 후 백그라운드 시트 동기화
   const cachedItems = loadLocalCache(STORAGE_KEYS.ARCHIVE, null);
   if (Array.isArray(cachedItems) && cachedItems.length > 0) {
     archiveItems = cachedItems;
-    updateCacheBadge(navigator.onLine !== false, false);
+    updateCacheBadge(true, 'CACHE: LOADED');
     refreshAllViews();
   }
 
   loadArchiveData(false);
   loadNotesData();
   initExtensionApps();
-
-  window.addEventListener('offline', () => updateCacheBadge(false, false));
-  window.addEventListener('online', () => loadArchiveData(false));
 });
 
-function updateCacheBadge(isOnline, isSyncing = false) {
-  renderSyncBadge(Boolean(isOnline), Boolean(isSyncing));
+function updateCacheBadge(isOnline, labelText) {
+  const badge = document.getElementById('cache-status-badge');
+  if (!badge) return;
+  badge.textContent = labelText;
+  badge.classList.toggle('offline', !isOnline);
 }
 
 async function loadArchiveData(showFeedback = false) {
   setLoadingCursor(true);
-  updateCacheBadge(navigator.onLine !== false, true);
   const statusLeft = document.getElementById('status-left');
-  if (statusLeft) statusLeft.textContent = `중앙 데이터 서버 동기화 중... (${window.__MOD_VERSIONS.archiveApp})`;
+  if (statusLeft) statusLeft.textContent = `중앙 데이터 서버 접속 중... (${window.__MOD_VERSIONS.archiveApp})`;
 
   try {
     const res = await fetch(`${GAS_WEB_APP_URL}?action=list`);
@@ -302,9 +177,9 @@ async function loadArchiveData(showFeedback = false) {
     if (json.status === 'success' && Array.isArray(json.items)) {
       archiveItems = json.items;
       saveLocalCache(STORAGE_KEYS.ARCHIVE, archiveItems);
-      updateCacheBadge(true, false);
+      updateCacheBadge(true, 'SHEET + CACHE: SYNCED');
       if (statusLeft) {
-        statusLeft.textContent = `동기화 완료 [${window.__MOD_VERSIONS.archiveApp}] — 제목 표시줄을 끌어 창 이동`;
+        statusLeft.textContent = `통신 접속 완료 [${window.__MOD_VERSIONS.archiveApp}] — 각 창의 제목 표시줄을 끌어 위치를 이동할 수 있습니다`;
       }
       if (showFeedback) playRetroTone('open');
     } else {
@@ -313,9 +188,9 @@ async function loadArchiveData(showFeedback = false) {
   } catch {
     const fallback = loadLocalCache(STORAGE_KEYS.ARCHIVE, []);
     archiveItems = Array.isArray(fallback) ? fallback : [];
-    updateCacheBadge(false, false);
+    updateCacheBadge(false, 'OFFLINE CACHE MODE');
     if (statusLeft) {
-      statusLeft.textContent = `동기화 오류 [${window.__MOD_VERSIONS.archiveApp}]`;
+      statusLeft.textContent = `오프라인 디스크 모드 [${window.__MOD_VERSIONS.archiveApp}] — 중앙 서버 회선 대기 중`;
     }
   } finally {
     setLoadingCursor(false);
@@ -346,7 +221,7 @@ function refreshAllViews() {
 }
 
 // ============================================================
-// 4. KPI 요약 카드 & 차트 & 메인 카드 그리드
+// 3. KPI 요약 카드 & 기본 통계 차트 & 메인 카드 그리드
 // ============================================================
 function getMyVisibleArchiveItems() {
   const me = typeof getCurrentUser === 'function' ? getCurrentUser() : { username: '문태양', role: 'owner' };
@@ -398,10 +273,9 @@ function updateKPIs() {
 
 function renderCharts() {
   if (typeof Chart === 'undefined') return;
-  Chart.defaults.font.family = "'Galmuri11', 'DungGeunMo', sans-serif";
-  Chart.defaults.font.size = 11;
-  Chart.defaults.font.weight = 700;
-  Chart.defaults.color = '#000000';
+  Chart.defaults.font.family = "'Pretendard Variable', Pretendard, sans-serif";
+  Chart.defaults.font.weight = 800;
+  Chart.defaults.color = '#111111';
 
   const myItems = getMyVisibleArchiveItems();
   const cats = ['도서', '음악', '영상', '기타'];
@@ -415,15 +289,15 @@ function renderCharts() {
         labels: cats,
         datasets: [{
           data: catVals,
-          backgroundColor: ['#ffff00', '#00ffff', '#ff4757', '#2ed573'],
-          borderColor: '#000000',
-          borderWidth: 2
+          backgroundColor: ['#ffd83b', '#48dbfb', '#ff4757', '#2ed573'],
+          borderColor: '#111111',
+          borderWidth: 2.5
         }]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: { legend: { position: 'right', labels: { boxWidth: 10, padding: 6 } } }
+        plugins: { legend: { position: 'right', labels: { boxWidth: 12, padding: 8 } } }
       }
     });
   }
@@ -441,8 +315,8 @@ function renderCharts() {
         datasets: [{
           data: months.length ? months.map(m => mMap[m]) : [0],
           backgroundColor: '#2ed573',
-          borderColor: '#000000',
-          borderWidth: 2
+          borderColor: '#111111',
+          borderWidth: 2.5
         }]
       },
       options: {
@@ -482,7 +356,7 @@ function renderArchiveGrid() {
   grid.innerHTML = '';
 
   if (!filtered.length) {
-    grid.innerHTML = `<div style="grid-column: 1 / -1; text-align: center; padding: 24px 12px; background: #ffffff; border: 2px dashed #000000; font-weight: 700;">디스크에 표시할 감상 자료가 없습니다. [+ 새 감상 기록하기] 단추를 눌러 첫 자료를 등록하십시오.</div>`;
+    grid.innerHTML = `<div style="grid-column: 1 / -1; text-align: center; padding: 44px 16px; background: #ffffff; border: 3px dashed #111111; font-weight: 800;">디스크에 표시할 감상 자료가 없습니다. [+ 새 감상 기록하기] 단추를 눌러 첫 자료를 등록하십시오.</div>`;
     return;
   }
 
@@ -495,7 +369,7 @@ function renderArchiveGrid() {
     const ownerLabel = checkIsPublicItem(item) ? '공용' : esc(item.owner || '문태양');
 
     const card = document.createElement('article');
-    card.className = 'archive-card item-card';
+    card.className = 'item-card';
     card.innerHTML = `
       <div class="item-card-bar"><span>${esc(item.id || 'ARCHIVE.DAT')}</span><span>[열람·편집]</span></div>
       <div class="item-thumb-box">
@@ -507,7 +381,7 @@ function renderArchiveGrid() {
         <h3 class="item-title">${esc(item.title)}</h3>
         <div class="item-creator">${esc(item.creator)} · ${esc(item.genre || '일반')}</div>
         <p class="item-memo">${esc(item.review)}</p>
-        <div class="item-footer"><span>${esc(item.watchDate)} · @${ownerLabel}</span><span>열람 &gt;&gt;</span></div>
+        <div class="item-footer"><span>${esc(item.watchDate)} · @${ownerLabel}</span><span class="inspect-hint">자료 열람 &gt;&gt;</span></div>
       </div>
     `;
     card.addEventListener('click', () => spawnDetailWindow(item));
@@ -516,7 +390,7 @@ function renderArchiveGrid() {
 }
 
 // ============================================================
-// 5. Windows 95 시스템 메시지 박스 다이얼로그
+// 4. Windows 95 시스템 메시지 박스 다이얼로그
 // ============================================================
 function showWin95MessageBox(title, message, tone = 'boom') {
   const existing = document.getElementById('win-sys-msgbox');
@@ -529,7 +403,7 @@ function showWin95MessageBox(title, message, tone = 'boom') {
   box.id = 'win-sys-msgbox';
   box.dataset.dynamic = 'true';
   box.dataset.winTitle = `[!] ${title}`;
-  box.style.width = '360px';
+  box.style.width = '410px';
   box.style.top = '50%';
   box.style.left = '50%';
   box.style.transform = 'translate(-50%, -50%)';
@@ -542,13 +416,13 @@ function showWin95MessageBox(title, message, tone = 'boom') {
         <button type="button" class="win-ctrl-btn close" id="btn-msgbox-x">X</button>
       </div>
     </div>
-    <div class="win-body" style="background: var(--win-gray); padding: 14px 12px;">
-      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 14px;">
-        <div style="width: 28px; height: 28px; flex-shrink: 0; background: var(--brutal-yellow); border: 2px solid #000000; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1rem; color: #000000;">!</div>
-        <div style="font-size: 0.78rem; font-weight: 700; line-height: 1.4; color: #000000; word-break: keep-all;">${esc(message)}</div>
+    <div class="win-body" style="background: var(--win-gray); padding: 18px 16px;">
+      <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 18px;">
+        <div style="width: 38px; height: 38px; flex-shrink: 0; background: var(--brutal-yellow); border: 3px solid #111111; box-shadow: 3px 3px 0px #111111; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 1.3rem; color: #111111;">!</div>
+        <div style="font-size: 0.86rem; font-weight: 800; line-height: 1.5; color: #111111; word-break: keep-all;">${esc(message)}</div>
       </div>
       <div style="display: flex; justify-content: center;">
-        <button type="button" class="btn95 yellow sm" id="btn-msgbox-ok" style="min-width: 84px;">확인 (OK)</button>
+        <button type="button" class="btn95 yellow sm" id="btn-msgbox-ok" style="min-width: 100px;">확인 (OK)</button>
       </div>
     </div>
   `;
@@ -567,7 +441,7 @@ function showWin95MessageBox(title, message, tone = 'boom') {
 }
 
 // ============================================================
-// 6. 상세 탐색기 창 (조회 + 수정 + 권한별 삭제 + 연관 추천)
+// 5. 상세 탐색기 창 (조회 + 수정 + 권한별 삭제 + 연관 추천)
 // ============================================================
 const detailItemRegistry = {};
 
@@ -583,7 +457,7 @@ async function spawnDetailWindow(item) {
   }
 
   detailWindowCount += 1;
-  const offset = (detailWindowCount % 6) * 22;
+  const offset = (detailWindowCount % 6) * 26;
   const ytQuery = item.category === '음악'
     ? `${item.creator} ${item.title} official`
     : item.category === '도서'
@@ -594,10 +468,13 @@ async function spawnDetailWindow(item) {
   const editable = checkCanEditItem(item);
   const deletable = checkCanDeleteItem(item);
   const isPublicPost = checkIsPublicItem(item);
-  const authorBadgeText = isPublicPost ? '공용 계정' : `@${item.owner || '문태양'}`;
+  const authorBadgeText = isPublicPost
+    ? '등록 계정: 공용 계정 (관리자 전용 편집·삭제)'
+    : `등록 계정: @${item.owner || '문태양'}`;
   const permDenyMsg = isPublicPost
     ? '공용 계정 게시물은 관리자 계정으로만 편집·삭제할 수 있습니다.'
     : '자료 편집 및 삭제는 작성자 본인 또는 관리자 계정으로만 가능합니다.';
+
   const ratingNum = Math.max(1, Math.min(5, Number(item.rating) || 5));
 
   const winEl = document.createElement('div');
@@ -606,13 +483,13 @@ async function spawnDetailWindow(item) {
   winEl.dataset.dynamic = 'true';
   winEl.dataset.itemKey = itemKey;
   winEl.dataset.winTitle = `[INFO] ${item.title}`;
-  winEl.style.top = `${52 + offset}px`;
-  winEl.style.left = `${136 + offset}px`;
-  winEl.style.width = '600px';
+  winEl.style.top = `${66 + offset}px`;
+  winEl.style.left = `${145 + offset}px`;
+  winEl.style.width = '720px';
 
   winEl.innerHTML = `
     <div class="win-titlebar draggable">
-      <div class="win-title-left"><span class="win-title-dot" style="background: var(--brutal-green);"></span><span>${esc(item.title)} — 상세 정보</span></div>
+      <div class="win-title-left"><span class="win-title-dot" style="background: var(--brutal-green);"></span><span>${esc(item.title)} — 등록 자료 상세 정보</span></div>
       <div class="win-controls">
         <button type="button" class="win-ctrl-btn" data-action="minimize" data-target="${winId}">_</button>
         <button type="button" class="win-ctrl-btn close" data-action="close" data-target="${winId}">X</button>
@@ -620,52 +497,52 @@ async function spawnDetailWindow(item) {
     </div>
     <div class="win-body">
       <div class="det-view-mode">
-        <div style="display:grid; grid-template-columns:120px 1fr; gap:10px; margin-bottom:10px;">
-          <img src="${esc(item.coverUrl || FALLBACK_COVER)}" alt="${esc(item.title)}" onerror="this.onerror=null;this.src='${FALLBACK_COVER}';" style="width:120px; height:150px; object-fit:cover; border:1px solid #000;" />
+        <div class="detail-hero">
+          <img class="detail-cover" src="${esc(item.coverUrl || FALLBACK_COVER)}" alt="${esc(item.title)}" onerror="this.onerror=null;this.src='${FALLBACK_COVER}';" />
           <div>
-            <div style="display:flex; gap:4px; margin-bottom:6px; flex-wrap:wrap;">
-              <span style="padding:1px 6px; border:1px solid #000; background:var(--brutal-yellow); font-size:0.74rem; font-weight:700;">${esc(item.category)}</span>
-              <span style="padding:1px 6px; border:1px solid #000; background:#fff; font-size:0.74rem; font-weight:700;">${'★'.repeat(ratingNum)}${'☆'.repeat(5 - ratingNum)}</span>
-              <span style="padding:1px 6px; border:1px solid #000; background:var(--win-gray); font-size:0.74rem;">${esc(item.watchDate)}</span>
-              <span style="padding:1px 6px; border:1px solid #000; background:#fff; font-size:0.74rem;">${esc(authorBadgeText)}</span>
+            <div style="display:flex; gap:6px; margin-bottom:8px; flex-wrap:wrap;">
+              <span style="padding:2px 8px; border:2px solid #111; background:var(--brutal-yellow); font-size:0.75rem; font-weight:900;">${esc(item.category)}</span>
+              <span style="padding:2px 8px; border:2px solid #111; background:#fff; font-size:0.75rem; font-weight:900;">${'★'.repeat(ratingNum)}${'☆'.repeat(5 - ratingNum)}</span>
+              <span style="padding:2px 8px; border:2px solid #111; background:var(--win-gray); font-size:0.75rem; font-weight:800;">${esc(item.watchDate)}</span>
+              <span style="padding:2px 8px; border:2px solid #111; background:${isPublicPost ? '#d0f0fd' : '#fffdf2'}; font-size:0.74rem; font-weight:800;">${esc(authorBadgeText)}</span>
             </div>
-            <h2 style="font-size:1rem; font-weight:700; margin-bottom:2px;">${esc(item.title)}</h2>
-            <div style="font-size:0.78rem; color:#333; margin-bottom:6px;">${esc(item.creator)} · ${esc(item.genre || '일반')}</div>
-            <p style="background:#ffffff; box-shadow:var(--bevel-sunken); padding:7px; font-size:0.78rem; white-space:pre-wrap; word-break:break-word;">${esc(item.review)}</p>
-            <div style="display:flex; flex-wrap:wrap; gap:4px; margin-top:8px; align-items:center;">
-              <a class="btn95 pink sm" href="${ytUrl}" target="_blank" rel="noopener noreferrer">[PLAY] YouTube</a>
-              ${item.sourceUrl ? `<a class="btn95 sky sm" href="${esc(item.sourceUrl)}" target="_blank" rel="noopener noreferrer">원본 링크 &gt;&gt;</a>` : ''}
+            <h2 style="font-size:1.25rem; font-weight:900; margin-bottom:4px;">${esc(item.title)}</h2>
+            <div style="font-size:0.86rem; font-weight:700; color:#4a4a4a; margin-bottom:10px;">${esc(item.creator)} · ${esc(item.genre || '일반')}</div>
+            <p style="background:var(--brutal-paper); border:2px solid #111; padding:10px; font-size:0.86rem; font-weight:600; white-space:pre-wrap; word-break:break-word;">${esc(item.review)}</p>
+            <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:12px; align-items:center;">
+              <a class="btn95 pink sm" href="${ytUrl}" target="_blank" rel="noopener noreferrer">[PLAY] 영상관(YouTube) 연결</a>
+              ${item.sourceUrl ? `<a class="btn95 sky sm" href="${esc(item.sourceUrl)}" target="_blank" rel="noopener noreferrer">원본 자료실 &gt;&gt;</a>` : ''}
               ${editable
-                ? `<button type="button" class="btn95 sm btn-toggle-share">${String(item.shared || 'Y').toUpperCase() !== 'N' ? '광장 공개중' : '개인 보관함'}</button>
-                   <button type="button" class="btn95 yellow sm btn-toggle-edit">[EDIT] 편집</button>`
-                : `<button type="button" class="btn95 sm" disabled style="opacity:0.55;" title="${esc(permDenyMsg)}">편집 불가</button>`
+                ? `<button type="button" class="btn95 sm btn-toggle-share" style="background:${String(item.shared || 'Y').toUpperCase() !== 'N' ? 'var(--brutal-green)' : '#e0e0e0'};">${String(item.shared || 'Y').toUpperCase() !== 'N' ? `${PIXEL_ICONS.SPEAKER} 광장 게시판 공개중` : `${PIXEL_ICONS.LOCK} 개인 보관함 (공개 전환)`}</button>
+                   <button type="button" class="btn95 yellow sm btn-toggle-edit">[EDIT] 자료 편집</button>`
+                : `<button type="button" class="btn95 sm" disabled style="opacity:0.55; cursor:not-allowed;" title="${esc(permDenyMsg)}">${PIXEL_ICONS.LOCK} 편집 불가</button>`
               }
               ${deletable
-                ? `<button type="button" class="btn95 sm btn-delete-item">[DEL] 삭제</button>`
-                : `<button type="button" class="btn95 sm" disabled style="opacity:0.55;" title="${esc(permDenyMsg)}">삭제 불가</button>`
+                ? `<button type="button" class="btn95 sm btn-delete-item" style="background:#111; color:#fff;">[DEL] 자료 삭제</button>`
+                : `<button type="button" class="btn95 sm" disabled style="opacity:0.55; cursor:not-allowed;" title="${esc(permDenyMsg)}">${PIXEL_ICONS.LOCK} 삭제 불가</button>`
               }
             </div>
             ${deletable ? `
-            <div class="del-confirm-bar" style="display:none; margin-top:8px; padding:6px 8px; background:#800000; color:#fff; border:1px solid #000; font-size:0.76rem; font-weight:700; align-items:center; justify-content:space-between; gap:6px;">
-              <span>본 자료를 영구 삭제하시겠습니까?</span>
-              <div style="display:flex; gap:4px;">
+            <div class="del-confirm-bar" style="display:none; margin-top:10px; padding:8px 10px; background:var(--brutal-pink); color:#fff; border:2px solid #111; font-size:0.8rem; font-weight:900; align-items:center; justify-content:space-between; gap:8px;">
+              <span>중앙 데이터베이스에서 본 자료를 영구 삭제하시겠습니까?</span>
+              <div style="display:flex; gap:6px;">
                 <button type="button" class="btn95 sm btn-delete-cancel">취소</button>
-                <button type="button" class="btn95 yellow sm btn-delete-confirm">삭제(Y)</button>
+                <button type="button" class="btn95 yellow sm btn-delete-confirm">예, 영구 삭제(Y)</button>
               </div>
             </div>` : ''}
           </div>
         </div>
         <div class="sunken-box">
-          <div class="box-head"><span>연관 추천 자료</span><span class="tag-mini">SIMILAR</span></div>
-          <div class="rec-status-msg" style="font-size:0.76rem; color:#444;">연관 자료를 조회하고 있습니다...</div>
-          <div class="rec-grid" style="display:grid; grid-template-columns:repeat(3, 1fr); gap:6px; margin-top:6px;"></div>
+          <div class="box-head"><span>「${esc(item.creator)} · ${esc(item.title)}」 연관 추천 자료</span><span style="font-size:0.72rem; background:var(--brutal-yellow); padding:2px 6px; border:1.5px solid #111;">SIMILAR</span></div>
+          <div class="rec-status-msg" style="font-size:0.82rem; font-weight:700; color:#4a4a4a;">연관 자료를 조회하고 있습니다...</div>
+          <div class="rec-grid"></div>
         </div>
       </div>
 
       <form class="det-edit-form sunken-box" style="display:none; background: var(--win-gray);">
-        <div class="box-head"><span>[EDIT] 자료 편집 (${esc(item.id || 'NO-ID')})</span><span class="tag-mini">EDIT</span></div>
-        <div style="display:grid; grid-template-columns:1fr 1.2fr; gap:6px; margin-bottom:6px;">
-          <div><label style="display:block; font-size:0.74rem; font-weight:700; margin-bottom:2px;">매체</label>
+        <div class="box-head"><span>[EDIT] 등록 자료 편집 (${esc(item.id || 'NO-ID')})</span><span style="font-size:0.72rem; background:var(--brutal-green); padding:2px 6px; border:1.5px solid #111;">EDIT MODE</span></div>
+        <div style="display:grid; grid-template-columns:1fr 1.15fr; gap:10px; margin-bottom:10px;">
+          <div><label style="display:block; font-size:0.78rem; font-weight:800; margin-bottom:3px;">매체 분류</label>
             <select name="category" class="win95-select" style="width:100%;">
               <option value="도서" ${item.category === '도서' ? 'selected' : ''}>도서</option>
               <option value="음악" ${item.category === '음악' ? 'selected' : ''}>음악</option>
@@ -673,24 +550,24 @@ async function spawnDetailWindow(item) {
               <option value="기타" ${item.category === '기타' ? 'selected' : ''}>기타</option>
             </select>
           </div>
-          <div><label style="display:block; font-size:0.74rem; font-weight:700; margin-bottom:2px;">감상일</label>
-            <div style="display:flex; gap:3px;">
+          <div><label style="display:block; font-size:0.78rem; font-weight:800; margin-bottom:3px;">감상 일자 (년 / 월 / 일)</label>
+            <div class="win95-date-group">
               <select name="dateY" class="win95-select"></select>
               <select name="dateM" class="win95-select"></select>
               <select name="dateD" class="win95-select"></select>
             </div>
           </div>
         </div>
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:6px;">
-          <div><label style="display:block; font-size:0.74rem; font-weight:700; margin-bottom:2px;">제목 *</label><input type="text" name="title" value="${esc(item.title)}" required style="width:100%;" /></div>
-          <div><label style="display:block; font-size:0.74rem; font-weight:700; margin-bottom:2px;">제작자 *</label><input type="text" name="creator" value="${esc(item.creator)}" required style="width:100%;" /></div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
+          <div><label style="display:block; font-size:0.78rem; font-weight:800; margin-bottom:3px;">작품 제목 *</label><input type="text" name="title" value="${esc(item.title)}" required style="width:100%;" /></div>
+          <div><label style="display:block; font-size:0.78rem; font-weight:800; margin-bottom:3px;">저작·제작자 *</label><input type="text" name="creator" value="${esc(item.creator)}" required style="width:100%;" /></div>
         </div>
-        <div style="display:grid; grid-template-columns:1fr 1.2fr; gap:6px; margin-bottom:6px;">
-          <div><label style="display:block; font-size:0.74rem; font-weight:700; margin-bottom:2px;">장르</label><input type="text" name="genre" value="${esc(item.genre)}" style="width:100%;" /></div>
-          <div><span style="display:block; font-size:0.74rem; font-weight:700; margin-bottom:2px;">평점</span>
-            <div style="display:flex; gap:6px; font-size:0.74rem;">
+        <div style="display:grid; grid-template-columns:1fr 1.25fr; gap:10px; margin-bottom:10px;">
+          <div><label style="display:block; font-size:0.78rem; font-weight:800; margin-bottom:3px;">장르 / 색인어</label><input type="text" name="genre" value="${esc(item.genre)}" style="width:100%;" /></div>
+          <div><span style="display:block; font-size:0.78rem; font-weight:800; margin-bottom:3px;">평가 등급 선택</span>
+            <div class="win95-radio-group">
               ${[1, 2, 3, 4, 5].map(r => `
-                <label style="display:inline-flex; align-items:center; gap:2px; cursor:pointer;">
+                <label class="win95-radio">
                   <input type="radio" name="editRating" value="${r}" ${ratingNum === r ? 'checked' : ''} />
                   <span>${r}점</span>
                 </label>
@@ -698,17 +575,17 @@ async function spawnDetailWindow(item) {
             </div>
           </div>
         </div>
-        <div style="margin-bottom:6px;"><label style="display:block; font-size:0.74rem; font-weight:700; margin-bottom:2px;">표지 URL</label><input type="text" name="coverUrl" value="${esc(item.coverUrl)}" style="width:100%;" /></div>
-        <div style="margin-bottom:6px;"><label style="display:block; font-size:0.74rem; font-weight:700; margin-bottom:2px;">원본 URL</label><input type="text" name="sourceUrl" value="${esc(item.sourceUrl)}" style="width:100%;" /></div>
-        <div style="margin-bottom:6px;"><label style="display:block; font-size:0.74rem; font-weight:700; margin-bottom:2px;">감상평 *</label><textarea name="review" rows="3" required style="width:100%;">${esc(item.review)}</textarea></div>
-        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
-          <label style="display:flex; align-items:center; gap:4px; font-size:0.74rem; font-weight:700; cursor:pointer;">
+        <div style="margin-bottom:10px;"><label style="display:block; font-size:0.78rem; font-weight:800; margin-bottom:3px;">표지 이미지 URL</label><input type="text" name="coverUrl" value="${esc(item.coverUrl)}" style="width:100%;" /></div>
+        <div style="margin-bottom:10px;"><label style="display:block; font-size:0.78rem; font-weight:800; margin-bottom:3px;">원본 자료 URL</label><input type="text" name="sourceUrl" value="${esc(item.sourceUrl)}" style="width:100%;" /></div>
+        <div style="margin-bottom:10px;"><label style="display:block; font-size:0.78rem; font-weight:800; margin-bottom:3px;">감상 비평문 *</label><textarea name="review" rows="3" required style="width:100%;">${esc(item.review)}</textarea></div>
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+          <label style="display:flex; align-items:center; gap:6px; font-size:0.78rem; font-weight:900; cursor:pointer; background:#fffdf2; border:1.5px solid #111; padding:4px 8px;">
             <input type="checkbox" name="shared" ${String(item.shared || 'Y').toUpperCase() !== 'N' ? 'checked' : ''} />
-            <span>광장 공개</span>
+            <span>${PIXEL_ICONS.SPEAKER} 광장 게시판 공개</span>
           </label>
-          <div style="display:flex; gap:4px;">
-            <button type="button" class="btn95 sm btn-cancel-edit">취소</button>
-            <button type="submit" class="btn95 yellow sm btn-save-edit">저장(S)</button>
+          <div style="display:flex; gap:8px;">
+            <button type="button" class="btn95 sm btn-cancel-edit">편집 취소</button>
+            <button type="submit" class="btn95 yellow sm btn-save-edit">편집 내용 저장(S)</button>
           </div>
         </div>
       </form>
@@ -725,6 +602,7 @@ async function spawnDetailWindow(item) {
     populateWin95DateSelects(editForm.dateY, editForm.dateM, editForm.dateD, item.watchDate);
   }
 
+  // 연관 작품 조회
   const statusEl = winEl.querySelector('.rec-status-msg');
   const recGrid = winEl.querySelector('.rec-grid');
   try {
@@ -734,7 +612,7 @@ async function spawnDetailWindow(item) {
       const json = await (await fetch(`https://itunes.apple.com/search?term=${q}&country=KR&media=music&limit=6`)).json();
       recs = (json.results || []).filter(r => (r.trackName || '').toLowerCase() !== item.title.toLowerCase()).slice(0, 3).map(r => ({
         title: r.trackName || r.collectionName, creator: r.artistName,
-        thumb: r.artworkUrl100 ? r.artworkUrl100.replace('100x100bb', '300x300bb') : FALLBACK_COVER,
+        thumb: r.artworkUrl100 ? r.artworkUrl100.replace('100x100bb', '600x600bb') : FALLBACK_COVER,
         yt: `https://www.youtube.com/results?search_query=${encodeURIComponent(`${r.artistName} ${r.trackName}`)}`, link: r.trackViewUrl || ''
       }));
     } else if (item.category === '영상') {
@@ -757,16 +635,16 @@ async function spawnDetailWindow(item) {
 
     if (!recs.length) statusEl.textContent = '일치하는 연관 추천 자료가 없습니다.';
     else {
-      statusEl.textContent = `유사 자료 ${recs.length}건`;
+      statusEl.textContent = `유사 자료 ${recs.length}건을 검색했습니다.`;
       recGrid.innerHTML = recs.map(r => `
-        <div style="background:var(--win-gray); box-shadow:var(--bevel-btn); padding:5px; display:flex; flex-direction:column; justify-content:space-between;">
+        <div class="rec-card">
           <div>
-            <img src="${esc(r.thumb)}" alt="${esc(r.title)}" onerror="this.onerror=null;this.src='${FALLBACK_COVER}';" style="width:100%; height:76px; object-fit:cover; border:1px solid #000; margin-bottom:4px;" />
-            <div style="font-size:0.74rem; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${esc(r.title)}</div>
-            <div style="font-size:0.68rem; color:#444; margin-bottom:5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${esc(r.creator)}</div>
+            <img class="rec-thumb" src="${esc(r.thumb)}" alt="${esc(r.title)}" onerror="this.onerror=null;this.src='${FALLBACK_COVER}';" />
+            <div style="font-size:0.84rem; font-weight:900; margin-bottom:2px;">${esc(r.title)}</div>
+            <div style="font-size:0.74rem; font-weight:700; color:#4a4a4a; margin-bottom:8px;">${esc(r.creator)}</div>
           </div>
-          <div style="display:flex; gap:3px;">
-            <a class="btn95 pink sm" style="flex:1;" href="${r.yt}" target="_blank" rel="noopener noreferrer">YouTube</a>
+          <div style="display:flex; gap:5px;">
+            <a class="btn95 pink sm" style="flex:1;" href="${r.yt}" target="_blank" rel="noopener noreferrer">[PLAY] YouTube</a>
             ${r.link ? `<a class="btn95 sm" href="${esc(r.link)}" target="_blank" rel="noopener noreferrer">정보</a>` : ''}
           </div>
         </div>
@@ -775,6 +653,7 @@ async function spawnDetailWindow(item) {
   } catch { statusEl.textContent = '연관 자료 조회 중 통신 오류가 발생했습니다.'; }
 }
 
+// 상세 창 수정/삭제/공개전환 버튼 전역 위임 처리 (작성자·관리자·공용 권한 검증 포함)
 document.addEventListener('click', async e => {
   const winEl = e.target.closest('.floating-win[data-item-key]');
   if (!winEl) return;
@@ -788,7 +667,11 @@ document.addEventListener('click', async e => {
   if (e.target.closest('.btn-toggle-share')) {
     e.preventDefault();
     e.stopPropagation();
-    if (!item || !item.id || !checkCanEditItem(item)) return;
+    if (!item || !item.id) return;
+    if (!checkCanEditItem(item)) {
+      showWin95MessageBox('공개 전환 권한 없음 — MY-ARCHIVE 95', '작성자 본인 또는 관리자 계정만 공개 상태를 변경할 수 있습니다.', 'boom');
+      return;
+    }
     const shareBtn = e.target.closest('.btn-toggle-share');
     shareBtn.disabled = true;
     try {
@@ -806,7 +689,11 @@ document.addEventListener('click', async e => {
         refreshAllViews();
         closeWindow(winEl.id);
         spawnDetailWindow(json.item);
+      } else {
+        showWin95MessageBox('상태 변경 오류 — MY-ARCHIVE 95', json.message || '공개 상태 변경에 실패했습니다.', 'boom');
       }
+    } catch {
+      showWin95MessageBox('통신 오류 — MY-ARCHIVE 95', '서버 통신 중 회선 오류가 발생했습니다.', 'boom');
     } finally {
       shareBtn.disabled = false;
     }
@@ -816,7 +703,16 @@ document.addEventListener('click', async e => {
   if (e.target.closest('.btn-toggle-edit')) {
     e.preventDefault();
     e.stopPropagation();
-    if (!checkCanEditItem(item)) return;
+    if (!checkCanEditItem(item)) {
+      showWin95MessageBox(
+        '편집 권한 없음 — MY-ARCHIVE 95',
+        checkIsPublicItem(item)
+          ? '공용 계정 게시물은 관리자 계정으로만 편집할 수 있습니다.'
+          : '자료 편집은 작성자 본인 또는 관리자 계정으로만 가능합니다.',
+        'boom'
+      );
+      return;
+    }
     playRetroTone('click');
     if (viewBox) viewBox.style.display = 'none';
     if (editForm) editForm.style.display = 'block';
@@ -835,7 +731,16 @@ document.addEventListener('click', async e => {
   if (e.target.closest('.btn-delete-item')) {
     e.preventDefault();
     e.stopPropagation();
-    if (!checkCanDeleteItem(item)) return;
+    if (!checkCanDeleteItem(item)) {
+      showWin95MessageBox(
+        '삭제 권한 없음 — MY-ARCHIVE 95',
+        checkIsPublicItem(item)
+          ? '공용 계정 게시물은 관리자 계정으로만 삭제할 수 있습니다.'
+          : '감상평 삭제는 작성자 본인 또는 관리자 계정으로만 가능합니다.',
+        'boom'
+      );
+      return;
+    }
     playRetroTone('click');
     if (confirmBar) confirmBar.style.display = 'flex';
     return;
@@ -852,17 +757,36 @@ document.addEventListener('click', async e => {
   if (e.target.closest('.btn-delete-confirm')) {
     e.preventDefault();
     e.stopPropagation();
-    if (!item || !item.id || !checkCanDeleteItem(item)) return;
+    if (!item || !item.id) {
+      showWin95MessageBox('삭제 불가 — MY-ARCHIVE 95', '본 자료에는 고유 식별번호(ID)가 없어 삭제할 수 없습니다.', 'boom');
+      return;
+    }
+    if (!checkCanDeleteItem(item)) {
+      showWin95MessageBox(
+        '삭제 권한 없음 — MY-ARCHIVE 95',
+        checkIsPublicItem(item)
+          ? '공용 계정 게시물은 관리자 계정으로만 삭제할 수 있습니다.'
+          : '감상평 삭제는 작성자 본인 또는 관리자 계정으로만 가능합니다.',
+        'boom'
+      );
+      return;
+    }
+
     const me = typeof getCurrentUser === 'function' ? getCurrentUser() : { username: '', role: '' };
     const delBtn = e.target.closest('.btn-delete-confirm');
     delBtn.disabled = true;
-    delBtn.textContent = '삭제 중...';
+    delBtn.textContent = '삭제 처리 중...';
     setLoadingCursor(true);
     try {
       const res = await fetch(GAS_WEB_APP_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action: 'delete', id: item.id, requester: me.username, requesterRole: me.role })
+        body: JSON.stringify({
+          action: 'delete',
+          id: item.id,
+          requester: me.username,
+          requesterRole: me.role
+        })
       });
       const json = await res.json();
       if (json.status === 'success') {
@@ -872,26 +796,41 @@ document.addEventListener('click', async e => {
         delete detailItemRegistry[itemKey];
         refreshAllViews();
         closeWindow(winEl.id);
+      } else {
+        showWin95MessageBox('삭제 거부 — MY-ARCHIVE 95', json.message || '삭제 처리 중 오류가 발생했습니다.', 'boom');
       }
+    } catch {
+      showWin95MessageBox('통신 오류 — MY-ARCHIVE 95', '서버 통신 중 회선 오류가 발생했습니다.', 'boom');
     } finally {
       delBtn.disabled = false;
-      delBtn.textContent = '삭제(Y)';
+      delBtn.textContent = '예, 영구 삭제(Y)';
       setLoadingCursor(false);
     }
   }
 });
 
+// 상세 탐색기 창 인라인 편집 폼(.det-edit-form) 저장 핸들러
 document.addEventListener('submit', async e => {
   const editForm = e.target.closest('.det-edit-form');
   if (!editForm) return;
+
   e.preventDefault();
   e.stopPropagation();
 
   const winEl = editForm.closest('.floating-win[data-item-key]');
   if (!winEl) return;
+
   const itemKey = winEl.dataset.itemKey;
   const item = detailItemRegistry[itemKey];
-  if (!item || !item.id || !checkCanEditItem(item)) return;
+  if (!item || !item.id) {
+    showWin95MessageBox('편집 불가 — MY-ARCHIVE 95', '고유 식별번호(ID)가 없는 자료는 수정할 수 없습니다.', 'boom');
+    return;
+  }
+
+  if (!checkCanEditItem(item)) {
+    showWin95MessageBox('편집 권한 없음 — MY-ARCHIVE 95', '작성자 본인 또는 관리자 계정만 수정할 수 있습니다.', 'boom');
+    return;
+  }
 
   const categoryVal = (editForm.category?.value || item.category || '도서').trim();
   const titleVal = (editForm.title?.value || '').trim();
@@ -903,32 +842,70 @@ document.addEventListener('submit', async e => {
   const checkedRating = editForm.querySelector('input[name="editRating"]:checked');
   const ratingVal = checkedRating ? Number(checkedRating.value) : (Number(item.rating) || 5);
   const sharedVal = editForm.shared ? (editForm.shared.checked ? 'Y' : 'N') : (item.shared || 'Y');
-  const watchDateVal = editForm.dateY && editForm.dateM && editForm.dateD && typeof getWin95DateValue === 'function'
-    ? getWin95DateValue(editForm.dateY, editForm.dateM, editForm.dateD)
-    : item.watchDate || normalizeDateString('');
+
+  const watchDateVal =
+    editForm.dateY && editForm.dateM && editForm.dateD && typeof getWin95DateValue === 'function'
+      ? getWin95DateValue(editForm.dateY, editForm.dateM, editForm.dateD)
+      : item.watchDate || normalizeDateString('');
 
   if (!titleVal || !creatorVal || !reviewVal) {
     showWin95MessageBox('입력 오류 — MY-ARCHIVE 95', '작품 제목, 저작·제작자, 감상 비평문은 필수 항목입니다.', 'boom');
     return;
   }
 
+  const isLocalDup = archiveItems.some(other => {
+    if (String(other.id).trim() === String(item.id).trim()) return false;
+    return other.category === categoryVal && String(other.title || '').trim().toLowerCase() === titleVal.toLowerCase();
+  });
+
+  if (isLocalDup) {
+    showWin95MessageBox(
+      '중복 수정 오류 — MY-ARCHIVE 95',
+      `이미 ${categoryVal} 목록에 동일한 이름(「${titleVal}」)의 다른 기록이 존재합니다.`,
+      'boom'
+    );
+    return;
+  }
+
   const me = typeof getCurrentUser === 'function' ? getCurrentUser() : { username: '', role: '' };
   const saveBtn = editForm.querySelector('.btn-save-edit');
-  if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = '저장 중...'; }
+  if (saveBtn) {
+    saveBtn.disabled = true;
+    saveBtn.textContent = '저장 중...';
+  }
   setLoadingCursor(true);
 
   try {
+    const payload = {
+      action: 'update',
+      id: item.id,
+      category: categoryVal,
+      title: titleVal,
+      creator: creatorVal,
+      genre: genreVal,
+      rating: ratingVal,
+      watchDate: watchDateVal,
+      review: reviewVal,
+      coverUrl: coverUrlVal,
+      sourceUrl: sourceUrlVal,
+      owner: item.owner || me.username || '문태양',
+      shared: sharedVal,
+      requester: me.username,
+      requesterRole: me.role
+    };
+
     const res = await fetch(GAS_WEB_APP_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({
-        action: 'update', id: item.id, category: categoryVal, title: titleVal, creator: creatorVal,
-        genre: genreVal, rating: ratingVal, watchDate: watchDateVal, review: reviewVal,
-        coverUrl: coverUrlVal, sourceUrl: sourceUrlVal, owner: item.owner || me.username || '문태양',
-        shared: sharedVal, requester: me.username, requesterRole: me.role
-      })
+      body: JSON.stringify(payload)
     });
     const json = await res.json();
+
+    if (json.status === 'duplicate') {
+      showWin95MessageBox('중복 수정 오류 — MY-ARCHIVE 95', json.message || '동일한 제목의 자료가 이미 존재합니다.', 'boom');
+      return;
+    }
+
     if (json.status === 'success' && json.item) {
       playRetroTone('open');
       const idx = archiveItems.findIndex(x => String(x.id) === String(item.id));
@@ -938,17 +915,135 @@ document.addEventListener('submit', async e => {
       refreshAllViews();
       closeWindow(winEl.id);
       spawnDetailWindow(json.item);
+    } else {
+      showWin95MessageBox('편집 저장 오류 — MY-ARCHIVE 95', json.message || '자료 수정 저장 중 오류가 발생했습니다.', 'boom');
     }
+  } catch {
+    showWin95MessageBox('통신 오류 — MY-ARCHIVE 95', '서버 통신 중 회선 오류가 발생했습니다.', 'boom');
   } finally {
-    if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = '저장(S)'; }
+    if (saveBtn) {
+      saveBtn.disabled = false;
+      saveBtn.textContent = '편집 내용 저장(S)';
+    }
     setLoadingCursor(false);
   }
 });
 
 // ============================================================
-// 7. 새 감상 기록 등록 모달 & 메모장 & 미니 앱
+// 6. 새 감상 기록 등록 모달 (카테고리 선선택 + 타임아웃 검색 + 1MB 압축)
 // ============================================================
+
+// 공식 음원 사이트 앨범아트 조회 유틸리티 (유튜브 썸네일 대체용)
+function isYoutubeAssetUrl(url) {
+  return /(youtube\.com|youtu\.be|ytimg\.com|ggpht\.com)/i.test(String(url || ''));
+}
+
+function cleanMusicSearchTitle(rawTitle) {
+  return String(rawTitle || '')
+    .replace(/\[[^\]]*\]/g, ' ')
+    .replace(/\((official|mv|m\/v|audio|lyrics?|가사|live|ver\.?|feat\.?)[^)]*\)/gi, ' ')
+    .replace(/official\s*(music\s*)?(video|audio|mv)/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+async function fetchOfficialMusicCandidates(rawQuery, signal) {
+  let searchKeyword = String(rawQuery || '').trim();
+  let originalYoutubeUrl = '';
+
+  // 유튜브 URL 입력 시 oEmbed로 곡/아티스트명을 추출하되 썸네일은 공식 음반 표지로 교체
+  if (/^https?:\/\/(www\.|m\.)?(youtube\.com|youtu\.be)\//i.test(searchKeyword)) {
+    originalYoutubeUrl = searchKeyword;
+    try {
+      const oembedRes = await fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent(searchKeyword)}&format=json`, { signal });
+      if (oembedRes.ok) {
+        const oembed = await oembedRes.json();
+        if (oembed && oembed.title) {
+          searchKeyword = cleanMusicSearchTitle(oembed.title);
+        }
+      }
+    } catch {}
+  } else {
+    searchKeyword = cleanMusicSearchTitle(searchKeyword);
+  }
+
+  const results = [];
+  const seenKeys = new Set();
+
+  // 1순위: Apple Music / iTunes 공식 음원 메타데이터 (KR -> 부족 시 US 보완)
+  for (const country of ['KR', 'US']) {
+    if (results.length >= 6) break;
+    try {
+      const itunesUrl = `https://itunes.apple.com/search?term=${encodeURIComponent(searchKeyword)}&country=${country}&media=music&entity=song&limit=6`;
+      const res = await fetch(itunesUrl, { signal });
+      if (res.ok) {
+        const json = await res.json();
+        (json.results || []).forEach(r => {
+          const title = r.trackName || r.collectionName || '';
+          const creator = r.artistName || '';
+          const dedupKey = `${title.toLowerCase()}|${creator.toLowerCase()}`;
+          if (!title || seenKeys.has(dedupKey)) return;
+          seenKeys.add(dedupKey);
+
+          const officialArt = r.artworkUrl100
+            ? String(r.artworkUrl100).replace('100x100bb', '600x600bb')
+            : '';
+
+          results.push({
+            category: '음악',
+            title,
+            creator,
+            genre: r.primaryGenreName || '음악',
+            year: r.releaseDate ? String(r.releaseDate).slice(0, 4) : '',
+            extra: r.collectionName ? `앨범: ${r.collectionName}` : '공식 음원',
+            source: `Apple Music 공식 (${country})`,
+            coverUrl: officialArt,
+            sourceUrl: originalYoutubeUrl || r.trackViewUrl || r.collectionViewUrl || ''
+          });
+        });
+      }
+    } catch {}
+  }
+
+  // 2순위: MusicBrainz + Cover Art Archive 공식 음반 DB 폴백
+  if (results.length === 0) {
+    try {
+      const mbUrl = `https://musicbrainz.org/ws/2/release/?query=${encodeURIComponent(searchKeyword)}&fmt=json&limit=4`;
+      const mbRes = await fetch(mbUrl, { headers: { Accept: 'application/json' }, signal });
+      if (mbRes.ok) {
+        const mbJson = await mbRes.json();
+        (mbJson.releases || []).forEach(rel => {
+          const title = rel.title || '';
+          const creator = rel['artist-credit']?.[0]?.name || '아티스트 미상';
+          if (!title) return;
+          results.push({
+            category: '음악',
+            title,
+            creator,
+            genre: '음반',
+            year: rel.date ? String(rel.date).slice(0, 4) : '',
+            extra: '공식 음반 DB',
+            source: 'Cover Art Archive',
+            coverUrl: `https://coverartarchive.org/release/${rel.id}/front-500`,
+            sourceUrl: originalYoutubeUrl || `https://musicbrainz.org/release/${rel.id}`
+          });
+        });
+      }
+    } catch {}
+  }
+
+  return results;
+}
+
 let regEventsBound = false;
+let regSearchAbortCtrl = null;
+
+const REG_CAT_PLACEHOLDERS = {
+  '도서': '책 제목, 저자명 또는 서점(알라딘/교보/예스24) URL 입력...',
+  '음악': '곡명, 아티스트명 또는 YouTube 링크 입력...',
+  '영상': '영화·드라마·애니메이션 제목 또는 링크 입력...',
+  '기타': '작품명, 제작자 또는 웹페이지 URL 입력...'
+};
 
 function syncRegisterCategoryState(cat) {
   const cleanCat = ['도서', '음악', '영상', '기타'].includes(cat) ? cat : '';
@@ -956,15 +1051,27 @@ function syncRegisterCategoryState(cat) {
   const statusBadge = document.getElementById('reg-cat-badge');
   const searchInp = document.getElementById('inp-search-query');
   const searchBtn = document.getElementById('btn-auto-search');
+
   if (catSelect) catSelect.value = cleanCat;
+
   document.querySelectorAll('[data-reg-cat-pill]').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.regCatPill === cleanCat);
   });
-  if (statusBadge) statusBadge.textContent = cleanCat ? `선택: ${cleanCat}` : '미선택';
+
+  if (statusBadge) {
+    statusBadge.textContent = cleanCat ? `선택됨: ${cleanCat}` : '미선택 (필수)';
+  }
+
   if (searchInp && searchBtn) {
-    searchInp.disabled = !cleanCat;
-    searchBtn.disabled = !cleanCat;
-    searchInp.placeholder = cleanCat ? `${cleanCat} 제목, 제작자 또는 URL 입력...` : '먼저 위에서 매체를 선택하세요...';
+    if (cleanCat) {
+      searchInp.disabled = false;
+      searchBtn.disabled = false;
+      searchInp.placeholder = REG_CAT_PLACEHOLDERS[cleanCat] || '검색어 또는 링크(URL) 입력...';
+    } else {
+      searchInp.disabled = true;
+      searchBtn.disabled = true;
+      searchInp.placeholder = '먼저 위에서 매체(도서/음악/영상/기타)를 선택하세요...';
+    }
   }
 }
 
@@ -975,63 +1082,109 @@ function ensureRegisterWindowExists() {
     regWin.className = 'floating-win';
     regWin.id = 'win-register';
     regWin.dataset.winTitle = '[+] 새 감상 기록하기';
-    regWin.style.top = '48px';
-    regWin.style.left = '150px';
-    regWin.style.width = '560px';
+    regWin.style.top = '58px';
+    regWin.style.left = '180px';
+    regWin.style.width = '680px';
     regWin.innerHTML = `
-      <div class="win-titlebar draggable">
-        <div class="win-title-left"><span class="win-title-dot"></span><span>새 감상 기록하기</span></div>
+      <div class="win-titlebar draggable yellow-bar">
+        <div class="win-title-left"><span class="win-title-dot"></span><span>새 감상 기록하기 — 매체 선택 및 메타데이터 검색</span></div>
         <div class="win-controls">
           <button type="button" class="win-ctrl-btn" data-action="minimize" data-target="win-register">_</button>
           <button type="button" class="win-ctrl-btn close" data-action="close" data-target="win-register">X</button>
         </div>
       </div>
       <div class="win-body">
-        <div class="sunken-box" style="margin-bottom:7px; background:#fffdf2;">
-          <div class="box-head"><span>1. 매체 선택 *</span><span class="tag-mini" id="reg-cat-badge">미선택</span></div>
-          <div class="pill-group" style="display:flex; gap:4px; flex-wrap:wrap;">
-            <button type="button" class="pill-btn" data-reg-cat-pill="도서" style="flex:1;">도서</button>
-            <button type="button" class="pill-btn" data-reg-cat-pill="음악" style="flex:1;">음악</button>
-            <button type="button" class="pill-btn" data-reg-cat-pill="영상" style="flex:1;">영상</button>
-            <button type="button" class="pill-btn" data-reg-cat-pill="기타" style="flex:1;">기타</button>
+        <!-- STEP 1: 매체(카테고리) 선선택 -->
+        <div class="sunken-box" style="margin-bottom:10px; background:#fffdf2;">
+          <div class="box-head">
+            <span>STEP 1. 매체(카테고리) 먼저 선택 *</span>
+            <span class="tag-mini" id="reg-cat-badge">미선택 (필수)</span>
+          </div>
+          <div class="pill-group" style="display:flex; gap:6px; flex-wrap:wrap;">
+            <button type="button" class="pill-btn" data-reg-cat-pill="도서" style="flex:1; min-width:72px; font-weight:900;">도서</button>
+            <button type="button" class="pill-btn" data-reg-cat-pill="음악" style="flex:1; min-width:72px; font-weight:900;">음악</button>
+            <button type="button" class="pill-btn" data-reg-cat-pill="영상" style="flex:1; min-width:72px; font-weight:900;">영상</button>
+            <button type="button" class="pill-btn" data-reg-cat-pill="기타" style="flex:1; min-width:72px; font-weight:900;">기타</button>
           </div>
         </div>
-        <div class="sunken-box" style="margin-bottom:8px; background:var(--win-gray);">
-          <label style="display:block; font-size:0.76rem; font-weight:700; margin-bottom:4px;">2. 작품명 · 아티스트 · URL 검색</label>
-          <div style="display:flex; gap:4px;">
-            <input type="text" id="inp-search-query" placeholder="먼저 위에서 매체를 선택하세요..." disabled style="flex:1;" />
+
+        <!-- STEP 2: 카테고리 선택 후 활성화되는 자동 검색 -->
+        <div class="sunken-box" style="margin-bottom:12px; background:var(--win-gray);">
+          <label style="display:block; font-size:0.8rem; font-weight:900; margin-bottom:5px;">STEP 2. 작품명 · 아티스트 · URL 자동 검색</label>
+          <div style="display:flex; gap:6px;">
+            <input type="text" id="inp-search-query" placeholder="먼저 위에서 매체(도서/음악/영상/기타)를 선택하세요..." disabled style="flex:1;" />
             <button type="button" class="btn95 yellow sm" id="btn-auto-search" disabled>검색</button>
           </div>
           <div id="reg-alert" class="dialog-banner"></div>
           <div id="rank-list" class="rank-list"></div>
         </div>
+
+        <!-- STEP 3: 상세 정보 입력 및 저장 -->
         <form id="archive-form" class="sunken-box">
-          <div style="display:grid; grid-template-columns:104px 1fr; gap:8px; margin-bottom:7px;">
+          <div style="display:grid; grid-template-columns:130px 1fr; gap:12px; margin-bottom:10px;">
             <div>
-              <img id="preview-cover" src="${FALLBACK_COVER}" alt="표지" style="width:100%; height:120px; object-fit:cover; border:1px solid #000; background:#111; margin-bottom:3px;" />
-              <label class="btn95 sm" style="width:100%; font-size:0.7rem;">사진 압축<input type="file" id="inp-cover-file" accept="image/*" style="display:none;" /></label>
+              <img id="preview-cover" src="${FALLBACK_COVER}" alt="표지" style="width:100%; height:155px; object-fit:cover; border:2px solid #111; background:#111; margin-bottom:4px;" />
+              <label class="btn95 sm" style="width:100%; font-size:0.7rem; padding:4px 6px;">
+                ${PIXEL_ICONS.CAMERA} 사진 압축 첨부
+                <input type="file" id="inp-cover-file" accept="image/*" style="display:none;" />
+              </label>
             </div>
-            <div style="display:flex; flex-direction:column; gap:5px;">
-              <div style="display:grid; grid-template-columns:1fr 1.3fr; gap:5px;">
-                <div><label style="display:block; font-size:0.72rem; font-weight:700;">매체 *</label><select id="inp-category" class="win95-select" required style="width:100%;"><option value="">-- 선택 --</option><option value="도서">도서</option><option value="음악">음악</option><option value="영상">영상</option><option value="기타">기타</option></select></div>
-                <div><label style="display:block; font-size:0.72rem; font-weight:700;">감상일</label><div style="display:flex; gap:2px;"><select id="inp-date-y" class="win95-select"></select><select id="inp-date-m" class="win95-select"></select><select id="inp-date-d" class="win95-select"></select></div></div>
+            <div style="display:flex; flex-direction:column; gap:8px;">
+              <div style="display:grid; grid-template-columns:1fr 1.25fr; gap:8px;">
+                <div>
+                  <label style="display:block; font-size:0.78rem; font-weight:800; margin-bottom:2px;">매체 *</label>
+                  <select id="inp-category" class="win95-select" required style="width:100%;">
+                    <option value="">-- 매체 선택 --</option>
+                    <option value="도서">도서</option>
+                    <option value="음악">음악</option>
+                    <option value="영상">영상</option>
+                    <option value="기타">기타</option>
+                  </select>
+                </div>
+                <div>
+                  <label style="display:block; font-size:0.78rem; font-weight:800; margin-bottom:2px;">감상 일자 (년/월/일)</label>
+                  <div class="win95-date-group">
+                    <select id="inp-date-y" class="win95-select"></select>
+                    <select id="inp-date-m" class="win95-select"></select>
+                    <select id="inp-date-d" class="win95-select"></select>
+                  </div>
+                </div>
               </div>
-              <div style="display:grid; grid-template-columns:1fr 1fr; gap:5px;">
-                <div><label style="display:block; font-size:0.72rem; font-weight:700;">제목 *</label><input type="text" id="inp-title" required style="width:100%;" /></div>
-                <div><label style="display:block; font-size:0.72rem; font-weight:700;">제작자/저자 *</label><input type="text" id="inp-creator" required style="width:100%;" /></div>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+                <div><label style="display:block; font-size:0.78rem; font-weight:800; margin-bottom:2px;">작품 제목 *</label><input type="text" id="inp-title" required style="width:100%;" /></div>
+                <div><label style="display:block; font-size:0.78rem; font-weight:800; margin-bottom:2px;">제작자 / 저자 *</label><input type="text" id="inp-creator" required style="width:100%;" /></div>
               </div>
-              <div><label style="display:block; font-size:0.72rem; font-weight:700;">장르</label><input type="text" id="inp-genre" style="width:100%;" /></div>
+              <div><label style="display:block; font-size:0.78rem; font-weight:800; margin-bottom:2px;">장르 / 키워드</label><input type="text" id="inp-genre" placeholder="예: 소설, 인디록, SF" style="width:100%;" /></div>
             </div>
           </div>
-          <div style="margin-bottom:6px;"><span style="display:block; font-size:0.72rem; font-weight:700; margin-bottom:2px;">평점</span><div style="display:flex; gap:8px; font-size:0.74rem;">${[1,2,3,4,5].map(r => `<label style="display:inline-flex; align-items:center; gap:2px; cursor:pointer;"><input type="radio" name="reg-rating" value="${r}" ${r === 5 ? 'checked' : ''} /><span>${r}점</span></label>`).join('')}</div></div>
-          <div style="display:grid; grid-template-columns:1fr 1fr; gap:5px; margin-bottom:6px;">
-            <div><label style="display:block; font-size:0.72rem; font-weight:700;">표지 URL</label><input type="text" id="inp-cover-url" style="width:100%;" /></div>
-            <div><label style="display:block; font-size:0.72rem; font-weight:700;">원본 링크 URL</label><input type="text" id="inp-source-url" style="width:100%;" /></div>
+          <div style="margin-bottom:8px;">
+            <span style="display:block; font-size:0.78rem; font-weight:800; margin-bottom:3px;">평점 선택</span>
+            <div class="win95-radio-group">
+              ${[1, 2, 3, 4, 5].map(r => `
+                <label class="win95-radio">
+                  <input type="radio" name="reg-rating" value="${r}" ${r === 5 ? 'checked' : ''} />
+                  <span>${r}점</span>
+                </label>
+              `).join('')}
+            </div>
           </div>
-          <div style="margin-bottom:7px;"><label style="display:block; font-size:0.72rem; font-weight:700;">한줄평 *</label><textarea id="inp-review" rows="2" required style="width:100%;"></textarea></div>
-          <div style="display:flex; justify-content:space-between; align-items:center;">
-            <label style="display:flex; align-items:center; gap:4px; font-size:0.74rem; font-weight:700;"><input type="checkbox" id="inp-share-board" checked /><span>광장 게시판 공개</span></label>
-            <div style="display:flex; gap:4px;"><button type="button" class="btn95 sm" id="btn-cancel-reg" data-action="close" data-target="win-register">취소</button><button type="submit" class="btn95 yellow sm" id="btn-submit-reg">확인 및 저장</button></div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px;">
+            <div><label style="display:block; font-size:0.78rem; font-weight:800; margin-bottom:2px;">표지 이미지 URL</label><input type="text" id="inp-cover-url" style="width:100%;" /></div>
+            <div><label style="display:block; font-size:0.78rem; font-weight:800; margin-bottom:2px;">원본 링크 URL</label><input type="text" id="inp-source-url" style="width:100%;" /></div>
+          </div>
+          <div style="margin-bottom:10px;">
+            <label style="display:block; font-size:0.78rem; font-weight:800; margin-bottom:2px;">한줄평 / 감상 메모 *</label>
+            <textarea id="inp-review" rows="3" required style="width:100%;" placeholder="감상한 소감을 기록하십시오..."></textarea>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+            <label style="display:flex; align-items:center; gap:6px; font-size:0.8rem; font-weight:900; cursor:pointer; background:#fffdf2; border:1.5px solid #111; padding:4px 8px;">
+              <input type="checkbox" id="inp-share-board" checked />
+              <span>${PIXEL_ICONS.SPEAKER} 광장 게시판(SNS 피드)에도 함께 공개하기</span>
+            </label>
+            <div style="display:flex; gap:8px;">
+              <button type="button" class="btn95 sm" id="btn-cancel-reg" data-action="close" data-target="win-register">취소</button>
+              <button type="submit" class="btn95 yellow sm" id="btn-submit-reg">확인 및 시트 저장</button>
+            </div>
           </div>
         </form>
       </div>
@@ -1042,54 +1195,331 @@ function ensureRegisterWindowExists() {
 
   if (!regEventsBound) {
     regEventsBound = true;
+
+    // STEP 1 카테고리 필 버튼 클릭
     document.querySelectorAll('[data-reg-cat-pill]').forEach(btn => {
       btn.addEventListener('click', () => {
         playRetroTone('click');
-        syncRegisterCategoryState(btn.dataset.regCatPill);
+        const chosen = btn.dataset.regCatPill;
+        syncRegisterCategoryState(chosen);
+        const rankBox = document.getElementById('rank-list');
+        if (rankBox) rankBox.style.display = 'none';
+        showRegAlert(`「${chosen}」 매체가 선택되었습니다. 검색어를 입력해 주세요.`, 'info');
+        document.getElementById('inp-search-query')?.focus();
       });
     });
-    document.getElementById('inp-category')?.addEventListener('change', e => syncRegisterCategoryState(e.target.value));
+
+    // 하단 폼의 매체 select 변경 시에도 상단 필/검색창 동기화
+    document.getElementById('inp-category')?.addEventListener('change', e => {
+      syncRegisterCategoryState(e.target.value);
+    });
+
+    document.getElementById('btn-auto-search')?.addEventListener('click', runRankedSearch);
+    document.getElementById('inp-search-query')?.addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); runRankedSearch(); }
+    });
+    document.getElementById('inp-cover-url')?.addEventListener('input', e => {
+      const img = document.getElementById('preview-cover');
+      if (!img) return;
+      img.src = e.target.value.trim() || FALLBACK_COVER;
+      img.onerror = () => { img.src = FALLBACK_COVER; };
+    });
+    // 직접 업로드한 표지·인증샷 1MB 이하 클라이언트 압축 적용
+    document.getElementById('inp-cover-file')?.addEventListener('change', async e => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      try {
+        showRegAlert('이미지를 1MB 이하로 압축하고 있습니다...');
+        const compressedDataUrl = await compressImageFile(file, 640, 380 * 1024);
+        document.getElementById('inp-cover-url').value = compressedDataUrl;
+        const img = document.getElementById('preview-cover');
+        if (img) img.src = compressedDataUrl;
+        showRegAlert('로컬 이미지 압축 및 표지 적용 완료!', 'ok');
+      } catch (err) {
+        showRegAlert(err.message || '이미지 압축 오류', 'err');
+      }
+    });
+    document.getElementById('btn-cancel-reg')?.addEventListener('click', e => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (regSearchAbortCtrl) {
+        regSearchAbortCtrl.abort();
+        regSearchAbortCtrl = null;
+      }
+      closeWindow('win-register');
+    });
     document.getElementById('archive-form')?.addEventListener('submit', handleRegisterSubmit);
   }
 }
 
-function openRegisterModal() {
+function openRegisterModal(forceShare = false) {
   ensureRegisterWindowExists();
+
+  if (regSearchAbortCtrl) {
+    regSearchAbortCtrl.abort();
+    regSearchAbortCtrl = null;
+  }
+
   const form = document.getElementById('archive-form');
-  if (form) form.reset();
+  if (form) {
+    form.reset();
+    delete form.dataset.editId;
+  }
+
+  const submitBtn = document.getElementById('btn-submit-reg');
+  if (submitBtn) {
+    submitBtn.disabled = false;
+    submitBtn.textContent = '확인 및 시트 저장';
+  }
+
+  // 열릴 때마다 카테고리 미선택 상태로 초기화하여 STEP 1 선선택 유도
   syncRegisterCategoryState('');
+
+  const searchInp = document.getElementById('inp-search-query');
+  if (searchInp) searchInp.value = '';
+
+  const coverInp = document.getElementById('inp-cover-url');
+  if (coverInp) coverInp.value = '';
+
   const ySel = document.getElementById('inp-date-y');
   const mSel = document.getElementById('inp-date-m');
   const dSel = document.getElementById('inp-date-d');
-  if (ySel && mSel && dSel && typeof populateWin95DateSelects === 'function') populateWin95DateSelects(ySel, mSel, dSel);
+  if (ySel && mSel && dSel && typeof populateWin95DateSelects === 'function') {
+    populateWin95DateSelects(ySel, mSel, dSel);
+  }
+
+  const prevImg = document.getElementById('preview-cover');
+  if (prevImg) prevImg.src = FALLBACK_COVER;
+
+  const rankList = document.getElementById('rank-list');
+  if (rankList) {
+    rankList.innerHTML = '';
+    rankList.style.display = 'none';
+  }
+
+  const shareChk = document.getElementById('inp-share-board');
+  if (shareChk) shareChk.checked = true;
+
+  showRegAlert(
+    forceShare
+      ? '전체 공유 게시판에 올릴 매체(도서 / 음악 / 영상 / 기타)를 먼저 선택해 주세요.'
+      : '먼저 STEP 1에서 매체(도서 / 음악 / 영상 / 기타)를 선택해 주세요.',
+    'info'
+  );
   openWindow('win-register');
+}
+
+function showRegAlert(msg, type = 'info') {
+  const el = document.getElementById('reg-alert');
+  if (!el) return;
+  el.style.display = 'block';
+  el.className = 'dialog-banner';
+  if (type === 'err') el.classList.add('err');
+  if (type === 'ok') el.classList.add('ok');
+  el.textContent = msg;
+}
+
+async function runRankedSearch() {
+  const category = (document.getElementById('inp-category')?.value || '').trim();
+  if (!category) {
+    showRegAlert('먼저 STEP 1에서 매체(도서 / 음악 / 영상 / 기타)를 선택해 주세요.', 'err');
+    return;
+  }
+
+  const query = document.getElementById('inp-search-query').value.trim();
+  if (!query) {
+    showRegAlert('검색어 또는 자료 주소(URL)를 입력하십시오.', 'err');
+    document.getElementById('inp-search-query')?.focus();
+    return;
+  }
+
+  if (regSearchAbortCtrl) {
+    regSearchAbortCtrl.abort();
+  }
+  const controller = new AbortController();
+  regSearchAbortCtrl = controller;
+  const timeoutId = setTimeout(() => controller.abort(), 12000);
+
+  const btn = document.getElementById('btn-auto-search');
+  const rankBox = document.getElementById('rank-list');
+  btn.disabled = true;
+  btn.textContent = '조회 중...';
+  setLoadingCursor(true);
+  if (rankBox) rankBox.style.display = 'none';
+  showRegAlert(
+    category === '음악'
+      ? `[음악] 「${query}」 공식 음원 사이트 앨범아트를 조회하고 있습니다...`
+      : `[${category}] 「${query}」 서지·메타데이터를 조회하고 있습니다...`
+  );
+
+  try {
+    let list = [];
+
+    if (category === '음악') {
+      // 1. 공식 음원 사이트(Apple Music/iTunes, Cover Art Archive) 우선 조회
+      const officialMusicList = await fetchOfficialMusicCandidates(query, controller.signal);
+
+      // 2. 필요 시 GAS 백엔드 보조 조회 후 유튜브 썸네일 제거 및 공식 앨범아트 매핑
+      let gasMusicList = [];
+      if (officialMusicList.length < 3) {
+        try {
+          const url = `${GAS_WEB_APP_URL}?action=search&q=${encodeURIComponent(query)}&title=${encodeURIComponent(query)}&category=${encodeURIComponent(category)}`;
+          const res = await fetch(url, { signal: controller.signal });
+          if (res.ok) {
+            const parsed = JSON.parse(await res.text());
+            if (Array.isArray(parsed.candidates)) {
+              gasMusicList = parsed.candidates.map(c => ({
+                ...c,
+                coverUrl: isYoutubeAssetUrl(c.coverUrl)
+                  ? (officialMusicList[0]?.coverUrl || '')
+                  : (c.coverUrl || officialMusicList[0]?.coverUrl || '')
+              }));
+            }
+          }
+        } catch {}
+      }
+
+      list = [...officialMusicList, ...gasMusicList];
+    } else {
+      const url = `${GAS_WEB_APP_URL}?action=search&q=${encodeURIComponent(query)}&title=${encodeURIComponent(query)}&category=${encodeURIComponent(category)}`;
+      const res = await fetch(url, { signal: controller.signal });
+      if (!res.ok) {
+        throw new Error(`HTTP 응답 오류 (${res.status})`);
+      }
+
+      const rawText = await res.text();
+      let result;
+      try {
+        result = JSON.parse(rawText);
+      } catch {
+        throw new Error('서버 응답이 JSON 형식이 아닙니다. Apps Script 배포 상태를 확인하십시오.');
+      }
+
+      if (result.status === 'error') {
+        showRegAlert(result.message || '조회 중 백엔드 오류가 발생했습니다.', 'err');
+        return;
+      }
+
+      list = Array.isArray(result.candidates) ? result.candidates : [];
+    }
+
+    if (!list.length) {
+      showRegAlert('일치하는 조회 결과가 없습니다. 아래 입력란에 직접 기재해 주십시오.', 'info');
+      return;
+    }
+
+    applyCandidateToForm(list[0]);
+    showRegAlert(
+      list.length > 1
+        ? `총 ${list.length}건의 공식 자료를 찾았습니다. 아래 목록에서 원하는 항목을 선택할 수 있습니다.`
+        : '공식 메타데이터 및 표지를 불러왔습니다.',
+      'ok'
+    );
+
+    if (list.length > 1 && rankBox) {
+      rankBox.innerHTML = '';
+      list.forEach((cand, idx) => {
+        const row = document.createElement('div');
+        row.className = 'rank-item';
+        row.innerHTML = `
+          <span class="rank-badge">#${idx + 1}</span>
+          <img class="rank-thumb" src="${esc(cand.coverUrl || FALLBACK_COVER)}" alt="" onerror="this.onerror=null;this.src='${FALLBACK_COVER}';" />
+          <div style="flex:1; min-width:0;">
+            <div style="font-size:0.82rem; font-weight:900; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${esc(cand.title)} <span style="font-weight:700; color:#4a4a4a;">— ${esc(cand.creator)}</span></div>
+            <div style="font-size:0.72rem; font-weight:700; color:#4a4a4a;"><span class="rank-src">${esc(cand.source)}</span>${cand.year ? ` · ${esc(cand.year)}년` : ''}${cand.extra ? ` · ${esc(cand.extra)}` : ''}</div>
+          </div>
+        `;
+        row.addEventListener('click', () => {
+          applyCandidateToForm(cand);
+          playRetroTone('click');
+          showRegAlert(`선택 완료: 「${cand.title}」 (${cand.creator})`, 'ok');
+        });
+        rankBox.appendChild(row);
+      });
+      rankBox.style.display = 'block';
+    }
+  } catch (err) {
+    if (err && err.name === 'AbortError') {
+      showRegAlert('조회 제한 시간(12초)이 경과했습니다. 다시 시도하거나 직접 입력하십시오.', 'err');
+    } else {
+      showRegAlert(`조회 오류: ${(err && err.message) || '통신 회선 상태를 확인하십시오.'}`, 'err');
+    }
+  } finally {
+    clearTimeout(timeoutId);
+    if (regSearchAbortCtrl === controller) regSearchAbortCtrl = null;
+    btn.disabled = false;
+    btn.textContent = '검색';
+    setLoadingCursor(false);
+  }
+}
+
+function applyCandidateToForm(c) {
+  if (c.category) syncRegisterCategoryState(c.category);
+  if (c.title) document.getElementById('inp-title').value = c.title;
+  if (c.creator) document.getElementById('inp-creator').value = c.creator;
+  if (c.genre) document.getElementById('inp-genre').value = c.genre;
+  if (c.sourceUrl) document.getElementById('inp-source-url').value = c.sourceUrl;
+  document.getElementById('inp-cover-url').value = c.coverUrl || '';
+  const img = document.getElementById('preview-cover');
+  if (img) {
+    img.src = c.coverUrl || FALLBACK_COVER;
+    img.onerror = () => { img.src = FALLBACK_COVER; };
+  }
 }
 
 async function handleRegisterSubmit(e) {
   e.preventDefault();
   const categoryVal = (document.getElementById('inp-category')?.value || '').trim();
-  if (!categoryVal) return;
+  if (!categoryVal) {
+    showRegAlert('매체(도서 / 음악 / 영상 / 기타)를 먼저 선택해 주세요.', 'err');
+    return;
+  }
+
   const checkedRating = document.querySelector('input[name="reg-rating"]:checked');
   const ratingVal = checkedRating ? Number(checkedRating.value) : 5;
+
   const ySel = document.getElementById('inp-date-y');
   const mSel = document.getElementById('inp-date-m');
   const dSel = document.getElementById('inp-date-d');
   const watchDateVal = (ySel && mSel && dSel && typeof getWin95DateValue === 'function')
     ? getWin95DateValue(ySel, mSel, dSel)
     : normalizeDateString('');
+
   const titleVal = document.getElementById('inp-title').value.trim();
+
+  const formEl = document.getElementById('archive-form');
+  const editingId = formEl ? (formEl.dataset.editId || '') : '';
+
+  const isLocalDup = archiveItems.some(item => {
+    if (editingId && String(item.id).trim() === String(editingId).trim()) return false;
+    return item.category === categoryVal && String(item.title || '').trim().toLowerCase() === titleVal.toLowerCase();
+  });
+
+  if (isLocalDup) {
+    const dupMsg = `이미 ${categoryVal} 목록에 동일한 이름(「${titleVal}」)의 다른 기록이 존재합니다.`;
+    showRegAlert(dupMsg, 'err');
+    showWin95MessageBox('중복 등록 오류 — MY-ARCHIVE 95', dupMsg, 'boom');
+    return;
+  }
+
   const me = typeof getCurrentUser === 'function' ? getCurrentUser() : { username: '문태양' };
+  const shareChecked = document.getElementById('inp-share-board')?.checked !== false;
   const payload = {
-    action: 'create', category: categoryVal, title: titleVal,
+    action: editingId ? 'update' : 'create',
+    id: editingId,
+    category: categoryVal,
+    title: titleVal,
     creator: document.getElementById('inp-creator').value.trim(),
     genre: document.getElementById('inp-genre').value.trim() || '일반',
-    rating: ratingVal, watchDate: watchDateVal,
+    rating: ratingVal || 5,
+    watchDate: watchDateVal,
     review: document.getElementById('inp-review').value.trim(),
     coverUrl: document.getElementById('inp-cover-url').value.trim(),
     sourceUrl: document.getElementById('inp-source-url').value.trim(),
     owner: me.username,
-    shared: document.getElementById('inp-share-board')?.checked !== false ? 'Y' : 'N'
+    shared: shareChecked ? 'Y' : 'N'
   };
+
   const btn = document.getElementById('btn-submit-reg');
   btn.disabled = true; btn.textContent = '저장 중...'; setLoadingCursor(true);
   try {
@@ -1099,18 +1529,38 @@ async function handleRegisterSubmit(e) {
       body: JSON.stringify(payload)
     });
     const json = await res.json();
+    if (json.status === 'duplicate') {
+      const dupMsg = json.message || `이미 ${categoryVal} 목록에 동일한 이름이 존재합니다.`;
+      showRegAlert(dupMsg, 'err');
+      showWin95MessageBox('중복 등록 오류 — MY-ARCHIVE 95', dupMsg, 'boom');
+      return;
+    }
     if (json.status === 'success' && json.item) {
       playRetroTone('boot');
-      archiveItems.unshift(json.item);
+      if (editingId) {
+        const idx = archiveItems.findIndex(x => String(x.id) === String(editingId));
+        if (idx !== -1) archiveItems[idx] = json.item;
+      } else {
+        archiveItems.unshift(json.item);
+      }
       saveLocalCache(STORAGE_KEYS.ARCHIVE, archiveItems);
       refreshAllViews();
       closeWindow('win-register');
+    } else {
+      showRegAlert(json.message || '저장 오류', 'err');
     }
+  } catch {
+    showRegAlert('서버 통신 중 오류가 발생했습니다.', 'err');
   } finally {
-    btn.disabled = false; btn.textContent = '확인 및 저장'; setLoadingCursor(false);
+    btn.disabled = false;
+    btn.textContent = '확인 및 시트 저장';
+    setLoadingCursor(false);
   }
 }
 
+// ============================================================
+// 7. 퀵 메모장 (MEMOPAD.EXE)
+// ============================================================
 function openMemoWindow() { openWindow('win-memo'); loadNotesData(); }
 
 async function loadNotesData() {
@@ -1129,9 +1579,16 @@ function renderNotesList() {
   const countBadge = document.getElementById('memo-count-badge');
   if (countBadge) countBadge.textContent = `${memoNotes.length}건`;
   if (!container) return;
-  container.innerHTML = memoNotes.length
-    ? memoNotes.map(n => `<div style="background:#fff;box-shadow:var(--bevel-sunken);padding:6px;margin-bottom:5px;"><div style="font-size:0.7rem;font-weight:700;color:#444;">${esc(n.title || '무제 메모')} · ${esc(n.createdAt)}</div><div style="font-size:0.78rem;white-space:pre-wrap;">${esc(n.content)}</div></div>`).join('')
-    : `<div style="font-size:0.78rem;color:#444;">저장된 메모가 없습니다.</div>`;
+  if (!memoNotes.length) {
+    container.innerHTML = `<div style="font-size:0.82rem; font-weight:700; color:#4a4a4a;">저장된 아이디어 메모가 없습니다.</div>`;
+    return;
+  }
+  container.innerHTML = memoNotes.map(n => `
+    <div class="note-card">
+      <div style="display:flex; justify-content:space-between; font-size:0.74rem; font-weight:800; color:#4a4a4a; margin-bottom:4px;"><span>[NOTE] ${esc(n.title || '무제 메모')}</span><span>${esc(n.createdAt)}</span></div>
+      <div style="font-size:0.84rem; font-weight:700; white-space:pre-wrap;">${esc(n.content)}</div>
+    </div>
+  `).join('');
 }
 
 document.getElementById('memo-form')?.addEventListener('submit', async e => {
@@ -1139,20 +1596,32 @@ document.getElementById('memo-form')?.addEventListener('submit', async e => {
   const title = document.getElementById('memo-title').value.trim() || '무제 아이디어';
   const content = document.getElementById('memo-content').value.trim();
   if (!content) return;
-  const res = await fetch(GAS_WEB_APP_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify({ action: 'note', title, content })
-  });
-  const json = await res.json();
-  if (json.status === 'success' && json.note) {
-    memoNotes.unshift(json.note);
-    saveLocalCache(STORAGE_KEYS.NOTES, memoNotes);
-    renderNotesList();
-    document.getElementById('memo-form').reset();
+  const btn = document.getElementById('btn-save-memo');
+  btn.disabled = true; btn.textContent = '저장 중...'; setLoadingCursor(true);
+  try {
+    const res = await fetch(GAS_WEB_APP_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: 'note', title, content })
+    });
+    const json = await res.json();
+    if (json.status === 'success' && json.note) {
+      playRetroTone('open');
+      memoNotes.unshift(json.note);
+      saveLocalCache(STORAGE_KEYS.NOTES, memoNotes);
+      renderNotesList();
+      document.getElementById('memo-form').reset();
+    }
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '메모 시트에 저장';
+    setLoadingCursor(false);
   }
 });
 
+// ============================================================
+// 8. 확장 미니 앱 초기화 브리지
+// ============================================================
 function initExtensionApps() {
   window.addEventListener('window:opened', ev => {
     const id = ev.detail && ev.detail.id;
@@ -1165,33 +1634,719 @@ function initExtensionApps() {
   });
 }
 
+// ------------------------------------------------------------
+// 8-1. 월별 감상 달력 & 목표 D-Day (CALENDAR95.EXE)
+// ------------------------------------------------------------
+let calCurrentYear = new Date().getFullYear();
+let calCurrentMonth = new Date().getMonth() + 1;
+
 function renderCalendarApp() {
   const body = document.getElementById('calendar-app-body');
-  if (body) body.innerHTML = `<div class="sunken-box">달력 보기 준비됨 (총 ${archiveItems.length}건)</div>`;
-}
-function renderMoodRecommenderApp() {
-  const body = document.getElementById('mood-app-body');
-  if (body) body.innerHTML = `<div class="sunken-box">기분별 추천 준비됨</div>`;
-}
-function renderArchiveQuizApp() {
-  const body = document.getElementById('quiz-app-body');
-  if (body) body.innerHTML = `<div class="sunken-box">퀴즈 준비됨</div>`;
-}
-function renderTimelineAndRadarApp() {
-  const body = document.getElementById('timeline-app-body');
-  if (body) body.innerHTML = `<div class="sunken-box">연대기 준비됨</div>`;
-}
-function renderStampAndReceiptApp() {
-  const body = document.getElementById('stamp-app-body');
-  if (body) body.innerHTML = `<div class="sunken-box">직인 생성기 준비됨</div>`;
-}
-function renderMailboxAndQrApp() {
-  const body = document.getElementById('mailbox-app-body');
-  if (body) body.innerHTML = `<div class="sunken-box">추천 우체통 준비됨</div>`;
+  if (!body) return;
+
+  const ymPrefix = `${calCurrentYear}-${String(calCurrentMonth).padStart(2, '0')}`;
+  const firstDayOfWeek = new Date(calCurrentYear, calCurrentMonth - 1, 1).getDay();
+  const daysInMonth = new Date(calCurrentYear, calCurrentMonth, 0).getDate();
+
+  const itemsByDate = {};
+  archiveItems.forEach(item => {
+    const dStr = String(item.watchDate || '').slice(0, 10);
+    if (dStr.startsWith(ymPrefix)) {
+      itemsByDate[dStr] = itemsByDate[dStr] || [];
+      itemsByDate[dStr].push(item);
+    }
+  });
+
+  const ddays = loadLocalCache(STORAGE_KEYS.DDAYS, [
+    { id: 'dd-1', title: '올해 필독서 10권 완독 목표', date: `${calCurrentYear}-12-31` }
+  ]);
+  const todayZero = new Date(normalizeDateString('') + 'T00:00:00');
+  const sortedDdays = [...ddays].map(d => {
+    const targetZero = new Date(normalizeDateString(d.date) + 'T00:00:00');
+    const diff = Math.round((targetZero - todayZero) / 86400000);
+    return { ...d, diff };
+  }).sort((a, b) => a.diff - b.diff);
+
+  let cellsHtml = '';
+  for (let i = 0; i < firstDayOfWeek; i++) {
+    cellsHtml += `<div class="cal-cell empty"></div>`;
+  }
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateKey = `${ymPrefix}-${String(d).padStart(2, '0')}`;
+    const list = itemsByDate[dateKey] || [];
+    cellsHtml += `
+      <div class="cal-cell ${list.length ? 'has-record' : ''}" data-cal-date="${dateKey}">
+        <div>${d}일</div>
+        <div class="cal-dot-list">
+          ${list.slice(0, 2).map(it => `<span class="cal-badge">${esc(it.title)}</span>`).join('')}
+          ${list.length > 2 ? `<span class="cal-badge">+${list.length - 2}</span>` : ''}
+        </div>
+      </div>
+    `;
+  }
+
+  body.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
+      <div style="display:flex;align-items:center;gap:6px;">
+        <button type="button" class="btn95 sm" id="cal-prev-m">◀ 이전 달</button>
+        <span style="font-size:1.05rem;font-weight:900;padding:0 8px;">${calCurrentYear}년 ${calCurrentMonth}월</span>
+        <button type="button" class="btn95 sm" id="cal-next-m">다음 달 ▶</button>
+      </div>
+      <span class="tag-mini">당월 수록: ${Object.values(itemsByDate).reduce((s, a) => s + a.length, 0)}건</span>
+    </div>
+
+    <div class="cal-grid">
+      ${['일', '월', '화', '수', '목', '금', '토'].map(w => `<div class="cal-head-cell">${w}</div>`).join('')}
+      ${cellsHtml}
+    </div>
+    <div id="cal-day-detail" class="sunken-box" style="margin-top:10px;font-size:0.82rem;font-weight:800;">
+      달력의 날짜 칸을 누르면 해당 일자의 감상 목록이 출력됩니다.
+    </div>
+
+    <div class="sunken-box" style="margin-top:12px;background:var(--win-gray);">
+      <div class="box-head"><span>다가오는 감상 목표 · 기념일 D-Day</span><span class="tag-mini">D-DAY</span></div>
+      <form id="dday-add-form" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
+        <input type="text" id="dday-title-inp" placeholder="목표 제목 (예: 전시회 관람일)" required style="flex:1;min-width:160px;" />
+        <input type="date" id="dday-date-inp" required />
+        <button type="submit" class="btn95 yellow sm">일정 추가</button>
+      </form>
+      <div style="display:flex;flex-direction:column;gap:5px;">
+        ${sortedDdays.map(dd => {
+          const badge = dd.diff === 0 ? 'D-DAY (금일)' : dd.diff > 0 ? `D-${dd.diff}` : `D+${Math.abs(dd.diff)}`;
+          return `
+            <div style="display:flex;justify-content:space-between;align-items:center;background:#fff;border:1.5px solid #111;padding:5px 8px;font-size:0.8rem;font-weight:800;">
+              <span><b style="background:#ffd83b;padding:1px 6px;border:1px solid #111;margin-right:6px;">${badge}</b>${esc(dd.title)} (${esc(dd.date)})</span>
+              <button type="button" class="btn95 sm" data-del-dday="${esc(dd.id)}" style="padding:2px 7px;">삭제</button>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    </div>
+  `;
+
+  document.getElementById('cal-prev-m')?.addEventListener('click', () => {
+    calCurrentMonth--;
+    if (calCurrentMonth < 1) { calCurrentMonth = 12; calCurrentYear--; }
+    playRetroTone('click');
+    renderCalendarApp();
+  });
+
+  document.getElementById('cal-next-m')?.addEventListener('click', () => {
+    calCurrentMonth++;
+    if (calCurrentMonth > 12) { calCurrentMonth = 1; calCurrentYear++; }
+    playRetroTone('click');
+    renderCalendarApp();
+  });
+
+  body.querySelectorAll('[data-cal-date]').forEach(cell => {
+    cell.addEventListener('click', () => {
+      const dKey = cell.dataset.calDate;
+      const list = itemsByDate[dKey] || [];
+      const box = document.getElementById('cal-day-detail');
+      if (!box) return;
+      playRetroTone('click');
+      if (!list.length) {
+        box.textContent = `${dKey}에는 등록된 감상 자료가 없습니다.`;
+      } else {
+        box.innerHTML = `<b>[${dKey} 감상 자료 ${list.length}건]</b><br/>` +
+          list.map(it => `• [${esc(it.category)}] ${esc(it.title)} — ${esc(it.creator)} (★${it.rating}점)`).join('<br/>');
+      }
+    });
+  });
+
+  document.getElementById('dday-add-form')?.addEventListener('submit', e => {
+    e.preventDefault();
+    const title = document.getElementById('dday-title-inp').value.trim();
+    const date = document.getElementById('dday-date-inp').value;
+    if (!title || !date) return;
+    const next = [...ddays, { id: `dd-${Date.now()}`, title, date }];
+    saveLocalCache(STORAGE_KEYS.DDAYS, next);
+    playRetroTone('open');
+    renderCalendarApp();
+  });
+
+  body.querySelectorAll('[data-del-dday]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const targetId = btn.dataset.delDday;
+      const next = ddays.filter(x => x.id !== targetId);
+      saveLocalCache(STORAGE_KEYS.DDAYS, next);
+      playRetroTone('close');
+      renderCalendarApp();
+    });
+  });
 }
 
+// ------------------------------------------------------------
+// 8-2. 감정 상태별 아카이브 랜덤 추천기 (MOODPICK.EXE)
+// ------------------------------------------------------------
+let lastMoodPickedKey = '';
+let currentMoodType = 'happy';
+
+function renderMoodRecommenderApp() {
+  const body = document.getElementById('mood-app-body');
+  if (!body) return;
+
+  const moods = [
+    { key: 'happy', icon: PIXEL_ICONS.MOOD_HAPPY, label: '기쁘고 행복함', color: 'yellow', keywords: ['행복', '사랑', '설렘', '유쾌', '즐거', '희망', '밝은', '코미디'] },
+    { key: 'sad', icon: PIXEL_ICONS.MOOD_SAD, label: '슬프고 우울함', color: 'sky', keywords: ['위로', '눈물', '슬픔', '그리움', '감동', '치유', '잔잔', '드라마'] },
+    { key: 'burnout', icon: PIXEL_ICONS.MOOD_BURNOUT, label: '지치고 번아웃', color: 'green', keywords: ['휴식', '힐링', '여유', '산책', '자유', '인디', '에세이', '자연'] },
+    { key: 'stress', icon: PIXEL_ICONS.MOOD_STRESS, label: '불안하고 스트레스', color: 'pink', keywords: ['몰입', '액션', '스릴', '에너지', '도전', '록', '판타지', '추리'] }
+  ];
+
+  const fallbackQuotes = [
+    { title: '작은 습관의 힘', creator: '제임스 클리어', category: '도서', review: '매일 1%씩 나아지는 루틴이 결국 거대한 변화를 만든다.' },
+    { title: 'Wicked Game', creator: 'Chris Isaak', category: '음악', review: '새벽 공기와 어울리는 몽환적이고 깊은 울림의 선율.' },
+    { title: '월터의 상상은 현실이 된다', creator: '벤 스틸러', category: '영상', review: '망설임을 멈추고 세상 밖으로 한 걸음 내딛게 만드는 영화.' }
+  ];
+
+  const activeMood = moods.find(m => m.key === currentMoodType) || moods[0];
+  const poolSource = archiveItems.length > 0 ? archiveItems : fallbackQuotes;
+
+  let matchedPool = poolSource.filter(item =>
+    activeMood.keywords.some(kw => `${item.title} ${item.genre} ${item.review}`.toLowerCase().includes(kw))
+  );
+  if (!matchedPool.length) matchedPool = poolSource;
+
+  let candidates = matchedPool.filter(it => (it.id || it.title) !== lastMoodPickedKey);
+  if (!candidates.length) candidates = matchedPool;
+
+  const picked = candidates[Math.floor(Math.random() * candidates.length)];
+  lastMoodPickedKey = picked.id || picked.title;
+
+  body.innerHTML = `
+    <p style="font-size:0.84rem;font-weight:800;margin-bottom:10px;">현재 기분 상태를 선택하시면 보관함에서 어울리는 작품과 감상평을 추천해 드립니다.</p>
+    <div class="mood-btn-grid">
+      ${moods.map(m => `
+        <button type="button" class="btn95 ${m.key === currentMoodType ? m.color : ''}" data-mood-key="${m.key}">
+          ${m.icon} ${m.label}
+        </button>
+      `).join('')}
+    </div>
+
+    <div class="mood-result-box">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <span class="tag-mini">${esc(picked.category || '추천')}</span>
+        <span style="font-size:0.75rem;font-weight:800;color:#555;">처방 분류: ${activeMood.icon} ${esc(activeMood.label)}</span>
+      </div>
+      <h3 style="font-size:1.15rem;font-weight:900;margin-bottom:4px;">「${esc(picked.title)}」</h3>
+      <div style="font-size:0.82rem;font-weight:700;color:#4a4a4a;margin-bottom:10px;">${esc(picked.creator)}</div>
+      <blockquote style="background:var(--brutal-paper);border-left:4px solid var(--brutal-pink);padding:10px;font-size:0.86rem;font-weight:700;margin-bottom:12px;">
+        “${esc(picked.review)}”
+      </blockquote>
+      <div style="display:flex;justify-content:flex-end;gap:8px;">
+        <button type="button" class="btn95 yellow sm" id="btn-mood-reroll">${PIXEL_ICONS.REROLL} 다른 추천 작품 보기</button>
+      </div>
+    </div>
+  `;
+
+  body.querySelectorAll('[data-mood-key]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      currentMoodType = btn.dataset.moodKey;
+      playRetroTone('open');
+      renderMoodRecommenderApp();
+    });
+  });
+
+  document.getElementById('btn-mood-reroll')?.addEventListener('click', () => {
+    playRetroTone('click');
+    renderMoodRecommenderApp();
+  });
+}
+
+// ------------------------------------------------------------
+// 8-3. 아카이브 복습 퀴즈 & 초성 힌트 챌린지 (QUIZ95.EXE)
+// ------------------------------------------------------------
+let quizScore = 0;
+let quizCount = 0;
+let quizHintUsed = false;
+
+function renderArchiveQuizApp() {
+  const body = document.getElementById('quiz-app-body');
+  if (!body) return;
+
+  const pool = getMyVisibleArchiveItems();
+  if (pool.length < 4) {
+    body.innerHTML = `
+      <div class="sunken-box" style="text-align:center;padding:24px;">
+        <p style="font-weight:900;margin-bottom:8px;">4지선다 기억력 퀴즈를 출제하려면 최소 4건 이상의 감상 자료가 필요합니다.</p>
+        <p style="font-size:0.8rem;color:#555;">현재 보관 중인 자료: ${pool.length}건</p>
+      </div>
+    `;
+    return;
+  }
+
+  quizHintUsed = false;
+  const shuffled = [...pool].sort(() => Math.random() - 0.5);
+  const answerItem = shuffled[0];
+  const distractors = shuffled.slice(1, 4);
+  const options = [answerItem, ...distractors].sort(() => Math.random() - 0.5);
+
+  const chosungHint = extractKoreanChosung(answerItem.title);
+
+  body.innerHTML = `
+    <div class="box-head">
+      <span>보관 자료 4지선다 기억력 퀴즈</span>
+      <span class="tag-mini">획득 점수: ${quizScore} PTS (${quizCount}문항 완료)</span>
+    </div>
+
+    <div class="sunken-box" style="background:#fff6bf;margin-bottom:12px;">
+      <div style="font-size:0.78rem;font-weight:800;color:#444;margin-bottom:4px;">Q. 아래 서지 및 감상 기록에 해당하는 작품명은 무엇입니까?</div>
+      <div style="font-size:0.95rem;font-weight:900;margin-bottom:6px;">
+- 매체/장르: [${esc(answerItem.category)}] ${esc(answerItem.genre || '일반')}<br/>
+- 저작·제작자: ${esc(answerItem.creator)}<br/>
+- 수록 감상평: “${esc(answerItem.review)}”
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:8px;">
+        <button type="button" class="btn95 sky sm" id="btn-quiz-hint">${PIXEL_ICONS.BULB} 초성 힌트 보기</button>
+        <span id="quiz-hint-text" style="font-family:var(--font-mono);font-size:0.88rem;font-weight:900;color:#000080;"></span>
+      </div>
+    </div>
+
+    <div id="quiz-options-wrap">
+      ${options.map((opt, idx) => `
+        <button type="button" class="quiz-option-btn" data-opt-id="${esc(opt.id)}">
+          ${idx + 1}. ${esc(opt.title)}
+        </button>
+      `).join('')}
+    </div>
+
+    <div id="quiz-feedback-box" style="display:none;margin-top:10px;padding:10px;border:2px solid #111;font-weight:900;font-size:0.86rem;"></div>
+  `;
+
+  document.getElementById('btn-quiz-hint')?.addEventListener('click', () => {
+    if (quizHintUsed) return;
+    quizHintUsed = true;
+    playRetroTone('click');
+    const hintEl = document.getElementById('quiz-hint-text');
+    if (hintEl) hintEl.textContent = `초성 힌트: [ ${chosungHint} ]`;
+  });
+
+  body.querySelectorAll('.quiz-option-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const pickedId = btn.dataset.optId;
+      const fb = document.getElementById('quiz-feedback-box');
+      if (!fb) return;
+
+      if (pickedId === answerItem.id) {
+        quizScore += quizHintUsed ? 5 : 10;
+        quizCount++;
+        playRetroTone('fanfare');
+        fb.style.display = 'block';
+        fb.style.background = 'var(--brutal-green)';
+        fb.style.color = '#111111';
+        fb.innerHTML = `${PIXEL_ICONS.TROPHY} 정답입니다! 「${esc(answerItem.title)}」 (+${quizHintUsed ? 5 : 10} PTS) <button type="button" class="btn95 yellow sm" id="btn-quiz-next" style="margin-left:8px;">다음 문항 &gt;&gt;</button>`;
+        body.querySelectorAll('.quiz-option-btn').forEach(b => (b.disabled = true));
+        document.getElementById('btn-quiz-next')?.addEventListener('click', renderArchiveQuizApp);
+      } else {
+        playRetroTone('boom');
+        fb.style.display = 'block';
+        fb.style.background = 'var(--brutal-pink)';
+        fb.style.color = '#ffffff';
+        fb.innerHTML = `${PIXEL_ICONS.CROSS} 오답입니다! 다른 보기를 다시 선택해 보십시오.`;
+        btn.disabled = true;
+        btn.style.opacity = '0.5';
+      }
+    });
+  });
+}
+
+// ------------------------------------------------------------
+// 8-4. 인터랙티브 가로 연표 & 상·하반기 레이더 차트 비교 (TIMELINE95.EXE)
+// ------------------------------------------------------------
+let radarComparisonChart = null;
+
+function renderTimelineAndRadarApp() {
+  const body = document.getElementById('timeline-app-body');
+  if (!body) return;
+
+  const sortedByDate = [...archiveItems].sort((a, b) => String(a.watchDate).localeCompare(String(b.watchDate)));
+  const cats = ['도서', '음악', '영상', '기타'];
+
+  const h1Data = cats.map(c => sortedByDate.filter(i => i.category === c && Number(String(i.watchDate).slice(5, 7)) <= 6).length);
+  const h2Data = cats.map(c => sortedByDate.filter(i => i.category === c && Number(String(i.watchDate).slice(5, 7)) >= 7).length);
+
+  body.innerHTML = `
+    <div class="box-head">
+      <span>연대기순 가로 감상 연표 (클릭 시 상세 열람)</span>
+      <span class="tag-mini">총 ${sortedByDate.length}개 노드</span>
+    </div>
+    <div class="timeline-scroll-wrap">
+      <div class="timeline-track">
+        ${sortedByDate.length ? sortedByDate.map(it => `
+          <div class="timeline-node" data-tl-id="${esc(it.id)}">
+            <div style="font-family:var(--font-mono);font-size:0.72rem;font-weight:900;color:#000080;">${esc(it.watchDate)}</div>
+            <div style="font-size:0.84rem;font-weight:900;margin:3px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(it.title)}</div>
+            <div style="font-size:0.74rem;color:#555;">[${esc(it.category)}] ★${it.rating}</div>
+          </div>
+        `).join('') : '<div style="padding:12px;font-weight:800;">출력할 연표 자료가 없습니다.</div>'}
+      </div>
+    </div>
+
+    <div class="sunken-box">
+      <div class="box-head">
+        <span>상반기(사전) vs 하반기(사후) 매체 활동 레이더 비교</span>
+        <button type="button" class="btn95 yellow sm" id="btn-save-radar-png">${PIXEL_ICONS.CHART} 레이더 차트 PNG 저장</button>
+      </div>
+      <div style="height:230px;position:relative;">
+        <canvas id="chart-radar-compare"></canvas>
+      </div>
+    </div>
+  `;
+
+  body.querySelectorAll('[data-tl-id]').forEach(node => {
+    node.addEventListener('click', () => {
+      const target = archiveItems.find(x => String(x.id) === String(node.dataset.tlId));
+      if (target) spawnDetailWindow(target);
+    });
+  });
+
+  const radarCanvas = document.getElementById('chart-radar-compare');
+  if (radarCanvas && typeof Chart !== 'undefined') {
+    if (radarComparisonChart) radarComparisonChart.destroy();
+    radarComparisonChart = new Chart(radarCanvas.getContext('2d'), {
+      type: 'radar',
+      data: {
+        labels: cats,
+        datasets: [
+          {
+            label: '상반기 (1~6월)',
+            data: h1Data,
+            borderColor: '#0055ff',
+            backgroundColor: 'rgba(0, 85, 255, 0.2)',
+            borderWidth: 2.5
+          },
+          {
+            label: '하반기 (7~12월)',
+            data: h2Data,
+            borderColor: '#ff2e55',
+            backgroundColor: 'rgba(255, 46, 85, 0.2)',
+            borderWidth: 2.5
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: { r: { beginAtZero: true, ticks: { stepSize: 1 } } }
+      }
+    });
+  }
+
+  document.getElementById('btn-save-radar-png')?.addEventListener('click', () => {
+    if (!radarCanvas) return;
+    const a = document.createElement('a');
+    a.href = radarCanvas.toDataURL('image/png');
+    a.download = `MyArchive_레이더비교_${normalizeDateString('')}.png`;
+    a.click();
+    playRetroTone('open');
+  });
+}
+
+// ------------------------------------------------------------
+// 8-5. 전자 직인(도장) 생성기 & 문화생활 가계부·전표 (STAMP95.EXE)
+// ------------------------------------------------------------
+function renderStampAndReceiptApp() {
+  const body = document.getElementById('stamp-app-body');
+  if (!body) return;
+
+  const budgetState = loadLocalCache(STORAGE_KEYS.BUDGET, {
+    limit: 100000,
+    expenses: []
+  });
+
+  const totalSpent = (budgetState.expenses || []).reduce((s, e) => s + (Number(e.price) || 0), 0);
+  const remain = Number(budgetState.limit || 0) - totalSpent;
+  const isOverBudget = remain < 0;
+
+  body.innerHTML = `
+    <div class="charts-grid" style="grid-template-columns:1fr 1.15fr;">
+      <!-- 좌측: 투명 배경 PNG 전자 직인 생성기 -->
+      <div class="sunken-box">
+        <div class="box-head"><span>열람 확인 전자 직인(도장) 생성기</span><span class="tag-mini">PNG</span></div>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px;">
+          <input type="text" id="stamp-name-inp" value="문태양" maxlength="4" placeholder="성명 (최대 4자)" />
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+            <select id="stamp-shape-sel" class="win95-select">
+              <option value="circle">원형 인장</option>
+              <option value="square">사각형 인장</option>
+            </select>
+            <select id="stamp-font-sel" class="win95-select">
+              <option value="serif">명조체 (Serif)</option>
+              <option value="sans-serif">고딕체 (Sans)</option>
+              <option value="cursive">필기체 (Cursive)</option>
+            </select>
+          </div>
+        </div>
+        <div style="text-align:center;padding:10px;background:#f7f5ee;border:1.5px dashed #111;margin-bottom:10px;">
+          <canvas id="stamp-preview-canvas" width="140" height="140"></canvas>
+        </div>
+        <button type="button" class="btn95 pink sm" id="btn-download-stamp" style="width:100%;">${PIXEL_ICONS.DOWNLOAD} 투명 배경 PNG 직인 내려받기</button>
+      </div>
+
+      <!-- 우측: 월간 문화생활 가계부 & 취득 사유 전표 -->
+      <div class="sunken-box">
+        <div class="box-head"><span>문화생활 가계부 &amp; 취득 사유 전표</span><span class="tag-mini">한도 ${formatCommaNumber(budgetState.limit)}원</span></div>
+        <div style="display:flex;gap:6px;margin-bottom:8px;">
+          <input type="number" id="budget-limit-inp" value="${budgetState.limit}" step="5000" style="width:130px;" />
+          <button type="button" class="btn95 sm" id="btn-set-budget">한도 설정</button>
+        </div>
+
+        <form id="expense-add-form" style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px;">
+          <div style="display:grid;grid-template-columns:1.3fr 1fr;gap:6px;">
+            <input type="text" id="exp-title-inp" placeholder="도서·음반·관람권명" required />
+            <input type="number" id="exp-price-inp" placeholder="금액 (원)" required />
+          </div>
+          <input type="text" id="exp-reason-inp" placeholder="본 자료를 선택·취득한 합리적 사유 기재..." required />
+          <button type="submit" class="btn95 yellow sm" ${isOverBudget ? 'disabled' : ''}>
+            ${isOverBudget ? `${PIXEL_ICONS.BAN} 예산 초과 잠금 (한도 조정 필요)` : '+ 지출 및 취득 사유 등록'}
+          </button>
+        </form>
+
+        <div id="printable-receipt-area" class="receipt-paper">
+          <div style="text-align:center;font-weight:900;border-bottom:1px dashed #111;padding-bottom:6px;margin-bottom:6px;">
+            *** MY-ARCHIVE 95 문화생활 전표 ***<br/>
+            발행일자: ${normalizeDateString('')}
+          </div>
+          ${(budgetState.expenses || []).map(ex => `
+            <div style="margin-bottom:6px;border-bottom:1px dotted #ccc;padding-bottom:4px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;font-weight:900;">
+                <span>${esc(ex.title)}</span>
+                <span>
+                  ${formatCommaNumber(ex.price)}원
+                  <button type="button" data-del-exp="${esc(ex.id)}" style="margin-left:4px;border:1px solid #111;background:#eee;font-size:0.68rem;cursor:pointer;">×</button>
+                </span>
+              </div>
+              <div style="font-size:0.74rem;color:#333;">사유: ${esc(ex.reason)}</div>
+            </div>
+          `).join('') || '<div style="color:#666;">기재된 지출 내역이 없습니다.</div>'}
+          <div style="border-top:1px dashed #111;padding-top:6px;margin-top:6px;font-weight:900;">
+            <div>총 지출 합계: ${formatCommaNumber(totalSpent)}원</div>
+            <div style="color:${isOverBudget ? '#d63031' : '#000080'};">남은 예산 잔액: ${formatCommaNumber(remain)}원</div>
+          </div>
+        </div>
+        <button type="button" class="btn95 sm" id="btn-print-receipt" style="width:100%;margin-top:8px;">${PIXEL_ICONS.PRINTER} 전표 인쇄 / PDF 출력</button>
+      </div>
+    </div>
+  `;
+
+  // 전자 직인 실시간 렌더링 ('인' 중복 방지)
+  const drawStamp = () => {
+    const canvas = document.getElementById('stamp-preview-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const rawName = (document.getElementById('stamp-name-inp')?.value || '완독').trim();
+    const name = rawName.endsWith('인') ? rawName : `${rawName}인`;
+    const shape = document.getElementById('stamp-shape-sel')?.value || 'circle';
+    const font = document.getElementById('stamp-font-sel')?.value || 'serif';
+
+    ctx.clearRect(0, 0, 140, 140);
+    ctx.strokeStyle = '#d63031';
+    ctx.fillStyle = '#d63031';
+    ctx.lineWidth = 5;
+
+    if (shape === 'circle') {
+      ctx.beginPath();
+      ctx.arc(70, 70, 56, 0, Math.PI * 2);
+      ctx.stroke();
+    } else {
+      ctx.strokeRect(18, 18, 104, 104);
+    }
+
+    ctx.font = `900 28px ${font}`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    if (name.length >= 4) {
+      ctx.fillText(name.slice(0, 2), 70, 52);
+      ctx.fillText(name.slice(2, 4), 70, 88);
+    } else {
+      ctx.fillText(name, 70, 70);
+    }
+  };
+
+  drawStamp();
+  document.getElementById('stamp-name-inp')?.addEventListener('input', drawStamp);
+  document.getElementById('stamp-shape-sel')?.addEventListener('change', drawStamp);
+  document.getElementById('stamp-font-sel')?.addEventListener('change', drawStamp);
+
+  document.getElementById('btn-download-stamp')?.addEventListener('click', () => {
+    const canvas = document.getElementById('stamp-preview-canvas');
+    if (!canvas) return;
+    const a = document.createElement('a');
+    a.href = canvas.toDataURL('image/png');
+    a.download = `열람확인직인_${Date.now()}.png`;
+    a.click();
+    playRetroTone('open');
+  });
+
+  document.getElementById('btn-set-budget')?.addEventListener('click', () => {
+    const newLimit = Number(document.getElementById('budget-limit-inp')?.value) || 0;
+    budgetState.limit = Math.max(0, newLimit);
+    saveLocalCache(STORAGE_KEYS.BUDGET, budgetState);
+    playRetroTone('click');
+    renderStampAndReceiptApp();
+  });
+
+  document.getElementById('expense-add-form')?.addEventListener('submit', e => {
+    e.preventDefault();
+    const title = document.getElementById('exp-title-inp').value.trim();
+    const price = Number(document.getElementById('exp-price-inp').value) || 0;
+    const reason = document.getElementById('exp-reason-inp').value.trim();
+    if (!title || price <= 0) return;
+
+    if (totalSpent + price > budgetState.limit) {
+      showWin95MessageBox('예산 초과 경고 — MY-ARCHIVE 95', `설정된 한도(${formatCommaNumber(budgetState.limit)}원)를 초과하여 지출을 기입할 수 없습니다.`, 'boom');
+      return;
+    }
+
+    budgetState.expenses.push({ id: `ex-${Date.now()}`, title, price, reason });
+    saveLocalCache(STORAGE_KEYS.BUDGET, budgetState);
+    playRetroTone('open');
+    renderStampAndReceiptApp();
+  });
+
+  body.querySelectorAll('[data-del-exp]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      budgetState.expenses = (budgetState.expenses || []).filter(x => x.id !== btn.dataset.delExp);
+      saveLocalCache(STORAGE_KEYS.BUDGET, budgetState);
+      playRetroTone('close');
+      renderStampAndReceiptApp();
+    });
+  });
+
+  document.getElementById('btn-print-receipt')?.addEventListener('click', () => window.print());
+}
+
+// ------------------------------------------------------------
+// 8-6. 비밀 추천 우체통 & 모바일 QR 코드 공유 (MAILBOX95.EXE)
+// ------------------------------------------------------------
+async function renderMailboxAndQrApp() {
+  const body = document.getElementById('mailbox-app-body');
+  if (!body) return;
+
+  const currentUrl = window.location.href;
+
+  body.innerHTML = `
+    <div class="charts-grid" style="grid-template-columns:1.35fr 1fr;">
+      <div class="sunken-box">
+        <div class="box-head"><span>방문자 작품 추천 · 전자 우체통</span><span class="tag-mini">MAILBOX</span></div>
+        <form id="mailbox-send-form" style="display:flex;flex-direction:column;gap:7px;margin-bottom:12px;">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+            <input type="text" id="mb-sender" placeholder="발신인 성명 (익명 가능)" />
+            <select id="mb-category" class="win95-select">
+              <option value="도서 추천">도서 추천</option>
+              <option value="음악 추천">음악 추천</option>
+              <option value="영상 추천">영상 추천</option>
+              <option value="응원·방명록">응원·방명록</option>
+            </select>
+          </div>
+          <textarea id="mb-content" rows="3" required placeholder="추천하고 싶은 작품명과 사유, 또는 방명록 전언을 남겨주십시오..."></textarea>
+          <button type="submit" class="btn95 green sm" id="btn-send-mailbox">${PIXEL_ICONS.MAILBOX} 우체통 발송 (서버 저장 + 전자우편 알림)</button>
+        </form>
+
+        <div class="box-head"><span>수신된 추천 전언함</span><span id="mb-count-tag" class="tag-mini">조회 중...</span></div>
+        <div id="mailbox-list-box" style="max-height:175px;overflow-y:auto;"></div>
+      </div>
+
+      <div class="sunken-box" style="text-align:center;">
+        <div class="box-head"><span>단말기 QR 코드 접속</span><span class="tag-mini">PWA</span></div>
+        <p style="font-size:0.78rem;font-weight:800;margin-bottom:10px;word-break:keep-all;">
+          휴대용 단말기 카메라로 아래 QR 코드를 판독하시면 이동 통신 환경에서도 자료실에 접속할 수 있습니다.
+        </p>
+        <div id="qr-code-container" class="qr-box"></div>
+        <div style="margin-top:10px;">
+          <button type="button" class="btn95 yellow sm" id="btn-copy-app-url">${PIXEL_ICONS.LINK} 접속 주소 복사하기</button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  const qrContainer = document.getElementById('qr-code-container');
+  if (qrContainer && typeof QRCode !== 'undefined') {
+    qrContainer.innerHTML = '';
+    new QRCode(qrContainer, {
+      text: currentUrl,
+      width: 148,
+      height: 148,
+      colorDark: '#111111',
+      colorLight: '#ffffff'
+    });
+  }
+
+  document.getElementById('btn-copy-app-url')?.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(currentUrl);
+      showWin95MessageBox('주소 복사 완료 — MY-ARCHIVE 95', '현재 자료실 접속 주소(URL)가 클립보드에 복사되었습니다.', 'open');
+    } catch {
+      showWin95MessageBox('접속 주소 안내 — MY-ARCHIVE 95', currentUrl, 'click');
+    }
+  });
+
+  const loadMailbox = async () => {
+    const listBox = document.getElementById('mailbox-list-box');
+    const countTag = document.getElementById('mb-count-tag');
+    try {
+      const json = await (await fetch(`${GAS_WEB_APP_URL}?action=mailbox`)).json();
+      mailboxItems = (json.status === 'success' && Array.isArray(json.mails)) ? json.mails : [];
+      saveLocalCache(STORAGE_KEYS.MAILBOX, mailboxItems);
+    } catch {
+      mailboxItems = loadLocalCache(STORAGE_KEYS.MAILBOX, []);
+    }
+    if (countTag) countTag.textContent = `${mailboxItems.length}건`;
+    if (listBox) {
+      listBox.innerHTML = mailboxItems.length ? mailboxItems.map(m => `
+        <div class="note-card">
+          <div style="display:flex;justify-content:space-between;font-size:0.72rem;font-weight:800;color:#000080;">
+            <span>[${esc(m.category)}] ${esc(m.sender)}</span>
+            <span>${esc(m.createdAt)}</span>
+          </div>
+          <div style="font-size:0.8rem;font-weight:700;margin-top:3px;white-space:pre-wrap;">${esc(m.content)}</div>
+        </div>
+      `).join('') : '<div style="font-size:0.78rem;color:#666;">수신된 추천 전언이 없습니다.</div>';
+    }
+  };
+
+  loadMailbox();
+
+  document.getElementById('mailbox-send-form')?.addEventListener('submit', async e => {
+    e.preventDefault();
+    const sender = document.getElementById('mb-sender').value.trim() || '익명 방문자';
+    const category = document.getElementById('mb-category').value;
+    const content = document.getElementById('mb-content').value.trim();
+    if (!content) return;
+
+    const btn = document.getElementById('btn-send-mailbox');
+    btn.disabled = true; btn.textContent = '발송 중...'; setLoadingCursor(true);
+    try {
+      const res = await fetch(GAS_WEB_APP_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: 'send_mail', sender, category, content })
+      });
+      const json = await res.json();
+      if (json.status === 'success' && json.mail) {
+        playRetroTone('fanfare');
+        document.getElementById('mailbox-send-form').reset();
+        await loadMailbox();
+        showWin95MessageBox(
+          '우체통 발송 완료 — MY-ARCHIVE 95',
+          json.emailSent ? '중앙 데이터 저장 및 관리자 전자우편 알림 발송이 완료되었습니다.' : '전자 우체통에 안전하게 보관되었습니다.',
+          'open'
+        );
+      }
+    } catch {
+      showWin95MessageBox('전송 오류 — MY-ARCHIVE 95', '우체통 발송 중 통신 회선 오류가 발생했습니다.', 'boom');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = `${PIXEL_ICONS.MAILBOX} 우체통 발송 (서버 저장 + 전자우편 알림)`;
+      setLoadingCursor(false);
+    }
+  });
+}
+
+// ============================================================
+// 9. 타 모듈(os-core.js / community / jukebox) 연동 전역 노출
+// ============================================================
 window.openRegisterModal = openRegisterModal;
-window.openAccountSettingsWindow = openAccountSettingsWindow;
 window.spawnDetailWindow = spawnDetailWindow;
 window.loadArchiveData = loadArchiveData;
 window.refreshAllViews = refreshAllViews;

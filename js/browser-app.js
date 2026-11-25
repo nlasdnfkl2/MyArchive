@@ -126,21 +126,14 @@ function applyOsPrefsToDom(prefs) {
   if (typeof applyTheme === 'function') {
     applyTheme(theme, false);
   } else {
-    document.body.classList.remove('theme-teal', 'theme-navy', 'theme-olive', 'theme-plum', 'theme-brick', 'theme-matrix', 'theme-grid');
+    document.body.classList.remove('theme-teal', 'theme-navy', 'theme-olive', 'theme-plum', 'theme-brick', 'theme-matrix');
     document.body.classList.add(`theme-${theme}`);
   }
-
-  document.querySelectorAll('#win-display-props [data-wp]').forEach(btn => {
-    const isSelected = btn.dataset.wp === theme;
-    btn.classList.toggle('yellow', isSelected);
-    btn.style.boxShadow = isSelected ? 'var(--bevel-btn-pressed)' : '';
-  });
 
   const crtEnabled = Boolean(p.crtScanline);
   const crtOverlay = document.getElementById('crt-overlay');
   if (crtOverlay) {
     crtOverlay.classList.toggle('hidden', !crtEnabled);
-    crtOverlay.style.display = crtEnabled ? 'block' : 'none';
   }
   const topChk = document.getElementById('chk-crt');
   if (topChk) topChk.checked = crtEnabled;
@@ -380,7 +373,6 @@ function openDisplayPropsWindow() {
   const inp = document.getElementById('inp-os-owner');
   if (chk) chk.checked = Boolean(cur.crtScanline);
   if (inp) inp.value = cur.ownerName || '문태양';
-  applyOsPrefsToDom(cur);
   openWindow('win-display-props');
 }
 

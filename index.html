@@ -10,10 +10,10 @@
   <meta name="apple-mobile-web-app-title" content="MY-ARCHIVE 95" />
   <title>MY-ARCHIVE 95 OS — 개인 문화·예술 감상 자료실</title>
   
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%23008080'/%3E%3Crect x='2' y='2' width='12' height='12' fill='%23c0c0c0' stroke='%23000000' stroke-width='1.5'/%3E%3Crect x='3' y='3' width='10' height='3' fill='%23000080'/%3E%3C/svg%3E" />
-  <link rel="manifest" href='data:application/manifest+json,{"name":"MY-ARCHIVE 95 OS","short_name":"ARCHIVE95","start_url":"./","display":"standalone","background_color":"%23008080","theme_color":"%23000080","description":"Windows 95 + Neo-Brutalism 개인 문화 감상 자료실 OS"}' />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://w3.org' viewBox='0 0 16 16'><rect width='16' height='16' fill='%23008080'/><rect x='2' y='2' width='12' height='12' fill='%23c0c0c0' stroke='%23000000' stroke-width='1.5'/><rect x='3' y='3' width='10' height='3' fill='%23000080'/></svg>">
+  <link rel="manifest" href='data:application/manifest+json,{"name":"MY-ARCHIVE 95 OS","short_name":"ARCHIVE95","start_url":"./index.html","display":"standalone","background_color":"%23008080","theme_color":"%23000080","description":"Windows 95 + Neo-Brutalism 개인 문화 감상 자료실 OS"}'>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
-  <link rel="stylesheet" href="./css/style.css?v=20261125-v10" />
+  <link rel="stylesheet" href="./css/style.css" />
 </head>
 <body class="theme-teal">
 
@@ -255,7 +255,7 @@
       <div class="menu-item-wrap">
         <button type="button" class="menu-root"><u>T</u>ools (도구·통신)</button>
         <div class="menu-dropdown">
-          <button type="button" class="menu-opt" id="mnu-open-community" onclick="if(typeof openCommunityBoard==='function')openCommunityBoard()">[BBS] 전체 공개 자료실 (COMMUNITY95)</button>
+          <button type="button" class="menu-opt" id="mnu-open-community" onclick="openCommunityBoard()">[BBS] 전체 공개 자료실 (COMMUNITY95)</button>
           <button type="button" class="menu-opt" id="mnu-open-browser">[WEB] 정보바다 탐색기 95 (YouTube·웹)</button>
           <button type="button" class="menu-opt" id="mnu-open-timeline">[CHART] 감상 연대기 &amp; 성향 분석</button>
           <button type="button" class="menu-opt" id="mnu-open-visualizer">[NODE] 연관어 망(網) 분석기</button>
@@ -276,13 +276,9 @@
           <button type="button" class="menu-opt" id="mnu-close-all-popups">모든 보조 창 닫기</button>
           <div class="menu-sep"></div>
           <button type="button" class="menu-opt" id="mnu-open-display">[DISP] 디스플레이 등록 정보 (배경·CRT)...</button>
-          <button type="button" class="menu-opt" data-theme-opt="teal">배경: 클래식 틸 (#008080)</button>
-          <button type="button" class="menu-opt" data-theme-opt="navy">배경: 미드나잇 네이비 (#102542)</button>
-          <button type="button" class="menu-opt" data-theme-opt="olive">배경: 올리브 그린 (#3B5323)</button>
-          <button type="button" class="menu-opt" data-theme-opt="plum">배경: 빈티지 플럼 (#4A2545)</button>
-          <button type="button" class="menu-opt" data-theme-opt="brick">배경: 브루탈 브릭 (#6E2626)</button>
-          <button type="button" class="menu-opt" data-theme-opt="matrix">배경: 매트릭스 블랙 (#081408)</button>
-          <div class="menu-sep"></div>
+          <button type="button" class="menu-opt" data-theme-opt="teal">배경: 클래식 틸 (Teal)</button>
+          <button type="button" class="menu-opt" data-theme-opt="grid">배경: 모눈종이 (Paper Grid)</button>
+          <button type="button" class="menu-opt" data-theme-opt="brick">배경: 레트로 벽돌 (Brick)</button>
           <div class="menu-sep"></div>
           <button type="button" class="menu-opt" id="mnu-toggle-crt">CRT 주사선(스캔라인) 전환</button>
           <button type="button" class="menu-opt" id="mnu-toggle-sound">8비트 PC 스피커 효과음 전환</button>
@@ -294,10 +290,7 @@
     </nav>
 
     <div class="menu-bar-right" style="display:flex;align-items:center;gap:6px;">
-      <button type="button" id="active-user-badge" class="status-pill" style="background:var(--brutal-yellow);color:#111;cursor:pointer;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;" onclick="if(typeof startBiosBootSequence==='function')startBiosBootSequence()" title="클릭하여 이용자 전환 / 접속 종료">
-        <svg class="pixel-svg-14" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true"><path fill="#000000" d="M3 1h3v1h1v2h2V2h1V1h3v1h1v3h-1v1h1v5h-1v2h1v2h-3v-1H5v1H2v-2h1v-2H2V6h1V5H2V2h1V1z"/><path fill="#008000" d="M3 2h3v3h4V2h3v3h-1v1h1v5h-1v2H4v-2H3V6h1V5H3V2z"/><path fill="#00ff00" d="M4 5h2v2H4V5zm6 0h2v2h-2V5zM5 10h6v2H5v-2z"/><path fill="#ffffff" d="M4 2h2v2H4V2zm6 0h2v2h-2V2z"/><path fill="#000000" d="M5 3h1v1H5V3zm6 0h1v1h-1V3zM4 8h8v1H4V8zM3 7h1v1H3V7zm9 0h1v1h-1V7z"/></svg>
-        <span>이용자 대기 중...</span>
-      </button>
+      <button type="button" id="active-user-badge" class="status-pill" style="background:var(--brutal-yellow);color:#111;cursor:pointer;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;" onclick="startBiosBootSequence()" title="클릭하여 이용자 전환 / 접속 종료"><svg class="pixel-svg-14" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true"><path fill="#000000" d="M3 1h3v1h1v2h2V2h1V1h3v1h1v3h-1v1h1v5h-1v2h1v2h-3v-1H5v1H2v-2h1v-2H2V6h1V5H2V2h1V1z"/><path fill="#008000" d="M3 2h3v3h4V2h3v3h-1v1h1v5h-1v2H4v-2H3V6h1V5H3V2z"/><path fill="#00ff00" d="M4 5h2v2H4V5zm6 0h2v2h-2V5zM5 10h6v2H5v-2z"/><path fill="#ffffff" d="M4 2h2v2H4V2zm6 0h2v2h-2V2z"/><path fill="#000000" d="M5 3h1v1H5V3zm6 0h1v1h-1V3zM4 8h8v1H4V8zM3 7h1v1H3V7zm9 0h1v1h-1V7z"/></svg><span>문태양 (시삽)</span></button>
       <span id="cache-status-badge" class="status-pill" style="white-space:nowrap;" title="보조기억장치 동기화 상태">DISK: READY</span>
     </div>
   </header>
@@ -320,7 +313,7 @@
         <span>새 감상록 등록</span>
       </button>
 
-      <button type="button" class="desk-icon" id="icon-community" onclick="if(typeof openCommunityBoard==='function')openCommunityBoard()">
+      <button type="button" class="desk-icon" id="icon-community" onclick="openCommunityBoard()">
         <div class="desk-icon-box" style="background: var(--brutal-green);">
           <svg width="24" height="24" viewBox="0 0 16 16" shape-rendering="crispEdges"><path fill="#111" d="M3 2h4v4H3V2zm6 1h4v4H9V3zM1 8h8v5H1V8zm8 1h6v4H9V9z"/><path fill="#ffd83b" d="M4 3h2v2H4V3zm6 1h2v2h-2V4z"/><path fill="#fff" d="M2 9h6v3H2V9zm8 1h4v2h-4v-2z"/></svg>
         </div>
@@ -648,7 +641,7 @@
     <div class="start-banner"><span>MY-ARCHIVE <b>95</b></span></div>
     <div class="start-list">
       <button type="button" class="start-item" id="sm-new">[+] 새 감상록 등록하기</button>
-      <button type="button" class="start-item" id="sm-community" onclick="if(typeof openCommunityBoard==='function')openCommunityBoard()">[BBS] 전체 공개 자료실 (광장)</button>
+      <button type="button" class="start-item" id="sm-community" onclick="openCommunityBoard()">[BBS] 전체 공개 자료실 (광장)</button>
       <button type="button" class="start-item" id="sm-browser">[WEB] 정보바다 탐색기 95</button>
       <button type="button" class="start-item" id="sm-all">[DIR] 전체 서재 열기</button>
       <button type="button" class="start-item" id="sm-book">[BOOK] 도서 서가</button>
@@ -706,14 +699,14 @@
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  <script src="js/config.js?v=20261125-v10"></script>
-  <script src="js/window-mgr.js?v=20261125-v10"></script>
-  <script src="js/jukebox.js?v=20261125-v10"></script>
-  <script src="js/gamepack.js?v=20261125-v10"></script>
-  <script src="js/visualizer.js?v=20261125-v10"></script>
-  <script src="js/archive-app.js?v=20261125-v10"></script>
-  <script src="js/browser-app.js?v=20261125-v10"></script>
-  <script src="js/community-app.js?v=20261125-v10"></script>
-  <script src="js/boot-screen.js?v=20261125-v10"></script>
+  <script src="js/config.js?v=20261122-v9"></script>
+  <script src="js/window-mgr.js?v=20261122-v9"></script>
+  <script src="js/jukebox.js?v=20261122-v9"></script>
+  <script src="js/gamepack.js?v=20261122-v9"></script>
+  <script src="js/visualizer.js?v=20261122-v9"></script>
+  <script src="js/archive-app.js?v=20261122-v9"></script>
+  <script src="js/browser-app.js?v=20261122-v9"></script>
+  <script src="js/community-app.js?v=20261122-v9"></script>
+  <script src="js/boot-screen.js?v=20261122-v9"></script>
 </body>
 </html>
