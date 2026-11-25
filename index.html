@@ -27,10 +27,10 @@
 </head>
 <body class="theme-teal">
 
-  <!-- BIOS POST & 정통 Windows 95 로그온 오버레이 -->
-  <div id="os-boot-overlay" role="dialog" aria-modal="true" aria-label="MY-ARCHIVE 95 부팅 및 로그온" style="position:fixed;inset:0;z-index:200000;background:#000000;display:flex;align-items:center;justify-content:center;">
+  <!-- BIOS POST & 정통 Windows 95 로그온 오버레이 (시작 애니메이션 이후 순차 표시) -->
+  <div id="os-boot-overlay" role="dialog" aria-modal="true" aria-label="MY-ARCHIVE 95 부팅 및 로그온" style="position:fixed;inset:0;z-index:200000;background:#000000;display:none;align-items:center;justify-content:center;">
     <!-- 1. BIOS POST -->
-    <div id="boot-stage-bios" class="boot-stage" style="width:100%;height:100%;">
+    <div id="boot-stage-bios" class="boot-stage" style="display:none;width:100%;height:100%;">
       <div class="bios-top-row">
         <div>
           <div class="bios-brand">AWARD MODULAR BIOS v4.51PG, An Energy Star Ally</div>
@@ -745,15 +745,15 @@
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  <script src="js/config.js?v=20261125-v1"></script>
-  <script src="js/window-mgr.js?v=20261125-v1"></script>
-  <script src="js/jukebox.js?v=20261125-v1"></script>
-  <script src="js/gamepack.js?v=20261125-v1"></script>
-  <script src="js/visualizer.js?v=20261125-v1"></script>
-  <script src="js/archive-app.js?v=20261125-v1"></script>
-  <script src="js/browser-app.js?v=20261125-v1"></script>
-  <script src="js/community-app.js?v=20261125-v1"></script>
-  <script src="js/boot-screen.js?v=20261125-v1"></script>
-  <script src="js/win95-widgets.js?v=20261125-v1"></script>
+  <script src="js/config.js?v=20261125-v2"></script>
+  <script src="js/window-mgr.js?v=20261125-v2"></script>
+  <script src="js/jukebox.js?v=20261125-v2"></script>
+  <script src="js/gamepack.js?v=20261125-v2"></script>
+  <script src="js/visualizer.js?v=20261125-v2"></script>
+  <script src="js/archive-app.js?v=20261125-v2"></script>
+  <script src="js/browser-app.js?v=20261125-v2"></script>
+  <script src="js/community-app.js?v=20261125-v2"></script>
+  <script src="js/boot-screen.js?v=20261125-v2"></script>
+  <script src="js/win95-widgets.js?v=20261125-v2"></script>
 </body>
 </html>
