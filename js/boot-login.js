@@ -3,7 +3,7 @@
 // ============================================================
 
 window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-window.__MOD_VERSIONS.bootLogin = 'v2026.11.25-split';
+window.__MOD_VERSIONS.bootLogin = 'v2026.11.25-split-gate';
 
 const SESSION_USER_KEY = 'myarchive95_current_user_v2';
 const USERS_CACHE_KEY = 'myarchive95_users_cache_v2';
@@ -834,7 +834,7 @@ async function startBiosBootSequence(options = {}) {
 
   const skip3d = Boolean(options.skip3d);
   if (!skip3d && typeof window.play3dCrtMonitorAnimation === 'function') {
-    await window.play3dCrtMonitorAnimation();
+    await window.play3dCrtMonitorAnimation({ alreadyClicked: Boolean(options.alreadyClicked) });
     if (seqId !== bootState.bootSeqId) return;
   }
 
@@ -847,6 +847,8 @@ async function startBiosBootSequence(options = {}) {
 function finishDesktopLogin(userObj) {
   bootState.bootSeqId += 1;
   clearBootTimers();
+  document.getElementById('pre-click-start-hit-layer')?.remove();
+  document.getElementById('pre-click-blurred-3d-crt')?.remove();
   document.getElementById('pre-click-noise-title-layer')?.remove();
   document.getElementById('retro-3d-crt-stage')?.remove();
   document.getElementById('fullscreen-crt-static-overlay')?.remove();
@@ -885,10 +887,10 @@ function finishDesktopLogin(userObj) {
     setTimeout(() => {
       if (bootState.stage !== 'done') return;
       overlay.style.display = 'none';
-      document.body.classList.remove('boot-locked');
+      document.body.classList.remove('boot-locked', 'pre-login-lock');
     }, 380);
   } else {
-    document.body.classList.remove('boot-locked');
+    document.body.classList.remove('boot-locked', 'pre-login-lock');
   }
 }
 
@@ -1192,14 +1194,25 @@ window.getCurrentUser = getCurrentUser;
 window.switchLoginTab = switchLoginTab;
 
 document.addEventListener('DOMContentLoaded', () => {
-  document.body.classList.add('boot-locked');
+  document.body.classList.add('boot-locked', 'pre-login-lock');
   renderSignupAvatarPicker();
   bindBootScreenEvents();
   hookArchiveSyncLifecycle();
-  if (typeof window.openInitialSetupScreen === 'function') {
-    window.openInitialSetupScreen(false, startBiosBootSequence);
+
+  const startAfterGate = () => {
+    window.__ARCHIVE_GATE_DISMISSED = true;
+    if (typeof window.openInitialSetupScreen === 'function') {
+      window.openInitialSetupScreen(false, () => startBiosBootSequence({ alreadyClicked: true }));
+    } else {
+      startBiosBootSequence({ alreadyClicked: true });
+    }
+  };
+
+  if (typeof window.mountPreClickStartScreen === 'function') {
+    window.mountPreClickStartScreen(startAfterGate);
   } else {
-    startBiosBootSequence();
+    startAfterGate();
   }
 });
+
 window.runBootAnimation = window.runBootAnimation || function () {};
