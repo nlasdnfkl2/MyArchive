@@ -401,6 +401,19 @@
         </div>
         <span>오락실 95</span>
       </button>
+
+      <button type="button" class="desk-icon" id="icon-portfolio" title="포트폴리오 새 창 열기 (https://nlasdnfkl2.github.io/my-webpage/)">
+        <div class="desk-icon-box" style="background: #ff7675;">
+          <svg width="24" height="24" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true">
+            <path fill="#111" d="M1 3h14v10H1V3z"/>
+            <path fill="#fff" d="M2 5h12v7H2V5z"/>
+            <path fill="#000080" d="M2 3h12v2H2V3z"/>
+            <path fill="#ff7675" d="M10 6h3v3h-1V7h-2V6z"/>
+            <path fill="#111" d="M9 9h2v1H9V9zm2-2h1v2h-1V7z"/>
+          </svg>
+        </div>
+        <span>포트폴리오</span>
+      </button>
     </nav>
 
     <!-- 1. 메인 탐색기 창 -->
@@ -714,5 +727,20 @@
   <script src="js/community-app.js?v=20261122-v9"></script>
   <script src="js/boot-screen.js?v=20261122-v9"></script>
   <script src="js/win95-widgets.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const portfolioIcon = document.getElementById('icon-portfolio');
+      if (!portfolioIcon) return;
+
+      portfolioIcon.addEventListener('click', (e) => {
+        e.preventDefault();
+        const url = 'https://nlasdnfkl2.github.io/my-webpage/';
+        if (typeof window.playRetroTone === 'function') {
+          try { window.playRetroTone('open'); } catch {}
+        }
+        window.open(url, '_blank', 'noopener,noreferrer');
+      });
+    });
+  </script>
 </body>
 </html>
