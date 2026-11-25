@@ -173,7 +173,7 @@ function startForwardNostalgicLoop() {
         if (!buf || !buf.duration || buf.duration <= 0.1) return;
 
         const dur = buf.duration;
-        const xfadeSec = Math.min(0.4, Math.max(0.08, dur * 0.12));
+        const xfadeSec = Math.min(0.06, dur * 0.03);
         const stepSec = Math.max(0.15, dur - xfadeSec);
 
         const spawnSegment = (startAt, fadeInSec, isFirst) => {
