@@ -899,9 +899,74 @@ function runBiosPostSequenceOnly(seqId, bootState, onSetStage) {
   if (logEl) logEl.innerHTML = '';
   if (ramEl) ramEl.textContent = '640';
 
+  if (bootState.ramInterval) {
+    clearInterval(bootState.ramInterval);
+    bootState.ramInterval = null;
+  }
+  if (Array.isArray(bootState.timers)) {
+    bootState.timers.forEach((t) => clearTimeout(t));
+    bootState.timers = [];
+  }
+
+  let advancedFromBios = false;
+
+  const cleanupBiosListeners = () => {
+    if (biosEl) {
+      biosEl.removeEventListener('pointerdown', handleBiosInteract, true);
+    }
+    window.removeEventListener('keydown', handleBiosInteract, true);
+  };
+
+  const advanceToSplash = () => {
+    if (advancedFromBios || seqId !== bootState.bootSeqId) return;
+    advancedFromBios = true;
+    cleanupBiosListeners();
+
+    if (bootState.ramInterval) {
+      clearInterval(bootState.ramInterval);
+      bootState.ramInterval = null;
+    }
+    if (Array.isArray(bootState.timers)) {
+      bootState.timers.forEach((t) => clearTimeout(t));
+      bootState.timers = [];
+    }
+    if (ramEl) ramEl.textContent = '65536';
+
+    if (typeof onSetStage === 'function') {
+      onSetStage('splash');
+    }
+
+    // 로딩(splash) 화면 완료 후 로그온 화면 진입
+    const toLoginTid = setTimeout(() => {
+      if (seqId === bootState.bootSeqId && bootState.stage === 'splash' && typeof onSetStage === 'function') {
+        onSetStage('login');
+      }
+    }, 1500);
+    bootState.timers.push(toLoginTid);
+  };
+
+  function handleBiosInteract(e) {
+    if (advancedFromBios || seqId !== bootState.bootSeqId || bootState.stage !== 'bios') return;
+    if (e.type === 'keydown') {
+      const key = (e.key || '').toUpperCase();
+      if (key === 'DELETE' || key === 'DEL') return;
+      e.preventDefault();
+    }
+    advanceToSplash();
+  }
+
+  if (biosEl) {
+    biosEl.addEventListener('pointerdown', handleBiosInteract, true);
+  }
+  window.addEventListener('keydown', handleBiosInteract, true);
+
   let ramVal = 640;
   bootState.ramInterval = setInterval(() => {
-    if (seqId !== bootState.bootSeqId) return;
+    if (seqId !== bootState.bootSeqId || advancedFromBios) {
+      clearInterval(bootState.ramInterval);
+      bootState.ramInterval = null;
+      return;
+    }
     ramVal += 4096;
     if (ramVal >= 65536) {
       ramVal = 65536;
@@ -921,12 +986,12 @@ function runBiosPostSequenceOnly(seqId, bootState, onSetStage) {
     { delay: 760, text: 'Initializing Sound Blaster 16  ... Port 220H IRQ 5 DMA 1 [OK]', tick: true },
     { delay: 1040, text: 'Connecting Archive Host        ... Network Drive Mounted [OK]', tick: true },
     { delay: 1320, text: 'Verifying DMI Pool Data ........ Update Success', tick: false },
-    { delay: 1600, text: 'Starting MY-ARCHIVE 95...', tick: false, accent: true }
+    { delay: 1600, text: 'Starting MY-ARCHIVE 95... (Click or press any key to continue)', tick: false, accent: true }
   ];
 
-  postSteps.forEach(step => {
+  postSteps.forEach((step) => {
     const tid = setTimeout(() => {
-      if (seqId !== bootState.bootSeqId || bootState.stage !== 'bios' || !logEl) return;
+      if (seqId !== bootState.bootSeqId || bootState.stage !== 'bios' || advancedFromBios || !logEl) return;
       if (step.tick) playDriveSeekTick();
 
       const line = document.createElement('div');
@@ -945,22 +1010,6 @@ function runBiosPostSequenceOnly(seqId, bootState, onSetStage) {
     }, step.delay);
     bootState.timers.push(tid);
   });
-
-  // BIOS -> 로딩 스플래시 자동 진입
-  bootState.timers.push(setTimeout(() => {
-    if (seqId === bootState.bootSeqId && bootState.stage === 'bios') onSetStage('splash');
-  }, 2050));
-
-  // 로딩 스플래시 재생 완료 후 클릭 없이 자동으로 로그온 화면 전환
-  bootState.timers.push(setTimeout(() => {
-    if (seqId === bootState.bootSeqId && bootState.stage === 'splash') onSetStage('login');
-  }, 3500));
-
-  bootState.timers.push(setTimeout(() => {
-    if (seqId === bootState.bootSeqId && (bootState.stage === 'bios' || bootState.stage === 'splash')) {
-      onSetStage('login');
-    }
-  }, 4800));
 }
 
 window.loadInitialSetup = loadInitialSetup;
