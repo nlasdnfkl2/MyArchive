@@ -1,6 +1,5 @@
 // ============================================================
 // MY-ARCHIVE 95 OS — Floating Win95 Widgets Controller
-// (CD Player + Live Clock + Calendar 95 + Mood Music AI + Jukebox 95 Sync + Gray Noise Easter Egg)
 // ============================================================
 
 (function () {
