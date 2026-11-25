@@ -7,12 +7,61 @@
 
 (function () {
   window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-  window.__MOD_VERSIONS.bootController = 'v2026.11.25-stage-flow-preloader-v7';
+  window.__MOD_VERSIONS.bootController = 'v2026.11.25-stage-flow-bios-audio-stop';
 
   window.__ARCHIVE_LOGGED_IN = false;
   window.__ARCHIVE_GATE_DISMISSED = false;
   let __waitBootStarted = false;
   let __firstScreenMounted = false;
+  let __biosMusicStopped = false;
+
+  function stopMusicAtBiosStage() {
+    if (__biosMusicStopped) return;
+    __biosMusicStopped = true;
+    try {
+      if (typeof window.__stopWaitMusicForBios === 'function') {
+        window.__stopWaitMusicForBios();
+      }
+    } catch {}
+    try {
+      if (typeof window.stopPreClickWaitAudio === 'function') {
+        window.stopPreClickWaitAudio();
+      }
+    } catch {}
+  }
+
+  function isElementVisible(el) {
+    if (!el) return false;
+    const style = window.getComputedStyle ? window.getComputedStyle(el) : null;
+    if (el.style.display === 'none' || el.hidden) return false;
+    if (style && (style.display === 'none' || style.visibility === 'hidden')) return false;
+    return true;
+  }
+
+  function observeBiosStageAppearance() {
+    const checkBios = () => {
+      const biosStage = document.getElementById('boot-stage-bios');
+      if (biosStage && isElementVisible(biosStage)) {
+        stopMusicAtBiosStage();
+      }
+    };
+
+    checkBios();
+
+    const targetRoot = document.getElementById('os-boot-overlay') || document.body || document.documentElement;
+    if (!targetRoot || typeof MutationObserver !== 'function') return;
+
+    const observer = new MutationObserver(() => {
+      checkBios();
+    });
+
+    observer.observe(targetRoot, {
+      attributes: true,
+      childList: true,
+      subtree: true,
+      attributeFilter: ['style', 'class', 'hidden']
+    });
+  }
 
   function setPreLoginLock(locked) {
     if (!document.body) return;
@@ -79,7 +128,6 @@
   window.__onBrutalPreloadReady = mountWaitScreenAfterPreload;
 
   function hookBootLifecycle() {
-    // boot-animation.js / boot-login.js의 부팅 시퀀스 훅
     if (typeof window.startBiosBootSequence === 'function' && !window.__origStartBiosBootSequence) {
       window.__origStartBiosBootSequence = window.startBiosBootSequence;
 
@@ -87,7 +135,6 @@
         if (!window.__ARCHIVE_LOGGED_IN) {
           setPreLoginLock(true);
         }
-        // 아직 첫 대기 화면(글자+노이즈)이 닫히지 않았다면 대기 화면부터 먼저 표시
         if (!window.__ARCHIVE_GATE_DISMISSED && typeof window.mountPreClickStartScreen === 'function') {
           __firstScreenMounted = true;
           window.mountPreClickStartScreen(enterBootAfterStartClick);
@@ -103,11 +150,21 @@
       };
     }
 
-    // 로그온 완료 시 바탕화면 잠금 해제
+    if (typeof window.skipBiosPostToSplash === 'function' && !window.skipBiosPostToSplash.__biosAudioHooked) {
+      const origSkip = window.skipBiosPostToSplash;
+      const wrappedSkip = function () {
+        stopMusicAtBiosStage();
+        return origSkip.apply(this, arguments);
+      };
+      wrappedSkip.__biosAudioHooked = true;
+      window.skipBiosPostToSplash = wrappedSkip;
+    }
+
     if (typeof window.finishDesktopLogin === 'function' && !window.finishDesktopLogin.__archiveHooked) {
       const origFinish = window.finishDesktopLogin;
       const wrappedFinish = function () {
         window.__ARCHIVE_LOGGED_IN = true;
+        stopMusicAtBiosStage();
         dismissPreClickStartScreen();
         const res = origFinish.apply(this, arguments);
         setPreLoginLock(false);
@@ -118,7 +175,6 @@
     }
   }
 
-  // 보조: BIOS 화면에서 클릭 또는 아무 키(DEL 제외) 입력 시 로딩 스플래시로 넘어가도록 보장
   function bindBiosAdvanceFallback() {
     if (window.__biosAdvanceBound) return;
     window.__biosAdvanceBound = true;
@@ -126,9 +182,9 @@
     const handleBiosAdvance = (e) => {
       const biosStage = document.getElementById('boot-stage-bios');
       if (!biosStage || biosStage.style.display === 'none') return;
+      stopMusicAtBiosStage();
       if (e.type === 'keydown') {
         const key = (e.key || '').toUpperCase();
-        // DEL 키는 CMOS 이스터에그용이므로 스킵에서 제외
         if (key === 'DELETE' || key === 'DEL') return;
       }
       if (typeof window.skipBiosPostToSplash === 'function') {
@@ -234,6 +290,7 @@
     hookBootLifecycle();
     bindShellActions();
     bindBiosAdvanceFallback();
+    observeBiosStageAppearance();
 
     const preloaderActive = Boolean(document.getElementById('brutal-js-preloader')) && !window.__BRUTAL_PRELOAD_DONE;
     if (!preloaderActive) {
@@ -244,5 +301,6 @@
   window.addEventListener('load', () => {
     hookBootLifecycle();
     bindShellActions();
+    observeBiosStageAppearance();
   }, { once: true });
 })();
