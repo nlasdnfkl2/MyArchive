@@ -1,12 +1,13 @@
 // ============================================================
 // MY-ARCHIVE 95 OS — WINAMP / JUKEBOX 95.EXE
-// (1995 Stereo Engine, YouTube Auto-Search, Player API & Widget Sync)
+// (1995 Stereo Engine, YouTube Auto-Search, Player API & Widget Sync + Responsive Guard)
 // ============================================================
 
 window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-window.__MOD_VERSIONS.jukebox = 'v2026.11.25-06-480p-abr';
+window.__MOD_VERSIONS.jukebox = 'v2026.11.26-480p-abr-widget-sync-responsive';
 
 const JB_CACHE_KEY = 'myarchive95_yt_track_cache_v2';
+const JB_RESPONSIVE_STYLE_ID = 'myarchive95-jukebox-responsive-style';
 const JB_PREFERRED_MAX_QUALITY = 'large'; // 480p 이하 권장 힌트 (tiny:144p, small:240p, medium:360p, large:480p)
 const JB_HIGH_QUALITIES = new Set(['hd720', 'hd1080', 'hd1440', 'highres']);
 
@@ -25,6 +26,69 @@ const JUKEBOX_PIXEL_ICONS = {
       <path fill="#19191f" d="M4 3h5v1h1v5H9v1H4V9H3V4h1V3z"/>
     </svg>`
 };
+
+const JB_BUILTIN_FALLBACK_TRACKS = [
+  {
+    title: "Don't You (Forget About Me)",
+    creator: 'Simple Minds',
+    genre: '80s Synth Pop / Rock',
+    videoId: 'CdqoNKCCt7A'
+  },
+  {
+    title: 'Take On Me',
+    creator: 'a-ha',
+    genre: '80s Synth Pop',
+    videoId: 'djV11Xbc914'
+  },
+  {
+    title: 'lofi hip hop radio - beats to relax/study to',
+    creator: 'Lofi Girl',
+    genre: 'Lo-Fi / Study',
+    videoId: 'jfKfPfyJRdk'
+  },
+  {
+    title: 'Walking On Sunshine',
+    creator: 'Katrina & The Waves',
+    genre: 'Pop Rock',
+    videoId: 'iPUmE-tne5U'
+  },
+  {
+    title: 'Sunday Morning',
+    creator: 'Maroon 5',
+    genre: 'Soul Pop',
+    videoId: 'S2Cti12XBw4'
+  },
+  {
+    title: 'Fix You',
+    creator: 'Coldplay',
+    genre: 'Alternative Ballad',
+    videoId: 'k4V3Mo61fJM'
+  },
+  {
+    title: 'Yellow',
+    creator: 'Coldplay',
+    genre: 'Alternative Rock',
+    videoId: 'yKNxeF4KMsY'
+  },
+  {
+    title: 'Clair de Lune',
+    creator: 'Claude Debussy',
+    genre: 'Classical / Ambient',
+    videoId: 'CvFH_6DNRCY'
+  },
+  {
+    title: 'synthwave radio - beats to chill/game to',
+    creator: 'Lofi Girl Synthwave',
+    genre: 'Synthwave / Focus',
+    videoId: '4xDzrJKXOOY'
+  },
+  {
+    title: 'Your Hand In Mine',
+    creator: 'Explosions In The Sky',
+    genre: 'Post-Rock',
+    videoId: 'cdiY6kijYHE'
+  }
+];
 
 const jbState = {
   playlist: [],
@@ -46,6 +110,84 @@ const jbState = {
 
 window.jbState = jbState;
 window.jukeboxPlaylist = jbState.playlist;
+
+function applyJukeboxResponsiveStyle() {
+  if (document.getElementById(JB_RESPONSIVE_STYLE_ID)) return;
+  const parent = document.head || document.documentElement;
+  if (!parent) return;
+
+  const style = document.createElement('style');
+  style.id = JB_RESPONSIVE_STYLE_ID;
+  style.textContent = `
+    #win-jukebox .jb-lcd-grid {
+      display: grid;
+      grid-template-columns: 112px minmax(0, 1fr);
+      gap: 10px;
+      align-items: center;
+    }
+    #win-jukebox .jb-ctrl-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-bottom: 8px;
+      align-items: center;
+    }
+    #win-jukebox .jb-url-row {
+      display: flex;
+      gap: 5px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    #win-jukebox .jb-track-row {
+      min-width: 0;
+    }
+    #win-jukebox .jb-track-row > div {
+      min-width: 0;
+      flex: 1;
+    }
+    @media (max-width: 768px) {
+      #win-jukebox .jb-lcd-grid {
+        grid-template-columns: minmax(0, 1fr) !important;
+        gap: 8px !important;
+      }
+      #win-jukebox .jb-lcd-box {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        text-align: left !important;
+      }
+      #win-jukebox #jb-lcd-time {
+        font-size: 1.15rem !important;
+      }
+      #win-jukebox #jb-eq-bars {
+        margin-top: 0 !important;
+        height: 20px !important;
+      }
+      #win-jukebox #jb-player-frame-wrap {
+        max-height: 150px !important;
+      }
+      #win-jukebox #jb-playlist-box {
+        max-height: 145px !important;
+      }
+    }
+    @media (max-width: 480px) {
+      #win-jukebox .jb-ctrl-row .btn95 {
+        flex: 1 1 calc(50% - 5px);
+        justify-content: center;
+        text-align: center;
+      }
+      #win-jukebox .jb-url-row > input {
+        flex: 1 1 100% !important;
+        min-width: 0 !important;
+      }
+      #win-jukebox .jb-url-row > button {
+        flex: 1 1 auto;
+      }
+    }
+  `;
+  parent.appendChild(style);
+}
 
 function safeJbEsc(str) {
   if (typeof window.esc === 'function') return window.esc(str);
@@ -101,6 +243,43 @@ function normalizeYtCandidateList(rawList, fallbackQuery = '') {
     }));
 }
 
+function findFallbackYouTubeCandidates(track) {
+  const titleLower = String(track?.title || '').toLowerCase();
+  const creatorLower = String(track?.creator || '').toLowerCase();
+  const genreLower = String(track?.genre || '').toLowerCase();
+  const tokens = `${titleLower} ${creatorLower} ${genreLower}`
+    .split(/[\s,./!?;:()\-]+/)
+    .map(t => t.trim())
+    .filter(t => t.length >= 2);
+
+  const scored = JB_BUILTIN_FALLBACK_TRACKS.map(item => {
+    const hay = `${item.title} ${item.creator} ${item.genre}`.toLowerCase();
+    let score = 0;
+    if (titleLower && item.title.toLowerCase().includes(titleLower)) score += 12;
+    if (creatorLower && item.creator.toLowerCase().includes(creatorLower)) score += 8;
+    for (const tok of tokens) {
+      if (hay.includes(tok)) score += 3;
+    }
+    return { item, score };
+  });
+
+  scored.sort((a, b) => b.score - a.score);
+  const topMatches = scored
+    .filter(s => s.score > 0)
+    .slice(0, 3)
+    .map(s => s.item);
+
+  const pool = topMatches.length ? topMatches : JB_BUILTIN_FALLBACK_TRACKS.slice(0, 3);
+  return pool.map((entry, idx) => ({
+    videoId: entry.videoId,
+    title: idx === 0 && topMatches.length
+      ? `${track.title || entry.title} (${entry.title})`
+      : `${entry.title} — ${entry.creator}`,
+    channel: entry.creator,
+    sourceUrl: `https://www.youtube.com/watch?v=${entry.videoId}`
+  }));
+}
+
 function emitJukeboxSyncEvent(type = 'state') {
   const track = jbState.playlist[jbState.currentIndex] || null;
   window.jukeboxPlaylist = jbState.playlist;
@@ -108,6 +287,7 @@ function emitJukeboxSyncEvent(type = 'state') {
   window.dispatchEvent(
     new CustomEvent('jukebox:sync', {
       detail: {
+        source: 'jukebox-95',
         type,
         track,
         index: jbState.currentIndex,
@@ -136,6 +316,7 @@ function applyLowBandwidthQualityHint(player, forceCapIfHigh = false) {
 }
 
 function buildJukeboxUI() {
+  applyJukeboxResponsiveStyle();
   const win = document.getElementById('win-jukebox');
   if (!win) return;
   const body = win.querySelector('.win-body');
@@ -144,13 +325,13 @@ function buildJukeboxUI() {
 
   body.innerHTML = `
     <div style="background:#19191f; color:#39ff14; border:3px solid #111; padding:10px; box-shadow:inset 2px 2px 0 #000, inset -2px -2px 0 #444; margin-bottom:10px; font-family:var(--font-mono);">
-      <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.72rem; color:#ffd83b; margin-bottom:6px; border-bottom:1px solid #333; padding-bottom:4px;">
-        <span>WINAMP / JUKEBOX 95 — STEREO AUDIO ENGINE (<=480P ABR)</span>
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:6px; flex-wrap:wrap; font-size:0.72rem; color:#ffd83b; margin-bottom:6px; border-bottom:1px solid #333; padding-bottom:4px;">
+        <span>WINAMP / JUKEBOX 95 — STEREO AUDIO ENGINE (&lt;=480P ABR)</span>
         <span id="jb-status-pill" style="background:#111; border:1px solid #39ff14; color:#39ff14; padding:1px 6px;">READY</span>
       </div>
 
-      <div style="display:grid; grid-template-columns:112px 1fr; gap:10px; align-items:center;">
-        <div style="background:#08120c; border:2px solid #333; padding:6px; text-align:center;">
+      <div class="jb-lcd-grid">
+        <div class="jb-lcd-box" style="background:#08120c; border:2px solid #333; padding:6px; text-align:center;">
           <div id="jb-lcd-time" style="font-size:1.35rem; font-weight:900; letter-spacing:1px; color:#39ff14;">00:00</div>
           <div id="jb-eq-bars" style="display:flex; align-items:flex-end; justify-content:center; gap:3px; height:26px; margin-top:6px;">
             ${Array.from({ length: 12 }).map((_, i) => `<span class="jb-bar" style="width:5px; height:${6 + (i % 4) * 4}px; background:#39ff14; display:inline-block; transition:height 0.15s;"></span>`).join('')}
@@ -160,10 +341,10 @@ function buildJukeboxUI() {
 
         <div style="min-width:0;">
           <div style="background:#08120c; border:1.5px solid #333; padding:5px 8px; overflow:hidden; white-space:nowrap; margin-bottom:6px;">
-            <div id="jb-marquee-title" style="font-size:0.86rem; font-weight:900; color:#39ff14;">재생할 트랙을 선택하여 시작하십시오.</div>
+            <div id="jb-marquee-title" style="font-size:0.86rem; font-weight:900; color:#39ff14; overflow:hidden; text-overflow:ellipsis;">재생할 트랙을 선택하여 시작하십시오.</div>
           </div>
           <div id="jb-track-sub" style="font-size:0.74rem; color:#cccccc; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:6px;">
-            대기 중 · 내 아카이브 음악 라이브러리 연동됨
+            대기 중 · 내 아카이브 음악 라이브러리 및 위젯 동기화 연결됨
           </div>
           <div id="jb-review-ticker" style="font-size:0.74rem; color:#ffd83b; background:#101016; border:1px dashed #444; padding:4px 7px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
             [MEMO] 감상 한줄평 메모가 이곳에 표시됩니다.
@@ -186,7 +367,7 @@ function buildJukeboxUI() {
     </div>
 
     <!-- Winamp 물리 컨트롤 버튼 -->
-    <div style="display:flex; flex-wrap:wrap; gap:5px; margin-bottom:8px; align-items:center;">
+    <div class="jb-ctrl-row">
       <button type="button" class="btn95 sm" id="jb-btn-prev" title="이전 곡">|&lt; 이전</button>
       <button type="button" class="btn95 yellow sm" id="jb-btn-play" title="재생 / 일시정지">&gt; 재생</button>
       <button type="button" class="btn95 sm" id="jb-btn-stop" title="정지">[] 정지</button>
@@ -198,8 +379,8 @@ function buildJukeboxUI() {
 
     <!-- 직접 YouTube 링크 지정 & 가상 브라우저 연동 바 -->
     <div class="sunken-box" style="padding:7px 8px; margin-bottom:8px; background:var(--win-gray);">
-      <div style="display:flex; gap:5px; flex-wrap:wrap; align-items:center;">
-        <input type="text" id="jb-manual-yt-inp" placeholder="URL을 붙여넣어 현재 곡에 연결..." style="flex:1; min-width:190px; font-size:0.76rem;" />
+      <div class="jb-url-row">
+        <input type="text" id="jb-manual-yt-inp" placeholder="URL을 붙여넣어 현재 곡에 연결..." style="flex:1; min-width:160px; font-size:0.76rem;" />
         <button type="button" class="btn95 green sm" id="jb-btn-bind-yt">링크 연결·재생</button>
         <button type="button" class="btn95 pink sm" id="jb-btn-open-browser">${JUKEBOX_PIXEL_ICONS.globe} 탐색기 95에서 찾기</button>
       </div>
@@ -207,7 +388,7 @@ function buildJukeboxUI() {
 
     <!-- 재생목록 (Playlist Editor) -->
     <div class="sunken-box" style="padding:8px;">
-      <div class="box-head" style="margin-bottom:6px;">
+      <div class="box-head" style="margin-bottom:6px; flex-wrap:wrap; gap:6px;">
         <span>PLAYLIST — 수록곡 목록 (<span id="jb-count-num">0</span>곡)</span>
         <div style="display:flex; gap:4px;">
           <button type="button" class="btn95 sm yellow" id="jb-filter-music" style="padding:2px 7px; font-size:0.72rem;">음악만</button>
@@ -252,6 +433,15 @@ function bindJukeboxControls() {
   document.getElementById('jb-btn-play')?.addEventListener('click', () => {
     if (!jbState.playlist.length) return;
     if (typeof playRetroTone === 'function') playRetroTone('click');
+    if (jbState.isPlaying && jbState.ytPlayer && typeof jbState.ytPlayer.pauseVideo === 'function') {
+      try {
+        jbState.ytPlayer.pauseVideo();
+        stopJukeboxTimer();
+        const pill = document.getElementById('jb-status-pill');
+        if (pill) pill.textContent = 'PAUSED';
+        return;
+      } catch {}
+    }
     playJukeboxTrack(jbState.currentIndex);
   });
 
@@ -355,6 +545,19 @@ function updateJukebox() {
     ? validList.filter(it => it.category === '음악')
     : [...validList];
 
+  if (!jbState.playlist.length) {
+    jbState.playlist = JB_BUILTIN_FALLBACK_TRACKS.slice(0, 3).map((b, i) => ({
+      id: `jb-def-${i + 1}`,
+      category: '음악',
+      title: b.title,
+      creator: b.creator,
+      genre: b.genre,
+      rating: 5,
+      review: '내장 기본 유튜브 트랙',
+      sourceUrl: `https://www.youtube.com/watch?v=${b.videoId}`
+    }));
+  }
+
   window.jukeboxPlaylist = jbState.playlist;
 
   if (jbState.currentIndex >= jbState.playlist.length) {
@@ -373,7 +576,7 @@ function renderJukeboxPlaylist() {
   if (!box) return;
 
   if (!jbState.playlist.length) {
-    box.innerHTML = `<div style="padding:14px; text-align:center; font-size:0.8rem; font-weight:800; color:#555;">내 보관함에 재생할 수록곡이 없습니다. 음악 기록을 추가하거나 [전체보관함] 버튼을 선택해 주십시오.</div>`;
+    box.innerHTML = `<div style="padding:14px; text-align:center; font-size:0.8rem; font-weight:800; color:#555;">내 보관함에 재생할 수록곡이 없습니다.</div>`;
     return;
   }
 
@@ -385,10 +588,10 @@ function renderJukeboxPlaylist() {
       <div class="jb-track-row" data-jb-idx="${idx}" style="display:flex; justify-content:space-between; align-items:center; gap:8px; padding:5px 8px; cursor:pointer; border:1.5px solid #111; background:${active ? '#111111' : '#ffffff'}; color:${active ? '#39ff14' : '#111111'}; font-size:0.78rem; font-weight:800;">
         <div style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
           <span>${active ? '&gt;' : `${idx + 1}.`}</span>
-          <span>[${safeJbEsc(item.category)}] ${safeJbEsc(item.title)} — ${safeJbEsc(item.creator)}</span>
+          <span>[${safeJbEsc(item.category || '음악')}] ${safeJbEsc(item.title)} — ${safeJbEsc(item.creator)}</span>
         </div>
         <span style="font-size:0.68rem; padding:1px 5px; border:1px solid currentColor; flex-shrink:0;">
-          ${hasYt ? 'YT READY' : 'AUTO-FIND'}
+          ${hasYt ? 'YT READY' : 'AUTO-YT'}
         </span>
       </div>
     `;
@@ -403,13 +606,14 @@ function renderJukeboxPlaylist() {
   });
 }
 
-function updateLcdTimeDisplay(sec) {
+function updateLcdTimeDisplay(sec, { emit = true } = {}) {
   const safeSec = Math.max(0, Math.floor(Number(sec) || 0));
   jbState.timerSec = safeSec;
   const mm = String(Math.floor(safeSec / 60)).padStart(2, '0');
   const ss = String(safeSec % 60).padStart(2, '0');
   const lcd = document.getElementById('jb-lcd-time');
   if (lcd) lcd.textContent = `${mm}:${ss}`;
+  if (emit) emitJukeboxSyncEvent('tick');
 }
 
 function startJukeboxTimer() {
@@ -469,7 +673,7 @@ function stopJukeboxPlayback() {
   }
   destroyJukeboxYtPlayer();
   stopJukeboxTimer();
-  updateLcdTimeDisplay(0);
+  updateLcdTimeDisplay(0, { emit: false });
   const pill = document.getElementById('jb-status-pill');
   if (pill) pill.textContent = 'STOPPED';
   const wrap = document.getElementById('jb-player-frame-wrap');
@@ -545,7 +749,7 @@ function mountYouTubeEmbedInJukebox(videoId, labelText) {
   if (!cleanId) return;
 
   destroyJukeboxYtPlayer();
-  updateLcdTimeDisplay(0);
+  updateLcdTimeDisplay(0, { emit: false });
 
   const wrap = document.getElementById('jb-player-frame-wrap');
   const pill = document.getElementById('jb-status-pill');
@@ -658,7 +862,7 @@ async function playJukeboxTrack(indexOrTrack) {
   if (ticker) ticker.textContent = `[${track.rating || 5}점] "${track.review || '등록된 한줄평 없음'}"`;
 
   // 1순위: 기록 자체에 저장된 YouTube URL이 있는 경우 즉시 재생
-  const directId = parseYtIdFromUrl(track.sourceUrl);
+  const directId = parseYtIdFromUrl(track.sourceUrl || track.videoId);
   if (directId) {
     jbState.candidates = [{ videoId: directId, title: track.title, channel: track.creator || 'YouTube' }];
     jbState.candidateIdx = 0;
@@ -682,12 +886,15 @@ async function playJukeboxTrack(indexOrTrack) {
     }
   }
 
-  // 3순위: Apps Script 전용 ytsearch 엔드포인트 호출
+  // 3순위: Apps Script 전용 ytsearch 엔드포인트 호출 (실패 시 내장 유튜브 후보 자동 매칭)
   const apiUrl = resolveGasApiUrl();
   if (!apiUrl) {
-    stopJukeboxTimer();
-    if (pill) pill.textContent = 'NO API';
-    if (sub) sub.textContent = 'GAS_WEB_APP_URL이 설정되지 않았습니다. 아래에서 직접 링크를 연결하십시오.';
+    const fallbackList = findFallbackYouTubeCandidates(track);
+    jbState.candidates = fallbackList;
+    jbState.candidateIdx = 0;
+    renderJukeboxCandidates();
+    const first = fallbackList[0];
+    mountYouTubeEmbedInJukebox(first.videoId, `${first.title} (${first.channel})`);
     return;
   }
 
@@ -725,32 +932,94 @@ async function playJukeboxTrack(indexOrTrack) {
 
     const best = videos[0];
     mountYouTubeEmbedInJukebox(best.videoId, `${best.title} (${best.channel})`);
-  } catch (err) {
-    stopJukeboxTimer();
-    if (pill) pill.textContent = 'NOT FOUND';
-    if (sub) sub.textContent = (err && err.name === 'AbortError')
-      ? '검색 시간 초과 — 아래에서 직접 링크를 연결해 주십시오.'
-      : (err?.message || '자동 검색 실패');
-    if (wrap) {
-      const ytFallbackSearch = `https://www.youtube.com/results?search_query=${encodeURIComponent(`${track.creator} ${track.title}`)}`;
-      wrap.innerHTML = `
-        <div style="width:100%; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; padding:12px; text-align:center; color:#fff; font-size:0.78rem;">
-          <div>자동 매칭에 실패했습니다. 탐색기 95에서 검색하거나 아래 입력창에 YouTube 링크를 붙여넣어 연결하십시오.</div>
-          <a class="btn95 pink sm" href="${safeJbEsc(ytFallbackSearch)}" target="_blank" rel="noopener noreferrer">새 탭에서 YouTube 검색 &gt;&gt;</a>
-        </div>
-      `;
-    }
+  } catch {
+    const fallbackList = findFallbackYouTubeCandidates(track);
+    jbState.candidates = fallbackList;
+    jbState.candidateIdx = 0;
+    renderJukeboxCandidates();
+    renderJukeboxPlaylist();
+    const best = fallbackList[0];
+    if (sub) sub.textContent = `자동 매칭 스트림 재생 중: ${best.title}`;
+    mountYouTubeEmbedInJukebox(best.videoId, `${best.title} (${best.channel})`);
   } finally {
     clearTimeout(timeoutId);
     if (jbState.abortCtrl === ctrl) jbState.abortCtrl = null;
   }
 }
 
+// 위젯(CD Player / Mood Music AI) 재생 상태 변화와 동기화
+window.addEventListener('widgets:playback', ev => {
+  const detail = ev?.detail || {};
+  if (detail.source !== 'win95-widgets') return;
+
+  buildJukeboxUI();
+
+  if (detail.track && detail.track.title) {
+    const foundIdx = jbState.playlist.findIndex(
+      t =>
+        String(t.title || '').toLowerCase() === String(detail.track.title).toLowerCase() &&
+        String(t.creator || '').toLowerCase() === String(detail.track.creator || '').toLowerCase()
+    );
+    if (foundIdx >= 0) {
+      jbState.currentIndex = foundIdx;
+    } else {
+      jbState.playlist.unshift({
+        id: detail.track.id || `w-${Date.now()}`,
+        category: '음악',
+        title: detail.track.title,
+        creator: detail.track.creator || 'Unknown Artist',
+        genre: detail.track.genre || '음악',
+        rating: detail.track.rating || 5,
+        review: detail.track.review || '',
+        sourceUrl: detail.track.sourceUrl || ''
+      });
+      jbState.currentIndex = 0;
+      window.jukeboxPlaylist = jbState.playlist;
+    }
+    renderJukeboxPlaylist();
+  }
+
+  const curTrack = jbState.playlist[jbState.currentIndex];
+  const marquee = document.getElementById('jb-marquee-title');
+  const sub = document.getElementById('jb-track-sub');
+  const pill = document.getElementById('jb-status-pill');
+
+  if (curTrack && marquee) {
+    marquee.textContent = `${jbState.currentIndex + 1}. ${curTrack.title} — ${curTrack.creator}`;
+  }
+
+  if (detail.reason === 'stop') {
+    jbState.isPlaying = false;
+    updateLcdTimeDisplay(0, { emit: false });
+    if (pill) pill.textContent = 'WIDGET STOP';
+    if (sub) sub.textContent = '위젯 재생이 정지되었습니다.';
+    return;
+  }
+
+  if (typeof detail.timerSec === 'number') {
+    updateLcdTimeDisplay(detail.timerSec, { emit: false });
+  }
+
+  if (typeof detail.isPlaying === 'boolean') {
+    jbState.isPlaying = detail.isPlaying;
+    if (pill) pill.textContent = detail.isPlaying ? 'WIDGET PLAY' : 'WIDGET PAUSE';
+    if (sub && curTrack) {
+      sub.textContent = detail.isPlaying
+        ? `위젯 단독 재생 동기화 중: ${curTrack.title}`
+        : `위젯 일시정지 동기화됨: ${curTrack.title}`;
+    }
+  }
+});
+
 // 주크박스 창이 닫힐 때 플레이어 인스턴스까지 확실히 해제
 window.addEventListener('window:closed', ev => {
   if (ev?.detail?.id === 'win-jukebox') {
     stopJukeboxPlayback();
   }
+});
+
+window.addEventListener('DOMContentLoaded', () => {
+  applyJukeboxResponsiveStyle();
 });
 
 window.updateJukebox = updateJukebox;
