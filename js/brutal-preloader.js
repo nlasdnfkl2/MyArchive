@@ -58,16 +58,18 @@
     }
   }
 
-  // '01010100 01100101 ...' 또는 연속 8비트 문자열을 Uint8Array로 변환
-  function parseBinaryTextToBytes(rawText) {
+  // Base64 문자열 또는 2진수(0/1) 문자열을 모두 Uint8Array로 변환
+  function parseTextToBytes(rawText) {
     if (typeof rawText !== 'string' || !rawText.trim()) {
       throw new Error('test.txt is empty');
     }
 
-    const tokens = rawText.trim().split(/[^01]+/).filter(Boolean);
-    const hasByteTokens = tokens.length > 0 && tokens.every((t) => t.length <= 8);
+    const trimmed = rawText.trim();
 
-    if (hasByteTokens && tokens.length > 1) {
+    // 1) 공백/구분자로 나뉜 2진수 바이트 토큰(예: "01010100 01100101 ...")인지 판별
+    const tokens = trimmed.split(/[^01]+/).filter(Boolean);
+    const nonBitOrSep = trimmed.replace(/[01\s]/g, '');
+    if (tokens.length > 1 && tokens.every((t) => t.length <= 8) && nonBitOrSep.length === 0) {
       const bytes = new Uint8Array(tokens.length);
       for (let i = 0; i < tokens.length; i++) {
         bytes[i] = parseInt(tokens[i].padEnd(8, '0'), 2) & 0xff;
@@ -75,9 +77,24 @@
       return bytes;
     }
 
-    const bitsOnly = rawText.replace(/[^01]/g, '');
+    // 2) Base64 문자열인지 판별 (순수 0/1 연속열이 아니고 Base64 문자셋 위주인 경우)
+    const compact = trimmed.replace(/\s+/g, '');
+    const isPureBitStream = /^[01]+$/.test(compact);
+    if (!isPureBitStream && /^[A-Za-z0-9+/=]+$/.test(compact)) {
+      const normalized = compact.replace(/-/g, '+').replace(/_/g, '/');
+      const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, '=');
+      const binStr = atob(padded);
+      const bytes = new Uint8Array(binStr.length);
+      for (let i = 0; i < binStr.length; i++) {
+        bytes[i] = binStr.charCodeAt(i);
+      }
+      return bytes;
+    }
+
+    // 3) 연속 2진수 비트열 처리
+    const bitsOnly = trimmed.replace(/[^01]/g, '');
     if (bitsOnly.length < 8) {
-      throw new Error('Invalid binary stream in test.txt');
+      throw new Error('Invalid binary or base64 stream in test.txt');
     }
 
     const usableLen = bitsOnly.length - (bitsOnly.length % 8);
