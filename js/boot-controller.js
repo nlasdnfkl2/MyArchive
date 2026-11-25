@@ -1,13 +1,13 @@
 // ============================================================
 // MY-ARCHIVE 95 OS — Boot Lifecycle Controller (Stage Flow)
-// Flow: Preloader -> TV Off -> Wait(Text+Noise) -> [Click/Key]
-//       -> [First Run & No Setup] Text-BIOS Setup -> BIOS
-//       -> Splash -> Logon
+// Flow: Preloader -> TV Off -> Wait -> [Click/Key]
+//       -> Boot Animation -> [First Run & No Setup] Initial Setup
+//       -> BIOS -> Splash -> Logon
 // ============================================================
 
 (function () {
   window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-  window.__MOD_VERSIONS.bootController = 'v2026.11.25-boot-controller-stop-music-setup-and-bios';
+  window.__MOD_VERSIONS.bootController = 'v2026.11.25-boot-controller-anim-to-setup-to-bios';
 
   const SETUP_STORAGE_KEY = 'myarchive95_setup_v1';
 
@@ -18,6 +18,7 @@
   let __stageMusicStopped = false;
   let __preBiosSetupShown = false;
   let __preBiosSetupResumed = false;
+  let __pendingBiosArgs = null;
 
   function hasSavedSetupData() {
     try {
@@ -64,7 +65,7 @@
 
     checkStages();
 
-    const targetRoot = document.body || document.documentElement;
+    const targetRoot = document.getElementById('os-boot-overlay') || document.body || document.documentElement;
     if (!targetRoot || typeof MutationObserver !== 'function') return;
 
     const observer = new MutationObserver(() => {
@@ -103,20 +104,23 @@
     }
   }
 
-  function runBiosSequenceDirect() {
+  function runBiosSequenceDirect(args) {
     stopAllBootMusicForStage();
     const overlay = document.getElementById('os-boot-overlay');
     if (overlay) {
       overlay.style.display = 'flex';
     }
+    const callArgs = args && args.length ? args : (__pendingBiosArgs || [{ alreadyClicked: true }]);
+    __pendingBiosArgs = null;
+
     if (typeof window.__runActualBiosSequence === 'function') {
-      return window.__runActualBiosSequence({ alreadyClicked: true });
+      return window.__runActualBiosSequence.apply(window, callArgs);
     }
     if (typeof window.__origStartBiosBootSequence === 'function') {
-      return window.__origStartBiosBootSequence({ alreadyClicked: true });
+      return window.__origStartBiosBootSequence.apply(window, callArgs);
     }
     if (typeof window.startBiosBootSequence === 'function') {
-      return window.startBiosBootSequence({ alreadyClicked: true });
+      return window.startBiosBootSequence.apply(window, callArgs);
     }
   }
 
@@ -157,15 +161,24 @@
     }
   }
 
-  function shouldShowPreBiosSetup() {
+  function shouldShowBetweenAnimAndBios() {
     if (__preBiosSetupShown || __preBiosSetupResumed) return false;
     if (hasSavedSetupData()) return false;
     return typeof window.openInitialSetupScreen === 'function';
   }
 
-  function openPreBiosSetupScreen() {
+  function openSetupBetweenAnimAndBios(biosArgs) {
     __preBiosSetupShown = true;
+    if (biosArgs && biosArgs.length) {
+      __pendingBiosArgs = Array.from(biosArgs);
+    }
     stopAllBootMusicForStage();
+
+    const overlay = document.getElementById('os-boot-overlay');
+    if (overlay) {
+      overlay.style.display = 'flex';
+    }
+
     try {
       window.openInitialSetupScreen(true, proceedAfterPreBiosSetup);
     } catch {
@@ -179,18 +192,12 @@
     watchSetupModalAndProceedToBios();
   }
 
-  // 대기 화면에서 클릭 또는 키 입력 시 -> 첫 실행(설정 없음)이면 바이오스 전 SETUP, 아니면 BIOS 진입
+  // 대기 화면에서 클릭 또는 키 입력 시 -> 부팅 애니메이션/시퀀스 진입
   function enterBootAfterStartClick() {
     if (__waitBootStarted || window.__ARCHIVE_LOGGED_IN) return;
     __waitBootStarted = true;
     dismissPreClickStartScreen();
-
-    if (shouldShowPreBiosSetup()) {
-      return openPreBiosSetupScreen();
-    }
-
-    stopAllBootMusicForStage();
-    return runBiosSequenceDirect();
+    return runBiosSequenceDirect([{ alreadyClicked: true }]);
   }
 
   window.__enterBootAfterStartClick = enterBootAfterStartClick;
@@ -218,8 +225,9 @@
         window.mountPreClickStartScreen(enterBootAfterStartClick);
         return;
       }
-      if (shouldShowPreBiosSetup()) {
-        return openPreBiosSetupScreen();
+      // 애니메이션 이후 바이오스 진입 직전: 첫 실행(설정 없음)이면 초기 설정 먼저 표시
+      if (shouldShowBetweenAnimAndBios()) {
+        return openSetupBetweenAnimAndBios(arguments);
       }
       stopAllBootMusicForStage();
       const overlay = document.getElementById('os-boot-overlay');
@@ -235,6 +243,9 @@
       window.__origStartBiosBootSequence = window.startBiosBootSequence;
       window.startBiosBootSequence = createControllerBiosWrapper(window.__origStartBiosBootSequence);
       window.__runActualBiosSequence = function () {
+        if (shouldShowBetweenAnimAndBios()) {
+          return openSetupBetweenAnimAndBios(arguments);
+        }
         stopAllBootMusicForStage();
         return window.__origStartBiosBootSequence.apply(window, arguments);
       };
