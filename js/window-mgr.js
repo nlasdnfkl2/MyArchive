@@ -1,10 +1,10 @@
 // ============================================================
 // MY-ARCHIVE 95 OS — Pure Window Manager & Desktop Shell UI
-// (Multi-Window Focus/Drag, 6-Theme Engine, CRT, Widgets & Task Manager)
+// (Multi-Window Focus/Drag, 6-Theme Engine, CRT, Widgets, Task Manager & About/License)
 // ============================================================
 
 window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-window.__MOD_VERSIONS.windowMgr = typeof APP_BUILD_VERSION !== 'undefined' ? APP_BUILD_VERSION : 'v2026.11.25-08';
+window.__MOD_VERSIONS.windowMgr = typeof APP_BUILD_VERSION !== 'undefined' ? APP_BUILD_VERSION : 'v2026.11.25-09';
 
 const ALL_DESKTOP_THEMES = [
   'theme-teal',
@@ -35,6 +35,9 @@ function focusWindow(winEl) {
   winEl.classList.add('focused');
   if (typeof topZIndex !== 'undefined') {
     winEl.style.zIndex = String(++topZIndex);
+  } else {
+    window.__fallbackTopZ = (window.__fallbackTopZ || 240) + 1;
+    winEl.style.zIndex = String(window.__fallbackTopZ);
   }
   syncTaskbar();
 }
@@ -172,10 +175,147 @@ document.addEventListener('click', e => {
 });
 
 // ============================================================
-// 3. 바탕화면 위젯 아이콘 자동 생성 & 런처 연결
+// 2-1. 제작자 소개 및 라이선스 정보 팝업 창 (About & License 95)
+// ============================================================
+function openAboutAndLicenseWindow(initialTab = 'creator') {
+  const winId = 'win-about-license';
+  let winEl = document.getElementById(winId);
+
+  if (!winEl) {
+    winEl = document.createElement('div');
+    winEl.id = winId;
+    winEl.className = 'floating-win';
+    winEl.dataset.winTitle = '제작자 및 라이선스 정보 — MY-ARCHIVE 95';
+    winEl.dataset.dynamic = 'true';
+
+    const initLeft = Math.max(24, Math.round((window.innerWidth - 460) / 2));
+    const initTop = Math.max(46, Math.round((window.innerHeight - 430) / 2));
+    winEl.style.cssText = `width:min(460px, calc(100vw - 24px)); left:${initLeft}px; top:${initTop}px;`;
+
+    const buildVer = window.__MOD_VERSIONS?.windowMgr || 'v2026.11.25';
+
+    winEl.innerHTML = `
+      <div class="win-titlebar draggable">
+        <div class="win-title-left" style="display:flex;align-items:center;gap:6px;">
+          <svg width="14" height="14" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true">
+            <rect x="2" y="1" width="12" height="14" fill="#ffffff" stroke="#111111" stroke-width="1.5"/>
+            <rect x="4" y="3" width="8" height="3" fill="#000080"/>
+            <rect x="4" y="8" width="8" height="1.5" fill="#111111"/>
+            <rect x="4" y="11" width="5" height="1.5" fill="#111111"/>
+          </svg>
+          <span>제작자 및 라이선스 정보 — MY-ARCHIVE 95</span>
+        </div>
+        <div class="win-ctrl-btns">
+          <button type="button" class="win-ctrl-btn" data-action="minimize" data-target="${winId}" title="최소화">_</button>
+          <button type="button" class="win-ctrl-btn" data-action="close" data-target="${winId}" title="닫기">X</button>
+        </div>
+      </div>
+      <div class="win-body" style="padding:12px;">
+        <div style="display:flex;align-items:center;gap:12px;background:#19191f;color:#ffffff;border:2px solid #111111;padding:10px 12px;margin-bottom:10px;">
+          <div style="width:46px;height:46px;background:#ffd83b;border:2px solid #ffffff;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <svg width="30" height="30" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true">
+              <rect x="2" y="2" width="12" height="12" fill="#008080" stroke="#111111" stroke-width="1.5"/>
+              <rect x="4" y="4" width="8" height="5" fill="#ffffff"/>
+              <rect x="5" y="10" width="6" height="2" fill="#ffd83b"/>
+            </svg>
+          </div>
+          <div style="min-width:0;">
+            <div style="font-family:var(--font-mono, Consolas, monospace);font-size:0.92rem;font-weight:900;color:#ffd83b;">
+              MY-ARCHIVE 95 OS
+            </div>
+            <div style="font-size:0.76rem;color:#48dbfb;font-weight:700;margin-top:2px;">
+              Retro Desktop Personal Archive &amp; Web Utility Shell (${buildVer})
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:4px;margin-bottom:8px;">
+          <button type="button" class="btn95 sm yellow" data-about-tab="creator" style="flex:1;">제작자 설명</button>
+          <button type="button" class="btn95 sm" data-about-tab="license" style="flex:1;">라이선스 · 고지</button>
+        </div>
+
+        <div id="about-pane-creator" class="sunken-box" style="padding:10px;background:#ffffff;color:#111111;font-size:0.8rem;line-height:1.55;">
+          <div style="font-weight:900;font-size:0.86rem;color:#000080;margin-bottom:6px;border-bottom:1px solid #c0c0c0;padding-bottom:4px;">
+            CREATOR PROFILE — 제작자 안내
+          </div>
+          <p style="margin:0 0 8px 0;">
+            <b>MY-ARCHIVE 95 OS</b>는 1995년 클래식 데스크톱 인터페이스의 감성을 바탕으로, 음악·독서·영상·일상 기록과 웹 유틸리티를 한 공간에 수집하기 위해 제작된 개인 웹 아카이브 프로젝트입니다.
+          </p>
+          <ul style="margin:0 0 10px 0;padding-left:18px;">
+            <li><b>기획 · 디자인 · 개발:</b> nlasdnfkl2 (nn80300)</li>
+            <li><b>주요 구성:</b> 주크박스 95, 무드 뮤직 로컬 AI, 탐색기 95, 플로팅 위젯 &amp; 타임라인 보관함</li>
+            <li><b>문의 및 업데이트 기록:</b> 아래 공식 블로그 및 GitHub 저장소에서 확인할 수 있습니다.</li>
+          </ul>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+            <a href="https://blog.naver.com/nn80300" target="_blank" rel="noopener noreferrer" class="btn95 yellow sm" style="text-decoration:none;text-align:center;display:inline-flex;align-items:center;justify-content:center;gap:4px;">
+              <span>Naver Blog (nn80300)</span>
+            </a>
+            <a href="https://github.com/nlasdnfkl2" target="_blank" rel="noopener noreferrer" class="btn95 sky sm" style="text-decoration:none;text-align:center;display:inline-flex;align-items:center;justify-content:center;gap:4px;">
+              <span>GitHub (nlasdnfkl2)</span>
+            </a>
+          </div>
+        </div>
+
+        <div id="about-pane-license" class="sunken-box" style="display:none;padding:10px;background:#ffffff;color:#111111;font-size:0.76rem;line-height:1.5;max-height:215px;overflow-y:auto;font-family:var(--font-mono, Consolas, monospace);">
+          <div style="font-weight:900;color:#000080;margin-bottom:6px;">
+            MIT License — Copyright (c) 2026 nlasdnfkl2 (nn80300)
+          </div>
+          <p style="margin:0 0 8px 0;">
+            Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, subject to the following conditions:
+          </p>
+          <p style="margin:0 0 8px 0;">
+            The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+          </p>
+          <p style="margin:0 0 8px 0;color:#444444;">
+            THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED.
+          </p>
+          <div style="border-top:1px dashed #808080;padding-top:6px;margin-top:6px;color:#222222;">
+            <b>[외부 연동 및 저작권 고지]</b><br/>
+            • 주크박스 및 위젯 내 스트리밍 영상·음원의 저작권은 각 원저작자 및 YouTube 게시자에게 있습니다.<br/>
+            • 본 프로젝트의 UI 스타일은 1995년 클래식 OS 데스크톱 메타포를 오마주한 창작 디자인입니다.
+          </div>
+        </div>
+
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;gap:8px;">
+          <span style="font-family:var(--font-mono, Consolas, monospace);font-size:0.7rem;color:#333333;">
+            All Rights Reserved · 1995–2026
+          </span>
+          <button type="button" class="btn95 green sm" id="btn-about-ok" style="min-width:74px;">확인</button>
+        </div>
+      </div>
+    `;
+
+    (document.getElementById('dynamic-windows-container') || document.body).appendChild(winEl);
+    enableWindowDrag(winEl);
+
+    winEl.querySelectorAll('[data-about-tab]').forEach(tabBtn => {
+      tabBtn.addEventListener('click', () => {
+        if (typeof playRetroTone === 'function') playRetroTone('click');
+        const mode = tabBtn.dataset.aboutTab;
+        winEl.querySelectorAll('[data-about-tab]').forEach(b => b.classList.toggle('yellow', b.dataset.aboutTab === mode));
+        const creatorPane = winEl.querySelector('#about-pane-creator');
+        const licensePane = winEl.querySelector('#about-pane-license');
+        if (creatorPane) creatorPane.style.display = mode === 'creator' ? 'block' : 'none';
+        if (licensePane) licensePane.style.display = mode === 'license' ? 'block' : 'none';
+      });
+    });
+
+    winEl.querySelector('#btn-about-ok')?.addEventListener('click', () => {
+      closeWindow(winId);
+    });
+  }
+
+  // 탭 초기 상태 전환
+  const targetTabBtn = winEl.querySelector(`[data-about-tab="${initialTab}"]`);
+  if (targetTabBtn) targetTabBtn.click();
+
+  openWindow(winId);
+}
+
+// ============================================================
+// 3. 바탕화면 위젯·정보 아이콘 자동 생성 & 상단 메뉴 항목 연결
 // ============================================================
 function injectDesktopWidgetIcons() {
-  // 기존 바탕화면 아이콘 컨테이너 탐색 (기존 아이콘의 부모 요소 기준)
   const sampleIcon =
     document.getElementById('icon-jukebox') ||
     document.getElementById('icon-main') ||
@@ -233,6 +373,22 @@ function injectDesktopWidgetIcons() {
       onOpen: () => {
         if (window.Win95Widgets?.openClock) window.Win95Widgets.openClock();
       }
+    },
+    {
+      id: 'icon-about-license',
+      label: '제작자 · 라이선스',
+      svg: `
+        <svg width="32" height="32" viewBox="0 0 32 32" shape-rendering="crispEdges" aria-hidden="true">
+          <rect x="5" y="3" width="22" height="26" fill="#ffffff" stroke="#111111" stroke-width="2"/>
+          <rect x="5" y="3" width="22" height="6" fill="#000080"/>
+          <rect x="9" y="13" width="14" height="2" fill="#111111"/>
+          <rect x="9" y="17" width="14" height="2" fill="#111111"/>
+          <rect x="9" y="21" width="9" height="2" fill="#008080"/>
+          <rect x="20" y="20" width="4" height="5" fill="#ffd83b" stroke="#111111" stroke-width="1"/>
+        </svg>`,
+      onOpen: () => {
+        openAboutAndLicenseWindow('creator');
+      }
     }
   ];
 
@@ -252,6 +408,57 @@ function injectDesktopWidgetIcons() {
     });
     iconContainer.appendChild(el);
   });
+}
+
+function injectAboutMenuItems() {
+  // 1) 이미 HTML에 #mnu-open-about-license가 있다면 이벤트만 연결
+  const existingMenuBtn = document.getElementById('mnu-open-about-license');
+  if (existingMenuBtn && !existingMenuBtn.dataset.bound) {
+    existingMenuBtn.dataset.bound = 'true';
+    existingMenuBtn.addEventListener('click', () => openAboutAndLicenseWindow('creator'));
+  }
+
+  // 2) 상단 메뉴바의 드롭다운 목록 끝에 '제작자 및 라이선스 정보' 자동 삽입
+  if (!document.getElementById('mnu-open-about-license')) {
+    const dropdownLists = document.querySelectorAll(
+      '.top-menubar .menu-dropdown, .menubar .menu-dropdown, .win-menubar .menu-dropdown, .menu-list, [role="menu"]'
+    );
+    const targetDropdown = dropdownLists.length ? dropdownLists[dropdownLists.length - 1] : null;
+
+    if (targetDropdown) {
+      const sampleItem = targetDropdown.querySelector('button, a, .menu-item, li');
+      const sep = document.createElement('div');
+      sep.style.cssText = 'height:1px;background:#808080;border-bottom:1px solid #ffffff;margin:4px 2px;';
+      targetDropdown.appendChild(sep);
+
+      const mnuBtn = document.createElement(sampleItem && sampleItem.tagName.toLowerCase() === 'a' ? 'a' : 'button');
+      if (mnuBtn.tagName.toLowerCase() === 'button') mnuBtn.type = 'button';
+      if (mnuBtn.tagName.toLowerCase() === 'a') mnuBtn.href = '#about-license';
+      mnuBtn.id = 'mnu-open-about-license';
+      if (sampleItem && sampleItem.className) mnuBtn.className = sampleItem.className;
+      mnuBtn.textContent = '제작자 및 라이선스 정보...';
+      mnuBtn.addEventListener('click', e => {
+        e.preventDefault();
+        openAboutAndLicenseWindow('creator');
+      });
+      targetDropdown.appendChild(mnuBtn);
+    }
+  }
+
+  // 3) 시작 메뉴가 있을 경우 하단에도 연결
+  const startMenuList = document.querySelector('#start-menu .start-menu-items, #start-menu-list, .start-menu-list');
+  if (startMenuList && !document.getElementById('sm-about-license')) {
+    const smBtn = document.createElement('button');
+    smBtn.type = 'button';
+    smBtn.id = 'sm-about-license';
+    smBtn.className = 'start-menu-item';
+    smBtn.textContent = '제작자 및 라이선스 정보';
+    smBtn.addEventListener('click', () => {
+      document.getElementById('start-menu')?.classList.add('hidden');
+      openAboutAndLicenseWindow('creator');
+    });
+    startMenuList.appendChild(smBtn);
+  }
 }
 
 // ============================================================
@@ -328,6 +535,7 @@ function triggerBsodEasterEgg() {
 document.addEventListener('DOMContentLoaded', () => {
   applyDesktopPreferences();
   injectDesktopWidgetIcons();
+  injectAboutMenuItems();
   document.querySelectorAll('.floating-win').forEach(enableWindowDrag);
   syncTaskbar();
   updateTaskbarClock();
@@ -389,7 +597,7 @@ document.addEventListener('DOMContentLoaded', () => {
   bindLauncher(['icon-visualizer', 'mnu-open-visualizer'], 'win-visualizer');
   bindLauncher(['icon-gamepack', 'mnu-open-gamepack'], 'win-gamepack');
 
-  // 위젯 런처 바인딩 (CD Player, Mood Music AI, Clock 95 + 작업표시줄 시계 클릭 연동)
+  // 위젯 런처 바인딩 (CD Player, Mood Music AI, Clock 95, Calendar 95 + 작업표시줄 시계 클릭 연동)
   ['mnu-open-cdplayer', 'sm-cdplayer'].forEach(sel => {
     document.getElementById(sel)?.addEventListener('click', () => {
       window.Win95Widgets?.openCdPlayer?.();
@@ -411,6 +619,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     el.addEventListener('click', () => {
       window.Win95Widgets?.openClock?.();
+    });
+  });
+
+  ['mnu-open-calendar-widget', 'sm-calendar-widget'].forEach(sel => {
+    document.getElementById(sel)?.addEventListener('click', () => {
+      window.Win95Widgets?.openCalendar?.();
     });
   });
 });
@@ -550,3 +764,4 @@ window.applyTheme = applyTheme;
 window.triggerBsodEasterEgg = triggerBsodEasterEgg;
 window.openTaskManager = openTaskManager;
 window.startWin95Screensaver = startWin95Screensaver;
+window.openAboutAndLicenseWindow = openAboutAndLicenseWindow;
