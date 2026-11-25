@@ -97,7 +97,7 @@
 }
 
 /* ============================================================
-   0. RESET, BITMAP RENDERING & CLASSIC SCROLLBARS
+0. RESET, BITMAP RENDERING & CLASSIC SCROLLBARS
    ============================================================ */
 *,
 *::before,
@@ -150,8 +150,6 @@ body {
   background-color: var(--win-gray);
 }
 
-/* Desktop Wallpapers */
-/* Desktop Wallpapers (6가지 Windows 95 정통 테마) */
 /* Desktop Wallpapers (디스플레이 등록 정보 6종 + 호환 테마) */
 body.theme-teal {
   background-color: #008080;
@@ -213,7 +211,7 @@ body.theme-grid {
 }
 
 /* ============================================================
-   1. BIOS POST & WINDOWS 95 BOOT / LOGON OVERLAY
+1. BIOS POST & WINDOWS 95 BOOT / LOGON OVERLAY
    ============================================================ */
 #os-boot-overlay {
   font-family: var(--font-mono);
@@ -704,7 +702,7 @@ body.theme-grid {
 }
 
 /* ============================================================
-   2. TOP OS SYSTEM MENUBAR
+2. TOP OS SYSTEM MENUBAR
    ============================================================ */
 .os-menubar {
   position: fixed;
@@ -825,7 +823,7 @@ button.status-pill:active {
 }
 
 /* ============================================================
-   3. DESKTOP WORKSPACE & SHORTCUT ICONS
+3. DESKTOP WORKSPACE & SHORTCUT ICONS
    ============================================================ */
 .desktop-workspace {
   position: fixed;
@@ -904,7 +902,7 @@ button.status-pill:active {
 }
 
 /* ============================================================
-   4. FLOATING WINDOWS (CLASSIC WIN95 3D FRAME)
+4. FLOATING WINDOWS (CLASSIC WIN95 3D FRAME)
    ============================================================ */
 .floating-win {
   display: none;
@@ -1020,7 +1018,7 @@ button.status-pill:active {
 }
 
 /* ============================================================
-   5. EXPLORER COMPONENTS (KPI, CHARTS, TOOLBAR, CARDS, FORMS)
+5. EXPLORER COMPONENTS (KPI, CHARTS, TOOLBAR, CARDS, FORMS)
    ============================================================ */
 .kpi-grid {
   display: grid;
@@ -1205,11 +1203,11 @@ button.status-pill:active {
   transform: translate(1px, 1px);
 }
 
-/* Archive Cards Grid */
+/* Archive Cards Grid (균형 그리드 & 표지 크기 고정) */
 .archive-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(275px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 8px;
   padding: 8px;
   background: #ffffff;
   box-shadow: var(--bevel-sunken);
@@ -1219,9 +1217,20 @@ button.status-pill:active {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  padding: 10px;
+  gap: 6px;
+  padding: 8px;
   background: var(--win-gray);
   box-shadow: var(--bevel-btn);
+  overflow: hidden;
+}
+
+.archive-card img {
+  width: 100%;
+  height: 165px;
+  object-fit: cover;
+  background: #dfdfdf;
+  border: 1px solid #000000;
+  display: block;
 }
 
 .archive-card:hover {
@@ -1230,7 +1239,7 @@ button.status-pill:active {
 }
 
 /* ============================================================
-   6. START MENU & BOTTOM TASKBAR (CLASSIC WIN95)
+6. START MENU & BOTTOM TASKBAR (CLASSIC WIN95)
    ============================================================ */
 .start-menu-popup {
   display: none;
@@ -1345,23 +1354,42 @@ button.status-pill:active {
   overflow-x: auto;
 }
 
-.taskbar-win-btn {
+.taskbar-win-btn,
+.taskbar-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   height: 25px;
-  max-width: 185px;
-  padding: 0 8px;
+  max-width: 175px;
+  padding: 0 7px;
   background: var(--win-gray);
   color: #000000;
   border: none;
   box-shadow: var(--bevel-btn);
   font-family: var(--font-sans);
-  font-size: 0.78rem;
+  font-size: 0.76rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   cursor: pointer;
+  flex-shrink: 0;
 }
 
-.taskbar-win-btn.active {
+.taskbar-win-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.taskbar-win-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.taskbar-win-btn.active,
+.taskbar-tab.active {
   background-color: #dfdfdf;
   background-image: var(--dither-bg);
   background-size: 2px 2px;
