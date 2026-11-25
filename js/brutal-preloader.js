@@ -242,22 +242,72 @@ function ensureBinaryAudioBytes() {
   window.createNostalgicParodyForwardBuffer = createNostalgicParodyForwardBuffer;
   window.loadTestTxtForwardBuffer = loadTestTxtForwardBuffer;
 
-  // 카세트 테이프 삽입('달칵') 사운드
+  // 현실적인 카세트 테이프 삽입 사운드 (슬롯 삽입 마찰 -> 멈춤 쿵 -> 걸쇠 래치 딸깍)
   function playTapeInsertDalkak(ctx, startTime) {
-    const mkClick = (offset, freqStart, freqEnd, dur, peak) => {
+    const mkNoiseBurst = (offset, dur, filterType, freqStart, freqEnd, q, peak, decayPow = 2.2) => {
       const t0 = startTime + offset;
-      const osc = ctx.createOscillator(), gain = ctx.createGain();
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(freqStart, t0);
-      osc.frequency.exponentialRampToValueAtTime(freqEnd, t0 + dur);
-      gain.gain.setValueAtTime(0.0004, t0);
-      gain.gain.linearRampToValueAtTime(peak, t0 + 0.002);
+      const len = Math.max(32, Math.floor(ctx.sampleRate * dur));
+      const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+      const ch = buf.getChannelData(0);
+      for (let i = 0; i < len; i++) {
+        const p = i / len;
+        ch[i] = (Math.random() * 2 - 1) * Math.pow(1 - p, decayPow);
+      }
+
+      const src = ctx.createBufferSource();
+      src.buffer = buf;
+
+      const filter = ctx.createBiquadFilter();
+      filter.type = filterType;
+      filter.frequency.setValueAtTime(freqStart, t0);
+      if (freqEnd && freqEnd !== freqStart) {
+        filter.frequency.exponentialRampToValueAtTime(Math.max(40, freqEnd), t0 + dur);
+      }
+      if (q) filter.Q.setValueAtTime(q, t0);
+
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(0.0003, t0);
+      gain.gain.linearRampToValueAtTime(peak, t0 + Math.min(0.008, dur * 0.15));
       gain.gain.exponentialRampToValueAtTime(0.0003, t0 + dur);
-      osc.connect(gain); gain.connect(ctx.destination);
-      osc.start(t0); osc.stop(t0 + dur + 0.008);
+
+      src.connect(filter);
+      filter.connect(gain);
+      gain.connect(ctx.destination);
+      src.start(t0);
+      src.stop(t0 + dur + 0.01);
     };
-    mkClick(0, 340, 115, 0.036, 0.24);
-    mkClick(0.068, 1680, 520, 0.026, 0.26);
+
+    const mkThud = (offset, freqStart, freqEnd, dur, peak, type = 'sine') => {
+      const t0 = startTime + offset;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freqStart, t0);
+      osc.frequency.exponentialRampToValueAtTime(Math.max(30, freqEnd), t0 + dur);
+
+      gain.gain.setValueAtTime(0.0003, t0);
+      gain.gain.linearRampToValueAtTime(peak, t0 + 0.003);
+      gain.gain.exponentialRampToValueAtTime(0.0003, t0 + dur);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(t0);
+      osc.stop(t0 + dur + 0.01);
+    };
+
+    // 1. 테이프를 슬롯에 밀어 넣을 때의 플라스틱 가이드 마찰음 (0.00s ~ 0.085s)
+    mkNoiseBurst(0.0, 0.085, 'bandpass', 950, 1450, 1.4, 0.14, 1.4);
+
+    // 2. 끝단 스토퍼에 닿는 둔탁한 하우징 쿵 + 짧은 섀시 공명 (0.075s)
+    mkThud(0.075, 165, 52, 0.065, 0.34, 'sine');
+    mkThud(0.078, 290, 95, 0.032, 0.12, 'triangle');
+
+    // 3. 걸쇠가 물리는 '달-칵' 2단 래치 (0.115s, 0.152s)
+    mkNoiseBurst(0.115, 0.022, 'bandpass', 2200, 1100, 2.5, 0.24, 3.0);
+    mkThud(0.115, 420, 140, 0.024, 0.18, 'triangle');
+
+    mkNoiseBurst(0.152, 0.018, 'highpass', 1900, 1900, 1.0, 0.28, 3.4);
+    mkThud(0.152, 1850, 620, 0.018, 0.20, 'triangle');
   }
 
   // '달칵' 후 test.txt 음원을 뒤로 점점 빠르게 감는 컨트롤러
