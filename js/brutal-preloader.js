@@ -4,7 +4,7 @@
 
 (function () {
   window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-  window.__MOD_VERSIONS.brutalPreloader = 'v2026.11.25-cc0-tape-rewind-accel';
+  window.__MOD_VERSIONS.brutalPreloader = 'v2026.11.25-nostalgic-intro-parody-rewind';
 
   const TARGET_AVG_MS = 4500, HOLD_MS = 1000, WAIT_SETUP_KEY = 'myarchive95_setup_v1';
   const LOADER_ID = 'brutal-js-preloader', STYLE_ID = 'brutal-js-preloader-style';
@@ -38,32 +38,53 @@
     } catch { return true; }
   };
 
-  // 저작권 없는(CC0/자체 합성) 카세트 트랙 3종 생성 후 역방향 버퍼 반환
-  function createReversedTrackBuffer(ctx, trackIdx) {
-    const sr = ctx.sampleRate, bpm = 124, beatSec = 60 / bpm, stepSec = beatSec / 2;
-    const notes = trackIdx === 0
-      ? [261.63, 329.63, 392.00, 523.25, 440.00, 392.00, 329.63, 293.66, 349.23, 440.00, 587.33, 523.25, 493.88, 440.00, 392.00, 329.63]
-      : trackIdx === 1
-        ? [196.00, 196.00, 246.94, 293.66, 220.00, 220.00, 261.63, 329.63, 246.94, 246.94, 293.66, 369.99, 293.66, 261.63, 246.94, 196.00]
-        : [220.00, 261.63, 329.63, 392.00, 349.23, 293.66, 261.63, 220.00, 196.00, 246.94, 293.66, 392.00, 329.63, 293.66, 261.63, 246.94];
+  // 원곡 전주(00:00~00:16)의 통통 튀는 동기를 패러디한 노스탤직 음원 생성 후 역방향 버퍼 반환
+  function createNostalgicParodyBuffer(ctx) {
+    const sr = ctx.sampleRate, stepSec = 0.165;
+    // 전주의 경쾌한 상행/반복 펄스 동기를 노스탤직한 메이저/애드9 톤으로 패러디
+    const leadFreqs = [
+      392.00, 392.00, 440.00, 493.88, 587.33, 523.25, 493.88, 440.00,
+      392.00, 440.00, 493.88, 587.33, 659.25, 587.33, 523.25, 493.88,
+      329.63, 329.63, 392.00, 440.00, 493.88, 440.00, 392.00, 329.63,
+      349.23, 392.00, 440.00, 523.25, 493.88, 440.00, 392.00, 349.23
+    ];
+    const bassFreqs = [
+      130.81, 130.81, 196.00, 130.81, 164.81, 164.81, 246.94, 164.81,
+      146.83, 146.83, 220.00, 146.83, 196.00, 196.00, 146.83, 130.81
+    ];
 
-    const totalSec = notes.length * stepSec;
+    const totalSec = leadFreqs.length * stepSec;
     const len = Math.max(1, Math.floor(sr * totalSec));
     const forward = new Float32Array(len);
 
     for (let i = 0; i < len; i++) {
       const t = i / sr;
-      const step = Math.floor(t / stepSec) % notes.length;
+      const step = Math.floor(t / stepSec) % leadFreqs.length;
       const localT = t - step * stepSec;
-      const freq = notes[step];
-      const env = Math.min(1, localT / 0.012) * Math.exp(-localT * 6.5);
-      const wave = trackIdx === 1
-        ? Math.sin(2 * Math.PI * freq * t) * 0.55 + Math.sin(2 * Math.PI * freq * 2 * t) * 0.2
-        : (2 * ((freq * t) % 1) - 1) * 0.35 + Math.sin(2 * Math.PI * freq * t) * 0.45;
-      forward[i] = wave * env;
+      const fLead = leadFreqs[step];
+      const fBass = bassFreqs[step % bassFreqs.length];
+
+      // 따뜻한 일렉트릭 피아노/신스 패드 감성 엔벨로프
+      const attack = Math.min(1, localT / 0.014);
+      const decay = Math.exp(-localT * 5.2);
+      const env = attack * decay;
+
+      const leadTone =
+        Math.sin(2 * Math.PI * fLead * t) * 0.52 +
+        Math.sin(2 * Math.PI * fLead * 2 * t) * 0.16 +
+        Math.sin(2 * Math.PI * fLead * 1.5 * t) * 0.08;
+
+      const bassTone =
+        Math.sin(2 * Math.PI * fBass * t) * 0.34 +
+        Math.sin(2 * Math.PI * (fBass * 1.5) * t) * 0.08;
+
+      // 노스탤직 테이프 워블(미세한 피치 흔들림)
+      const wow = 1 + 0.006 * Math.sin(2 * Math.PI * 2.4 * t);
+      const sample = (leadTone * 0.65 + bassTone * 0.35) * env;
+      forward[i] = Math.max(-0.95, Math.min(0.95, sample * (0.92 + 0.08 * wow)));
     }
 
-    // 시간 역방향(뒤로 감기용) 버퍼 변환
+    // 뒤로 감기용 시간 역방향 변환
     forward.reverse();
     const buf = ctx.createBuffer(1, len, sr);
     buf.getChannelData(0).set(forward);
@@ -84,18 +105,17 @@
       osc.connect(gain); gain.connect(ctx.destination);
       osc.start(t0); osc.stop(t0 + dur + 0.008);
     };
-    // "달" (낮은 묵직한 쉘 안착) + "칵" (약 68ms 뒤 또렷한 래치 체결)
     mkClick(0, 340, 115, 0.036, 0.24);
     mkClick(0.068, 1680, 520, 0.026, 0.26);
   }
 
-  // '달칵' 후 랜덤 CC0 음원을 뒤로 점점 빠르게 감는 컨트롤러
+  // '달칵' 후 노스탤직 패러디 음원을 뒤로 점점 빠르게 감는 컨트롤러
   function startRewindAudio() {
     if (rewindCtl || !isSoundAllowed()) return rewindCtl;
     const AudioCtx = window.AudioContext || window.webkitAudioContext;
     if (!AudioCtx) return null;
 
-    let ctx = null, src = null, gain = null, stopped = false, rafAccel = 0, unlockBound = null;
+    let ctx = null, src = null, filter = null, gain = null, stopped = false, rafAccel = 0, unlockBound = null;
 
     const beginTapeRewind = () => {
       if (stopped || !ctx || src) return;
@@ -103,27 +123,36 @@
       playTapeInsertDalkak(ctx, now);
 
       const rewindStart = now + 0.11;
-      const trackIdx = Math.floor(Math.random() * 3);
-      const revBuf = createReversedTrackBuffer(ctx, trackIdx);
+      const revBuf = createNostalgicParodyBuffer(ctx);
 
       src = ctx.createBufferSource();
       src.buffer = revBuf;
       src.loop = true;
       src.playbackRate.setValueAtTime(0.95, rewindStart);
 
+      filter = ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(2400, rewindStart);
+      filter.Q.setValueAtTime(1.1, rewindStart);
+
       gain = ctx.createGain();
       gain.gain.setValueAtTime(0.0002, rewindStart);
-      gain.gain.linearRampToValueAtTime(0.16, rewindStart + 0.05);
+      gain.gain.linearRampToValueAtTime(0.18, rewindStart + 0.05);
 
-      src.connect(gain);
+      src.connect(filter);
+      filter.connect(gain);
       gain.connect(ctx.destination);
       src.start(rewindStart);
 
-      // 로딩 진행률에 따라 뒤로 감기 속도(0.95x -> 3.4x)를 점점 가속
       const tickSpeed = () => {
         if (stopped || !src || !ctx) return;
-        const speed = 0.95 + Math.pow(Math.max(0, Math.min(1, currentRatio)), 1.35) * 2.45;
-        try { src.playbackRate.setTargetAtTime(speed, ctx.currentTime, 0.04); } catch {}
+        const p = Math.max(0, Math.min(1, currentRatio));
+        const speed = 0.95 + Math.pow(p, 1.35) * 2.5;
+        const cutoff = 2400 + p * 2600;
+        try {
+          src.playbackRate.setTargetAtTime(speed, ctx.currentTime, 0.04);
+          if (filter) filter.frequency.setTargetAtTime(cutoff, ctx.currentTime, 0.05);
+        } catch {}
         rafAccel = requestAnimationFrame(tickSpeed);
       };
       rafAccel = requestAnimationFrame(tickSpeed);
@@ -162,7 +191,7 @@
             gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.14);
           }
           setTimeout(() => {
-            try { src?.stop(); src?.disconnect(); gain?.disconnect(); } catch {}
+            try { src?.stop(); src?.disconnect(); filter?.disconnect(); gain?.disconnect(); } catch {}
           }, 170);
         } catch {}
         rewindCtl = null;
@@ -234,7 +263,7 @@
   }
 
   const buildTicker = (files) => {
-    const line = `MY-ARCHIVE 95 WIN95 PRELOADER ★ REWINDING ${files.length} SYSTEM MODULES ★ ${files.join(' /// ')} ★ `;
+    const line = `MY-ARCHIVE 95 WIN95 PRELOADER ★ REWINDING NOSTALGIC INTRO PARODY ★ ${files.join(' /// ')} ★ `;
     return `<span class="brutal-ticker-msg">${line}</span><span class="brutal-ticker-msg">${line}</span>`;
   };
 
