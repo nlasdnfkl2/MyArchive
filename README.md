@@ -15,9 +15,10 @@
   - 1995년 PC 부팅 시퀀스(메모리 체크, 드라이브 인식, 도트 픽셀 부팅 로고) 및 부팅 생략(`ESC`/`SPACE`/클릭) 지원
   - 최초 실행 시 텍스트 모드 기반 환경설정 유틸리티(화면 해상도 배율, 바탕화면 테마, CRT 스캔라인, 시스템 사운드) 제공
   - 개인 계정 로그인(4자리 PIN), 신규 계정 등록, 비밀번호 없는 **공용 단말기** 접속 모드 전환, 관리자 권한 분리 및 상단 계정 배지 클릭을 통한 **계정 설정 팝업**(초상화·한줄 소개·PIN 변경 및 로그아웃) 지원
-- **멀티 태스킹 창 관리 (`index.html`, `css/style.css`, `js/window-mgr.js`):**
+- **멀티 태스킹 창 관리 & 위젯 (`index.html`, `css/style.css`, `js/window-mgr.js`, `js/win95-widgets.js`):**
   - 다중 창 드래그 이동, 최소화/복원, 시작 메뉴·하단 작업표시줄 창 전환 및 계단식 배열(Cascade)
   - `Ctrl+Alt+Delete` **Windows 95 작업 관리자**, 화면 보호기, 블루스크린(BSOD) 이스터에그 및 Web Audio API 기반 8비트 시스템 효과음 구현
+  - 바탕화면 위젯(CD Player, Mood Music AI, Clock 95, Calendar 95 등), 포트폴리오 가상 창(`#win-portfolio`), 제작자 및 라이선스 정보 창(`openAboutAndLicenseWindow`) 연동
   - 현대 유니코드 이모지를 배제하고 16×16 도트 픽셀 SVG(`crispEdges`)와 입체 베벨(Bevel)을 적용한 1995년 시대 고증 UI
 - **데스크톱 개인화 & 디스플레이 등록 정보 (`DISPLAY95.EXE`):**
   - 바탕화면 우클릭 컨텍스트 메뉴 지원
@@ -25,8 +26,8 @@
   - **CRT 브라운관 스캔라인(주사선) 오버레이** 실시간 토글 및 워크스테이션 소유자 이름 설정
 
 ### 2. Google Apps Script 서버리스 백엔드 & 아카이브 CRUD
-- **시트 자동 생성 및 실시간 동기화 (`backend/Code.gs`, `js/archive-app.js`):**
-  - `Archive`, `Users`, `Notes`, `Mailbox`, `Bookmarks`, `Likes`, `Comments` 등 핵심 시트를 자동 구성하고 실시간 CRUD 및 상호작용 데이터를 동기화합니다.
+- **시트 자동 생성 및 실시간 동기화 (`js/config.js`, `js/archive-app.js`):**
+  - `Archive`, `Users`, `Notes`, `Mailbox`, `Bookmarks`, `Likes`, `Comments` 등 핵심 시트와 연동해 실시간 CRUD 및 상호작용 데이터를 동기화합니다.
   - 상단 상태 표시줄에서 실시간 동기화 상태(`동기화 중` / `동기화 완료` / `동기화 실패`)를 시각적으로 표시합니다.
 - **다중 소스 메타데이터 자동 수집 & 무결성 검증:**
   - **도서:** Google Books, Apple Books, Open Library API 연동
@@ -41,7 +42,7 @@
   - **퀵 메모장 & 전자 우체통:** 개인 비망록 동기화(`NOTEPAD95.EXE`) 및 `GmailApp` 기반 명작 추천 메시지 전송·휴대 단말기 QR 공유(`MAILBOX95.EXE`)
 
 ### 3. 주크박스 YouTube 자동 검색 및 스트리밍 플레이어 (`JUKEBOX 95`)
-- **InnerTube API 기반 검색 엔진 (`js/jukebox.js`, `backend/Code.gs`):** YouTube InnerTube 검색 및 HTML 파싱 기반 `ytsearch` 엔드포인트를 구축하고, 검색 결과를 `localStorage`에 캐싱해 재재생 속도를 높였습니다.
+- **InnerTube API 기반 검색 엔진 (`js/jukebox.js`):** YouTube InnerTube 검색 및 HTML 파싱 기반 `ytsearch` 엔드포인트를 활용하고, 검색 결과를 `localStorage`에 캐싱해 재재생 속도를 높였습니다.
 - **후보 전환 & 링크 영구 연결:** 검색된 상위 후보 `#1 ~ #5` 버튼으로 라이브·MV·공식 음원을 즉시 전환하거나, 원하는 YouTube URL을 직접 입력해 해당 트랙에 영구 연결할 수 있습니다.
 - **탐색기 95 양방향 연동:** 주크박스에서 `[탐색기 95에서 찾기]`로 영상을 검색하거나, 반대로 탐색기 95에서 찾은 영상을 `[주크박스 95에서 듣기]`로 즉시 전송해 재생할 수 있습니다.
 
@@ -60,20 +61,19 @@
 ## 디렉터리 구조
 
 ```text
-MyArchive-main/
-├── index.html                 # 메인 OS 데스크톱 셸 (바탕화면 아이콘, 플로팅 창, 태스크바)
-├── README.md                  # 프로젝트 개요 및 주요 구현 기능 문서
+MyArchive/
 ├── css/
 │   └── style.css              # Windows 95 입체 UI + Neo-Brutalism 스타일, 배경 테마, CRT 효과
 ├── js/
-│   ├── config.js              # GAS Web App URL 설정, 로컬 스토리지 캐시, 권한 판별 및 공통 유틸리티
-│   ├── boot-screen.js         # 초기 SETUP, BIOS POST 부팅 시퀀스, 로그인/회원가입, 계정 설정, 실시간 동기화 배지
-│   ├── window-mgr.js          # 창 드래그·포커스·최소화, 7종 테마 엔진, 작업 관리자, 화면 보호기, BSOD
 │   ├── archive-app.js         # 감상 기록 CRUD, 다중 소스 검색, 월력·기분추천·퀴즈·연대기·인장·메모장·우체통
-│   ├── visualizer.js          # Canvas 물리 데이터 노드 맵, 워드클라우드, 편중도 통계 진단
-│   ├── community-app.js       # COMMUNITY95.EXE 공개 자료실 광장 피드, 전체 통계, 좋아요·댓글·스크랩
-│   ├── jukebox.js             # JUKEBOX 95 (YouTube 자동 검색·캐싱·후보 전환 스테레오 플레이어)
+│   ├── boot-screen.js         # 초기 SETUP, BIOS POST 부팅 시퀀스, 로그인/회원가입, 계정 설정, 실시간 동기화 배지
 │   ├── browser-app.js         # EXPLORER95.EXE 가상 브라우저, 북마크, DISPLAY95.EXE, 우클릭 메뉴
-│   └── gamepack.js            # 내장 레트로 미니게임 팩 (솔리테어 95, 지뢰찾기 95, 카드 뒤집기, 하이로우)
-└── backend/
-    └── Code.gs                # Google Apps Script 서버리스 API (시트 CRUD, 계정 인증·수정, 피드 상호작용, 파서, 메일 알림)
+│   ├── community-app.js       # COMMUNITY95.EXE 공개 자료실 광장 피드, 전체 통계, 좋아요·댓글·스크랩
+│   ├── config.js              # GAS Web App URL 설정, 로컬 스토리지 캐시, 권한 판별 및 공통 유틸리티
+│   ├── gamepack.js            # 내장 레트로 미니게임 팩 (솔리테어 95, 지뢰찾기 95, 카드 뒤집기, 하이로우)
+│   ├── jukebox.js             # JUKEBOX 95 (YouTube 자동 검색·캐싱·후보 전환 스테레오 플레이어)
+│   ├── visualizer.js          # Canvas 물리 데이터 노드 맵, 워드클라우드, 편중도 통계 진단
+│   ├── win95-widgets.js       # 바탕화면 위젯(CD Player, Mood Music AI, Clock 95, Calendar 95 등) 모듈
+│   └── window-mgr.js          # 창 드래그·포커스·최소화, 포트폴리오 가상 창, 제작자·라이선스 창, 7종 테마, 작업 관리자, BSOD
+├── README.md                  # 프로젝트 개요 및 주요 구현 기능 문서
+└── index.html                 # 메인 OS 데스크톱 셸 (바탕화면 아이콘, 플로팅 창, 태스크바, 스크립트 로더)
