@@ -3,10 +3,137 @@
 // ============================================================
 
 window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-window.__MOD_VERSIONS.bootLogin = 'v2026.11.25-setup-after-anim-before-bios';
+window.__MOD_VERSIONS.bootLogin = 'v2026.11.26-boot-login-responsive-mobile-guard';
 
 const SESSION_USER_KEY = 'myarchive95_current_user_v2';
 const USERS_CACHE_KEY = 'myarchive95_users_cache_v2';
+const LOGIN_RESPONSIVE_STYLE_ID = 'myarchive95-login-responsive-style';
+
+function applyLoginResponsiveStyle() {
+  if (document.getElementById(LOGIN_RESPONSIVE_STYLE_ID)) return;
+  const parent = document.head || document.documentElement;
+  if (!parent) return;
+
+  const style = document.createElement('style');
+  style.id = LOGIN_RESPONSIVE_STYLE_ID;
+  style.textContent = `
+    #boot-stage-login,
+    #win95-account-settings-modal {
+      box-sizing: border-box;
+      max-width: 100vw;
+      overflow-y: auto;
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
+    }
+    #boot-stage-login .win95-login-dialog,
+    #win95-account-settings-modal .win95-login-dialog {
+      box-sizing: border-box;
+      max-width: 100%;
+      min-width: 0;
+      max-height: calc(var(--app-vh, 100vh) - 20px);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    #boot-stage-login .win95-logon-body,
+    #win95-account-settings-modal .win95-logon-body {
+      min-width: 0;
+      overflow-y: auto;
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
+    }
+    #boot-stage-login .win95-logon-grid,
+    #win95-account-settings-modal .win95-logon-grid {
+      min-width: 0;
+    }
+    #boot-stage-login select,
+    #boot-stage-login input,
+    #win95-account-settings-modal select,
+    #win95-account-settings-modal input {
+      box-sizing: border-box;
+      max-width: 100%;
+      min-width: 0;
+    }
+    #boot-stage-login .win95-avatar-grid,
+    #win95-account-settings-modal .win95-avatar-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 6px;
+      min-width: 0;
+    }
+    #boot-stage-login .win95-avatar-choice,
+    #win95-account-settings-modal .win95-avatar-choice {
+      min-width: 0;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    @media (max-width: 768px) {
+      #boot-stage-login {
+        padding: 8px !important;
+        align-items: flex-start !important;
+        height: auto !important;
+        min-height: var(--app-vh, 100vh) !important;
+      }
+      #win95-account-settings-modal {
+        padding: 8px !important;
+        align-items: flex-start !important;
+      }
+      #boot-stage-login .win95-login-dialog,
+      #win95-account-settings-modal .win95-login-dialog {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 4px auto !important;
+        max-height: calc(var(--app-vh, 100vh) - 16px);
+      }
+      #boot-stage-login .win95-logon-grid,
+      #win95-account-settings-modal .win95-logon-grid {
+        grid-template-columns: 1fr !important;
+        gap: 6px !important;
+      }
+      #boot-stage-login .win95-logon-label,
+      #win95-account-settings-modal .win95-logon-label {
+        padding-top: 2px !important;
+      }
+      #login-user-search-row {
+        flex-wrap: wrap !important;
+        gap: 6px !important;
+      }
+      #login-user-search-input {
+        flex: 1 1 160px !important;
+        width: 100%;
+      }
+    }
+    @media (max-width: 480px) {
+      #boot-stage-login .win95-avatar-grid,
+      #win95-account-settings-modal .win95-avatar-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+      }
+      #boot-stage-login .win95-logon-actions,
+      #win95-account-settings-modal .win95-logon-actions {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 6px !important;
+      }
+      #boot-stage-login .win95-logon-actions button,
+      #win95-account-settings-modal .win95-logon-actions button {
+        width: 100%;
+      }
+    }
+  `;
+  parent.appendChild(style);
+}
+
+function syncLoginViewportHeight() {
+  applyLoginResponsiveStyle();
+  const vh = window.visualViewport && typeof window.visualViewport.height === 'number' && window.visualViewport.height > 0
+    ? Math.round(window.visualViewport.height)
+    : window.innerHeight;
+  if (vh > 0) {
+    document.documentElement.style.setProperty('--app-vh', `${vh}px`);
+  }
+}
 
 function loginSafeEsc(str) {
   if (typeof window.esc === 'function') return window.esc(str);
@@ -341,6 +468,7 @@ window.setArchiveSyncStatus = setArchiveSyncStatus;
 // 메인 화면 계정명 클릭 시 뜨는 계정 설정 팝업
 // ============================================================
 function openAccountSettingsModal() {
+  syncLoginViewportHeight();
   loginSafeTone('click');
   const prev = document.getElementById('win95-account-settings-modal');
   if (prev) prev.remove();
@@ -355,7 +483,7 @@ function openAccountSettingsModal() {
   modal.style.cssText = `
     position: fixed; inset: 0; z-index: 150000;
     background: rgba(0, 0, 0, 0.45);
-    display: flex; align-items: center; justify-content: center; padding: 16px;
+    display: flex; align-items: center; justify-content: center; padding: 12px;
   `;
 
   modal.innerHTML = `
@@ -371,7 +499,7 @@ function openAccountSettingsModal() {
         <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px; padding:8px; background:#fff; border:1.5px solid #808080;">
           <div id="acct-modal-avatar-preview">${renderPixelAvatarHtml(curAvatar, 32, curUser.role)}</div>
           <div style="min-width:0; flex:1;">
-            <div style="font-weight:900; font-size:0.9rem;">${loginSafeEsc(curUser.username)}</div>
+            <div style="font-weight:900; font-size:0.9rem; overflow:hidden; text-overflow:ellipsis;">${loginSafeEsc(curUser.username)}</div>
             <div style="font-size:0.75rem; color:#555;">${isPublic ? '공용 단말기 세션' : '개인 계정 세션'}</div>
           </div>
         </div>
@@ -398,7 +526,7 @@ function openAccountSettingsModal() {
 
         <div class="win95-logon-actions" style="justify-content:space-between; margin-top:14px; gap:6px; flex-wrap:wrap;">
           <button type="button" id="btn-acct-logout" class="win95-dlg-btn">로그아웃 / 계정 전환</button>
-          <div style="display:flex; gap:6px;">
+          <div style="display:flex; gap:6px; flex-wrap:wrap;">
             <button type="button" id="btn-acct-cancel" class="win95-dlg-btn">취소</button>
             ${!isPublic ? `<button type="button" id="btn-acct-save" class="win95-dlg-btn primary">설정 저장</button>` : ''}
           </div>
@@ -687,6 +815,7 @@ function handleLoginAccountSelectChange() {
 // 부팅 단계 제어 & 로그인/회원가입 실행기
 // ============================================================
 function setBootStage(stageName) {
+  syncLoginViewportHeight();
   if (bootState.stage === 'done' && stageName !== 'bios' && stageName !== 'intro') {
     return;
   }
@@ -707,7 +836,7 @@ function setBootStage(stageName) {
     overlay.style.pointerEvents = showOverlay ? 'auto' : 'none';
     overlay.style.display = showOverlay ? 'flex' : 'none';
     overlay.style.background = stageName === 'login' ? '#008080' : '#000000';
-    overlay.style.alignItems = 'center';
+    overlay.style.alignItems = window.innerWidth <= 768 ? 'flex-start' : 'center';
     overlay.style.justifyContent = 'center';
   }
 
@@ -717,10 +846,10 @@ function setBootStage(stageName) {
     loginEl.style.display = stageName === 'login' ? 'flex' : 'none';
     if (stageName === 'login') {
       loginEl.style.width = '100%';
-      loginEl.style.height = '100%';
-      loginEl.style.minHeight = '100vh';
+      loginEl.style.height = 'auto';
+      loginEl.style.minHeight = '100%';
       loginEl.style.background = '#008080';
-      loginEl.style.alignItems = 'center';
+      loginEl.style.alignItems = window.innerWidth <= 768 ? 'flex-start' : 'center';
       loginEl.style.justifyContent = 'center';
       if (typeof window.triggerCrtPowerOnFlash === 'function') {
         window.triggerCrtPowerOnFlash(loginEl.firstElementChild);
@@ -804,7 +933,7 @@ function showLoginError(msg) {
       <path fill="#ffff00" d="M7 3h2v2h1v2h1v2h1v2h1v2H3v-2h1V9h1V7h1V5h1V3z"/>
       <path fill="#000000" d="M7 5h2v5H7V5zm0 6h2v2H7v-2z"/>
     </svg>
-    <span style="color:#800000;font-weight:700;line-height:1.35;">[ERROR] ${loginSafeEsc(msg)}</span>
+    <span style="color:#800000;font-weight:700;line-height:1.35;min-width:0;word-break:break-word;">[ERROR] ${loginSafeEsc(msg)}</span>
   `;
   errBox.style.display = 'flex';
 }
@@ -1203,7 +1332,14 @@ window.startBiosBootSequence = startBiosBootSequence;
 window.getCurrentUser = getCurrentUser;
 window.switchLoginTab = switchLoginTab;
 
+window.addEventListener('resize', syncLoginViewportHeight, { passive: true });
+window.addEventListener('orientationchange', syncLoginViewportHeight, { passive: true });
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', syncLoginViewportHeight, { passive: true });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
+  syncLoginViewportHeight();
   document.body.classList.add('boot-locked', 'pre-login-lock');
   renderSignupAvatarPicker();
   bindBootScreenEvents();
