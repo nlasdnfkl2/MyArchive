@@ -152,42 +152,29 @@ body {
 
 /* Desktop Wallpapers */
 /* Desktop Wallpapers (6가지 Windows 95 정통 테마) */
+/* Desktop Wallpapers (디스플레이 등록 정보 6종 + 호환 테마) */
 body.theme-teal {
-  background-color: #008080; /* 1. 클래식 청록 (기본 단색) */
+  background-color: #008080;
   background-image: none;
 }
 
-body.theme-navy,
-body.theme-blue {
-  background-color: #000080; /* 2. 심야 네이비 단색 */
+body.theme-navy {
+  background-color: #102542;
   background-image: none;
 }
 
-body.theme-forest,
-body.theme-green {
-  background-color: #004040; /* 3. 짙은 청녹 단색 */
+body.theme-olive {
+  background-color: #3b5323;
   background-image: none;
 }
 
-body.theme-plum,
-body.theme-purple {
-  background-color: #400040; /* 4. 클래식 자두 단색 */
+body.theme-plum {
+  background-color: #4a2545;
   background-image: none;
 }
 
-body.theme-grid,
-body.theme-gray,
-body.theme-silver {
-  background-color: #c0c0c0; /* 5. 실버 격자 벽지 */
-  background-image:
-    linear-gradient(to right, rgba(0, 0, 0, 0.14) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(0, 0, 0, 0.14) 1px, transparent 1px);
-  background-size: 16px 16px;
-}
-
-body.theme-brick,
-body.theme-red {
-  background-color: #800000; /* 6. 적갈색 벽돌 패턴 */
+body.theme-brick {
+  background-color: #6e2626;
   background-image:
     linear-gradient(335deg, rgba(0, 0, 0, 0.35) 23px, transparent 23px),
     linear-gradient(155deg, rgba(0, 0, 0, 0.35) 23px, transparent 23px),
@@ -195,6 +182,22 @@ body.theme-red {
     linear-gradient(155deg, rgba(0, 0, 0, 0.35) 23px, transparent 23px);
   background-size: 58px 58px;
   background-position: 0 2px, 4px 35px, 29px 31px, 34px 6px;
+}
+
+body.theme-matrix {
+  background-color: #081408;
+  background-image:
+    linear-gradient(to right, rgba(0, 255, 65, 0.07) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 255, 65, 0.07) 1px, transparent 1px);
+  background-size: 16px 16px;
+}
+
+body.theme-grid {
+  background-color: #c0c0c0;
+  background-image:
+    linear-gradient(to right, rgba(0, 0, 0, 0.14) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.14) 1px, transparent 1px);
+  background-size: 16px 16px;
 }
 
 .crt-overlay {
