@@ -32,6 +32,44 @@
   padding: 0;
 }
 
+.win-titlebar {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  flex-wrap: nowrap !important;
+  gap: 8px;
+}
+
+.win-title-left {
+  display: flex !important;
+  align-items: center !important;
+  flex-direction: row !important;
+  gap: 7px;
+  flex: 1 1 auto;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.win-controls {
+  display: inline-flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  flex-wrap: nowrap !important;
+  flex-shrink: 0 !important;
+  gap: 4px;
+}
+
+.win-ctrl-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0 !important;
+  white-space: nowrap;
+}
+
 html, body {
   width: 100%;
   height: 100%;
