@@ -4,9 +4,10 @@
 
 (function () {
   window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-  window.__MOD_VERSIONS.brutalPreloader = 'v2026.11.25-strict-per-file-500ms';
+  window.__MOD_VERSIONS.brutalPreloader = 'v2026.11.25-random-per-file-500-1500ms';
 
-  const PER_FILE_MIN_MS = 500;
+  const FILE_MIN_MS = 500;
+  const FILE_MAX_MS = 1500;
   const COMPLETE_HOLD_MS = 650;
   const PRELOADER_ID = 'brutal-js-preloader';
   const STYLE_ID = 'brutal-js-preloader-style';
@@ -18,6 +19,7 @@
   let finished = false;
   let loopStarted = false;
   let filesCache = null;
+  let totalPlannedMs = null;
 
   const FALLBACK_JS_FILES = [
     'js/shell-builder.js',
@@ -35,6 +37,10 @@
     'js/boot-login.js',
     'js/win95-widgets.js'
   ];
+
+  function getRandomFileDurationMs() {
+    return Math.floor(FILE_MIN_MS + Math.random() * (FILE_MAX_MS - FILE_MIN_MS + 1));
+  }
 
   function collectJsFileNames() {
     if (filesCache && filesCache.length > 0) return filesCache;
@@ -58,97 +64,41 @@
     style.id = STYLE_ID;
     style.textContent = `
       @keyframes brutalTvPowerOff {
-        0% {
-          transform: scaleX(1) scaleY(1);
-          filter: brightness(1);
-          opacity: 1;
-        }
-        45% {
-          transform: scaleX(1.04) scaleY(0.012);
-          filter: brightness(1.9);
-          opacity: 1;
-        }
-        78% {
-          transform: scaleX(0.06) scaleY(0.012);
-          filter: brightness(2.4);
-          opacity: 0.95;
-        }
-        100% {
-          transform: scaleX(0) scaleY(0);
-          filter: brightness(0);
-          opacity: 0;
-        }
+        0% { transform: scaleX(1) scaleY(1); filter: brightness(1); opacity: 1; }
+        45% { transform: scaleX(1.04) scaleY(0.012); filter: brightness(1.9); opacity: 1; }
+        78% { transform: scaleX(0.06) scaleY(0.012); filter: brightness(2.4); opacity: 0.95; }
+        100% { transform: scaleX(0) scaleY(0); filter: brightness(0); opacity: 0; }
       }
 
       @keyframes tickerScrollLeft {
-        0% {
-          transform: translateX(0%);
-        }
-        100% {
-          transform: translateX(-50%);
-        }
+        0% { transform: translateX(0%); }
+        100% { transform: translateX(-50%); }
       }
 
       @keyframes bubblePopExaggerated {
-        0% {
-          transform: translateY(14px) scale(0.35) rotate(-9deg);
-          opacity: 0;
-        }
-        45% {
-          transform: translateY(-10px) scale(1.18) rotate(4deg);
-          opacity: 1;
-        }
-        72% {
-          transform: translateY(2px) scale(0.94) rotate(-2deg);
-          opacity: 1;
-        }
-        100% {
-          transform: translateY(0px) scale(1) rotate(0deg);
-          opacity: 1;
-        }
+        0% { transform: translateY(14px) scale(0.35) rotate(-9deg); opacity: 0; }
+        45% { transform: translateY(-10px) scale(1.18) rotate(4deg); opacity: 1; }
+        72% { transform: translateY(2px) scale(0.94) rotate(-2deg); opacity: 1; }
+        100% { transform: translateY(0px) scale(1) rotate(0deg); opacity: 1; }
       }
 
       @keyframes completeStampSlam {
-        0% {
-          transform: scale(2.1) rotate(-14deg);
-          opacity: 0;
-        }
-        55% {
-          transform: scale(0.92) rotate(5deg);
-          opacity: 1;
-        }
-        80% {
-          transform: scale(1.06) rotate(-2deg);
-          opacity: 1;
-        }
-        100% {
-          transform: scale(1) rotate(-3deg);
-          opacity: 1;
-        }
+        0% { transform: scale(2.1) rotate(-14deg); opacity: 0; }
+        55% { transform: scale(0.92) rotate(5deg); opacity: 1; }
+        80% { transform: scale(1.06) rotate(-2deg); opacity: 1; }
+        100% { transform: scale(1) rotate(-3deg); opacity: 1; }
       }
 
       @keyframes cardShakePunch {
-        0%, 100% {
-          transform: translate(0, 0) rotate(0deg);
-        }
-        25% {
-          transform: translate(-3px, -2px) rotate(-1.2deg);
-        }
-        50% {
-          transform: translate(3px, 2px) rotate(1.2deg);
-        }
-        75% {
-          transform: translate(-2px, 1px) rotate(-0.6deg);
-        }
+        0%, 100% { transform: translate(0, 0) rotate(0deg); }
+        25% { transform: translate(-3px, -2px) rotate(-1.2deg); }
+        50% { transform: translate(3px, 2px) rotate(1.2deg); }
+        75% { transform: translate(-2px, 1px) rotate(-0.6deg); }
       }
 
       @keyframes popStripeShift {
-        0% {
-          background-position: 0 0;
-        }
-        100% {
-          background-position: 32px 0;
-        }
+        0% { background-position: 0 0; }
+        100% { background-position: 32px 0; }
       }
 
       #${PRELOADER_ID} {
@@ -417,13 +367,8 @@
       }
 
       @media (max-width: 520px) {
-        .brutal-file-list {
-          grid-template-columns: 1fr;
-        }
-        .brutal-loader-card {
-          padding: 16px;
-          box-shadow: 6px 6px 0 #111111;
-        }
+        .brutal-file-list { grid-template-columns: 1fr; }
+        .brutal-loader-card { padding: 16px; box-shadow: 6px 6px 0 #111111; }
       }
     `;
     head.appendChild(style);
@@ -431,7 +376,7 @@
 
   function buildTickerContent(files) {
     const joined = files.join('  ///  ');
-    const line = `POP-BRUTAL MODULE PRELOADER  ★  MIN 500MS / INDEX FILE (${files.length} FILES)  ★  ${joined}  ★  `;
+    const line = `POP-BRUTAL MODULE PRELOADER  ★  RANDOM 0.5-1.5S / FILE (${files.length} FILES)  ★  ${joined}  ★  `;
     return `<span class="brutal-ticker-msg">${line}</span><span class="brutal-ticker-msg">${line}</span>`;
   }
 
@@ -504,9 +449,10 @@
     return '#39ff14';
   }
 
-  function triggerSpeechBubblePop(bubbleEl, cardEl, fileName, fileIndex, totalFiles, pct) {
+  function triggerSpeechBubblePop(bubbleEl, cardEl, fileName, fileIndex, totalFiles, pct, stepDurationMs) {
     if (!bubbleEl) return;
-    bubbleEl.textContent = `⚡ [${fileIndex + 1}/${totalFiles}] ${fileName} (500ms+)`;
+    const secLabel = `${(stepDurationMs / 1000).toFixed(2)}s`;
+    bubbleEl.textContent = `⚡ [${fileIndex + 1}/${totalFiles}] ${fileName} (${secLabel})`;
 
     bubbleEl.classList.remove('is-popping');
     void bubbleEl.offsetWidth;
@@ -561,7 +507,7 @@
     }
   }
 
-  function updatePreloaderProgress(ratio, currentFile, activeIndex, totalFiles) {
+  function updatePreloaderProgress(ratio, currentFile, activeIndex, totalFiles, stepDurationMs) {
     const clamped = Math.max(0, Math.min(1, ratio));
     const pct = Math.round(clamped * 100);
 
@@ -580,7 +526,7 @@
     const fileKey = `${activeIndex}:${currentFile || ''}`;
     if (currentFile && fileKey !== lastActiveFileKey) {
       lastActiveFileKey = fileKey;
-      triggerSpeechBubblePop(bubbleEl, cardEl, currentFile, activeIndex, totalFiles, pct);
+      triggerSpeechBubblePop(bubbleEl, cardEl, currentFile, activeIndex, totalFiles, pct, stepDurationMs);
     }
 
     if (listEl) {
@@ -647,22 +593,27 @@
 
     const files = collectJsFileNames();
     const lastFile = files[files.length - 1] || 'ALL MODULES READY';
-    updatePreloaderProgress(1, `${lastFile} — DONE!`, files.length, files.length);
+    updatePreloaderProgress(1, `${lastFile} — DONE!`, files.length, files.length, FILE_MIN_MS);
     showCompletionBanner(files.length);
 
     setTimeout(executeTvPowerOffNow, COMPLETE_HOLD_MS);
   }
 
-  // 인덱스 파일 하나당 최소 PER_FILE_MIN_MS(500ms)씩 순차적으로 진행
+  // 파일 하나당 매번 500ms ~ 1500ms 랜덤 시간으로 순차 진행
   function runPerFileSequentialSteps(files, onAllFilesCompleted) {
     const totalFiles = Math.max(1, files.length);
+    const stepDurations = Array.from({ length: totalFiles }, () => getRandomFileDurationMs());
+    totalPlannedMs = stepDurations.reduce((acc, ms) => acc + ms, 0);
+
     let currentIndex = 0;
+    let completedMs = 0;
 
     const runSingleFileStep = () => {
       if (finished || powerOffScheduled) return;
       mountPreloader();
 
       const fileName = files[currentIndex] || files[files.length - 1];
+      const stepDurationMs = stepDurations[currentIndex] || FILE_MIN_MS;
       const stepStart = performance.now();
 
       const animateCurrentFile = () => {
@@ -670,22 +621,25 @@
         mountPreloader();
 
         const stepElapsed = Math.max(0, performance.now() - stepStart);
-        const withinStepRatio = Math.min(1, stepElapsed / PER_FILE_MIN_MS);
-        const overallRatio = Math.min(1, (currentIndex + withinStepRatio) / totalFiles);
+        const clampedStepElapsed = Math.min(stepDurationMs, stepElapsed);
+        const overallRatio = totalPlannedMs > 0
+          ? Math.min(1, (completedMs + clampedStepElapsed) / totalPlannedMs)
+          : Math.min(1, (currentIndex + clampedStepElapsed / stepDurationMs) / totalFiles);
 
-        updatePreloaderProgress(overallRatio, fileName, currentIndex, totalFiles);
+        updatePreloaderProgress(overallRatio, fileName, currentIndex, totalFiles, stepDurationMs);
 
-        if (stepElapsed < PER_FILE_MIN_MS) {
+        if (stepElapsed < stepDurationMs) {
           requestAnimationFrame(animateCurrentFile);
           return;
         }
 
-        // 해당 파일의 최소 500ms 구간 완료
+        completedMs += stepDurationMs;
         currentIndex += 1;
+
         if (currentIndex < totalFiles) {
           runSingleFileStep();
         } else {
-          updatePreloaderProgress(1, fileName, totalFiles - 1, totalFiles);
+          updatePreloaderProgress(1, fileName, totalFiles - 1, totalFiles, stepDurationMs);
           onAllFilesCompleted();
         }
       };
@@ -730,11 +684,13 @@
   window.addEventListener('load', () => {
     mountPreloader();
     const files = collectJsFileNames();
-    const minTotalFromStart = Math.max(1, files.length) * PER_FILE_MIN_MS;
+    const fallbackTotalMs = typeof totalPlannedMs === 'number'
+      ? totalPlannedMs
+      : Math.max(1, files.length) * FILE_MIN_MS;
     const elapsed = Math.max(0, performance.now() - startTime);
-    const remain = Math.max(0, minTotalFromStart - elapsed);
+    const remain = Math.max(0, fallbackTotalMs - elapsed);
     setTimeout(() => {
-      if (!powerOffScheduled && !finished && elapsed >= minTotalFromStart) {
+      if (!powerOffScheduled && !finished && performance.now() - startTime >= fallbackTotalMs) {
         completeWithTvPowerOff();
       }
     }, remain);
