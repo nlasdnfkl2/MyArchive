@@ -1,10 +1,10 @@
 // ============================================================
 // MY-ARCHIVE 95 OS — BIOS POST & Authentic Windows 95 Logon
-// (Low-Poly 3D CRT Left-Turn Align + Radial Edge Stretch Zoom, POST Sequence, Win95 Splash & Logon)
+// (Black Screen -> Wait -> Low-Poly 3D CRT Front/Back/Side Turn & Full-Screen Zoom -> BIOS Screen)
 // ============================================================
 
 window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-window.__MOD_VERSIONS.bootScreen = 'v2026.11.25-lowpoly-crt-stretch';
+window.__MOD_VERSIONS.bootScreen = 'v2026.11.25-lowpoly-3d-full-zoom-bios';
 
 const SESSION_USER_KEY = 'myarchive95_current_user_v2';
 const USERS_CACHE_KEY = 'myarchive95_users_cache_v2';
@@ -70,7 +70,7 @@ function safeBootTone(type) {
 }
 
 // ============================================================
-// 로우폴리 3D CRT 모니터 좌회전 정렬 + 방사형 가장자리 팽창 연출
+// 3D 로우-폴리 CRT 모니터 (앞·뒤·옆면) + 느린 좌회전 + 브라우저 확대 -> BIOS
 // ============================================================
 function ensure3dCrtMonitorStyles() {
   if (document.getElementById('retro-3d-crt-monitor-style')) return;
@@ -85,96 +85,83 @@ function ensure3dCrtMonitorStyles() {
       display: flex;
       align-items: center;
       justify-content: center;
-      perspective: 1200px;
+      perspective: 1150px;
       overflow: hidden;
       opacity: 1;
-      transition: opacity 0.28s ease;
+      transition: opacity 0.2s ease;
     }
     #retro-3d-crt-stage.fade-out {
       opacity: 0;
       pointer-events: none;
     }
 
-    /* 잠시 대기 후 느리게 왼쪽으로 회전하며 화면 중앙에 맞추는 3D 리그 */
+    /* 검은 화면에서 잠깐 대기 후 천천히 왼쪽으로 회전 정렬 -> 브라우저 가득 확대 */
     .poly-crt-rig {
       position: relative;
       transform-style: preserve-3d;
-      transform: translate3d(3vw, 4px, -90px) rotateX(6deg) rotateY(34deg) rotateZ(0deg) scale(0.92);
-      animation: polyCrtTurnLeftCenter 2.65s cubic-bezier(0.22, 0.88, 0.28, 1) 0.55s forwards;
-    }
-
-    /* 바닥 그림자 */
-    .poly-crt-shadow {
-      position: absolute;
-      width: 260px;
-      height: 155px;
-      left: 50%;
-      bottom: -90px;
-      transform: translateX(-44%) rotateX(74deg) translateZ(-36px);
-      background: radial-gradient(ellipse at center, rgba(120, 125, 132, 0.22) 0%, rgba(120, 125, 132, 0.05) 65%, transparent 78%);
-      filter: blur(5px);
-      pointer-events: none;
+      opacity: 0;
+      transform: translate3d(28px, 4px, -110px) rotateX(5deg) rotateY(38deg) rotateZ(0deg) scale(0.9);
+      animation: polyCrtBlackWaitTurnZoom 3.45s cubic-bezier(0.22, 0.86, 0.26, 1) 0.55s forwards;
     }
 
     .poly-crt-unit {
-      --w: 316px;
-      --h: 268px;
-      --d: 220px;
+      --w: 310px;
+      --h: 256px;
+      --d: 224px;
       position: relative;
       width: var(--w);
       height: var(--h);
       transform-style: preserve-3d;
     }
 
+    /* 로우-폴리 플랫 셰이딩 면 공통 */
     .poly-face {
       position: absolute;
       box-sizing: border-box;
-      border: 1px solid rgba(72, 74, 72, 0.45);
+      border: 1px solid rgba(35, 36, 34, 0.55);
+      backface-visibility: visible;
     }
 
-    /* 전면 베젤 */
+    /* 1. 앞면: 로우-폴리 베이지 베젤 + 볼록 CRT 화면 */
     .poly-front {
       width: var(--w);
       height: var(--h);
-      background: linear-gradient(155deg, #dfddd2 0%, #cfccc0 56%, #bdb9ac 100%);
+      background: linear-gradient(155deg, #dcd9cc 0%, #c8c4b5 58%, #b3afa0 100%);
       transform: translateZ(calc(var(--d) * 0.5));
       padding: 15px 17px 11px;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      box-shadow: inset 2px 2px 0 rgba(255, 255, 255, 0.55), inset -2px -2px 0 rgba(88, 86, 78, 0.35);
+      box-shadow: inset 2px 2px 0 rgba(255, 255, 255, 0.45), inset -2px -2px 0 rgba(70, 68, 60, 0.4);
     }
 
-    /* 움푹 들어간 스크린 프레임 */
     .poly-screen-well {
       position: relative;
       flex: 1;
-      background: #7c796f;
-      border-top: 3px solid #58554d;
-      border-left: 3px solid #58554d;
-      border-right: 3px solid #e7e5da;
-      border-bottom: 3px solid #e7e5da;
-      padding: 4px;
+      background: #757268;
+      border-top: 3px solid #525048;
+      border-left: 3px solid #525048;
+      border-right: 3px solid #e6e4d8;
+      border-bottom: 3px solid #e6e4d8;
+      padding: 3px;
       overflow: hidden;
     }
 
-    /* 튀어나온(볼록한) CRT 유리 화면 질감 + BIOS 화면 */
+    /* 튀어나온(볼록) CRT 유리 화면 질감 */
     .poly-screen-display {
       position: relative;
       width: 100%;
       height: 100%;
-      background: #06080a;
+      background: #050709;
       border-radius: 10px / 8px;
       transform: translateZ(5px) scale(1.015);
       box-shadow:
-        inset 0 0 14px rgba(0, 0, 0, 0.88),
-        inset 4px 4px 10px rgba(255, 255, 255, 0.14),
-        0 2px 6px rgba(0, 0, 0, 0.65);
+        inset 0 0 12px rgba(0, 0, 0, 0.9),
+        inset 3px 3px 8px rgba(255, 255, 255, 0.14);
       overflow: hidden;
       font-family: 'Consolas', 'Courier New', monospace;
     }
 
-    /* 볼록 CRT 유리 반사/곡률 하이라이트 */
     .poly-crt-glass-bulge {
       position: absolute;
       inset: 0;
@@ -182,11 +169,10 @@ function ensure3dCrtMonitorStyles() {
       pointer-events: none;
       border-radius: 10px / 8px;
       background:
-        radial-gradient(ellipse at 32% 22%, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.04) 38%, transparent 66%),
+        radial-gradient(ellipse at 30% 22%, rgba(255, 255, 255, 0.17) 0%, rgba(255, 255, 255, 0.03) 40%, transparent 68%),
         radial-gradient(ellipse at 50% 50%, transparent 56%, rgba(0, 0, 0, 0.55) 100%);
     }
 
-    /* 화면 위 미세 스캔라인 */
     .poly-crt-scanlines {
       position: absolute;
       inset: 0;
@@ -194,91 +180,29 @@ function ensure3dCrtMonitorStyles() {
       pointer-events: none;
       background: repeating-linear-gradient(
         0deg,
-        rgba(0, 0, 0, 0.24) 0px,
-        rgba(0, 0, 0, 0.24) 1px,
+        rgba(0, 0, 0, 0.22) 0px,
+        rgba(0, 0, 0, 0.22) 1px,
         transparent 1px,
         transparent 2.5px
       );
     }
 
-    /* 모니터 화면 내부에 표시되는 시작 화면(검은 BIOS 화면) */
-    .poly-bios-screen {
+    .poly-screen-preview-text {
       position: relative;
       z-index: 2;
-      width: 100%;
-      height: 100%;
-      padding: 6px 7px;
-      color: #d8d8d8;
+      padding: 6px 8px;
+      color: #c8d2dc;
       font-size: 0.44rem;
-      line-height: 1.32;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      text-shadow: 0 0 4px rgba(210, 235, 255, 0.25);
+      line-height: 1.35;
     }
 
-    .poly-bios-head {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 4px;
-      border-bottom: 1px dashed rgba(255, 255, 255, 0.28);
-      padding-bottom: 3px;
-    }
-
-    .poly-bios-title {
-      color: #ffffff;
-      font-weight: 700;
-    }
-
-    .poly-bios-epa {
-      border: 1px solid #ffff55;
-      color: #ffff55;
-      padding: 1px 3px;
-      font-size: 0.38rem;
-      font-weight: 700;
-      line-height: 1.1;
-      text-align: center;
-      flex-shrink: 0;
-    }
-
-    .poly-bios-lines {
-      flex: 1;
-      margin-top: 3px;
-      display: flex;
-      flex-direction: column;
-      gap: 1.5px;
-      color: #c2c2c2;
-      overflow: hidden;
-    }
-
-    .poly-bios-ok {
-      color: #55ff55;
-      font-weight: 700;
-    }
-
-    .poly-bios-warn {
-      color: #ffff55;
-      font-weight: 700;
-    }
-
-    .poly-bios-foot {
-      border-top: 1px solid rgba(255, 255, 255, 0.24);
-      padding-top: 2px;
-      display: flex;
-      justify-content: space-between;
-      color: #ffffff;
-      font-size: 0.4rem;
-    }
-
-    /* 하단 턱: 미니 컨트롤 버튼 + 파란 전원 버튼 + LED */
     .poly-chin {
-      height: 24px;
+      height: 22px;
       margin-top: 7px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0 4px;
+      padding: 0 3px;
     }
     .poly-chin-left {
       display: flex;
@@ -293,9 +217,9 @@ function ensure3dCrtMonitorStyles() {
       width: 8px;
       height: 8px;
       border-radius: 50%;
-      background: #b6b2a4;
-      border: 1px solid #5c5a52;
-      box-shadow: inset 1px 1px 0 #eceae0;
+      background: #b2ae9f;
+      border: 1px solid #55534b;
+      box-shadow: inset 1px 1px 0 #ebe9df;
     }
     .poly-led {
       width: 5px;
@@ -310,128 +234,116 @@ function ensure3dCrtMonitorStyles() {
       border-radius: 50%;
       background: radial-gradient(circle at 35% 30%, #7aa8ff 0%, #3d6ed6 65%, #274999 100%);
       border: 1px solid #2d3442;
-      box-shadow: inset 1px 1px 0 rgba(255, 255, 255, 0.5);
     }
 
-    /* 후면 돌출 하우징 */
+    /* 2. 뒷면: 돌출된 CRT 브라운관 하우징 + 후면 패널 디테일 */
     .poly-back {
-      width: calc(var(--w) * 0.72);
+      width: calc(var(--w) * 0.74);
       height: calc(var(--h) * 0.72);
-      left: calc(var(--w) * 0.14);
+      left: calc(var(--w) * 0.13);
       top: calc(var(--h) * 0.14);
-      background: #aca89b;
-      transform: translateZ(calc(var(--d) * -0.55)) rotateY(180deg);
+      background: linear-gradient(180deg, #9d998c 0%, #858174 100%);
+      transform: translateZ(calc(var(--d) * -0.56)) rotateY(180deg);
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .poly-back-vents {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 5px;
+    }
+    .poly-back-vent {
+      height: 6px;
+      background: #4d4b43;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.25);
+    }
+    .poly-back-ports {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+    .poly-back-port {
+      width: 22px;
+      height: 10px;
+      background: #3d3b35;
+      border: 1px solid #66635a;
     }
 
-    /* 좌/우 측면: 로우폴리 환기구 도트 패턴 */
+    /* 3. 좌/우 측면: 로우-폴리 측면 + 환기구 도트 패턴 */
     .poly-left,
     .poly-right {
       width: var(--d);
       height: var(--h);
       left: calc((var(--w) - var(--d)) * 0.5);
-      background-color: #c6c3b6;
-      background-image: radial-gradient(rgba(68, 66, 60, 0.42) 1px, transparent 1.1px);
+      background-image: radial-gradient(rgba(52, 50, 46, 0.45) 1px, transparent 1.1px);
       background-size: 7px 7px;
     }
     .poly-left {
-      background-color: #cbc8bb;
+      background-color: #c2bfb2;
       transform: rotateY(-90deg) translateZ(calc(var(--w) * 0.5));
     }
     .poly-right {
-      background-color: #b5b1a4;
+      background-color: #a4a092;
       transform: rotateY(90deg) translateZ(calc(var(--w) * 0.5));
     }
 
-    /* 상/하면 */
+    /* 4. 상/하면 */
     .poly-top {
       width: var(--w);
       height: var(--d);
       top: calc((var(--h) - var(--d)) * 0.5);
-      background: #dcd9cd;
+      background: #d4d1c4;
       transform: rotateX(90deg) translateZ(calc(var(--h) * 0.5));
     }
     .poly-bottom {
       width: var(--w);
       height: var(--d);
       top: calc((var(--h) - var(--d)) * 0.5);
-      background: #9c988b;
+      background: #8f8b7e;
       transform: rotateX(-90deg) translateZ(calc(var(--h) * 0.5));
     }
 
     /* 넥 & 사각 베이스 스탠드 */
     .poly-neck {
       position: absolute;
-      width: 118px;
+      width: 116px;
       height: 24px;
-      left: calc((var(--w) - 118px) * 0.5);
+      left: calc((var(--w) - 116px) * 0.5);
       bottom: -22px;
-      background: #a4a093;
-      border: 1px solid rgba(72, 74, 72, 0.45);
+      background: #9c988b;
+      border: 1px solid rgba(35, 36, 34, 0.55);
       transform: translateZ(-6px);
     }
     .poly-base {
       position: absolute;
-      width: 198px;
-      height: 114px;
-      left: calc((var(--w) - 198px) * 0.5);
-      bottom: -78px;
-      background: linear-gradient(180deg, #d5d2c6 0%, #b8b4a7 100%);
-      border: 1px solid rgba(72, 74, 72, 0.45);
+      width: 196px;
+      height: 112px;
+      left: calc((var(--w) - 196px) * 0.5);
+      bottom: -76px;
+      background: linear-gradient(180deg, #ccc8b9 0%, #aba799 100%);
+      border: 1px solid rgba(35, 36, 34, 0.55);
       transform: rotateX(76deg) translateZ(-28px);
-      box-shadow: 0 8px 0 #979386;
+      box-shadow: 0 8px 0 #898578;
     }
 
-    /* 방사형 가장자리 스트레치 라인 오버레이 */
-    .edge-stretch-rays {
-      position: fixed;
-      inset: -18vmax;
-      z-index: 1000001;
-      pointer-events: none;
-      opacity: 0;
-      background:
-        repeating-conic-gradient(
-          from 0deg at 50% 50%,
-          rgba(165, 170, 176, 0.85) 0deg 1.1deg,
-          transparent 1.1deg 7.5deg,
-          rgba(145, 150, 156, 0.72) 7.5deg 8.2deg,
-          transparent 8.2deg 18deg,
-          rgba(175, 179, 184, 0.78) 18deg 18.8deg,
-          transparent 18.8deg 30deg
-        ),
-        radial-gradient(circle at 50% 50%, #000000 0%, #000000 22%, rgba(0, 0, 0, 0.35) 54%, rgba(0, 0, 0, 0) 76%);
-      -webkit-mask-image: radial-gradient(circle at 50% 50%, transparent 0%, transparent 16%, #000 32%, #000 100%);
-      mask-image: radial-gradient(circle at 50% 50%, transparent 0%, transparent 16%, #000 32%, #000 100%);
-      transform: scale(0.32);
-      animation: radialEdgeStretchExpand 0.82s cubic-bezier(0.16, 1, 0.3, 1) 2.75s forwards;
-    }
-
-    @keyframes polyCrtTurnLeftCenter {
+    @keyframes polyCrtBlackWaitTurnZoom {
       0% {
-        opacity: 0.96;
-        transform: translate3d(3vw, 4px, -90px) rotateX(6deg) rotateY(34deg) rotateZ(0deg) scale(0.92);
+        opacity: 0;
+        transform: translate3d(28px, 4px, -110px) rotateX(5deg) rotateY(38deg) rotateZ(0deg) scale(0.9);
+      }
+      18% {
+        opacity: 1;
+        transform: translate3d(28px, 4px, -110px) rotateX(5deg) rotateY(38deg) rotateZ(0deg) scale(0.92);
       }
       66% {
         opacity: 1;
-        transform: translate3d(0px, 0px, 0px) rotateX(3deg) rotateY(0deg) rotateZ(0deg) scale(1.02);
+        transform: translate3d(0px, 0px, 0px) rotateX(2deg) rotateY(0deg) rotateZ(0deg) scale(1.02);
       }
       100% {
         opacity: 1;
-        transform: translate3d(0px, 0px, 470px) rotateX(0deg) rotateY(0deg) rotateZ(0deg) scale(4.7);
-      }
-    }
-
-    @keyframes radialEdgeStretchExpand {
-      0% {
-        opacity: 0;
-        transform: scale(0.28);
-      }
-      28% {
-        opacity: 0.98;
-        transform: scale(0.88);
-      }
-      100% {
-        opacity: 1;
-        transform: scale(2.45);
+        transform: translate3d(0px, -6px, 520px) rotateX(0deg) rotateY(0deg) rotateZ(0deg) scale(5.4);
       }
     }
   `;
@@ -446,33 +358,16 @@ function play3dCrtMonitorAnimation() {
 
     const stage = document.createElement('div');
     stage.id = 'retro-3d-crt-stage';
-    stage.title = '클릭하면 즉시 부팅 화면으로 이동합니다';
+    stage.title = '클릭하면 즉시 BIOS 화면으로 이동합니다';
     stage.innerHTML = `
       <div class="poly-crt-rig">
         <div class="poly-crt-unit">
           <div class="poly-face poly-front">
             <div class="poly-screen-well">
               <div class="poly-screen-display">
-                <div class="poly-bios-screen">
-                  <div class="poly-bios-head">
-                    <div>
-                      <div class="poly-bios-title">AWARD MODULAR BIOS v4.51PG</div>
-                      <div>MY-ARCHIVE 95 WORKSTATION ROM</div>
-                    </div>
-                    <div class="poly-bios-epa">ENERGY<br>STAR</div>
-                  </div>
-                  <div class="poly-bios-lines">
-                    <div>PENTIUM-S CPU @ 133MHz</div>
-                    <div>Memory Test: <span id="poly-mini-ram" class="poly-bios-ok">65536K OK</span></div>
-                    <div>Pri Master: MY-HDD <span class="poly-bios-ok">[OK]</span></div>
-                    <div>Pri Slave : CD-ROM <span class="poly-bios-ok">[OK]</span></div>
-                    <div>SoundBlaster 16 @ 220H <span class="poly-bios-ok">[OK]</span></div>
-                    <div class="poly-bios-warn">Booting C:\MY-ARCHIVE\BIOS.SYS...</div>
-                  </div>
-                  <div class="poly-bios-foot">
-                    <span>[DEL] SETUP</span>
-                    <span>POST PASS</span>
-                  </div>
+                <div class="poly-screen-preview-text">
+                  <div>AWARD BIOS ROM</div>
+                  <div style="color:#55ff55;">INITIALIZING...</div>
                 </div>
                 <div class="poly-crt-scanlines"></div>
                 <div class="poly-crt-glass-bulge"></div>
@@ -490,7 +385,25 @@ function play3dCrtMonitorAnimation() {
               <span class="poly-power-btn"></span>
             </div>
           </div>
-          <div class="poly-face poly-back"></div>
+
+          <div class="poly-face poly-back">
+            <div class="poly-back-vents">
+              <span class="poly-back-vent"></span>
+              <span class="poly-back-vent"></span>
+              <span class="poly-back-vent"></span>
+              <span class="poly-back-vent"></span>
+              <span class="poly-back-vent"></span>
+              <span class="poly-back-vent"></span>
+              <span class="poly-back-vent"></span>
+              <span class="poly-back-vent"></span>
+            </div>
+            <div class="poly-back-ports">
+              <span class="poly-back-port"></span>
+              <span class="poly-back-port"></span>
+              <span class="poly-back-port"></span>
+            </div>
+          </div>
+
           <div class="poly-face poly-left"></div>
           <div class="poly-face poly-right"></div>
           <div class="poly-face poly-top"></div>
@@ -498,23 +411,25 @@ function play3dCrtMonitorAnimation() {
           <div class="poly-neck"></div>
           <div class="poly-base"></div>
         </div>
-        <div class="poly-crt-shadow"></div>
       </div>
-      <div class="edge-stretch-rays"></div>
     `;
 
     document.body.appendChild(stage);
-    playDriveSeekTick();
+
+    const tickTimer = setTimeout(() => {
+      playDriveSeekTick();
+    }, 620);
 
     let finished = false;
     const finishIntro = () => {
       if (finished) return;
       finished = true;
+      clearTimeout(tickTimer);
       stage.classList.add('fade-out');
       setTimeout(() => {
         stage.remove();
         resolve();
-      }, 240);
+      }, 180);
     };
 
     stage.addEventListener('click', () => {
@@ -522,7 +437,7 @@ function play3dCrtMonitorAnimation() {
       finishIntro();
     });
 
-    const autoTimer = setTimeout(finishIntro, 3550);
+    const autoTimer = setTimeout(finishIntro, 3920);
     stage.dataset.autoTimer = String(autoTimer);
   });
 }
