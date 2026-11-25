@@ -3,7 +3,7 @@
 // ============================================================
 
 window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-window.__MOD_VERSIONS.bootLogin = 'v2026.11.26-boot-login-responsive-mobile-guard';
+window.__MOD_VERSIONS.bootLogin = 'v2026.11.26-boot-login-desktop-width-guard';
 
 const SESSION_USER_KEY = 'myarchive95_current_user_v2';
 const USERS_CACHE_KEY = 'myarchive95_users_cache_v2';
@@ -27,19 +27,23 @@ function applyLoginResponsiveStyle() {
     }
     #boot-stage-login .win95-login-dialog,
     #win95-account-settings-modal .win95-login-dialog {
-      box-sizing: border-box;
-      max-width: 100%;
-      min-width: 0;
-      max-height: calc(var(--app-vh, 100vh) - 20px);
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
+      box-sizing: border-box !important;
+      width: min(480px, 100%) !important;
+      max-width: 480px !important;
+      min-width: 0 !important;
+      max-height: calc(var(--app-vh, 100vh) - 20px) !important;
+      margin: 0 auto !important;
+      display: flex !important;
+      flex-direction: column !important;
+      overflow: hidden !important;
     }
     #boot-stage-login .win95-logon-body,
     #win95-account-settings-modal .win95-logon-body {
       min-width: 0;
       overflow-y: auto;
       overflow-x: hidden;
+      overflow-wrap: anywhere;
+      word-break: break-word;
       -webkit-overflow-scrolling: touch;
     }
     #boot-stage-login .win95-logon-grid,
@@ -85,7 +89,7 @@ function applyLoginResponsiveStyle() {
         width: 100% !important;
         max-width: 100% !important;
         margin: 4px auto !important;
-        max-height: calc(var(--app-vh, 100vh) - 16px);
+        max-height: calc(var(--app-vh, 100vh) - 16px) !important;
       }
       #boot-stage-login .win95-logon-grid,
       #win95-account-settings-modal .win95-logon-grid {
