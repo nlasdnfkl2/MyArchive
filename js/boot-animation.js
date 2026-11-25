@@ -3,7 +3,7 @@
 // ============================================================
 
 window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-window.__MOD_VERSIONS.bootAnimation = 'v2026.11.25-auto-boot-retro-vga';
+window.__MOD_VERSIONS.bootAnimation = 'v2026.11.25-pre-bios-setup-boot-ctrl';
 
 const ANIM_SETUP_KEY = 'myarchive95_setup_v1';
 const DEFAULT_ANIM_SETUP = { resolution: '100', theme: 'theme-teal', crt: true, sound: true };
@@ -68,11 +68,25 @@ function applyInitialSetupToSystem(cfg) {
 function openInitialSetupScreen(forceOpen = false, onCompleteCallback = null) {
   document.body.classList.add('boot-locked');
   const existingCfg = loadInitialSetup();
-  const nextStep = typeof onCompleteCallback === 'function' ? onCompleteCallback : window.startBiosBootSequence;
+
+  const runNextAfterSetup = () => {
+    if (typeof window.__onInitialSetupComplete === 'function') {
+      return window.__onInitialSetupComplete();
+    }
+    if (typeof onCompleteCallback === 'function') {
+      return onCompleteCallback();
+    }
+    if (typeof window.__runActualBiosSequence === 'function') {
+      return window.__runActualBiosSequence({ alreadyClicked: true });
+    }
+    if (typeof window.__origStartBiosBootSequence === 'function') {
+      return window.__origStartBiosBootSequence({ alreadyClicked: true });
+    }
+  };
 
   if (existingCfg && !forceOpen) {
     applyInitialSetupToSystem(existingCfg);
-    if (typeof nextStep === 'function') nextStep();
+    runNextAfterSetup();
     return;
   }
 
@@ -123,7 +137,7 @@ function openInitialSetupScreen(forceOpen = false, onCompleteCallback = null) {
     window.removeEventListener('keydown', onSetupKeyDown, true);
     applyInitialSetupToSystem(cfgToSave);
     overlay.remove();
-    if (typeof nextStep === 'function') nextStep();
+    runNextAfterSetup();
   };
 
   function onSetupKeyDown(e) {
