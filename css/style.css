@@ -87,7 +87,7 @@ body.theme-brick, body[data-os-wallpaper="brick"], body[data-wallpaper="brick"] 
 
 /* 4. 바탕화면 아이콘 그리드 */
 .desktop-workspace { position: fixed; top: 30px; left: 0; right: 0; bottom: 38px; width: 100%; height: calc(100dvh - 68px); min-height: 0; padding: 10px 12px 12px; background: transparent; overflow: hidden; }
-.desktop-icons { display: grid; grid-template-columns: repeat(2, 84px); grid-auto-rows: min-content; gap: 6px; width: max-content; max-height: 100%; overflow-y: auto; position: relative; z-index: 10; }
+.desktop-icons{display:grid;grid-auto-flow:column;grid-template-rows:repeat(auto-fill,86px);grid-auto-columns:84px;gap:6px;width:max-content;height:100%;max-height:100%;overflow:hidden;position:relative;z-index:10;}
 .desk-icon { display: flex; flex-direction: column; align-items: center; gap: 5px; background: transparent; border: 1.5px dashed transparent; padding: 6px 4px; cursor: pointer; color: #ffffff; text-shadow: 1px 1px 0px #000000; font-family: var(--font-main); font-size: 0.74rem; font-weight: 800; text-align: center; word-break: keep-all; }
 body.theme-paper .desk-icon, body.theme-solid-paper .desk-icon, body[data-wallpaper="paper"] .desk-icon, body[data-wallpaper="solid-paper"] .desk-icon { color: #111111; text-shadow: none; }
 .desk-icon:hover { border-color: rgba(255,255,255,0.75); background: rgba(0,0,128,0.25); }
