@@ -7,7 +7,7 @@
 
 (function () {
   window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-  window.__MOD_VERSIONS.bootController = 'v2026.11.25-boot-controller-pre-bios-setup-v2';
+  window.__MOD_VERSIONS.bootController = 'v2026.11.25-boot-controller-stop-music-setup-and-bios';
 
   const SETUP_STORAGE_KEY = 'myarchive95_setup_v1';
 
@@ -15,7 +15,7 @@
   window.__ARCHIVE_GATE_DISMISSED = false;
   let __waitBootStarted = false;
   let __firstScreenMounted = false;
-  let __biosMusicStopped = false;
+  let __stageMusicStopped = false;
   let __preBiosSetupShown = false;
   let __preBiosSetupResumed = false;
 
@@ -30,9 +30,9 @@
     }
   }
 
-  function stopMusicAtBiosStage() {
-    if (__biosMusicStopped) return;
-    __biosMusicStopped = true;
+  function stopAllBootMusicForStage() {
+    if (__stageMusicStopped) return;
+    __stageMusicStopped = true;
     try {
       if (typeof window.__stopWaitMusicForBios === 'function') {
         window.__stopWaitMusicForBios();
@@ -53,21 +53,22 @@
     return true;
   }
 
-  function observeBiosStageAppearance() {
-    const checkBios = () => {
+  function observeBiosAndSetupAppearance() {
+    const checkStages = () => {
       const biosStage = document.getElementById('boot-stage-bios');
-      if (biosStage && isElementVisible(biosStage)) {
-        stopMusicAtBiosStage();
+      const setupStage = document.getElementById('bios-text-setup-overlay');
+      if ((biosStage && isElementVisible(biosStage)) || (setupStage && isElementVisible(setupStage))) {
+        stopAllBootMusicForStage();
       }
     };
 
-    checkBios();
+    checkStages();
 
-    const targetRoot = document.getElementById('os-boot-overlay') || document.body || document.documentElement;
+    const targetRoot = document.body || document.documentElement;
     if (!targetRoot || typeof MutationObserver !== 'function') return;
 
     const observer = new MutationObserver(() => {
-      checkBios();
+      checkStages();
     });
 
     observer.observe(targetRoot, {
@@ -103,6 +104,7 @@
   }
 
   function runBiosSequenceDirect() {
+    stopAllBootMusicForStage();
     const overlay = document.getElementById('os-boot-overlay');
     if (overlay) {
       overlay.style.display = 'flex';
@@ -121,6 +123,7 @@
   function proceedAfterPreBiosSetup() {
     if (__preBiosSetupResumed) return;
     __preBiosSetupResumed = true;
+    stopAllBootMusicForStage();
     return runBiosSequenceDirect();
   }
 
@@ -131,11 +134,14 @@
 
     if (typeof MutationObserver === 'function') {
       const observer = new MutationObserver(() => {
+        const curEl = findSetupEl();
+        if (curEl && isElementVisible(curEl)) {
+          stopAllBootMusicForStage();
+        }
         if (__preBiosSetupResumed) {
           observer.disconnect();
           return;
         }
-        const curEl = findSetupEl();
         if (!curEl || !isElementVisible(curEl)) {
           observer.disconnect();
           proceedAfterPreBiosSetup();
@@ -159,6 +165,7 @@
 
   function openPreBiosSetupScreen() {
     __preBiosSetupShown = true;
+    stopAllBootMusicForStage();
     try {
       window.openInitialSetupScreen(true, proceedAfterPreBiosSetup);
     } catch {
@@ -168,6 +175,7 @@
         return proceedAfterPreBiosSetup();
       }
     }
+    stopAllBootMusicForStage();
     watchSetupModalAndProceedToBios();
   }
 
@@ -181,6 +189,7 @@
       return openPreBiosSetupScreen();
     }
 
+    stopAllBootMusicForStage();
     return runBiosSequenceDirect();
   }
 
@@ -212,6 +221,7 @@
       if (shouldShowPreBiosSetup()) {
         return openPreBiosSetupScreen();
       }
+      stopAllBootMusicForStage();
       const overlay = document.getElementById('os-boot-overlay');
       if (overlay) overlay.style.display = 'flex';
       return rawFn.apply(this, arguments);
@@ -225,6 +235,7 @@
       window.__origStartBiosBootSequence = window.startBiosBootSequence;
       window.startBiosBootSequence = createControllerBiosWrapper(window.__origStartBiosBootSequence);
       window.__runActualBiosSequence = function () {
+        stopAllBootMusicForStage();
         return window.__origStartBiosBootSequence.apply(window, arguments);
       };
     }
@@ -232,7 +243,7 @@
     if (typeof window.skipBiosPostToSplash === 'function' && !window.skipBiosPostToSplash.__biosAudioHooked) {
       const origSkip = window.skipBiosPostToSplash;
       const wrappedSkip = function () {
-        stopMusicAtBiosStage();
+        stopAllBootMusicForStage();
         return origSkip.apply(this, arguments);
       };
       wrappedSkip.__biosAudioHooked = true;
@@ -243,7 +254,7 @@
       const origFinish = window.finishDesktopLogin;
       const wrappedFinish = function () {
         window.__ARCHIVE_LOGGED_IN = true;
-        stopMusicAtBiosStage();
+        stopAllBootMusicForStage();
         dismissPreClickStartScreen();
         const res = origFinish.apply(this, arguments);
         setPreLoginLock(false);
@@ -261,7 +272,7 @@
     const handleBiosAdvance = (e) => {
       const biosStage = document.getElementById('boot-stage-bios');
       if (!biosStage || biosStage.style.display === 'none') return;
-      stopMusicAtBiosStage();
+      stopAllBootMusicForStage();
       if (e.type === 'keydown') {
         const key = (e.key || '').toUpperCase();
         if (key === 'DELETE' || key === 'DEL') return;
@@ -369,7 +380,7 @@
     hookBootLifecycle();
     bindShellActions();
     bindBiosAdvanceFallback();
-    observeBiosStageAppearance();
+    observeBiosAndSetupAppearance();
 
     const preloaderActive = Boolean(document.getElementById('brutal-js-preloader')) && !window.__BRUTAL_PRELOAD_DONE;
     if (!preloaderActive) {
@@ -380,6 +391,6 @@
   window.addEventListener('load', () => {
     hookBootLifecycle();
     bindShellActions();
-    observeBiosStageAppearance();
+    observeBiosAndSetupAppearance();
   }, { once: true });
 })();
