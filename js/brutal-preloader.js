@@ -4,7 +4,7 @@
 
 (function () {
   window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-  window.__MOD_VERSIONS.brutalPreloader = 'v2026.11.25-nostalgic-intro-parody-rewind';
+  window.__MOD_VERSIONS.brutalPreloader = 'v2026.11.25-rewind-exclusive-lock';
 
   const TARGET_AVG_MS = 4500, HOLD_MS = 1000, WAIT_SETUP_KEY = 'myarchive95_setup_v1';
   const LOADER_ID = 'brutal-js-preloader', STYLE_ID = 'brutal-js-preloader-style';
@@ -30,6 +30,9 @@
   let lastKey = '', bannerShown = false, powerOffQueued = false, done = false, started = false, plannedMs = null;
   let rewindCtl = null, currentRatio = 0;
 
+  // 뒤로 감기 구간 동안 순방향 재생이 겹치지 않도록 잠금 플래그 관리
+  window.__PRELOAD_REWIND_ACTIVE = true;
+
   const isSoundAllowed = () => {
     if (typeof window.__WIN95_SOUND_ENABLED === 'boolean') return window.__WIN95_SOUND_ENABLED;
     try {
@@ -38,10 +41,16 @@
     } catch { return true; }
   };
 
+  function releaseRewindLockAndStartForward() {
+    window.__PRELOAD_REWIND_ACTIVE = false;
+    if (typeof window.__allowWaitForwardLoop === 'function') {
+      try { window.__allowWaitForwardLoop(); } catch {}
+    }
+  }
+
   // 원곡 전주(00:00~00:16)의 통통 튀는 동기를 패러디한 노스탤직 음원 생성 후 역방향 버퍼 반환
   function createNostalgicParodyBuffer(ctx) {
     const sr = ctx.sampleRate, stepSec = 0.165;
-    // 전주의 경쾌한 상행/반복 펄스 동기를 노스탤직한 메이저/애드9 톤으로 패러디
     const leadFreqs = [
       392.00, 392.00, 440.00, 493.88, 587.33, 523.25, 493.88, 440.00,
       392.00, 440.00, 493.88, 587.33, 659.25, 587.33, 523.25, 493.88,
@@ -64,7 +73,6 @@
       const fLead = leadFreqs[step];
       const fBass = bassFreqs[step % bassFreqs.length];
 
-      // 따뜻한 일렉트릭 피아노/신스 패드 감성 엔벨로프
       const attack = Math.min(1, localT / 0.014);
       const decay = Math.exp(-localT * 5.2);
       const env = attack * decay;
@@ -78,13 +86,11 @@
         Math.sin(2 * Math.PI * fBass * t) * 0.34 +
         Math.sin(2 * Math.PI * (fBass * 1.5) * t) * 0.08;
 
-      // 노스탤직 테이프 워블(미세한 피치 흔들림)
       const wow = 1 + 0.006 * Math.sin(2 * Math.PI * 2.4 * t);
       const sample = (leadTone * 0.65 + bassTone * 0.35) * env;
       forward[i] = Math.max(-0.95, Math.min(0.95, sample * (0.92 + 0.08 * wow)));
     }
 
-    // 뒤로 감기용 시간 역방향 변환
     forward.reverse();
     const buf = ctx.createBuffer(1, len, sr);
     buf.getChannelData(0).set(forward);
@@ -111,14 +117,22 @@
 
   // '달칵' 후 노스탤직 패러디 음원을 뒤로 점점 빠르게 감는 컨트롤러
   function startRewindAudio() {
-    if (rewindCtl || !isSoundAllowed()) return rewindCtl;
+    window.__PRELOAD_REWIND_ACTIVE = true;
+    if (rewindCtl || !isSoundAllowed()) {
+      if (!isSoundAllowed()) releaseRewindLockAndStartForward();
+      return rewindCtl;
+    }
     const AudioCtx = window.AudioContext || window.webkitAudioContext;
-    if (!AudioCtx) return null;
+    if (!AudioCtx) {
+      releaseRewindLockAndStartForward();
+      return null;
+    }
 
     let ctx = null, src = null, filter = null, gain = null, stopped = false, rafAccel = 0, unlockBound = null;
 
     const beginTapeRewind = () => {
       if (stopped || !ctx || src) return;
+      window.__PRELOAD_REWIND_ACTIVE = true;
       const now = ctx.currentTime;
       playTapeInsertDalkak(ctx, now);
 
@@ -160,7 +174,10 @@
 
     try {
       ctx = typeof window.getWaitAudioContext === 'function' ? window.getWaitAudioContext() : new AudioCtx();
-      if (!ctx) return null;
+      if (!ctx) {
+        releaseRewindLockAndStartForward();
+        return null;
+      }
       if (ctx.state === 'running') {
         beginTapeRewind();
       } else {
@@ -172,7 +189,10 @@
         window.addEventListener('pointerdown', unlockBound, { once: true, passive: true });
         window.addEventListener('keydown', unlockBound, { once: true, passive: true });
       }
-    } catch { return null; }
+    } catch {
+      releaseRewindLockAndStartForward();
+      return null;
+    }
 
     rewindCtl = {
       stop: () => {
@@ -187,14 +207,13 @@
           if (ctx && gain) {
             const t = ctx.currentTime;
             gain.gain.cancelScheduledValues(t);
-            gain.gain.setValueAtTime(Math.max(0.0001, gain.gain.value), t);
-            gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.14);
+            gain.gain.setValueAtTime(0.0001, t);
           }
-          setTimeout(() => {
-            try { src?.stop(); src?.disconnect(); filter?.disconnect(); gain?.disconnect(); } catch {}
-          }, 170);
+          try { src?.stop(); } catch {}
+          try { src?.disconnect(); filter?.disconnect(); gain?.disconnect(); } catch {}
         } catch {}
         rewindCtl = null;
+        releaseRewindLockAndStartForward();
       }
     };
     return rewindCtl;
@@ -355,6 +374,7 @@
     bannerShown = true;
     currentRatio = 1;
     rewindCtl?.stop?.();
+    releaseRewindLockAndStartForward();
     document.getElementById('brutal-loader-card')?.classList.add('is-complete');
     const badge = document.getElementById('brutal-loader-badge');
     const pct = document.getElementById('brutal-loader-pct');
@@ -377,6 +397,7 @@
 
   function triggerNextScreen() {
     window.__BRUTAL_PRELOAD_DONE = true;
+    releaseRewindLockAndStartForward();
     if (typeof window.__onBrutalPreloadReady === 'function') window.__onBrutalPreloadReady();
     else if (typeof window.mountPreClickStartScreen === 'function' && typeof window.__enterBootAfterStartClick === 'function') {
       window.mountPreClickStartScreen(window.__enterBootAfterStartClick);
@@ -387,6 +408,7 @@
     if (done) return;
     done = true;
     rewindCtl?.stop?.();
+    releaseRewindLockAndStartForward();
     const el = document.getElementById(LOADER_ID);
     if (!el) return triggerNextScreen();
 
