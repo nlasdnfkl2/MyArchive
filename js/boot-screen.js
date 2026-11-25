@@ -1,2473 +1,1034 @@
-// ============================================================
-// MY-ARCHIVE 95 OS — BIOS POST & Authentic Windows 95 Logon
-// (Pre-Rotation Static & Subtle Noise -> Click Triggers Loud Click + 3D CRT Turn & Slow Zoom -> BIOS -> Retro Chime Splash -> Logon)
-// ============================================================
-
-window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-window.__MOD_VERSIONS.bootScreen = 'v2026.11.25-no-desktop-flash-on-boot-end';
-
-const SESSION_USER_KEY = 'myarchive95_current_user_v2';
-const USERS_CACHE_KEY = 'myarchive95_users_cache_v2';
-const INITIAL_SETUP_KEY = 'myarchive95_setup_v1';
-
-const DEFAULT_INITIAL_SETUP = {
-  resolution: '100',
-  theme: 'theme-teal',
-  crt: true,
-  sound: true
-};
-
-function safeEsc(str) {
-  if (typeof window.esc === 'function') return window.esc(str);
-  return String(str ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
-
-function safeLoadCache(key, fallback) {
-  if (typeof window.loadLocalCache === 'function') {
-    try { return window.loadLocalCache(key, fallback); } catch {}
-  }
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? JSON.parse(raw) : fallback;
-  } catch {
-    return fallback;
-  }
-}
-
-function safeSaveCache(key, value) {
-  if (typeof window.saveLocalCache === 'function') {
-    try { window.saveLocalCache(key, value); return; } catch {}
-  }
-  try {
-    localStorage.setItem(key, JSON.stringify(value));
-  } catch {}
-}
-
-function getGasApiUrl() {
-  if (typeof GAS_WEB_APP_URL !== 'undefined' && GAS_WEB_APP_URL) return String(GAS_WEB_APP_URL).trim();
-  if (window.GAS_WEB_APP_URL) return String(window.GAS_WEB_APP_URL).trim();
-  if (window.CONFIG?.GAS_WEB_APP_URL) return String(window.CONFIG.GAS_WEB_APP_URL).trim();
-  if (window.APP_CONFIG?.GAS_WEB_APP_URL) return String(window.APP_CONFIG.GAS_WEB_APP_URL).trim();
-  return '';
-}
-
-function isRetroSoundEnabled() {
-  if (typeof window.__WIN95_SOUND_ENABLED === 'boolean') return window.__WIN95_SOUND_ENABLED;
-  const setup = loadInitialSetup();
-  return setup ? Boolean(setup.sound) : true;
-}
-
-function safeBootTone(type) {
-  if (!isRetroSoundEnabled()) return;
-  if (typeof window.playRetroTone === 'function') {
-    try { window.playRetroTone(type); } catch {}
-  }
-}
-
-// ============================================================
-// 버튼이 눌리는 '딸깍' 사운드 (볼륨 강화) & 전체 화면 노이즈 사운드
-// ============================================================
-let __sharedAudioCtx = null;
-
-function getSharedAudioContext() {
-  const AudioCtx = window.AudioContext || window.webkitAudioContext;
-  if (!AudioCtx) return null;
-  if (!__sharedAudioCtx || __sharedAudioCtx.state === 'closed') {
-    __sharedAudioCtx = new AudioCtx();
-  }
-  if (__sharedAudioCtx.state === 'suspended') {
-    __sharedAudioCtx.resume().catch(() => {});
-  }
-  return __sharedAudioCtx;
-}
-
-function playButtonClickSound() {
-  if (!isRetroSoundEnabled()) return;
-  try {
-    const ctx = getSharedAudioContext();
-    if (!ctx) return;
-    const now = ctx.currentTime;
-
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = 'triangle';
-    osc.frequency.setValueAtTime(2200, now);
-    osc.frequency.exponentialRampToValueAtTime(380, now + 0.022);
-
-    gain.gain.setValueAtTime(0.28, now);
-    gain.gain.exponentialRampToValueAtTime(0.0005, now + 0.03);
-
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start(now);
-    osc.stop(now + 0.035);
-
-    const osc2 = ctx.createOscillator();
-    const gain2 = ctx.createGain();
-    osc2.type = 'square';
-    osc2.frequency.setValueAtTime(1480, now + 0.012);
-    osc2.frequency.exponentialRampToValueAtTime(280, now + 0.036);
-
-    gain2.gain.setValueAtTime(0.14, now + 0.012);
-    gain2.gain.exponentialRampToValueAtTime(0.0005, now + 0.04);
-
-    osc2.connect(gain2);
-    gain2.connect(ctx.destination);
-    osc2.start(now + 0.012);
-    osc2.stop(now + 0.045);
-  } catch {}
-}
-
-function startSubtleStaticNoise() {
-  if (!isRetroSoundEnabled()) return null;
-  try {
-    const ctx = getSharedAudioContext();
-    if (!ctx) return null;
-    const bufferSize = ctx.sampleRate * 2;
-    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-    const data = buffer.getChannelData(0);
-
-    let lastOut = 0;
-    for (let i = 0; i < bufferSize; i++) {
-      const white = Math.random() * 2 - 1;
-      const crackle = Math.random() > 0.9965 ? (Math.random() * 2 - 1) * 0.85 : 0;
-      lastOut = (lastOut + 0.14 * white) / 1.14;
-      data[i] = lastOut * 0.65 + crackle * 0.25;
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+  <meta name="theme-color" content="#008080" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="MY-ARCHIVE 95" />
+  <title>MY-ARCHIVE 95 OS — 개인 문화·예술 감상 자료실</title>
+  
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://w3.org' viewBox='0 0 16 16'><rect width='16' height='16' fill='%23008080'/><rect x='2' y='2' width='12' height='12' fill='%23c0c0c0' stroke='%23000000' stroke-width='1.5'/><rect x='3' y='3' width='10' height='3' fill='%23000080'/></svg>">
+  <link rel="manifest" href='data:application/manifest+json,{"name":"MY-ARCHIVE 95 OS","short_name":"ARCHIVE95","start_url":"./index.html","display":"standalone","background_color":"%23008080","theme_color":"%23000080","description":"Windows 95 + Neo-Brutalism 개인 문화 감상 자료실 OS"}'>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
+  <link rel="stylesheet" href="./css/style.css" />
+  <style>
+    @keyframes archiveSyncSpin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    .archive-sync-spin {
+      display: inline-block;
+      animation: archiveSyncSpin 0.9s linear infinite;
     }
 
-    const noise = ctx.createBufferSource();
-    noise.buffer = buffer;
-    noise.loop = true;
-
-    const bandpass = ctx.createBiquadFilter();
-    bandpass.type = 'bandpass';
-    bandpass.frequency.setValueAtTime(1850, ctx.currentTime);
-    bandpass.Q.setValueAtTime(0.65, ctx.currentTime);
-
-    const gain = ctx.createGain();
-    const now = ctx.currentTime;
-    gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.linearRampToValueAtTime(0.022, now + 0.16);
-
-    noise.connect(bandpass);
-    bandpass.connect(gain);
-    gain.connect(ctx.destination);
-    noise.start(now);
-
-    return {
-      resume: () => {
-        try {
-          if (ctx.state === 'suspended') ctx.resume().catch(() => {});
-          const t = ctx.currentTime;
-          gain.gain.cancelScheduledValues(t);
-          gain.gain.setValueAtTime(Math.max(0.0005, gain.gain.value), t);
-          gain.gain.linearRampToValueAtTime(0.022, t + 0.08);
-        } catch {}
-      },
-      stop: () => {
-        try {
-          const t = ctx.currentTime;
-          gain.gain.cancelScheduledValues(t);
-          gain.gain.setValueAtTime(Math.max(0.0001, gain.gain.value), t);
-          gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.14);
-          setTimeout(() => {
-            try {
-              noise.stop();
-            } catch {}
-          }, 160);
-        } catch {}
-      }
-    };
-  } catch {
-    return null;
-  }
-}
-
-// ============================================================
-// 첫 클릭 전 노이즈 뒤 중앙 50% 타이틀 레이어 (3D 시선 이동 + 흔들림 + 좌우 노이즈 번짐)
-// ============================================================
-function ensurePreClickNoiseTitleStyles() {
-  if (document.getElementById('pre-click-noise-title-style')) return;
-  const style = document.createElement('style');
-  style.id = 'pre-click-noise-title-style';
-  style.textContent = `
-    #pre-click-noise-title-layer {
+    /* 레트로 신호 대기(노이즈) 화면: 호러틱하지 않은 경쾌한 90년대 모니터/방송 스타일 */
+    #retro-noise-gate {
       position: fixed;
       inset: 0;
-      z-index: 1000005;
-      pointer-events: none;
+      z-index: 210000;
+      background: #142838;
       display: flex;
       align-items: center;
       justify-content: center;
-      perspective: 920px;
+      cursor: pointer;
+      user-select: none;
       overflow: hidden;
-      opacity: 1;
-      transition: opacity 0.24s ease;
+      transition: opacity 0.22s ease;
     }
-    #pre-click-noise-title-layer.fade-out {
+    #retro-noise-gate.hidden {
       opacity: 0;
+      pointer-events: none;
     }
-    #pre-click-noise-title-box {
-      width: 54vw;
-      max-width: 780px;
-      min-width: 280px;
-      max-height: 54vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      color: #ffffff;
-      font-family: 'DungGeunMo', 'Galmuri11', 'Consolas', monospace;
-      transform-style: preserve-3d;
-      will-change: transform;
-      animation: noiseTitleMicroJitter 0.18s steps(2, end) infinite;
-    }
-    .noise-bleed-text {
-      position: relative;
-      color: #ffffff;
-      text-shadow:
-        -6px 0 6px rgba(255, 255, 255, 0.42),
-        6px 0 6px rgba(255, 255, 255, 0.42),
-        -14px 0 12px rgba(210, 235, 255, 0.2),
-        14px 0 12px rgba(255, 220, 220, 0.2);
-      animation: horizontalNoiseSmear 2.4s infinite;
-    }
-    .noise-bleed-text::before,
-    .noise-bleed-text::after {
-      content: attr(data-text);
+    #retro-noise-canvas {
       position: absolute;
       inset: 0;
-      pointer-events: none;
-      color: #ffffff;
-      opacity: 0.62;
-    }
-    .noise-bleed-text::before {
-      transform: translateX(-4px);
-      clip-path: inset(18% 0 52% 0);
-      text-shadow: -8px 0 5px rgba(255, 255, 255, 0.65);
-      animation: smearSliceLeft 1.35s infinite steps(2, end);
-    }
-    .noise-bleed-text::after {
-      transform: translateX(4px);
-      clip-path: inset(58% 0 14% 0);
-      text-shadow: 8px 0 5px rgba(255, 255, 255, 0.65);
-      animation: smearSliceRight 1.55s infinite steps(2, end);
-    }
-    .noise-main-title {
-      font-size: clamp(2.1rem, 4.4vw, 4.2rem);
-      font-weight: 900;
-      letter-spacing: 0.08em;
-      line-height: 1.12;
-      margin-bottom: clamp(8px, 1.4vh, 18px);
-    }
-    .noise-maker-line {
-      font-size: clamp(1.05rem, 2.0vw, 1.85rem);
-      font-weight: 800;
-      letter-spacing: 0.04em;
-      line-height: 1.3;
-      margin-bottom: clamp(12px, 2vh, 24px);
-    }
-    .noise-retrace-cta {
-      font-size: clamp(1.2rem, 2.35vw, 2.15rem);
-      font-weight: 900;
-      letter-spacing: 0.12em;
-      line-height: 1.25;
-      margin-bottom: clamp(12px, 2vh, 22px);
-    }
-    .noise-copyleft-row {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      font-size: clamp(0.85rem, 1.55vw, 1.35rem);
-      font-weight: 800;
-      letter-spacing: 0.05em;
-      line-height: 1.25;
-      opacity: 0.92;
-    }
-    .flipped-copyright-symbol {
-      display: inline-block;
-      transform: scale(-1, -1);
-      font-weight: 900;
-      text-shadow:
-        -4px 0 5px rgba(255, 255, 255, 0.5),
-        4px 0 5px rgba(255, 255, 255, 0.5);
-    }
-    @keyframes noiseTitleMicroJitter {
-      0% { margin-left: 0px; margin-top: 0px; }
-      25% { margin-left: -1.5px; margin-top: 1px; }
-      50% { margin-left: 1.5px; margin-top: -1px; }
-      75% { margin-left: -1px; margin-top: -1px; }
-      100% { margin-left: 1px; margin-top: 1px; }
-    }
-    @keyframes horizontalNoiseSmear {
-      0%, 84%, 100% {
-        transform: skewX(0deg) scaleX(1);
-      }
-      86% {
-        transform: skewX(-7deg) scaleX(1.03);
-      }
-      89% {
-        transform: skewX(6deg) scaleX(0.98);
-      }
-      92% {
-        transform: skewX(-4deg) scaleX(1.02);
-      }
-    }
-    @keyframes smearSliceLeft {
-      0%, 78%, 100% { transform: translateX(-3px); }
-      82% { transform: translateX(-11px); }
-      86% { transform: translateX(4px); }
-    }
-    @keyframes smearSliceRight {
-      0%, 80%, 100% { transform: translateX(3px); }
-      84% { transform: translateX(12px); }
-      88% { transform: translateX(-5px); }
-    }
-  `;
-  document.head.appendChild(style);
-}
-
-function startPreClickNoiseTitleLayer() {
-  ensurePreClickNoiseTitleStyles();
-  const prev = document.getElementById('pre-click-noise-title-layer');
-  if (prev) prev.remove();
-
-  const layer = document.createElement('div');
-  layer.id = 'pre-click-noise-title-layer';
-  layer.innerHTML = `
-    <div id="pre-click-noise-title-box">
-      <div class="noise-bleed-text noise-main-title" data-text="MY-ARCHIVE 95">MY-ARCHIVE 95</div>
-      <div class="noise-bleed-text noise-maker-line" data-text="만든 이: TAEYANG MUN (nlasdnfkl2)">만든 이: TAEYANG MUN (nlasdnfkl2)</div>
-      <div class="noise-bleed-text noise-retrace-cta" data-text="CLICK TO RETRACE">CLICK TO RETRACE</div>
-      <div class="noise-copyleft-row">
-        <span class="flipped-copyright-symbol" aria-hidden="true">©</span>
-        <span class="noise-bleed-text" data-text="COPYLEFT TAEYANG MUN (nlasdnfkl2)">COPYLEFT TAEYANG MUN (nlasdnfkl2)</span>
-      </div>
-    </div>
-  `;
-
-  document.body.appendChild(layer);
-  const box = layer.querySelector('#pre-click-noise-title-box');
-
-  let pointerTargetX = 0;
-  let pointerTargetY = 0;
-  let curRotX = 0;
-  let curRotY = 0;
-  let rafId = 0;
-  let stopped = false;
-
-  const onPointerMove = e => {
-    const w = window.innerWidth || 1280;
-    const h = window.innerHeight || 720;
-    const nx = (e.clientX / w) * 2 - 1;
-    const ny = (e.clientY / h) * 2 - 1;
-    pointerTargetY = nx * 9;
-    pointerTargetX = -ny * 7;
-  };
-
-  window.addEventListener('pointermove', onPointerMove, { passive: true });
-
-  const tick3dGaze = now => {
-    if (stopped) return;
-    const idleYaw = Math.sin(now * 0.0014) * 3.2;
-    const idlePitch = Math.cos(now * 0.0011) * 2.2;
-    const goalY = pointerTargetY + idleYaw;
-    const goalX = pointerTargetX + idlePitch;
-
-    curRotY += (goalY - curRotY) * 0.09;
-    curRotX += (goalX - curRotX) * 0.09;
-
-    if (box) {
-      box.style.transform = `rotateX(${curRotX.toFixed(2)}deg) rotateY(${curRotY.toFixed(2)}deg) translate3d(${(curRotY * 1.1).toFixed(1)}px, ${(-curRotX * 0.9).toFixed(1)}px, 0)`;
-    }
-    rafId = requestAnimationFrame(tick3dGaze);
-  };
-
-  rafId = requestAnimationFrame(tick3dGaze);
-
-  return () => {
-    if (stopped) return;
-    stopped = true;
-    window.removeEventListener('pointermove', onPointerMove);
-    if (rafId) cancelAnimationFrame(rafId);
-    layer.classList.add('fade-out');
-    setTimeout(() => layer.remove(), 250);
-  };
-}
-
-// ============================================================
-// 전체 화면 '치지직' 시각 효과 오버레이
-// ============================================================
-function ensureFullScreenStaticStyles() {
-  if (document.getElementById('fullscreen-crt-static-style')) return;
-  const style = document.createElement('style');
-  style.id = 'fullscreen-crt-static-style';
-  style.textContent = `
-    #fullscreen-crt-static-overlay {
-      position: fixed;
-      inset: 0;
-      z-index: 1000010;
-      pointer-events: none;
-      overflow: hidden;
-      opacity: 0.9;
-      mix-blend-mode: screen;
-      transition: opacity 0.25s ease;
-    }
-    #fullscreen-crt-static-overlay.fade-out {
-      opacity: 0;
-    }
-    #fullscreen-crt-static-canvas {
       width: 100%;
       height: 100%;
-      display: block;
+      opacity: 0.24;
+      pointer-events: none;
     }
-    #fullscreen-crt-scanlines {
-      position: absolute;
-      inset: 0;
-      background: repeating-linear-gradient(
-        0deg,
-        rgba(255, 255, 255, 0.045) 0px,
-        rgba(255, 255, 255, 0.045) 1px,
-        rgba(0, 0, 0, 0.24) 1px,
-        rgba(0, 0, 0, 0.24) 3px
-      );
-      animation: staticScanRoll 0.35s linear infinite;
+    .retro-noise-card {
+      position: relative;
+      z-index: 2;
+      max-width: 440px;
+      width: calc(100% - 32px);
+      background: #c0c0c0;
+      color: #111111;
+      border: 2px solid #111111;
+      box-shadow: inset 2px 2px 0 #ffffff, inset -2px -2px 0 #808080, 6px 6px 0 #000000;
     }
-    @keyframes staticScanRoll {
-      0% { transform: translateY(0px); }
-      100% { transform: translateY(3px); }
-    }
-  `;
-  document.head.appendChild(style);
-}
-
-function startFullScreenStaticEffect() {
-  ensureFullScreenStaticStyles();
-  const prev = document.getElementById('fullscreen-crt-static-overlay');
-  if (prev) prev.remove();
-
-  const wrap = document.createElement('div');
-  wrap.id = 'fullscreen-crt-static-overlay';
-
-  const canvas = document.createElement('canvas');
-  canvas.id = 'fullscreen-crt-static-canvas';
-  wrap.appendChild(canvas);
-
-  const scanlines = document.createElement('div');
-  scanlines.id = 'fullscreen-crt-scanlines';
-  wrap.appendChild(scanlines);
-
-  document.body.appendChild(wrap);
-
-  const ctx = canvas.getContext('2d');
-  const cw = 256;
-  const ch = 144;
-  canvas.width = cw;
-  canvas.height = ch;
-
-  let rafId = 0;
-  let stopped = false;
-
-  const renderStatic = () => {
-    if (stopped) return;
-    const imgData = ctx.createImageData(cw, ch);
-    const buf = imgData.data;
-
-    for (let i = 0; i < buf.length; i += 4) {
-      const n = Math.random();
-      const spark = n > 0.985 ? 235 : Math.floor(n * 85);
-      buf[i] = spark;
-      buf[i + 1] = spark;
-      buf[i + 2] = spark;
-      buf[i + 3] = n > 0.92 ? 52 : 18;
-    }
-    ctx.putImageData(imgData, 0, 0);
-
-    const bandY = Math.floor(Math.random() * ch);
-    const bandH = 1 + Math.floor(Math.random() * 2);
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.16)';
-    ctx.fillRect(0, bandY, cw, bandH);
-
-    rafId = requestAnimationFrame(renderStatic);
-  };
-
-  rafId = requestAnimationFrame(renderStatic);
-
-  return () => {
-    if (stopped) return;
-    stopped = true;
-    if (rafId) cancelAnimationFrame(rafId);
-    wrap.classList.add('fade-out');
-    setTimeout(() => wrap.remove(), 220);
-  };
-}
-
-// ============================================================
-// 실제 3D 로우-폴리 CRT 모델 로더 (Three.js, '>' 각진 폴리곤 + 정면 스크린)
-// ============================================================
-let __threeScriptPromise = null;
-
-function loadThreeJsLibrary() {
-  if (window.THREE) return Promise.resolve(window.THREE);
-  if (__threeScriptPromise) return __threeScriptPromise;
-
-  __threeScriptPromise = new Promise((resolve, reject) => {
-    const script = document.createElement('script');
-    script.src = 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js';
-    script.async = true;
-    script.onload = () => (window.THREE ? resolve(window.THREE) : reject(new Error('THREE unavailable')));
-    script.onerror = () => reject(new Error('Failed to load THREE'));
-    document.head.appendChild(script);
-  });
-
-  return __threeScriptPromise;
-}
-
-function createCrtScreenCanvasTexture(THREE) {
-  const canvas = document.createElement('canvas');
-  canvas.width = 512;
-  canvas.height = 384;
-  const ctx = canvas.getContext('2d');
-
-  ctx.fillStyle = '#05080c';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  ctx.fillStyle = '#d8e4f0';
-  ctx.font = 'bold 18px Consolas, monospace';
-  ctx.fillText('AWARD MODULAR BIOS v4.51PG', 22, 38);
-  ctx.fillStyle = '#7cd4ff';
-  ctx.font = '15px Consolas, monospace';
-  ctx.fillText('MY-ARCHIVE 95 WORKSTATION', 22, 66);
-  ctx.fillStyle = '#66ff66';
-  ctx.fillText('CPU: PENTIUM-CLASS 133MHz [OK]', 22, 106);
-  ctx.fillText('MEMORY TEST: 65536K OK', 22, 130);
-  ctx.fillStyle = '#ffff66';
-  ctx.fillText('BIOS READY...', 22, 174);
-
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.28)';
-  for (let y = 0; y < canvas.height; y += 4) {
-    ctx.fillRect(0, y, canvas.width, 1.5);
-  }
-
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  tex.needsUpdate = true;
-  return tex;
-}
-
-function buildLowPolyCrt3dGroup(THREE) {
-  const root = new THREE.Group();
-
-  const bezelMat = new THREE.MeshStandardMaterial({
-    color: 0xd0ccc0,
-    roughness: 0.78,
-    metalness: 0.04,
-    flatShading: true
-  });
-  const bevelRidgeMat = new THREE.MeshStandardMaterial({
-    color: 0xc2beb0,
-    roughness: 0.8,
-    metalness: 0.05,
-    flatShading: true
-  });
-  const darkTrimMat = new THREE.MeshStandardMaterial({
-    color: 0x67645a,
-    roughness: 0.85,
-    metalness: 0.08,
-    flatShading: true
-  });
-  const backShellMat = new THREE.MeshStandardMaterial({
-    color: 0x9c988a,
-    roughness: 0.82,
-    metalness: 0.06,
-    flatShading: true
-  });
-  const ledMat = new THREE.MeshStandardMaterial({
-    color: 0x3be85e,
-    emissive: 0x22b542,
-    emissiveIntensity: 0.85,
-    flatShading: true
-  });
-  const powerBtnMat = new THREE.MeshStandardMaterial({
-    color: 0x3b6fd8,
-    roughness: 0.45,
-    metalness: 0.15,
-    flatShading: true
-  });
-
-  const topBar = new THREE.Mesh(new THREE.BoxGeometry(3.24, 0.34, 0.36), bezelMat);
-  topBar.position.set(0, 1.13, 1.04);
-  root.add(topBar);
-
-  const bottomChin = new THREE.Mesh(new THREE.BoxGeometry(3.24, 0.54, 0.42), bezelMat);
-  bottomChin.position.set(0, -1.03, 1.06);
-  root.add(bottomChin);
-
-  const leftPillar = new THREE.Mesh(new THREE.BoxGeometry(0.36, 1.92, 0.36), bezelMat);
-  leftPillar.position.set(-1.44, 0.01, 1.04);
-  root.add(leftPillar);
-
-  const rightPillar = new THREE.Mesh(new THREE.BoxGeometry(0.36, 1.92, 0.36), bezelMat);
-  rightPillar.position.set(1.44, 0.01, 1.04);
-  root.add(rightPillar);
-
-  const innerRim = new THREE.Mesh(new THREE.BoxGeometry(2.58, 1.96, 0.14), darkTrimMat);
-  innerRim.position.set(0, 0.01, 0.96);
-  root.add(innerRim);
-
-  const screenGeo = new THREE.PlaneGeometry(2.44, 1.82, 10, 8);
-  const posAttr = screenGeo.attributes.position;
-  for (let i = 0; i < posAttr.count; i++) {
-    const x = posAttr.getX(i) / 1.22;
-    const y = posAttr.getY(i) / 0.91;
-    const bulge = Math.max(0, 1 - 0.32 * (x * x + y * y)) * 0.08;
-    posAttr.setZ(i, bulge);
-  }
-  screenGeo.computeVertexNormals();
-
-  const screenMat = new THREE.MeshStandardMaterial({
-    map: createCrtScreenCanvasTexture(THREE),
-    roughness: 0.25,
-    metalness: 0.05,
-    emissive: 0x16222c,
-    emissiveIntensity: 0.55,
-    flatShading: true
-  });
-  const screenMesh = new THREE.Mesh(screenGeo, screenMat);
-  screenMesh.position.set(0, 0.01, 1.06);
-  root.add(screenMesh);
-
-  const pwrBtn = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.12, 8), powerBtnMat);
-  pwrBtn.rotation.x = Math.PI / 2;
-  pwrBtn.position.set(1.28, -1.03, 1.27);
-  root.add(pwrBtn);
-
-  const ledDot = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.05, 0.06), ledMat);
-  ledDot.position.set(-1.18, -1.03, 1.28);
-  root.add(ledDot);
-
-  const chevronShape = new THREE.Shape();
-  chevronShape.moveTo(-0.75, -1.24);
-  chevronShape.lineTo(0.86, -1.24);
-  chevronShape.lineTo(1.06, 0.0);
-  chevronShape.lineTo(0.86, 1.24);
-  chevronShape.lineTo(-0.75, 1.24);
-  chevronShape.closePath();
-
-  const chevronSideGeo = new THREE.ExtrudeGeometry(chevronShape, {
-    depth: 0.24,
-    bevelEnabled: false,
-    steps: 1
-  });
-  chevronSideGeo.rotateY(Math.PI / 2);
-
-  const leftChevronSide = new THREE.Mesh(chevronSideGeo, bevelRidgeMat);
-  leftChevronSide.position.set(-1.58, 0, 0.24);
-  root.add(leftChevronSide);
-
-  const rightChevronSide = new THREE.Mesh(chevronSideGeo, bevelRidgeMat);
-  rightChevronSide.position.set(1.34, 0, 0.24);
-  root.add(rightChevronSide);
-
-  const mainBody = new THREE.Mesh(new THREE.BoxGeometry(3.12, 2.5, 1.22), bezelMat);
-  mainBody.position.set(0, 0, 0.26);
-  root.add(mainBody);
-
-  const rearCone = new THREE.Mesh(new THREE.CylinderGeometry(1.06, 0.68, 1.16, 6), backShellMat);
-  rearCone.rotation.x = Math.PI / 2;
-  rearCone.position.set(0, 0.04, -0.88);
-  root.add(rearCone);
-
-  const rearCap = new THREE.Mesh(new THREE.BoxGeometry(1.32, 1.22, 0.22), darkTrimMat);
-  rearCap.position.set(0, 0.04, -1.48);
-  root.add(rearCap);
-
-  const neck = new THREE.Mesh(new THREE.BoxGeometry(1.16, 0.34, 0.84), darkTrimMat);
-  neck.position.set(0, -1.36, 0.14);
-  root.add(neck);
-
-  const baseShape = new THREE.Shape();
-  baseShape.moveTo(-0.92, -0.92);
-  baseShape.lineTo(0.92, -0.92);
-  baseShape.lineTo(1.14, 0.0);
-  baseShape.lineTo(0.92, 0.92);
-  baseShape.lineTo(-0.92, 0.92);
-  baseShape.lineTo(-1.14, 0.0);
-  baseShape.closePath();
-
-  const baseGeo = new THREE.ExtrudeGeometry(baseShape, {
-    depth: 0.22,
-    bevelEnabled: false,
-    steps: 1
-  });
-  baseGeo.rotateX(Math.PI / 2);
-
-  const base = new THREE.Mesh(baseGeo, bezelMat);
-  base.position.set(0, -1.52, 0.16);
-  root.add(base);
-
-  return root;
-}
-
-function easeInOutCubic(t) {
-  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-}
-
-function easeInOutQuart(t) {
-  return t < 0.5 ? 8 * t * t * t * t : 1 - Math.pow(-2 * t + 2, 4) / 2;
-}
-
-function play3dCrtMonitorAnimation() {
-  return new Promise(resolve => {
-    const prev = document.getElementById('retro-3d-crt-stage');
-    if (prev) prev.remove();
-
-    const stage = document.createElement('div');
-    stage.id = 'retro-3d-crt-stage';
-    stage.title = 'CLICK TO RETRACE';
-    stage.style.cssText = `
-      position: fixed;
-      inset: 0;
-      z-index: 1000000;
-      background: #000000;
-      opacity: 1;
-      transition: opacity 0.25s ease;
-      cursor: pointer;
-    `;
-    document.body.appendChild(stage);
-
-    let finished = false;
-    let rafId = 0;
-    let renderer = null;
-    let rotationStarted = false;
-    let turnStartTime = 0;
-
-    let stopNoiseTitleLayer = startPreClickNoiseTitleLayer();
-    let stopStaticVisual = startFullScreenStaticEffect();
-    let stopNoiseAudio = startSubtleStaticNoise();
-
-    const cleanup = () => {
-      if (stopNoiseTitleLayer) {
-        stopNoiseTitleLayer();
-        stopNoiseTitleLayer = null;
-      }
-      if (stopStaticVisual) {
-        stopStaticVisual();
-        stopStaticVisual = null;
-      }
-      if (stopNoiseAudio) {
-        stopNoiseAudio.stop();
-        stopNoiseAudio = null;
-      }
-      if (rafId) cancelAnimationFrame(rafId);
-      if (renderer) {
-        try {
-          renderer.dispose();
-          renderer.domElement?.remove();
-        } catch {}
-      }
-    };
-
-    const finishIntro = () => {
-      if (finished) return;
-      finished = true;
-      stage.style.opacity = '0';
-      stage.style.pointerEvents = 'none';
-      setTimeout(() => {
-        cleanup();
-        stage.remove();
-        resolve();
-      }, 240);
-    };
-
-    const turnDurationMs = 2650;
-    const zoomDurationMs = 2750;
-
-    const triggerRotationFromClick = now => {
-      if (rotationStarted) {
-        finishIntro();
-        return;
-      }
-      rotationStarted = true;
-      turnStartTime = now || performance.now();
-      if (stopNoiseTitleLayer) {
-        stopNoiseTitleLayer();
-        stopNoiseTitleLayer = null;
-      }
-      if (stopNoiseAudio?.resume) stopNoiseAudio.resume();
-      playButtonClickSound();
-    };
-
-    stage.addEventListener('click', () => {
-      triggerRotationFromClick(performance.now());
-    });
-
-    loadThreeJsLibrary()
-      .then(THREE => {
-        if (finished) return;
-
-        const width = window.innerWidth || 1280;
-        const height = window.innerHeight || 720;
-
-        const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x000000);
-
-        const camera = new THREE.PerspectiveCamera(42, width / height, 0.05, 100);
-        camera.position.set(0.35, 0.25, 7.6);
-        camera.lookAt(0, -0.1, 0);
-
-        renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
-        renderer.setSize(width, height);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-        renderer.outputColorSpace = THREE.SRGBColorSpace;
-        stage.appendChild(renderer.domElement);
-
-        const ambientLight = new THREE.AmbientLight(0xffffff, 1.15);
-        scene.add(ambientLight);
-
-        const keyLight = new THREE.DirectionalLight(0xfff7e6, 1.95);
-        keyLight.position.set(4.5, 5.5, 6.0);
-        scene.add(keyLight);
-
-        const rimLight = new THREE.DirectionalLight(0x9ec5ff, 0.95);
-        rimLight.position.set(-5.0, 2.0, -4.0);
-        scene.add(rimLight);
-
-        const crtModel = buildLowPolyCrt3dGroup(THREE);
-        crtModel.position.set(0.65, -0.05, -0.8);
-        crtModel.rotation.set(0.08, 0.78, 0);
-        crtModel.visible = false;
-        scene.add(crtModel);
-
-        const onResize = () => {
-          if (finished || !renderer) return;
-          const w = window.innerWidth || 1280;
-          const h = window.innerHeight || 720;
-          camera.aspect = w / h;
-          camera.updateProjectionMatrix();
-          renderer.setSize(w, h);
-        };
-        window.addEventListener('resize', onResize);
-
-        const animateFrame = now => {
-          if (finished) {
-            window.removeEventListener('resize', onResize);
-            return;
-          }
-
-          if (!rotationStarted) {
-            crtModel.visible = false;
-          } else {
-            crtModel.visible = true;
-            const elapsedTurn = Math.max(0, now - turnStartTime);
-            const turnRaw = Math.min(1, elapsedTurn / turnDurationMs);
-            const tEase = easeInOutCubic(turnRaw);
-
-            crtModel.rotation.y = 0.78 * (1 - tEase);
-            crtModel.rotation.x = 0.08 * (1 - tEase);
-            crtModel.position.x = 0.65 * (1 - tEase);
-            crtModel.position.y = -0.05 * (1 - tEase);
-            crtModel.position.z = -0.8 * (1 - tEase);
-
-            if (elapsedTurn > turnDurationMs * 0.74) {
-              const zoomStart = turnDurationMs * 0.74;
-              const zoomRaw = Math.min(1, Math.max(0, (elapsedTurn - zoomStart) / zoomDurationMs));
-              const zEase = easeInOutQuart(zoomRaw);
-
-              camera.position.x = 0.35 * (1 - tEase);
-              camera.position.y = 0.25 * (1 - tEase) + 0.01 * zEase;
-              camera.position.z = 7.6 - 5.95 * zEase;
-              camera.lookAt(0, 0.01 * zEase, 0.85 * zEase);
-
-              if (zoomRaw >= 1) {
-                window.removeEventListener('resize', onResize);
-                finishIntro();
-                return;
-              }
-            }
-          }
-
-          renderer.render(scene, camera);
-          rafId = requestAnimationFrame(animateFrame);
-        };
-
-        rafId = requestAnimationFrame(animateFrame);
-      })
-      .catch(() => {
-        if (!finished) finishIntro();
-      });
-  });
-}
-
-// ============================================================
-// 동기화 상태 배지 실시간 업데이트
-// ============================================================
-let __syncPollTimer = null;
-
-function setArchiveSyncStatus(mode = 'done', customLabel = '') {
-  const badge = document.getElementById('cache-status-badge');
-  if (!badge) return;
-
-  if (mode === 'syncing') {
-    badge.style.background = '#ecfdf5';
-    badge.style.color = '#14532d';
-    badge.style.borderColor = '#16a34a';
-    badge.innerHTML = `<span id="sync-status-icon" class="archive-sync-spin" style="color:#16a34a;font-weight:900;">↻</span><span id="sync-status-text">${safeEsc(customLabel || '동기화 중')}</span>`;
-  } else if (mode === 'error') {
-    badge.style.background = '#fef2f2';
-    badge.style.color = '#991b1b';
-    badge.style.borderColor = '#dc2626';
-    badge.innerHTML = `<span id="sync-status-icon" style="color:#dc2626;font-weight:900;">✕</span><span id="sync-status-text">${safeEsc(customLabel || '동기화 실패')}</span>`;
-  } else {
-    badge.style.background = '#f0fdf4';
-    badge.style.color = '#166534';
-    badge.style.borderColor = '#16a34a';
-    badge.innerHTML = `<span id="sync-status-icon" style="color:#16a34a;font-weight:900;">✓</span><span id="sync-status-text">${safeEsc(customLabel || '동기화 완료')}</span>`;
-  }
-}
-
-function hookArchiveSyncLifecycle() {
-  if (typeof window.loadArchiveData === 'function' && !window.loadArchiveData.__syncWrapped) {
-    const origLoad = window.loadArchiveData;
-    const wrappedLoad = async function (...args) {
-      setArchiveSyncStatus('syncing', '동기화 중');
-      try {
-        const result = await origLoad.apply(this, args);
-        setArchiveSyncStatus('done', '동기화 완료');
-        return result;
-      } catch (err) {
-        setArchiveSyncStatus('error', '동기화 실패');
-        throw err;
-      }
-    };
-    wrappedLoad.__syncWrapped = true;
-    window.loadArchiveData = wrappedLoad;
-  }
-
-  if (!__syncPollTimer) {
-    __syncPollTimer = setInterval(() => {
-      if (document.hidden || bootState.stage !== 'done') return;
-      if (typeof window.loadArchiveData === 'function') {
-        hookArchiveSyncLifecycle();
-        window.loadArchiveData(true).catch(() => setArchiveSyncStatus('error', '동기화 실패'));
-      }
-    }, 30000);
-  }
-}
-
-window.setArchiveSyncStatus = setArchiveSyncStatus;
-
-// ============================================================
-// 초기 실행 텍스트 기반 SETUP 화면
-// ============================================================
-function loadInitialSetup() {
-  try {
-    const raw = localStorage.getItem(INITIAL_SETUP_KEY);
-    if (!raw) return null;
-    return { ...DEFAULT_INITIAL_SETUP, ...JSON.parse(raw) };
-  } catch {
-    return null;
-  }
-}
-
-function applyInitialSetupToSystem(cfg) {
-  const settings = { ...DEFAULT_INITIAL_SETUP, ...(cfg || {}) };
-
-  const themeClasses = [
-    'theme-teal', 'theme-navy', 'theme-olive',
-    'theme-plum', 'theme-brick', 'theme-matrix', 'theme-grid'
-  ];
-  document.body.classList.remove(...themeClasses);
-  if (themeClasses.includes(settings.theme)) {
-    document.body.classList.add(settings.theme);
-  } else {
-    document.body.classList.add('theme-teal');
-  }
-
-  if (settings.resolution === '90') {
-    document.documentElement.style.fontSize = '13px';
-  } else if (settings.resolution === '110') {
-    document.documentElement.style.fontSize = '15px';
-  } else {
-    document.documentElement.style.fontSize = '14px';
-  }
-
-  let crtEl = document.querySelector('.crt-overlay');
-  if (!crtEl && settings.crt) {
-    crtEl = document.createElement('div');
-    crtEl.className = 'crt-overlay';
-    document.body.appendChild(crtEl);
-  }
-  if (crtEl) {
-    crtEl.classList.toggle('hidden', !settings.crt);
-    crtEl.style.display = settings.crt ? 'block' : 'none';
-  }
-
-  window.__WIN95_SOUND_ENABLED = Boolean(settings.sound);
-  if (!settings.sound) {
-    window.playRetroTone = () => {};
-  }
-
-  try {
-    localStorage.setItem(INITIAL_SETUP_KEY, JSON.stringify(settings));
-  } catch {}
-}
-
-function openInitialSetupScreen(forceOpen = false) {
-  document.body.classList.add('boot-locked');
-  const existingCfg = loadInitialSetup();
-  if (existingCfg && !forceOpen) {
-    applyInitialSetupToSystem(existingCfg);
-    startBiosBootSequence();
-    return;
-  }
-
-  const current = existingCfg || { ...DEFAULT_INITIAL_SETUP };
-
-  const prevOverlay = document.getElementById('bios-text-setup-overlay');
-  if (prevOverlay) prevOverlay.remove();
-
-  const overlay = document.createElement('div');
-  overlay.id = 'bios-text-setup-overlay';
-  overlay.style.cssText = `
-    position: fixed;
-    inset: 0;
-    z-index: 999999;
-    background: #000080;
-    color: #ffffff;
-    font-family: 'DungGeunMo', 'Galmuri11', 'Fixedsys', monospace;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 16px;
-    box-sizing: border-box;
-    user-select: none;
-  `;
-
-  overlay.innerHTML = `
-    <div style="
-      width: 100%;
-      max-width: 680px;
-      border: 2px solid #ffffff;
-      outline: 2px solid #000080;
-      background: #000080;
-      box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.55);
+    .retro-noise-bar {
+      background: linear-gradient(90deg, #000080, #008080);
+      color: #ffffff;
+      padding: 6px 10px;
+      font-size: 0.78rem;
+      font-weight: 800;
       display: flex;
-      flex-direction: column;
-    ">
-      <div style="
-        background: #c0c0c0;
-        color: #000080;
-        padding: 4px 10px;
-        font-weight: 700;
-        font-size: 0.9rem;
-        display: flex;
-        justify-content: space-between;
-      ">
-        <span>MY-ARCHIVE 95 SYSTEM SETUP UTILITY v1.0</span>
-        <span>[TEXT MODE]</span>
-      </div>
-
-      <div style="padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; font-size: 0.86rem;">
-        <div style="color: #ffff55; line-height: 1.45;">
-          최초 실행 환경설정입니다. 원하는 표시 및 사운드 옵션을 선택한 뒤<br>
-          [저장 및 부팅]을 누르십시오. (설정은 브라우저에 저장됩니다)
-        </div>
-
-        <div style="border: 1px solid #80bfff; padding: 12px; display: grid; gap: 10px;">
-          <div style="display: grid; grid-template-columns: 150px 1fr; align-items: center; gap: 8px;">
-            <label for="setup-res-select" style="color: #00ffff; font-weight: 700;">1. 화면 해상도</label>
-            <select id="setup-res-select" style="background:#040826;color:#ffffff;border:1px solid #80bfff;padding:5px 8px;font-family:inherit;">
-              <option value="90" ${current.resolution === '90' ? 'selected' : ''}>COMPACT (90% / 13px)</option>
-              <option value="100" ${current.resolution === '100' ? 'selected' : ''}>STANDARD (100% / 14px - 기본)</option>
-              <option value="110" ${current.resolution === '110' ? 'selected' : ''}>LARGE (110% / 15px)</option>
-            </select>
-          </div>
-
-          <div style="display: grid; grid-template-columns: 150px 1fr; align-items: center; gap: 8px;">
-            <label for="setup-theme-select" style="color: #00ffff; font-weight: 700;">2. 바탕화면 테마</label>
-            <select id="setup-theme-select" style="background:#040826;color:#ffffff;border:1px solid #80bfff;padding:5px 8px;font-family:inherit;">
-              <option value="theme-teal" ${current.theme === 'theme-teal' ? 'selected' : ''}>WIN95 TEAL (#008080 - 기본)</option>
-              <option value="theme-navy" ${current.theme === 'theme-navy' ? 'selected' : ''}>DEEP NAVY (#102542)</option>
-              <option value="theme-olive" ${current.theme === 'theme-olive' ? 'selected' : ''}>MILITARY OLIVE (#3B5323)</option>
-              <option value="theme-plum" ${current.theme === 'theme-plum' ? 'selected' : ''}>RETRO PLUM (#4A2545)</option>
-              <option value="theme-brick" ${current.theme === 'theme-brick' ? 'selected' : ''}>BRICK WALL PATTERN</option>
-              <option value="theme-matrix" ${current.theme === 'theme-matrix' ? 'selected' : ''}>MATRIX TERMINAL GRID</option>
-              <option value="theme-grid" ${current.theme === 'theme-grid' ? 'selected' : ''}>DRAFTING PAPER GRID</option>
-            </select>
-          </div>
-
-          <div style="display: grid; grid-template-columns: 150px 1fr; align-items: center; gap: 8px;">
-            <label for="setup-crt-select" style="color: #00ffff; font-weight: 700;">3. CRT 스캔라인</label>
-            <select id="setup-crt-select" style="background:#040826;color:#ffffff;border:1px solid #80bfff;padding:5px 8px;font-family:inherit;">
-              <option value="on" ${current.crt ? 'selected' : ''}>ENABLED (스캔라인 켜기 - 기본)</option>
-              <option value="off" ${!current.crt ? 'selected' : ''}>DISABLED (스캔라인 끄기)</option>
-            </select>
-          </div>
-
-          <div style="display: grid; grid-template-columns: 150px 1fr; align-items: center; gap: 8px;">
-            <label for="setup-sound-select" style="color: #00ffff; font-weight: 700;">4. 시스템 사운드</label>
-            <select id="setup-sound-select" style="background:#040826;color:#ffffff;border:1px solid #80bfff;padding:5px 8px;font-family:inherit;">
-              <option value="on" ${current.sound ? 'selected' : ''}>ENABLED (비프음/부팅음 켜기 - 기본)</option>
-              <option value="off" ${!current.sound ? 'selected' : ''}>MUTED (무음 모드)</option>
-            </select>
-          </div>
-        </div>
-
-        <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; color: #c0c0c0; font-size: 0.78rem;">
-          <span>[ENTER] 저장 및 부팅 · [ESC] 기본값 사용</span>
-          <div style="display: flex; gap: 8px;">
-            <button type="button" id="btn-setup-default" style="
-              background: #040826; color: #ffffff; border: 1px solid #80bfff;
-              padding: 5px 10px; font-family: inherit; font-weight: 700; cursor: pointer;
-            ">기본값으로 진행</button>
-            <button type="button" id="btn-setup-save" style="
-              background: #c0c0c0; color: #000080; border: 2px solid #ffffff;
-              padding: 5px 14px; font-family: inherit; font-weight: 700; cursor: pointer;
-            ">저장 및 부팅</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  `;
-
-  document.body.appendChild(overlay);
-
-  const finalizeSetup = (cfgToSave) => {
-    window.removeEventListener('keydown', onSetupKeyDown, true);
-    applyInitialSetupToSystem(cfgToSave);
-    overlay.remove();
-    startBiosBootSequence();
-  };
-
-  const readFormValues = () => ({
-    resolution: document.getElementById('setup-res-select')?.value || '100',
-    theme: document.getElementById('setup-theme-select')?.value || 'theme-teal',
-    crt: (document.getElementById('setup-crt-select')?.value || 'on') === 'on',
-    sound: (document.getElementById('setup-sound-select')?.value || 'on') === 'on'
-  });
-
-  function onSetupKeyDown(e) {
-    if (!document.getElementById('bios-text-setup-overlay')) return;
-    if (e.key === 'Enter' && document.activeElement?.tagName !== 'SELECT') {
-      e.preventDefault();
-      e.stopPropagation();
-      finalizeSetup(readFormValues());
-    } else if (e.key === 'Escape') {
-      e.preventDefault();
-      e.stopPropagation();
-      finalizeSetup(DEFAULT_INITIAL_SETUP);
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 2px solid #111111;
     }
-  }
+    .retro-noise-body {
+      padding: 18px 16px;
+      text-align: center;
+    }
+    .retro-noise-bars {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      height: 14px;
+      border: 2px solid #111111;
+      margin-bottom: 14px;
+    }
+    .retro-noise-title {
+      font-size: 1.05rem;
+      font-weight: 900;
+      margin-bottom: 6px;
+      color: #000080;
+    }
+    .retro-noise-sub {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #222222;
+      margin-bottom: 14px;
+      line-height: 1.45;
+    }
+    .retro-noise-cta {
+      display: inline-block;
+      background: #ffd83b;
+      color: #111111;
+      border: 2px solid #111111;
+      box-shadow: inset 1.5px 1.5px 0 #ffffff, inset -1.5px -1.5px 0 #808080, 3px 3px 0 #111111;
+      padding: 7px 16px;
+      font-size: 0.82rem;
+      font-weight: 900;
+    }
+    @keyframes retroPromptBlink {
+      0%, 49% { opacity: 1; }
+      50%, 100% { opacity: 0.45; }
+    }
+    .retro-noise-blink {
+      animation: retroPromptBlink 1.1s infinite;
+    }
 
-  window.addEventListener('keydown', onSetupKeyDown, true);
+    /* 로그온 완료 전 메인 화면 노출 방지 */
+    body.pre-login-lock #desktop-area,
+    body.pre-login-lock .os-menubar,
+    body.pre-login-lock .os-taskbar,
+    body.pre-login-lock #start-menu {
+      visibility: hidden !important;
+    }
+  </style>
+  <script>
+    (function () {
+      window.__ARCHIVE_LOGGED_IN = false;
 
-  document.getElementById('btn-setup-save')?.addEventListener('click', () => {
-    finalizeSetup(readFormValues());
-  });
-
-  document.getElementById('btn-setup-default')?.addEventListener('click', () => {
-    finalizeSetup(DEFAULT_INITIAL_SETUP);
-  });
-}
-
-window.openInitialSetupScreen = openInitialSetupScreen;
-window.loadInitialSetup = loadInitialSetup;
-window.applyInitialSetupToSystem = applyInitialSetupToSystem;
-
-// ============================================================
-// 노스탤직 CRT 전원 켜짐 연출 헬퍼 (발광 잔상 강화)
-// ============================================================
-function triggerCrtPowerOnFlash(targetEl) {
-  if (!targetEl) return;
-  targetEl.animate(
-    [
-      {
-        transform: 'scaleY(0.01) scaleX(0.18)',
-        filter: 'brightness(4.2) drop-shadow(0 0 28px #ffffff)',
-        opacity: 0.95
-      },
-      {
-        transform: 'scaleY(0.028) scaleX(1.02)',
-        filter: 'brightness(3.2) drop-shadow(0 0 22px #a8f5ff)',
-        opacity: 1,
-        offset: 0.42
-      },
-      {
-        transform: 'scaleY(1.01) scaleX(1)',
-        filter: 'brightness(1.85) drop-shadow(0 0 12px rgba(255, 255, 255, 0.6))',
-        opacity: 1,
-        offset: 0.72
-      },
-      {
-        transform: 'scaleY(1) scaleX(1)',
-        filter: 'brightness(1) drop-shadow(0 0 0 transparent)',
-        opacity: 1
-      }
-    ],
-    { duration: 820, easing: 'cubic-bezier(0.16, 1, 0.3, 1)' }
-  );
-}
-
-// 1995년 16색 도트 픽셀 SVG 아바타 라이브러리 (이모지 미사용)
-const PIXEL_AVATARS = {
-  frog: `
-    <svg class="pixel-avatar-svg" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true">
-      <path fill="#000000" d="M3 1h3v1h1v2h2V2h1V1h3v1h1v3h-1v1h1v5h-1v2h1v2h-3v-1H5v1H2v-2h1v-2H2V6h1V5H2V2h1V1z"/>
-      <path fill="#008000" d="M3 2h3v3h4V2h3v3h-1v1h1v5h-1v2H4v-2H3V6h1V5H3V2z"/>
-      <path fill="#00ff00" d="M4 5h2v2H4V5zm6 0h2v2h-2V5zM5 10h6v2H5v-2z"/>
-      <path fill="#ffffff" d="M4 2h2v2H4V2zm6 0h2v2h-2V2z"/>
-      <path fill="#000000" d="M5 3h1v1H5V3zm6 0h1v1h-1V3zM4 8h8v1H4V8zM3 7h1v1H3V7zm9 0h1v1h-1V7z"/>
-    </svg>`,
-  globe: `
-    <svg class="pixel-avatar-svg" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true">
-      <path fill="#000000" d="M5 1h6v1h2v1h1v2h1v6h-1v2h-1v1h-2v1H5v-1H3v-1H2v-2H1V5h1V3h1V2h2V1z"/>
-      <path fill="#0000ff" d="M5 2h6v1h2v2h1v6h-1v2h-2v1H5v-1H3v-2H2V5h1V3h2V2z"/>
-      <path fill="#00ff00" d="M6 2h3v2H7v1H5V3h1V2zm4 3h3v3h-2v2H9V7h1V5zM3 7h3v3H5v2H3V7z"/>
-      <path fill="#ffffff" d="M4 3h2v1H4V3z"/>
-    </svg>`,
-  user: `
-    <svg class="pixel-avatar-svg" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true">
-      <path fill="#000000" d="M6 1h4v1h1v4h-1v1H6V6H5V2h1V1zM4 8h8v1h1v5H3V9h1V8z"/>
-      <path fill="#ffff00" d="M6 2h4v4H6V2z"/>
-      <path fill="#008080" d="M4 9h8v4H4V9z"/>
-      <path fill="#ffffff" d="M7 9h2v2H7V9z"/>
-    </svg>`,
-  book: `
-    <svg class="pixel-avatar-svg" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true">
-      <path fill="#000000" d="M2 2h11v1h1v10h-1v1H2V2z"/>
-      <path fill="#800000" d="M3 3h9v9H3V3z"/>
-      <path fill="#ffffff" d="M4 4h7v7H4V4zm8-1h1v9h-1V3z"/>
-      <path fill="#808080" d="M5 5h5v1H5V5zm0 2h5v1H5V7zm0 2h3v1H5V9z"/>
-    </svg>`,
-  headphone: `
-    <svg class="pixel-avatar-svg" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true">
-      <path fill="#000000" d="M5 2h6v1h2v2h1v8h-3V8h1V5h-1V4H5v1H4v3h1v5H2V5h1V3h2V2z"/>
-      <path fill="#808080" d="M5 3h6v1H5V3zM3 8h2v4H3V8zm8 0h2v4h-2V8z"/>
-      <path fill="#00ffff" d="M4 9h1v2H4V9zm7 0h1v2h-1V9z"/>
-    </svg>`,
-  movie: `
-    <svg class="pixel-avatar-svg" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true">
-      <path fill="#000000" d="M2 3h12v10H2V3z"/>
-      <path fill="#ffffff" d="M3 4h2v2H3V4zm4 0h2v2H7V4zm4 0h2v2h-2V4z"/>
-      <path fill="#c0c0c0" d="M3 7h10v5H3V7z"/>
-      <path fill="#000000" d="M4 8h8v1H4V8zm0 2h5v1H4v-1z"/>
-    </svg>`,
-  star: `
-    <svg class="pixel-avatar-svg" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true">
-      <path fill="#000000" d="M7 1h2v3h1v1h4v2h-2v2h-1v2h1v3H9v-1H7v1H4v-3h1V9H4V7H2V5h4V4h1V1z"/>
-      <path fill="#ffff00" d="M7 2h2v3h4v1h-2v2h-1v3h1v1H9v-1H7v1H5v-1h1V8H5V6H3V5h4V2z"/>
-      <path fill="#808000" d="M9 5h4v1H9V5zm-1 5h2v2H8v-2z"/>
-    </svg>`
-};
-
-const PIXEL_AVATAR_OPTIONS = [
-  { key: 'frog', label: '개구리' },
-  { key: 'user', label: '기본유저' },
-  { key: 'book', label: '도서' },
-  { key: 'headphone', label: '음악' },
-  { key: 'movie', label: '영상' },
-  { key: 'star', label: '별' }
-];
-
-const AVATAR_ALIAS_MAP = {
-  ADMIN: 'frog',
-  PUBLIC: 'globe',
-  USER: 'user',
-  '\u{1F438}': 'frog',
-  '\u{1F310}': 'globe',
-  '\u{1F464}': 'user',
-  '\u{1F4DA}': 'book',
-  '\u{1F3A7}': 'headphone',
-  '\u{1F3AC}': 'movie',
-  '\u{2B50}': 'star'
-};
-
-function normalizePixelAvatarKey(rawAvatar, role = 'user') {
-  const normRole = String(role || 'user').trim().toLowerCase();
-  if (normRole === 'public' && !rawAvatar) return 'globe';
-  if ((normRole === 'owner' || normRole === 'admin') && !rawAvatar) return 'frog';
-  const val = String(rawAvatar || '').trim();
-  const upperVal = val.toUpperCase();
-  if (AVATAR_ALIAS_MAP[val]) return AVATAR_ALIAS_MAP[val];
-  if (AVATAR_ALIAS_MAP[upperVal]) return AVATAR_ALIAS_MAP[upperVal];
-  if (PIXEL_AVATARS[val]) return val;
-  return normRole === 'public' ? 'globe' : ((normRole === 'owner' || normRole === 'admin') ? 'frog' : 'user');
-}
-
-function renderPixelAvatarHtml(rawAvatar, sizePx = 28, role = 'user') {
-  const key = normalizePixelAvatarKey(rawAvatar, role);
-  const svg = PIXEL_AVATARS[key] || PIXEL_AVATARS.user;
-  return `<span class="pixel-avatar-wrap" style="width:${sizePx}px;height:${sizePx}px;display:inline-flex;align-items:center;justify-content:center;">${svg}</span>`;
-}
-
-function formatRetroBio(rawBio, userObj = {}) {
-  const cleaned = String(rawBio || '')
-    .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\uFE0F]/gu, '')
-    .trim();
-
-  const normRole = String(userObj.role || '').trim().toLowerCase();
-  const isAdmin = typeof window.isAdminUser === 'function'
-    ? window.isAdminUser(userObj)
-    : (normRole === 'owner' || normRole === 'admin' || userObj.username === '문태양');
-
-  if (normRole === 'public' || userObj.username === '공용') {
-    return cleaned
-      ? `[PUBLIC] ${cleaned.replace(/^\[PUBLIC\]\s*/i, '')}`
-      : '[PUBLIC] 공용 단말기 모드 - 누구나 자유롭게 감상을 기록하고 광장 게시판에 공유';
-  }
-  if (isAdmin) {
-    return cleaned
-      ? `[SYSOP] ${cleaned.replace(/^\[SYSOP\]\s*/i, '')}`
-      : '[SYSOP] 시스템 관리자 워크스테이션 - 개인 서재 및 광장 게시판 전체 관리';
-  }
-  if (!cleaned) {
-    return '[USER] 개인 서재 보관함 관리 및 광장 게시판 기고·스크랩 지원';
-  }
-  return /^\[[A-Z0-9_-]+\]/i.test(cleaned) ? cleaned : `[USER] ${cleaned}`;
-}
-
-window.PIXEL_AVATARS = PIXEL_AVATARS;
-window.normalizePixelAvatarKey = normalizePixelAvatarKey;
-window.renderPixelAvatarHtml = renderPixelAvatarHtml;
-window.formatRetroBio = formatRetroBio;
-
-const DEFAULT_FALLBACK_USERS = [
-  {
-    id: 'USR-PUBLIC',
-    username: '공용',
-    role: 'public',
-    bio: '[PUBLIC] 공용 단말기 모드 - 누구나 자유롭게 감상을 기록하고 광장 게시판에 공유',
-    avatar: 'globe'
-  },
-  {
-    id: 'USR-OWNER',
-    username: '문태양',
-    role: 'owner',
-    bio: '[SYSOP] 시스템 관리자 워크스테이션 - 개인 서재 및 광장 게시판 전체 관리',
-    avatar: 'frog'
-  }
-];
-
-window.currentOsUser = null;
-window.registeredOsUsers = [...DEFAULT_FALLBACK_USERS];
-
-const bootState = {
-  stage: 'intro',
-  loginTab: 'signin',
-  userSearchOpen: false,
-  userSearchQuery: '',
-  isSubmitting: false,
-  timers: [],
-  ramInterval: null,
-  biosBeepPlayed: false,
-  startupSoundPlayed: false,
-  bootSeqId: 0
-};
-
-function getPersonalUsersList() {
-  const all = Array.isArray(window.registeredOsUsers) ? window.registeredOsUsers : DEFAULT_FALLBACK_USERS;
-  return all.filter(u =>
-    u &&
-    String(u.role || '').trim().toLowerCase() !== 'public' &&
-    String(u.username || '').trim() !== '공용' &&
-    String(u.id || '') !== 'USR-PUBLIC'
-  );
-}
-
-function clearBootTimers() {
-  bootState.timers.forEach(id => clearTimeout(id));
-  bootState.timers = [];
-  if (bootState.ramInterval) {
-    clearInterval(bootState.ramInterval);
-    bootState.ramInterval = null;
-  }
-}
-
-function getCurrentUser() {
-  if (window.currentOsUser) return window.currentOsUser;
-  const saved = safeLoadCache(SESSION_USER_KEY, null);
-  if (saved && saved.username) {
-    window.currentOsUser = saved;
-    return saved;
-  }
-  return DEFAULT_FALLBACK_USERS[1];
-}
-
-function setCurrentUser(userObj) {
-  const normalizedRole = String(userObj.role || 'member').trim().toLowerCase();
-  const normalized = {
-    ...userObj,
-    role: normalizedRole,
-    avatar: normalizePixelAvatarKey(userObj.avatar, normalizedRole)
-  };
-  window.currentOsUser = normalized;
-  safeSaveCache(SESSION_USER_KEY, normalized);
-  updateDesktopUserBadge();
-}
-
-function updateDesktopUserBadge() {
-  const user = getCurrentUser();
-  const normRole = String(user?.role || '').trim().toLowerCase();
-  const isAdmin = typeof window.isAdminUser === 'function'
-    ? window.isAdminUser(user)
-    : (normRole === 'owner' || normRole === 'admin');
-
-  const badge = document.getElementById('active-user-badge');
-  if (badge && user) {
-    const roleLabel = normRole === 'public' ? '비로그인' : (isAdmin ? '관리자' : '개인');
-    badge.innerHTML = `${renderPixelAvatarHtml(user.avatar, 14, normRole)}<span>${safeEsc(user.username)} (${roleLabel})</span>`;
-  }
-  const winMainTitle = document.getElementById('win-main-title-text');
-  if (winMainTitle && user) {
-    winMainTitle.textContent = normRole === 'public'
-      ? 'C:\\MY-ARCHIVE\\PUBLIC.EXE — 공용 단말기 아카이브'
-      : `C:\\MY-ARCHIVE\\${user.username.toUpperCase()}.EXE — ${user.username}의 개인 아카이브`;
-  }
-}
-
-// ============================================================
-// 메인 화면 계정명 클릭 시 뜨는 계정 설정 팝업
-// ============================================================
-function openAccountSettingsModal() {
-  safeBootTone('click');
-  const prev = document.getElementById('win95-account-settings-modal');
-  if (prev) prev.remove();
-
-  const curUser = getCurrentUser() || DEFAULT_FALLBACK_USERS[1];
-  const isPublic = String(curUser.role || '').toLowerCase() === 'public' || curUser.username === '공용';
-  const curAvatar = normalizePixelAvatarKey(curUser.avatar, curUser.role);
-  const curBio = String(curUser.bio || '').replace(/^\[(SYSOP|USER|PUBLIC)\]\s*/i, '');
-
-  const modal = document.createElement('div');
-  modal.id = 'win95-account-settings-modal';
-  modal.style.cssText = `
-    position: fixed; inset: 0; z-index: 150000;
-    background: rgba(0, 0, 0, 0.45);
-    display: flex; align-items: center; justify-content: center; padding: 16px;
-  `;
-
-  modal.innerHTML = `
-    <div class="win95-login-dialog" style="width: 100%; max-width: 440px; margin: 0;">
-      <div class="win95-logon-titlebar">
-        <div class="win95-logon-title-left">
-          <span>계정 설정 — ${safeEsc(curUser.username)}</span>
-        </div>
-        <button type="button" id="btn-acct-close-x" class="win95-title-help-btn">X</button>
-      </div>
-
-      <div class="win95-logon-body">
-        <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px; padding:8px; background:#fff; border:1.5px solid #808080;">
-          <div id="acct-modal-avatar-preview">${renderPixelAvatarHtml(curAvatar, 32, curUser.role)}</div>
-          <div style="min-width:0; flex:1;">
-            <div style="font-weight:900; font-size:0.9rem;">${safeEsc(curUser.username)}</div>
-            <div style="font-size:0.75rem; color:#555;">${isPublic ? '공용 단말기 세션' : '개인 계정 세션'}</div>
-          </div>
-        </div>
-
-        ${!isPublic ? `
-          <div class="win95-logon-grid">
-            <span class="win95-logon-label" style="align-self:start; padding-top:6px;">초상화:</span>
-            <div>
-              <input type="hidden" id="acct-edit-avatar" value="${safeEsc(curAvatar)}" />
-              <div id="acct-edit-avatar-grid" class="win95-avatar-grid" role="radiogroup"></div>
-            </div>
-
-            <label class="win95-logon-label" for="acct-edit-bio">한줄 소개:</label>
-            <input type="text" id="acct-edit-bio" class="win95-logon-input" maxlength="60" value="${safeEsc(curBio)}" placeholder="한줄 소개를 입력하세요" />
-
-            <label class="win95-logon-label" for="acct-edit-pin">새 PIN(4자리):</label>
-            <input type="password" id="acct-edit-pin" class="win95-logon-input" maxlength="4" inputmode="numeric" pattern="[0-9]{4}" placeholder="변경할 때만 4자리 입력" />
-          </div>
-        ` : `
-          <div style="font-size:0.8rem; color:#333; padding:8px; background:#fff; border:1.5px solid #808080; margin-bottom:10px;">
-            공용 단말기로 접속 중입니다. 개인 계정으로 전환하려면 [로그아웃 / 계정 전환]을 누르십시오.
-          </div>
-        `}
-
-        <div class="win95-logon-actions" style="justify-content:space-between; margin-top:14px; gap:6px; flex-wrap:wrap;">
-          <button type="button" id="btn-acct-logout" class="win95-dlg-btn">로그아웃 / 계정 전환</button>
-          <div style="display:flex; gap:6px;">
-            <button type="button" id="btn-acct-cancel" class="win95-dlg-btn">취소</button>
-            ${!isPublic ? `<button type="button" id="btn-acct-save" class="win95-dlg-btn primary">설정 저장</button>` : ''}
-          </div>
-        </div>
-      </div>
-    </div>
-  `;
-
-  document.body.appendChild(modal);
-
-  const closeModal = () => modal.remove();
-  modal.querySelector('#btn-acct-close-x')?.addEventListener('click', closeModal);
-  modal.querySelector('#btn-acct-cancel')?.addEventListener('click', closeModal);
-  modal.addEventListener('click', e => {
-    if (e.target === modal) closeModal();
-  });
-
-  modal.querySelector('#btn-acct-logout')?.addEventListener('click', () => {
-    closeModal();
-    startBiosBootSequence({ skip3d: true });
-  });
-
-  if (!isPublic) {
-    const paintAvatarGrid = () => {
-      const hidden = modal.querySelector('#acct-edit-avatar');
-      const grid = modal.querySelector('#acct-edit-avatar-grid');
-      const prevBox = modal.querySelector('#acct-modal-avatar-preview');
-      if (!hidden || !grid) return;
-      const key = normalizePixelAvatarKey(hidden.value || curAvatar, curUser.role);
-      hidden.value = key;
-      if (prevBox) prevBox.innerHTML = renderPixelAvatarHtml(key, 32, curUser.role);
-      grid.innerHTML = PIXEL_AVATAR_OPTIONS.map(opt => {
-        const sel = opt.key === key;
-        return `
-          <button type="button" class="win95-avatar-choice ${sel ? 'selected' : ''}" data-acct-av="${opt.key}">
-            ${renderPixelAvatarHtml(opt.key, 18)}
-            <span>${opt.label}</span>
-          </button>
-        `;
-      }).join('');
-      grid.querySelectorAll('[data-acct-av]').forEach(b => {
-        b.addEventListener('click', () => {
-          safeBootTone('click');
-          hidden.value = b.dataset.acctAv;
-          paintAvatarGrid();
-        });
-      });
-    };
-    paintAvatarGrid();
-
-    modal.querySelector('#acct-edit-pin')?.addEventListener('input', e => {
-      e.target.value = String(e.target.value || '').replace(/\D/g, '').slice(0, 4);
-    });
-
-    modal.querySelector('#btn-acct-save')?.addEventListener('click', async () => {
-      const nextAvatar = normalizePixelAvatarKey(modal.querySelector('#acct-edit-avatar')?.value || curAvatar, curUser.role);
-      const rawBio = (modal.querySelector('#acct-edit-bio')?.value || '').trim();
-      const nextBio = formatRetroBio(rawBio, curUser);
-      const nextPin = (modal.querySelector('#acct-edit-pin')?.value || '').trim();
-
-      if (nextPin && !/^\d{4}$/.test(nextPin)) {
-        safeBootTone('boom');
-        alert('PIN은 숫자 4자리로 입력해 주십시오.');
-        return;
+      function setPreLoginLock(locked) {
+        if (!document.body) return;
+        if (locked) {
+          document.body.classList.add('boot-locked');
+          document.body.classList.add('pre-login-lock');
+        } else {
+          document.body.classList.remove('boot-locked');
+          document.body.classList.remove('pre-login-lock');
+        }
       }
 
-      const updatedUser = {
-        ...curUser,
-        avatar: nextAvatar,
-        bio: nextBio
-      };
-      setCurrentUser(updatedUser);
+      function showNoiseGate() {
+        if (window.__ARCHIVE_LOGGED_IN) return;
+        setPreLoginLock(true);
+        var gate = document.getElementById('retro-noise-gate');
+        if (gate) {
+          gate.style.display = 'flex';
+          gate.classList.remove('hidden');
+          gate.style.opacity = '1';
+          gate.style.pointerEvents = 'auto';
+        }
+      }
 
-      window.registeredOsUsers = (window.registeredOsUsers || []).map(u =>
-        u.username === curUser.username ? { ...u, avatar: nextAvatar, bio: nextBio } : u
-      );
-      safeSaveCache(USERS_CACHE_KEY, window.registeredOsUsers);
+      function enterBootAfterNoiseClick() {
+        var gate = document.getElementById('retro-noise-gate');
+        if (gate) {
+          gate.classList.add('hidden');
+          gate.style.pointerEvents = 'none';
+          setTimeout(function () {
+            if (gate.classList.contains('hidden')) {
+              gate.style.display = 'none';
+            }
+          }, 230);
+        }
 
-      const apiUrl = getGasApiUrl();
-      if (apiUrl) {
-        setArchiveSyncStatus('syncing', '동기화 중');
-        try {
-          const payload = {
-            action: 'update_user',
-            username: curUser.username,
-            avatar: nextAvatar,
-            bio: nextBio
+        var overlay = document.getElementById('os-boot-overlay');
+        if (overlay) {
+          overlay.style.display = 'flex';
+        }
+
+        if (typeof window.__origStartBiosBootSequence === 'function') {
+          window.__origStartBiosBootSequence();
+        } else if (typeof window.startBiosBootSequence === 'function') {
+          window.startBiosBootSequence();
+        } else if (typeof window.openInitialSetupScreen === 'function') {
+          window.openInitialSetupScreen(false);
+        }
+      }
+
+      window.__showRetroNoiseGate = showNoiseGate;
+      window.__enterBootAfterNoiseClick = enterBootAfterNoiseClick;
+
+      function hookBootLifecycle() {
+        if (typeof window.startBiosBootSequence === 'function' && !window.__origStartBiosBootSequence) {
+          window.__origStartBiosBootSequence = window.startBiosBootSequence;
+          var allowDirectCall = false;
+          window.startBiosBootSequence = function () {
+            if (!window.__ARCHIVE_LOGGED_IN) {
+              setPreLoginLock(true);
+            }
+            if (!allowDirectCall && document.getElementById('retro-noise-gate')?.style.display !== 'none') {
+              return;
+            }
+            return window.__origStartBiosBootSequence.apply(this, arguments);
           };
-          if (nextPin) payload.pin = nextPin;
-          await fetch(apiUrl, {
-            method: 'POST',
-            redirect: 'follow',
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify(payload)
+          window.__runActualBiosSequence = function () {
+            allowDirectCall = true;
+            try {
+              return window.__origStartBiosBootSequence.apply(window, arguments);
+            } finally {
+              allowDirectCall = false;
+            }
+          };
+        }
+
+        if (typeof window.finishDesktopLogin === 'function' && !window.__loginHooked) {
+          var origFinish = window.finishDesktopLogin;
+          window.finishDesktopLogin = function () {
+            window.__ARCHIVE_LOGGED_IN = true;
+            var res = origFinish.apply(this, arguments);
+            setPreLoginLock(false);
+            return res;
+          };
+          window.__loginHooked = true;
+        }
+      }
+
+      document.addEventListener('DOMContentLoaded', function () {
+        setPreLoginLock(true);
+        hookBootLifecycle();
+
+        var gate = document.getElementById('retro-noise-gate');
+        if (gate) {
+          gate.addEventListener('click', function () {
+            if (window.__runActualBiosSequence) {
+              var g = document.getElementById('retro-noise-gate');
+              if (g) {
+                g.classList.add('hidden');
+                g.style.pointerEvents = 'none';
+                setTimeout(function () {
+                  if (g.classList.contains('hidden')) g.style.display = 'none';
+                }, 230);
+              }
+              var ov = document.getElementById('os-boot-overlay');
+              if (ov) ov.style.display = 'flex';
+              window.__runActualBiosSequence();
+            } else {
+              enterBootAfterNoiseClick();
+            }
           });
-          setArchiveSyncStatus('done', '동기화 완료');
-        } catch {
-          setArchiveSyncStatus('error', '동기화 실패');
         }
-      }
 
-      safeBootTone('open');
-      closeModal();
-    });
-  }
-}
+        // 가벼운 레트로 픽셀 노이즈 렌더러
+        var canvas = document.getElementById('retro-noise-canvas');
+        if (canvas) {
+          var ctx = canvas.getContext('2d');
+          var w = 160, h = 90;
+          canvas.width = w;
+          canvas.height = h;
+          var img = ctx.createImageData(w, h);
+          var rafId = 0;
 
-window.openAccountSettingsModal = openAccountSettingsModal;
+          function drawNoise() {
+            var gEl = document.getElementById('retro-noise-gate');
+            if (!gEl || gEl.style.display === 'none' || gEl.classList.contains('hidden')) {
+              cancelAnimationFrame(rafId);
+              return;
+            }
+            var data = img.data;
+            for (var i = 0; i < data.length; i += 4) {
+              var v = (Math.random() * 255) | 0;
+              data[i] = v;
+              data[i + 1] = Math.min(255, (v * 0.92 + 18) | 0);
+              data[i + 2] = Math.min(255, (v * 0.85 + 36) | 0);
+              data[i + 3] = 255;
+            }
+            ctx.putImageData(img, 0, 0);
+            rafId = requestAnimationFrame(drawNoise);
+          }
+          drawNoise();
+        }
+      });
 
-// ============================================================
-// Web Audio API: BIOS 비프음, 드라이브 틱음 & 레트로 부팅음 (패드 + 차임 + 딜레이)
-// ============================================================
-function playBiosPostBeep(freq = 880, dur = 0.14) {
-  if (!isRetroSoundEnabled()) return;
-  try {
-    const ctx = getSharedAudioContext();
-    if (!ctx) return;
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = 'square';
-    osc.frequency.setValueAtTime(freq, ctx.currentTime);
-    gain.gain.setValueAtTime(0.055, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + dur);
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start();
-    osc.stop(ctx.currentTime + dur + 0.02);
-  } catch {}
-}
+      window.addEventListener('load', hookBootLifecycle, { once: true });
+    })();
+  </script>
+</head>
+<body class="theme-teal boot-locked pre-login-lock">
 
-function playDriveSeekTick() {
-  if (!isRetroSoundEnabled()) return;
-  try {
-    const ctx = getSharedAudioContext();
-    if (!ctx) return;
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = 'square';
-    osc.frequency.setValueAtTime(145, ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(65, ctx.currentTime + 0.035);
-    gain.gain.setValueAtTime(0.035, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.04);
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start();
-    osc.stop(ctx.currentTime + 0.045);
-  } catch {}
-}
+  <!-- 0단계: 레트로 신호 대기(노이즈) 화면 -> 클릭 시 부팅/초기 애니메이션 시작 -->
+  <div id="retro-noise-gate" role="button" tabindex="0" aria-label="화면을 클릭하여 MY-ARCHIVE 95 부팅 시작">
+    <canvas id="retro-noise-canvas" aria-hidden="true"></canvas>
+    <div class="retro-noise-card">
+      <div class="retro-noise-bar">
+        <span>CH-95 // SIGNAL STANDBY</span>
+        <span>1995-RETRO</span>
+      </div>
+      <div class="retro-noise-body">
+        <div class="retro-noise-bars" aria-hidden="true">
+          <span style="background:#f5f5f5;"></span>
+          <span style="background:#ffd83b;"></span>
+          <span style="background:#4be36a;"></span>
+          <span style="background:#67e8f9;"></span>
+          <span style="background:#4ba3ff;"></span>
+          <span style="background:#f472b6;"></span>
+          <span style="background:#ff5252;"></span>
+        </div>
+        <div class="retro-noise-title">MY-ARCHIVE 95 WORKSTATION</div>
+        <div class="retro-noise-sub">
+          모니터 신호 대기 중입니다.<br />
+          화면을 클릭하면 시스템 초기화 및 부팅을 시작합니다.
+        </div>
+        <div class="retro-noise-cta retro-noise-blink">[ CLICK TO POWER ON ]</div>
+      </div>
+    </div>
+  </div>
 
-function playWin95StartupSound(forceOnce = true) {
-  if (!isRetroSoundEnabled()) return;
-  if (forceOnce && bootState.startupSoundPlayed) return;
-  bootState.startupSoundPlayed = true;
+  <!-- BIOS POST & 정통 Windows 95 로그온 오버레이 -->
+  <div id="os-boot-overlay" role="dialog" aria-modal="true" aria-label="MY-ARCHIVE 95 부팅 및 로그온" style="position:fixed;inset:0;z-index:200000;background:#000000;display:none;align-items:center;justify-content:center;">
+    <!-- 1. BIOS POST -->
+    <div id="boot-stage-bios" class="boot-stage" style="display:none;width:100%;height:100%;">
+      <div class="bios-top-row">
+        <div>
+          <div class="bios-brand">AWARD MODULAR BIOS v4.51PG, An Energy Star Ally</div>
+          <div>Copyright (C) 1984-1995, Award Software, Inc.</div>
+          <div style="color:#55ffff; margin-top:4px;">MY-ARCHIVE 95 MULTI-USER WORKSTATION BIOS REV 3.5</div>
+        </div>
+        <div class="bios-energy-box">
+          <div style="color:#ffff55; font-weight:900;">ENERGY</div>
+          <div style="color:#55ff55; font-size:0.68rem;">EPA POLLUTION PREVENTER</div>
+        </div>
+      </div>
+      <div class="bios-spec-block">
+        <div>MAIN PROCESSOR : 80486DX4-100MHz / Pentium Compatible</div>
+        <div>MEMORY TESTING : <span id="bios-ram-count">640</span>K OK + 65536K EXTENDED</div>
+      </div>
+      <div id="bios-log-lines" class="bios-log-area"></div>
+      <div id="bios-cmos-easter" class="bios-cmos-box" style="display:none;">
+        <div style="color:#ffff55; font-weight:900; margin-bottom:4px;">[CMOS SETUP UTILITY]</div>
+        <div>- Primary Master : Central Archive Multi-User DB (Archive / Users / Feed)</div>
+        <div>- Public Terminal : '공용' (No PIN) / SYSOP Admin: '문태양' (PIN: 1234)</div>
+      </div>
+      <div class="bios-footer-bar">
+        <span>Press <b>DEL</b> for CMOS, <b>SPACE / CLICK</b> to skip POST</span>
+        <span id="bios-sync-badge" style="color:#ffff55;">HOST SYNC: STANDBY</span>
+      </div>
+    </div>
 
-  try {
-    const ctx = getSharedAudioContext();
-    if (!ctx) return;
-    const now = ctx.currentTime;
+    <!-- 2. Windows 95 부팅 스플래시 (로딩 창) -->
+    <div id="boot-stage-splash" class="boot-stage" style="display:none;width:100%;height:100%;">
+      <div class="win95-splash-card">
+        <div class="win95-flag-grid" aria-hidden="true">
+          <span style="background:#ff4b4b;"></span>
+          <span style="background:#4be36a;"></span>
+          <span style="background:#4ba3ff;"></span>
+          <span style="background:#ffd83b;"></span>
+        </div>
+        <div class="win95-splash-sub">MULTI-USER CULTURE ARCHIVE &amp; BBS WORKSTATION</div>
+        <div class="win95-splash-title">MY-ARCHIVE <span class="win95-splash-95">95</span></div>
+        <div class="win95-splash-desc">이용자 명부 및 중앙 공개 자료실 전산망을 초기화하는 중...</div>
+      </div>
+      <div class="win95-boot-track"><div class="win95-boot-runner"></div></div>
+    </div>
 
-    const masterGain = ctx.createGain();
-    const delay = ctx.createDelay();
-    const delayGain = ctx.createGain();
+    <!-- 3. 정통 Windows 95 로그온 대화상자 -->
+    <div id="boot-stage-login" class="boot-stage-login" style="display:none;">
+      <div class="win95-login-dialog" role="dialog" aria-labelledby="win95-logon-title">
+        <div class="win95-logon-titlebar">
+          <div class="win95-logon-title-left">
+            <svg width="14" height="14" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true">
+              <path fill="#000" d="M3 2h6v6H7v6H5V8H3V2z"/>
+              <path fill="#ffff00" d="M4 3h4v4H6v6H5V7H4V3z"/>
+            </svg>
+            <span id="win95-logon-title">Windows 95 시작 — MY-ARCHIVE 95 통신망 로그온</span>
+          </div>
+          <button type="button" id="btn-reboot-bios" class="win95-title-help-btn" title="BIOS 부팅 화면 다시 보기">?</button>
+        </div>
 
-    delay.delayTime.value = 0.3;
-    delayGain.gain.value = 0.4;
+        <div class="win95-logon-tabs" role="tablist">
+          <button type="button" id="tab-win95-signin" class="win95-logon-tab active" role="tab" aria-selected="true">
+            <span>등록 이용자 접속</span>
+          </button>
+          <button type="button" id="tab-win95-signup" class="win95-logon-tab" role="tab" aria-selected="false">
+            <span>신규 이용자 가입 (4자리 암호)</span>
+          </button>
+        </div>
 
-    masterGain.connect(ctx.destination);
-    masterGain.connect(delay);
-    delay.connect(delayGain);
-    delayGain.connect(masterGain);
+        <div class="win95-logon-body">
+          <div id="win95-login-error" class="win95-login-error" style="display:none;"></div>
 
-    masterGain.gain.setValueAtTime(0.6, now);
-    masterGain.gain.exponentialRampToValueAtTime(0.001, now + 4.5);
+          <!-- TAB 1: 기존 계정 로그인 -->
+          <div id="win95-pane-signin">
+            <form id="win95-login-form">
+              <div class="win95-logon-intro">
+                <svg width="34" height="34" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true">
+                  <rect x="1" y="2" width="11" height="8" fill="#dcdcdc" stroke="#111"/>
+                  <rect x="3" y="4" width="7" height="4" fill="#008080"/>
+                  <rect x="3" y="11" width="7" height="2" fill="#808080" stroke="#111"/>
+                  <rect x="10" y="7" width="4" height="4" fill="#ffff00" stroke="#111"/>
+                  <rect x="11" y="11" width="2" height="4" fill="#ffff00" stroke="#111"/>
+                </svg>
+                <p>이용자 계정을 선택하고 <strong>4자리 숫자 암호(PIN)</strong>를 입력한 뒤 <strong>[확인 (접속)]</strong>을 누르십시오.</p>
+              </div>
 
-    const frequencies = [130.81, 196.00, 261.63];
-    frequencies.forEach((freq, index) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
+              <div class="win95-logon-grid">
+                <label class="win95-logon-label" for="login-account-select">이용자명(<u>U</u>):</label>
+                <div class="win95-account-row">
+                  <div class="win95-select-wrap">
+                    <select id="login-account-select" class="win95-logon-select"></select>
+                    <span class="win95-select-arrow" aria-hidden="true">
+                      <svg width="9" height="6" viewBox="0 0 9 6" shape-rendering="crispEdges">
+                        <rect x="1" y="1" width="7" height="1" fill="#111"/>
+                        <rect x="2" y="2" width="5" height="1" fill="#111"/>
+                        <rect x="3" y="3" width="3" height="1" fill="#111"/>
+                        <rect x="4" y="4" width="1" height="1" fill="#111"/>
+                      </svg>
+                    </span>
+                  </div>
+                  <button type="button" id="btn-toggle-user-search" class="win95-user-search-btn" title="이용자 찾기" aria-label="이용자 찾기">
+                    <svg width="14" height="14" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true">
+                      <rect x="3" y="2" width="6" height="1" fill="#111"/>
+                      <rect x="2" y="3" width="1" height="6" fill="#111"/>
+                      <rect x="9" y="3" width="1" height="6" fill="#111"/>
+                      <rect x="3" y="9" width="6" height="1" fill="#111"/>
+                      <rect x="3" y="3" width="6" height="6" fill="#a8e6ff"/>
+                      <rect x="4" y="4" width="2" height="2" fill="#fff"/>
+                      <rect x="9" y="9" width="2" height="2" fill="#111"/>
+                      <rect x="11" y="11" width="2" height="2" fill="#111"/>
+                      <rect x="13" y="13" width="2" height="2" fill="#111"/>
+                    </svg>
+                  </button>
+                </div>
 
-      osc.type = index === 1 ? 'triangle' : 'sine';
-      osc.frequency.setValueAtTime(freq, now);
+                <div id="login-user-search-row" class="win95-user-search-row" style="display:none;">
+                  <input type="text" id="login-user-search-input" class="win95-logon-input" placeholder="이용자 이름 또는 자기소개 찾기..." />
+                  <span id="login-user-search-count" class="win95-search-count">0명</span>
+                  <button type="button" id="btn-clear-user-search" class="win95-mini-btn" style="display:none;">초기화</button>
+                </div>
 
-      gain.gain.setValueAtTime(0.0001, now);
-      gain.gain.linearRampToValueAtTime(0.2, now + 1.2);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 4.0);
+                <input type="text" id="login-username" class="win95-logon-input win95-grid-right" placeholder="이용자 이름 직접 입력" style="display:none;" />
 
-      osc.connect(gain);
-      gain.connect(masterGain);
-      osc.start(now);
-      osc.stop(now + 4.5);
-    });
+                <label class="win95-logon-label" for="login-password">비밀번호(<u>P</u>):</label>
+                <input type="password" id="login-password" class="win95-logon-input" maxlength="4" inputmode="numeric" pattern="[0-9]{4}" placeholder="4자리 숫자 암호 (예: 1234)" />
+              </div>
 
-    const chimeNotes = [659.25, 783.99, 587.33, 523.25];
-    const startTimeOffsets = [0.4, 0.6, 0.9, 1.2];
+              <fieldset class="win95-profile-fieldset">
+                <legend>이용자 신상 명세 (USER PROFILE)</legend>
+                <div class="win95-profile-inner">
+                  <div id="login-profile-avatar" class="win95-profile-avatar-box"></div>
+                  <div class="win95-profile-meta">
+                    <div id="login-profile-name" class="win95-profile-name"></div>
+                    <div id="login-account-hint" class="win95-profile-bio"></div>
+                  </div>
+                </div>
+              </fieldset>
 
-    chimeNotes.forEach((freq, index) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
+              <div class="win95-logon-actions" style="margin-top: 14px;">
+                <button type="button" id="btn-win95-public-enter" class="win95-dlg-btn">
+                  <svg width="14" height="14" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true">
+                    <rect x="3" y="2" width="10" height="12" fill="#0000ff" stroke="#111"/>
+                    <rect x="5" y="4" width="3" height="4" fill="#00ff00"/>
+                    <rect x="9" y="7" width="3" height="4" fill="#00ff00"/>
+                  </svg>
+                  <span>공용 단말기 접속 (무암호)</span>
+                </button>
+                <button type="submit" id="btn-win95-login" class="win95-dlg-btn primary">확인 (접속)</button>
+              </div>
+            </form>
+          </div>
 
-      osc.type = 'sine';
-      const toneStart = now + startTimeOffsets[index];
-      osc.frequency.setValueAtTime(freq, toneStart);
+          <!-- TAB 2: 새 이용자 계정 만들기 -->
+          <div id="win95-pane-signup" style="display:none;">
+            <form id="win95-signup-form">
+              <div class="win95-logon-intro">
+                <svg width="34" height="34" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true">
+                  <rect x="1" y="1" width="9" height="11" fill="#fff" stroke="#111"/>
+                  <rect x="3" y="3" width="5" height="2" fill="#000080"/>
+                  <rect x="3" y="6" width="5" height="1" fill="#808080"/>
+                  <rect x="7" y="7" width="8" height="8" fill="#000080" stroke="#111"/>
+                  <rect x="9" y="8" width="4" height="3" fill="#fff"/>
+                  <rect x="9" y="12" width="4" height="2" fill="#c0c0c0"/>
+                </svg>
+                <p>신규 개인 계정을 개설하면 나만의 서재 보관함과 전체 공개 자료실을 모두 이용할 수 있습니다.</p>
+              </div>
 
-      gain.gain.setValueAtTime(0.0001, now);
-      gain.gain.setValueAtTime(0.0001, toneStart);
-      gain.gain.linearRampToValueAtTime(0.25, toneStart + 0.05);
-      gain.gain.exponentialRampToValueAtTime(0.001, toneStart + 1.5);
+              <div class="win95-logon-grid">
+                <label class="win95-logon-label" for="signup-username">이용자명 *:</label>
+                <input type="text" id="signup-username" class="win95-logon-input" minlength="2" maxlength="15" placeholder="2~15자 필명 (예: 홍길동)" required />
 
-      osc.connect(gain);
-      gain.connect(masterGain);
-      osc.start(now);
-      osc.stop(toneStart + 1.6);
-    });
-  } catch {}
-}
+                <label class="win95-logon-label" for="signup-pin">4자리 암호 *:</label>
+                <input type="password" id="signup-pin" class="win95-logon-input" maxlength="4" inputmode="numeric" pattern="[0-9]{4}" placeholder="숫자 4자리 (예: 2580)" required />
 
-// ============================================================
-// 회원가입 탭 도트 픽셀 아바타 선택기 렌더링
-// ============================================================
-function renderSignupAvatarPicker() {
-  const grid = document.getElementById('signup-avatar-grid');
-  const hiddenInput = document.getElementById('signup-avatar');
-  if (!grid || !hiddenInput) return;
+                <label class="win95-logon-label" for="signup-pin-confirm">암호 확인 *:</label>
+                <input type="password" id="signup-pin-confirm" class="win95-logon-input" maxlength="4" inputmode="numeric" pattern="[0-9]{4}" placeholder="숫자 4자리 재입력" required />
 
-  const currentKey = normalizePixelAvatarKey(hiddenInput.value || 'frog');
-  hiddenInput.value = currentKey;
+                <span class="win95-logon-label" style="align-self:start; padding-top:8px;">도트 초상화:</span>
+                <div>
+                  <input type="hidden" id="signup-avatar" value="frog" />
+                  <div id="signup-avatar-grid" class="win95-avatar-grid" role="radiogroup"></div>
+                </div>
 
-  grid.innerHTML = PIXEL_AVATAR_OPTIONS.map(opt => {
-    const selected = opt.key === currentKey;
-    return `
-      <button type="button"
-              class="win95-avatar-choice ${selected ? 'selected' : ''}"
-              data-avatar-key="${opt.key}"
-              role="radio"
-              aria-checked="${selected}"
-              title="${opt.label}">
-        ${renderPixelAvatarHtml(opt.key, 20)}
-        <span>${opt.label}</span>
+                <label class="win95-logon-label" for="signup-bio">한줄 자기소개:</label>
+                <input type="text" id="signup-bio" class="win95-logon-input" maxlength="60" placeholder="예) 심야 영화와 고전 소설을 갈무리합니다." />
+              </div>
+
+              <div class="win95-logon-actions" style="justify-content:flex-end; margin-top:14px;">
+                <button type="submit" id="btn-win95-signup-submit" class="win95-dlg-btn primary">계정 개설 및 즉시 접속</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="crt-overlay" class="crt-overlay" style="display:none;" aria-hidden="true"></div>
+
+  <!-- 상단 OS 시스템 메뉴바 -->
+  <header class="os-menubar">
+    <nav class="menu-bar-left" aria-label="시스템 주 메뉴">
+      <div class="os-brand-badge">ARCHIVE95.OS</div>
+
+      <div class="menu-item-wrap">
+        <button type="button" class="menu-root"><u>F</u>ile (파일)</button>
+        <div class="menu-dropdown">
+          <button type="button" class="menu-opt" id="mnu-new-archive">[+] 새 감상록 등록...</button>
+          <button type="button" class="menu-opt" id="mnu-open-memo">[NOTE] 간이 메모장 열기</button>
+          <div class="menu-sep"></div>
+          <button type="button" class="menu-opt" id="mnu-sync-sheet">[SYNC] 중앙 전산실 자료 갱신</button>
+          <button type="button" class="menu-opt" id="mnu-export-csv">[CSV] 전체 자료 백업 내려받기</button>
+        </div>
+      </div>
+
+      <div class="menu-item-wrap">
+        <button type="button" class="menu-root"><u>V</u>iew (보기)</button>
+        <div class="menu-dropdown">
+          <button type="button" class="menu-opt" data-cat-menu="ALL">전체 자료실 보기</button>
+          <button type="button" class="menu-opt" data-cat-menu="도서">도서 서가만 보기</button>
+          <button type="button" class="menu-opt" data-cat-menu="음악">음반 서가만 보기</button>
+          <button type="button" class="menu-opt" data-cat-menu="영상">영상 서가만 보기</button>
+          <button type="button" class="menu-opt" data-cat-menu="기타">기타 서가만 보기</button>
+          <div class="menu-sep"></div>
+          <button type="button" class="menu-opt" id="mnu-toggle-charts">기본 통계 도표 표시/숨김</button>
+          <button type="button" class="menu-opt" id="mnu-open-calendar">월력 및 기념일 관리 열기</button>
+        </div>
+      </div>
+
+      <div class="menu-item-wrap">
+        <button type="button" class="menu-root"><u>T</u>ools (도구·통신)</button>
+        <div class="menu-dropdown">
+          <button type="button" class="menu-opt" id="mnu-open-community" onclick="openCommunityBoard()">[BBS] 전체 공개 자료실 (COMMUNITY95)</button>
+          <button type="button" class="menu-opt" id="mnu-open-browser">[WEB] 정보바다 탐색기 95 (YouTube·웹)</button>
+          <button type="button" class="menu-opt" id="mnu-open-timeline">[CHART] 감상 연대기 &amp; 성향 분석</button>
+          <button type="button" class="menu-opt" id="mnu-open-visualizer">[NODE] 연관어 망(網) 분석기</button>
+          <button type="button" class="menu-opt" id="mnu-open-mood">[MOOD] 기분별 명작 추천기</button>
+          <button type="button" class="menu-opt" id="mnu-open-quiz">[QUIZ] 기억력 퀴즈 95</button>
+          <div class="menu-sep"></div>
+          <button type="button" class="menu-opt" id="mnu-open-stamp">[STAMP] 열람 인장 &amp; 가계부 영수증</button>
+          <button type="button" class="menu-opt" id="mnu-open-mailbox">[MAIL] 전자 우체통 &amp; 단말기 전송</button>
+          <button type="button" class="menu-opt" id="mnu-open-jukebox">[PLAY] 스테레오 주크박스 95</button>
+          <button type="button" class="menu-opt" id="mnu-open-gamepack">[GAME] 오락실 모음집 95</button>
+        </div>
+      </div>
+
+      <div class="menu-item-wrap">
+        <button type="button" class="menu-root"><u>W</u>indow (창·화면)</button>
+        <div class="menu-dropdown">
+          <button type="button" class="menu-opt" id="mnu-cascade">열린 창 계단식 배열 (Cascade)</button>
+          <button type="button" class="menu-opt" id="mnu-close-all-popups">모든 보조 창 닫기</button>
+          <div class="menu-sep"></div>
+          <button type="button" class="menu-opt" id="mnu-open-display">[DISP] 디스플레이 등록 정보 (배경·CRT)...</button>
+          <button type="button" class="menu-opt" data-theme-opt="teal">배경: 클래식 틸 (Teal)</button>
+          <button type="button" class="menu-opt" data-theme-opt="grid">배경: 모눈종이 (Paper Grid)</button>
+          <button type="button" class="menu-opt" data-theme-opt="brick">배경: 레트로 벽돌 (Brick)</button>
+          <div class="menu-sep"></div>
+          <button type="button" class="menu-opt" id="mnu-toggle-crt">CRT 주사선(스캔라인) 전환</button>
+          <button type="button" class="menu-opt" id="mnu-toggle-sound">8비트 PC 스피커 효과음 전환</button>
+          <button type="button" class="menu-opt" id="mnu-open-taskmgr">[TASK] 작업 관리자 (Ctrl+Alt+Del)</button>
+          <button type="button" class="menu-opt" id="mnu-start-screensaver">[SCR] 화면 보호기 실행</button>
+          <button type="button" class="menu-opt" id="mnu-trigger-bsod">치명적 오류(BSOD) 시연</button>
+        </div>
+      </div>
+    </nav>
+
+    <div class="menu-bar-right" style="display:flex;align-items:center;gap:6px;">
+      <button type="button" id="active-user-badge" class="status-pill" style="background:var(--brutal-yellow);color:#111;cursor:pointer;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;" onclick="openAccountSettingsModal()" title="클릭하여 계정 설정 열기"><svg class="pixel-svg-14" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true"><path fill="#000000" d="M3 1h3v1h1v2h2V2h1V1h3v1h1v3h-1v1h1v5h-1v2h1v2h-3v-1H5v1H2v-2h1v-2H2V6h1V5H2V2h1V1z"/><path fill="#008000" d="M3 2h3v3h4V2h3v3h-1v1h1v5h-1v2H4v-2H3V6h1V5H3V2z"/><path fill="#00ff00" d="M4 5h2v2H4V5zm6 0h2v2h-2V5zM5 10h6v2H5v-2z"/><path fill="#ffffff" d="M4 2h2v2H4V2zm6 0h2v2h-2V2z"/><path fill="#000000" d="M5 3h1v1H5V3zm6 0h1v1h-1V3zM4 8h8v1H4V8zM3 7h1v1H3V7zm9 0h1v1h-1V7z"/></svg><span>문태양 (시삽)</span></button>
+      <span id="cache-status-badge" class="status-pill" style="background:#ecfdf5;color:#14532d;border-color:#16a34a;white-space:nowrap;display:inline-flex;align-items:center;gap:4px;" title="실시간 동기화 상태"><span id="sync-status-icon" class="archive-sync-spin" style="color:#16a34a;font-weight:900;">↻</span><span id="sync-status-text">동기화 중</span></span>
+    </div>
+  </header>
+
+  <!-- 메인 데스크톱 작업 공간 -->
+  <main id="desktop-area" class="desktop-workspace">
+
+    <nav class="desktop-icons" aria-label="바탕화면 프로그램 아이콘">
+      <button type="button" class="desk-icon" id="icon-main">
+        <div class="desk-icon-box" style="background: var(--brutal-yellow);">
+          <svg width="24" height="24" viewBox="0 0 16 16" shape-rendering="crispEdges"><path fill="#111" d="M1 3h6l1 2h7v8H1V3z"/><path fill="#fff" d="M2 6h12v6H2V6z"/><path fill="#000080" d="M2 4h4l1 2H2V4z"/></svg>
+        </div>
+        <span>내 서재 자료실</span>
       </button>
-    `;
-  }).join('');
-
-  grid.querySelectorAll('.win95-avatar-choice').forEach(btn => {
-    btn.addEventListener('click', () => {
-      safeBootTone('click');
-      hiddenInput.value = btn.dataset.avatarKey || 'frog';
-      renderSignupAvatarPicker();
-    });
-  });
-}
-
-// ============================================================
-// 등록 사용자 목록 동기화 & 유저 검색 필터링
-// ============================================================
-async function syncRegisteredUsersList() {
-  const cached = safeLoadCache(USERS_CACHE_KEY, null);
-  if (Array.isArray(cached) && cached.length > 0) {
-    window.registeredOsUsers = cached;
-  }
-  populateLoginAccountSelect();
-  updateLogonStatusLine();
-
-  const apiUrl = getGasApiUrl();
-  if (!apiUrl) return;
-
-  try {
-    const res = await fetch(`${apiUrl}?action=users`, { redirect: 'follow' });
-    const json = await res.json();
-    if (json.status === 'success' && Array.isArray(json.users) && json.users.length > 0) {
-      window.registeredOsUsers = json.users;
-      safeSaveCache(USERS_CACHE_KEY, json.users);
-
-      if (window.currentOsUser && window.currentOsUser.username) {
-        const syncedMe = json.users.find(u => u.username === window.currentOsUser.username);
-        if (syncedMe && syncedMe.role !== window.currentOsUser.role) {
-          setCurrentUser({ ...window.currentOsUser, role: syncedMe.role });
-        }
-      }
-
-      populateLoginAccountSelect();
-      updateLogonStatusLine();
-    }
-  } catch {}
-}
-
-function updateLogonStatusLine() {
-  const statusEl = document.getElementById('login-cloud-status');
-  const statusBox = statusEl?.closest('.win95-status-bar-box');
-  if (statusEl) statusEl.textContent = '';
-  if (statusBox) statusBox.style.display = 'none';
-}
-
-function populateLoginAccountSelect() {
-  const sel = document.getElementById('login-account-select');
-  if (!sel) return;
-
-  const personalUsers = getPersonalUsersList();
-  const q = bootState.userSearchQuery.trim().toLowerCase();
-  const filteredUsers = q
-    ? personalUsers.filter(u => `${u.username} ${u.bio || ''}`.toLowerCase().includes(q))
-    : personalUsers;
-
-  const countBadge = document.getElementById('login-user-search-count');
-  if (countBadge) {
-    countBadge.textContent = `${filteredUsers.length}/${personalUsers.length}명`;
-  }
-
-  const prevVal = sel.value;
-
-  if (filteredUsers.length === 0) {
-    sel.innerHTML = q
-      ? `<option value="__NO_MATCH__">[검색 결과 없음] 일치하는 이용자가 없습니다</option><option value="__CUSTOM__">[+] 직접 사용자 이름 입력...</option>`
-      : `<option value="__CUSTOM__">[+] 등록된 개인 계정 없음 — 직접 이름 입력...</option>`;
-  } else {
-    sel.innerHTML = filteredUsers.map(u => {
-      const normRole = String(u.role || '').trim().toLowerCase();
-      const isAdmin = typeof window.isAdminUser === 'function' ? window.isAdminUser(u) : (normRole === 'owner' || normRole === 'admin');
-      const prefix = isAdmin ? '[SYSOP]' : '[USER]';
-      const roleDesc = isAdmin ? '관리자 계정' : '개인 계정';
-      return `<option value="${safeEsc(u.username)}">${prefix} ${safeEsc(u.username)} (${roleDesc})</option>`;
-    }).join('') + `<option value="__CUSTOM__">[+] 직접 사용자 이름 입력...</option>`;
-  }
-
-  if (prevVal && Array.from(sel.options).some(o => o.value === prevVal)) {
-    sel.value = prevVal;
-  } else if (filteredUsers.length > 0) {
-    sel.value = filteredUsers[0].username;
-  }
-
-  handleLoginAccountSelectChange();
-}
-
-function handleLoginAccountSelectChange() {
-  const sel = document.getElementById('login-account-select');
-  const customInput = document.getElementById('login-username');
-  const pinInput = document.getElementById('login-password');
-  const avatarBox = document.getElementById('login-profile-avatar');
-  const nameBox = document.getElementById('login-profile-name');
-  const hintBox = document.getElementById('login-account-hint');
-  if (!sel || !customInput || !pinInput) return;
-
-  const val = sel.value;
-  if (val === '__NO_MATCH__') {
-    customInput.style.display = 'none';
-    customInput.value = '';
-    pinInput.value = '';
-    pinInput.disabled = true;
-    pinInput.placeholder = '검색 조건과 일치하는 계정 없음';
-    if (avatarBox) avatarBox.innerHTML = renderPixelAvatarHtml('user', 32, 'user');
-    if (nameBox) nameBox.textContent = '[SEARCH] 일치하는 이용자 없음';
-    if (hintBox) hintBox.textContent = '[INFO] 검색어를 변경하거나 하단의 [공용 단말기 접속]을 선택하십시오.';
-    return;
-  }
-
-  if (val === '__CUSTOM__') {
-    customInput.style.display = 'block';
-    customInput.value = '';
-    if (document.activeElement?.id !== 'login-user-search-input') {
-      customInput.focus();
-    }
-    pinInput.disabled = false;
-    pinInput.placeholder = '4자리 숫자 PIN 입력';
-    if (avatarBox) avatarBox.innerHTML = renderPixelAvatarHtml('user', 32, 'user');
-    if (nameBox) nameBox.textContent = '[CUSTOM] 직접 계정 입력 모드';
-    if (hintBox) hintBox.textContent = '[INPUT] 등록한 개인 사용자 이름과 4자리 숫자 암호를 입력하십시오.';
-    return;
-  }
-
-  customInput.style.display = 'none';
-  customInput.value = val;
-
-  const matched = getPersonalUsersList().find(u => u.username === val);
-  const userObj = matched || { username: val, role: 'user', avatar: 'user', bio: '' };
-  const normRole = String(userObj.role || '').trim().toLowerCase();
-  const isAdmin = typeof window.isAdminUser === 'function' ? window.isAdminUser(userObj) : (normRole === 'owner' || normRole === 'admin');
-  const roleTag = isAdmin ? '[SYSOP]' : '[USER]';
-
-  if (avatarBox) {
-    avatarBox.innerHTML = renderPixelAvatarHtml(userObj.avatar, 32, normRole);
-  }
-  if (nameBox) {
-    nameBox.textContent = `${roleTag} ${userObj.username}`;
-  }
-
-  pinInput.disabled = false;
-  pinInput.placeholder = '4자리 숫자 PIN (예: 1234)';
-  if (hintBox) {
-    hintBox.textContent = formatRetroBio(userObj.bio, userObj);
-  }
-}
-
-// ============================================================
-// 부팅 단계 제어 (시작 애니메이션 이후 BIOS -> SPLASH -> WIN95 LOGON -> DESKTOP)
-// ============================================================
-function setBootStage(stageName) {
-  if (bootState.stage === 'done' && stageName !== 'bios' && stageName !== 'intro') {
-    return;
-  }
-  clearBootTimers();
-  bootState.stage = stageName;
-  const overlay = document.getElementById('os-boot-overlay');
-  const biosEl = document.getElementById('boot-stage-bios');
-  const splashEl = document.getElementById('boot-stage-splash');
-  const loginEl = document.getElementById('boot-stage-login');
-
-  const showOverlay = stageName === 'bios' || stageName === 'splash' || stageName === 'login';
-  if (showOverlay) {
-    document.body.classList.add('boot-locked');
-  }
-  if (overlay) {
-    overlay.classList.remove('boot-fade-out');
-    overlay.style.opacity = '1';
-    overlay.style.pointerEvents = showOverlay ? 'auto' : 'none';
-    overlay.style.display = showOverlay ? 'flex' : 'none';
-    overlay.style.background = stageName === 'login' ? '#008080' : '#000000';
-    overlay.style.alignItems = 'center';
-    overlay.style.justifyContent = 'center';
-  }
-
-  if (biosEl) biosEl.style.display = stageName === 'bios' ? 'flex' : 'none';
-  if (splashEl) splashEl.style.display = stageName === 'splash' ? 'flex' : 'none';
-  if (loginEl) {
-    loginEl.style.display = stageName === 'login' ? 'flex' : 'none';
-    if (stageName === 'login') {
-      loginEl.style.width = '100%';
-      loginEl.style.height = '100%';
-      loginEl.style.minHeight = '100vh';
-      loginEl.style.background = '#008080';
-      loginEl.style.alignItems = 'center';
-      loginEl.style.justifyContent = 'center';
-      triggerCrtPowerOnFlash(loginEl.firstElementChild);
-    }
-  }
-
-  if (stageName === 'splash' && splashEl) {
-    triggerCrtPowerOnFlash(splashEl.querySelector('.win95-splash-card'));
-    playWin95StartupSound(true);
-  }
-
-  if (stageName === 'login') {
-    bootState.userSearchOpen = false;
-    bootState.userSearchQuery = '';
-    const searchRow = document.getElementById('login-user-search-row');
-    const searchBtn = document.getElementById('btn-toggle-user-search');
-    const searchInput = document.getElementById('login-user-search-input');
-    if (searchRow) searchRow.style.display = 'none';
-    if (searchBtn) searchBtn.classList.remove('active');
-    if (searchInput) searchInput.value = '';
-
-    switchLoginTab('signin');
-    renderSignupAvatarPicker();
-    syncRegisteredUsersList();
-    updateLogonStatusLine();
-  }
-}
-
-function switchLoginTab(tabName) {
-  const targetTab = tabName === 'signup' ? 'signup' : 'signin';
-  bootState.loginTab = targetTab;
-
-  const signinPane = document.getElementById('win95-pane-signin');
-  const signupPane = document.getElementById('win95-pane-signup');
-  const tabSignin = document.getElementById('tab-win95-signin');
-  const tabSignup = document.getElementById('tab-win95-signup');
-  const errBox = document.getElementById('win95-login-error');
-
-  if (errBox) errBox.style.display = 'none';
-  if (signinPane) signinPane.style.display = targetTab === 'signin' ? 'block' : 'none';
-  if (signupPane) {
-    signupPane.style.display = targetTab === 'signup' ? 'block' : 'none';
-    if (targetTab === 'signup') {
-      renderSignupAvatarPicker();
-    }
-  }
-
-  if (tabSignin) {
-    tabSignin.classList.toggle('active', targetTab === 'signin');
-    tabSignin.setAttribute('aria-selected', String(targetTab === 'signin'));
-  }
-  if (tabSignup) {
-    tabSignup.classList.toggle('active', targetTab === 'signup');
-    tabSignup.setAttribute('aria-selected', String(targetTab === 'signup'));
-  }
-}
-
-function showLoginError(msg) {
-  safeBootTone('boom');
-  const errBox = document.getElementById('win95-login-error');
-  if (!errBox) {
-    alert('[ERROR] ' + msg);
-    return;
-  }
-
-  const activePane = bootState.loginTab === 'signup'
-    ? document.getElementById('win95-pane-signup')
-    : document.getElementById('win95-pane-signin');
-  if (activePane && !activePane.contains(errBox) && (errBox.closest('#win95-pane-signin') || errBox.closest('#win95-pane-signup'))) {
-    activePane.insertBefore(errBox, activePane.firstChild);
-  }
-
-  errBox.innerHTML = `
-    <svg class="pixel-svg-14" style="flex-shrink:0;width:14px;height:14px;" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true">
-      <path fill="#000000" d="M7 1h2v2h1v2h1v2h1v2h1v2h1v3H2v-3h1V9h1V7h1V5h1V3h1V1z"/>
-      <path fill="#ffff00" d="M7 3h2v2h1v2h1v2h1v2h1v2H3v-2h1V9h1V7h1V5h1V3z"/>
-      <path fill="#000000" d="M7 5h2v5H7V5zm0 6h2v2H7v-2z"/>
-    </svg>
-    <span style="color:#800000;font-weight:700;line-height:1.35;">[ERROR] ${safeEsc(msg)}</span>
-  `;
-  errBox.style.display = 'flex';
-}
-
-function runBiosPostSequenceOnly(seqId) {
-  const biosEl = document.getElementById('boot-stage-bios');
-  triggerCrtPowerOnFlash(biosEl);
-
-  const ramEl = document.getElementById('bios-ram-count');
-  const logEl = document.getElementById('bios-log-lines');
-  const syncBadge = document.getElementById('bios-sync-badge');
-
-  if (logEl) logEl.innerHTML = '';
-  if (ramEl) ramEl.textContent = '640';
-
-  let ramVal = 640;
-  bootState.ramInterval = setInterval(() => {
-    if (seqId !== bootState.bootSeqId) return;
-    ramVal += 4096;
-    if (ramVal >= 65536) {
-      ramVal = 65536;
-      clearInterval(bootState.ramInterval);
-      bootState.ramInterval = null;
-      if (!bootState.biosBeepPlayed && bootState.stage === 'bios') {
-        bootState.biosBeepPlayed = true;
-        playBiosPostBeep(920, 0.12);
-      }
-    }
-    if (ramEl) ramEl.textContent = String(ramVal);
-  }, 45);
-
-  const postSteps = [
-    { delay: 220, text: 'Detecting IDE Primary Master   ... MY-ARCHIVE-HDD [OK]', tick: true },
-    { delay: 480, text: 'Detecting IDE Primary Slave    ... JUKEBOX-CDROM 4X [OK]', tick: true },
-    { delay: 760, text: 'Initializing Sound Blaster 16  ... Port 220H IRQ 5 DMA 1 [OK]', tick: true },
-    { delay: 1040, text: 'Connecting Archive Host        ... Network Drive Mounted [OK]', tick: true },
-    { delay: 1320, text: 'Verifying DMI Pool Data ........ Update Success', tick: false },
-    { delay: 1600, text: 'Starting MY-ARCHIVE 95...', tick: false, accent: true }
-  ];
-
-  postSteps.forEach(step => {
-    const tid = setTimeout(() => {
-      if (seqId !== bootState.bootSeqId || bootState.stage !== 'bios' || !logEl) return;
-      if (step.tick) playDriveSeekTick();
-
-      const line = document.createElement('div');
-      line.textContent = step.text;
-      if (step.accent) {
-        line.style.color = '#ffff55';
-        line.style.fontWeight = '900';
-        line.style.marginTop = '8px';
-      }
-      logEl.appendChild(line);
-
-      if (syncBadge && step.text.includes('Archive Host')) {
-        syncBadge.textContent = 'ARCHIVE HOST: CONNECTED';
-        syncBadge.style.color = '#55ff55';
-      }
-    }, step.delay);
-    bootState.timers.push(tid);
-  });
-
-  bootState.timers.push(setTimeout(() => {
-    if (seqId === bootState.bootSeqId && bootState.stage === 'bios') setBootStage('splash');
-  }, 2050));
-
-  bootState.timers.push(setTimeout(() => {
-    if (seqId === bootState.bootSeqId && bootState.stage === 'splash') setBootStage('login');
-  }, 3250));
-
-  bootState.timers.push(setTimeout(() => {
-    if (seqId === bootState.bootSeqId && (bootState.stage === 'bios' || bootState.stage === 'splash')) {
-      setBootStage('login');
-    }
-  }, 4700));
-}
-
-async function startBiosBootSequence(options = {}) {
-  clearBootTimers();
-  const seqId = ++bootState.bootSeqId;
-  bootState.biosBeepPlayed = false;
-  bootState.startupSoundPlayed = false;
-  bootState.stage = 'intro';
-
-  // 시작 애니메이션 구간 동안 오버레이와 BIOS/SPLASH/LOGIN 화면은 철저히 숨기고 바탕화면은 잠금
-  document.body.classList.add('boot-locked');
-  const overlay = document.getElementById('os-boot-overlay');
-  if (overlay) {
-    overlay.style.display = 'none';
-    overlay.style.opacity = '1';
-    overlay.style.background = '#000000';
-    overlay.classList.remove('boot-fade-out');
-  }
-
-  const biosEl = document.getElementById('boot-stage-bios');
-  const splashEl = document.getElementById('boot-stage-splash');
-  const loginEl = document.getElementById('boot-stage-login');
-  if (biosEl) biosEl.style.display = 'none';
-  if (splashEl) splashEl.style.display = 'none';
-  if (loginEl) loginEl.style.display = 'none';
-
-  // 1. 시작 애니메이션을 먼저 재생
-  const skip3d = Boolean(options.skip3d);
-  if (!skip3d) {
-    await play3dCrtMonitorAnimation();
-    if (seqId !== bootState.bootSeqId) return;
-  }
-
-  // 2. 시작 애니메이션 종료 후 바이오스 화면 표시 및 POST 실행
-  setBootStage('bios');
-  runBiosPostSequenceOnly(seqId);
-}
-
-function finishDesktopLogin(userObj) {
-  bootState.bootSeqId += 1;
-  clearBootTimers();
-  document.getElementById('pre-click-noise-title-layer')?.remove();
-  document.getElementById('retro-3d-crt-stage')?.remove();
-  document.getElementById('fullscreen-crt-static-overlay')?.remove();
-  bootState.stage = 'done';
-  setCurrentUser(userObj);
-  hookArchiveSyncLifecycle();
-
-  const normRole = String(userObj.role || '').trim().toLowerCase();
-  const isAdmin = typeof window.isAdminUser === 'function'
-    ? window.isAdminUser(userObj)
-    : (normRole === 'owner' || normRole === 'admin');
-
-  const statusLeft = document.getElementById('status-left');
-  if (statusLeft) {
-    if (normRole === 'public') {
-      statusLeft.textContent = '[GUEST] 공용 단말기 접속 중 — 광장 게시판 및 공용 자료 열람 활성화';
-    } else if (isAdmin) {
-      statusLeft.textContent = `[SYSOP] 관리자(${userObj.username}) 접속 완료 — 개인 보관함 및 광장 게시판 전체 관리 권한`;
-    } else {
-      statusLeft.textContent = `[LOGIN] ${userObj.username}님 환영합니다 — 개인 감상 보관함 및 광장 게시판 준비 완료`;
-    }
-  }
-
-  playWin95StartupSound(true);
-
-  if (typeof window.refreshAllViews === 'function') {
-    window.refreshAllViews();
-  }
-
-  const overlay = document.getElementById('os-boot-overlay');
-  if (overlay) {
-    overlay.style.pointerEvents = 'none';
-    overlay.classList.add('boot-fade-out');
-    setTimeout(() => {
-      if (bootState.stage !== 'done') return;
-      overlay.style.display = 'none';
-      document.body.classList.remove('boot-locked');
-    }, 380);
-  } else {
-    document.body.classList.remove('boot-locked');
-  }
-}
-
-// ============================================================
-// 로그인 & 신규 이용자 가입 실행기
-// ============================================================
-async function submitUserLogin() {
-  if (bootState.isSubmitting) return;
-
-  const selVal = document.getElementById('login-account-select')?.value;
-  if (selVal === '__NO_MATCH__') {
-    showLoginError('선택된 계정이 없습니다. 검색어를 초기화하거나 하단의 [공용 단말기 접속]을 누르십시오.');
-    return;
-  }
-
-  const rawName = (!selVal || selVal === '__CUSTOM__')
-    ? (document.getElementById('login-username')?.value || '').trim()
-    : selVal.trim();
-  const pin = (document.getElementById('login-password')?.value || '').trim();
-
-  if (!rawName) {
-    showLoginError('이용자 이름을 선택하거나 직접 입력해 주십시오.');
-    return;
-  }
-
-  if (rawName === '공용') {
-    const pubUser = (window.registeredOsUsers || []).find(u => u.username === '공용') || DEFAULT_FALLBACK_USERS[0];
-    finishDesktopLogin(pubUser);
-    return;
-  }
-
-  if (!/^\d{4}$/.test(pin)) {
-    showLoginError('개인 계정은 4자리 숫자 비밀번호(PIN)를 입력해야 합니다.');
-    document.getElementById('login-password')?.focus();
-    return;
-  }
-
-  const apiUrl = getGasApiUrl();
-  if (!apiUrl || !/^https:\/\/script\.google\.com\//i.test(apiUrl)) {
-    if (rawName === '문태양' && pin === '1234') {
-      finishDesktopLogin(DEFAULT_FALLBACK_USERS[1]);
-    } else {
-      showLoginError('js/config.js에 Google Apps Script 배포 URL(GAS_WEB_APP_URL)이 설정되지 않았습니다.');
-    }
-    return;
-  }
-
-  const btn = document.getElementById('btn-win95-login');
-  const prevBtnText = btn ? btn.textContent : '확인 (접속)';
-  bootState.isSubmitting = true;
-  if (btn) { btn.disabled = true; btn.textContent = '인증 확인 중...'; }
-
-  try {
-    const res = await fetch(apiUrl, {
-      method: 'POST',
-      redirect: 'follow',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action: 'login_user', username: rawName, pin })
-    });
-    const rawText = await res.text();
-    if (rawText.trim().startsWith('<')) {
-      throw new Error("Apps Script 웹 앱 권한을 '모든 사용자(Anyone)'로 배포했는지 확인해 주십시오.");
-    }
-    const json = JSON.parse(rawText);
-    if (json.status === 'success' && json.user) {
-      finishDesktopLogin(json.user);
-    } else {
-      showLoginError(json.message || '로그인 인증에 실패했습니다.');
-    }
-  } catch (err) {
-    if (rawName === '문태양' && pin === '1234') {
-      finishDesktopLogin(DEFAULT_FALLBACK_USERS[1]);
-    } else {
-      showLoginError(err?.message || '중앙 서버 회선 연결에 실패했습니다. 통신 상태를 확인하십시오.');
-    }
-  } finally {
-    bootState.isSubmitting = false;
-    if (btn) { btn.disabled = false; btn.textContent = prevBtnText; }
-  }
-}
-
-async function submitNewUserSignup() {
-  if (bootState.isSubmitting) return;
-
-  const username = (document.getElementById('signup-username')?.value || '').trim();
-  const pin = (document.getElementById('signup-pin')?.value || '').trim();
-  const pinConfirmEl = document.getElementById('signup-pin-confirm');
-  const pinConfirm = pinConfirmEl ? String(pinConfirmEl.value || '').trim() : pin;
-  const avatar = normalizePixelAvatarKey(document.getElementById('signup-avatar')?.value || 'frog');
-  const rawBio = (document.getElementById('signup-bio')?.value || '').trim();
-  const bio = formatRetroBio(rawBio, { username, role: 'member' });
-
-  if (username.length < 2 || username.length > 15) {
-    showLoginError('사용자 이름은 2~15자로 입력해 주십시오.');
-    document.getElementById('signup-username')?.focus();
-    return;
-  }
-  if (username === '공용' || username.toUpperCase() === 'PUBLIC' || username.toUpperCase() === 'GUEST') {
-    showLoginError('예약된 시스템 이름은 사용할 수 없습니다.');
-    document.getElementById('signup-username')?.focus();
-    return;
-  }
-  if (!/^\d{4}$/.test(pin)) {
-    showLoginError('비밀번호는 반드시 숫자 4자리(예: 0000)로 입력해 주십시오.');
-    document.getElementById('signup-pin')?.focus();
-    return;
-  }
-  if (pinConfirmEl && pin !== pinConfirm) {
-    showLoginError('4자리 비밀번호 확인이 일치하지 않습니다.');
-    pinConfirmEl.focus();
-    return;
-  }
-
-  const apiUrl = getGasApiUrl();
-  if (!apiUrl || !/^https:\/\/script\.google\.com\//i.test(apiUrl)) {
-    showLoginError('js/config.js에 Google Apps Script 배포 URL(GAS_WEB_APP_URL)이 설정되지 않았습니다.');
-    return;
-  }
-
-  const btn = document.getElementById('btn-win95-signup-submit');
-  const prevBtnText = btn ? btn.textContent : '계정 생성 및 즉시 로그인';
-  bootState.isSubmitting = true;
-  if (btn) { btn.disabled = true; btn.textContent = '계정 생성 중...'; }
-
-  try {
-    const res = await fetch(apiUrl, {
-      method: 'POST',
-      redirect: 'follow',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action: 'register_user', username, pin, avatar, bio })
-    });
-
-    const rawText = await res.text();
-    if (rawText.trim().startsWith('<')) {
-      throw new Error("Apps Script 웹 앱 권한을 '모든 사용자(Anyone)'로 배포했는지 확인해 주십시오.");
-    }
-    const json = JSON.parse(rawText);
-
-    if (json && json.status === 'success' && json.user) {
-      window.registeredOsUsers = [...(window.registeredOsUsers || []), json.user];
-      safeSaveCache(USERS_CACHE_KEY, window.registeredOsUsers);
-      finishDesktopLogin(json.user);
-    } else {
-      showLoginError((json && json.message) || '계정 생성에 실패했습니다.');
-    }
-  } catch (err) {
-    showLoginError(err?.message || '중앙 서버 통신 중 회선 오류가 발생했습니다. 잠시 후 다시 시도하십시오.');
-  } finally {
-    bootState.isSubmitting = false;
-    if (btn) { btn.disabled = false; btn.textContent = prevBtnText; }
-  }
-}
-
-// ============================================================
-// 로그인 / 회원가입 / 유저 검색 이벤트 핸들러
-// ============================================================
-function bindBootScreenEvents() {
-  document.getElementById('boot-stage-bios')?.addEventListener('click', () => {
-    playBiosPostBeep(760, 0.08);
-    bootState.bootSeqId += 1;
-    setBootStage('login');
-  });
-
-  document.getElementById('boot-stage-splash')?.addEventListener('click', () => {
-    safeBootTone('click');
-    bootState.bootSeqId += 1;
-    setBootStage('login');
-  });
-
-  document.addEventListener('keydown', e => {
-    if (document.getElementById('bios-text-setup-overlay')) return;
-    if (bootState.stage === 'bios') {
-      if (e.key === 'Delete') {
-        e.preventDefault();
-        playBiosPostBeep(1046, 0.1);
-        const cmos = document.getElementById('bios-cmos-easter');
-        if (cmos) cmos.style.display = cmos.style.display === 'none' ? 'block' : 'none';
-      } else if (e.key === ' ' || e.key === 'Enter' || e.key === 'Escape') {
-        e.preventDefault();
-        playBiosPostBeep(760, 0.08);
-        bootState.bootSeqId += 1;
-        setBootStage('login');
-      }
-    } else if (bootState.stage === 'splash' && (e.key === ' ' || e.key === 'Enter' || e.key === 'Escape')) {
-      e.preventDefault();
-      safeBootTone('click');
-      bootState.bootSeqId += 1;
-      setBootStage('login');
-    }
-  });
-
-  const loginStageEl = document.getElementById('boot-stage-login');
-  loginStageEl?.addEventListener('click', e => {
-    const tabBtn = e.target.closest('#tab-win95-signin, #tab-win95-signup, [data-login-tab]');
-    if (!tabBtn) return;
-    e.preventDefault();
-    safeBootTone('click');
-    const isSignup = tabBtn.id === 'tab-win95-signup' || tabBtn.dataset.loginTab === 'signup';
-    switchLoginTab(isSignup ? 'signup' : 'signin');
-    if (isSignup) {
-      document.getElementById('signup-username')?.focus();
-    }
-  });
-
-  document.getElementById('login-account-select')?.addEventListener('change', handleLoginAccountSelectChange);
-
-  ['login-password', 'signup-pin', 'signup-pin-confirm'].forEach(id => {
-    document.getElementById(id)?.addEventListener('input', e => {
-      e.target.value = String(e.target.value || '').replace(/\D/g, '').slice(0, 4);
-    });
-  });
-
-  document.getElementById('btn-toggle-user-search')?.addEventListener('click', () => {
-    safeBootTone('click');
-    bootState.userSearchOpen = !bootState.userSearchOpen;
-    const searchRow = document.getElementById('login-user-search-row');
-    const searchBtn = document.getElementById('btn-toggle-user-search');
-    const searchInput = document.getElementById('login-user-search-input');
-
-    if (searchRow) searchRow.style.display = bootState.userSearchOpen ? 'flex' : 'none';
-    if (searchBtn) searchBtn.classList.toggle('active', bootState.userSearchOpen);
-
-    if (bootState.userSearchOpen) {
-      searchInput?.focus();
-    } else {
-      bootState.userSearchQuery = '';
-      if (searchInput) searchInput.value = '';
-      populateLoginAccountSelect();
-    }
-  });
-
-  document.getElementById('login-user-search-input')?.addEventListener('input', e => {
-    bootState.userSearchQuery = e.target.value;
-    const clearBtn = document.getElementById('btn-clear-user-search');
-    if (clearBtn) clearBtn.style.display = bootState.userSearchQuery ? 'inline-flex' : 'none';
-    populateLoginAccountSelect();
-  });
-
-  document.getElementById('login-user-search-input')?.addEventListener('keydown', e => {
-    if (e.key === 'Escape') {
-      e.preventDefault();
-      document.getElementById('btn-toggle-user-search')?.click();
-    } else if (e.key === 'Enter') {
-      e.preventDefault();
-      document.getElementById('login-password')?.focus();
-    }
-  });
-
-  document.getElementById('btn-clear-user-search')?.addEventListener('click', () => {
-    safeBootTone('click');
-    bootState.userSearchQuery = '';
-    const searchInput = document.getElementById('login-user-search-input');
-    if (searchInput) {
-      searchInput.value = '';
-      searchInput.focus();
-    }
-    const clearBtn = document.getElementById('btn-clear-user-search');
-    if (clearBtn) clearBtn.style.display = 'none';
-    populateLoginAccountSelect();
-  });
-
-  document.getElementById('win95-login-form')?.addEventListener('submit', e => {
-    e.preventDefault();
-    submitUserLogin();
-  });
-  document.getElementById('btn-win95-login')?.addEventListener('click', e => {
-    if (e.currentTarget.type !== 'submit') {
-      e.preventDefault();
-      submitUserLogin();
-    }
-  });
-
-  document.getElementById('btn-win95-public-enter')?.addEventListener('click', () => {
-    const pubUser = (window.registeredOsUsers || []).find(u => u.username === '공용') || DEFAULT_FALLBACK_USERS[0];
-    finishDesktopLogin(pubUser);
-  });
-
-  document.getElementById('win95-signup-form')?.addEventListener('submit', e => {
-    e.preventDefault();
-    submitNewUserSignup();
-  });
-  document.getElementById('btn-win95-signup-submit')?.addEventListener('click', e => {
-    if (e.currentTarget.type !== 'submit') {
-      e.preventDefault();
-      submitNewUserSignup();
-    }
-  });
-
-  document.getElementById('btn-reboot-bios')?.addEventListener('click', () => {
-    playBiosPostBeep(880, 0.12);
-    startBiosBootSequence({ skip3d: true });
-  });
-
-  document.getElementById('sm-logoff')?.addEventListener('click', () => {
-    const sm = document.getElementById('start-menu');
-    if (sm) sm.classList.remove('open');
-    document.getElementById('btn-start')?.classList.remove('pressed');
-    startBiosBootSequence({ skip3d: true });
-  });
-}
-
-window.startBiosBootSequence = startBiosBootSequence;
-window.getCurrentUser = getCurrentUser;
-window.switchLoginTab = switchLoginTab;
-
-document.addEventListener('DOMContentLoaded', () => {
-  document.body.classList.add('boot-locked');
-  renderSignupAvatarPicker();
-  bindBootScreenEvents();
-  hookArchiveSyncLifecycle();
-  openInitialSetupScreen(false);
-});
-window.runBootAnimation = window.runBootAnimation || function () {};
+
+      <button type="button" class="desk-icon" id="icon-new">
+        <div class="desk-icon-box" style="background: var(--brutal-green);">
+          <svg width="24" height="24" viewBox="0 0 16 16" shape-rendering="crispEdges"><path fill="#111" d="M6 2h4v4h4v4h-4v4H6v-4H2V6h4V2z"/><path fill="#fff" d="M7 3h2v4h4v2H9v4H7V9H3V7h4V3z"/></svg>
+        </div>
+        <span>새 감상록 등록</span>
+      </button>
+
+      <button type="button" class="desk-icon" id="icon-community" onclick="openCommunityBoard()">
+        <div class="desk-icon-box" style="background: var(--brutal-green);">
+          <svg width="24" height="24" viewBox="0 0 16 16" shape-rendering="crispEdges"><path fill="#111" d="M3 2h4v4H3V2zm6 1h4v4H9V3zM1 8h8v5H1V8zm8 1h6v4H9V9z"/><path fill="#ffd83b" d="M4 3h2v2H4V3zm6 1h2v2h-2V4z"/><path fill="#fff" d="M2 9h6v3H2V9zm8 1h4v2h-4v-2z"/></svg>
+        </div>
+        <span>공개 자료실 광장</span>
+      </button>
+
+      <button type="button" class="desk-icon" id="icon-browser">
+        <div class="desk-icon-box" style="background: var(--brutal-sky);">
+          <svg width="24" height="24" viewBox="0 0 16 16" shape-rendering="crispEdges"><path fill="#111" d="M5 1h6v1h2v1h1v2h1v6h-1v2h-1v1h-2v1H5v-1H3v-1H2v-2H1V5h1V3h1V2h2V1z"/><path fill="#1e90ff" d="M5 2h6v1h2v2h1v6h-1v2h-2v1H5v-1H3v-2H2V5h1V3h2V2z"/><path fill="#2ed573" d="M6 2h3v2H7v1H5V3h1V2zm4 3h3v3h-2v2H9V7h1V5zM3 7h3v3H5v2H3V7z"/></svg>
+        </div>
+        <span>정보바다 탐색기</span>
+      </button>
+
+      <button type="button" class="desk-icon" id="icon-calendar">
+        <div class="desk-icon-box" style="background: var(--brutal-sky);">
+          <svg width="24" height="24" viewBox="0 0 16 16" shape-rendering="crispEdges"><path fill="#111" d="M2 2h12v12H2V2z"/><path fill="#ff4757" d="M3 3h10v3H3V3z"/><path fill="#fff" d="M3 6h10v7H3V6z"/><path fill="#111" d="M5 8h2v2H5V8zm4 0h2v2H9V8z"/></svg>
+        </div>
+        <span>월력·기념일</span>
+      </button>
+
+      <button type="button" class="desk-icon" id="icon-mood">
+        <div class="desk-icon-box" style="background: var(--brutal-pink);">
+          <svg width="24" height="24" viewBox="0 0 16 16" shape-rendering="crispEdges"><path fill="#111" d="M4 2h8v1h2v2h1v6h-1v2h-2v1H4v-1H2v-2H1V5h1V3h2V2z"/><path fill="#ffd83b" d="M4 3h8v1h1v1h1v6h-1v1h-1v1H4v-1H3v-1H2V5h1V4h1V3z"/><path fill="#111" d="M5 5h2v2H5V5zm4 0h2v2H9V5zM4 9h1v1h6V9h1v1h-1v1H5v-1H4V9z"/></svg>
+        </div>
+        <span>기분별 명작 추천</span>
+      </button>
+
+      <button type="button" class="desk-icon" id="icon-quiz">
+        <div class="desk-icon-box" style="background: #ff9f43;">
+          <svg width="24" height="24" viewBox="0 0 16 16" shape-rendering="crispEdges"><path fill="#111" d="M5 2h6v1h2v3h-2v2H9v2H7V7h2V6h2V4H5v2H3V3h2V2zm2 9h2v3H7v-3z"/><path fill="#fff" d="M5 3h6v1H5V3zm2 9h2v1H7v-1z"/></svg>
+        </div>
+        <span>기억력 퀴즈 95</span>
+      </button>
+
+      <button type="button" class="desk-icon" id="icon-timeline">
+        <div class="desk-icon-box" style="background: #a29bfe;">
+          <svg width="24" height="24" viewBox="0 0 16 16" shape-rendering="crispEdges"><path fill="#111" d="M2 2h12v12H2V2z"/><path fill="#fff" d="M3 3h10v10H3V3z"/><path fill="#ff4757" d="M4 9h2v3H4V9z"/><path fill="#000080" d="M7 5h2v7H7V5z"/><path fill="#2ed573" d="M10 7h2v5h-2V7z"/></svg>
+        </div>
+        <span>감상 연대기</span>
+      </button>
+
+      <button type="button" class="desk-icon" id="icon-stamp">
+        <div class="desk-icon-box" style="background: #ffffff;">
+          <svg width="24" height="24" viewBox="0 0 16 16" shape-rendering="crispEdges"><path fill="#d63031" d="M4 2h8v2h2v8h-2v2H4v-2H2V4h2V2z"/><path fill="#fff" d="M4 4h8v8H4V4z"/><path fill="#d63031" d="M5 5h6v2H5V5zm0 4h6v2H5V9z"/></svg>
+        </div>
+        <span>인장·가계부</span>
+      </button>
+
+      <button type="button" class="desk-icon" id="icon-mailbox">
+        <div class="desk-icon-box" style="background: var(--brutal-yellow);">
+          <svg width="24" height="24" viewBox="0 0 16 16" shape-rendering="crispEdges"><path fill="#111" d="M1 3h14v10H1V3z"/><path fill="#fff" d="M2 4h12v8H2V4z"/><path fill="#ff4757" d="M2 4h2v2h2v2h4V6h2V4h2v1h-2v2h-2v2H6V7H4V5H2V4z"/></svg>
+        </div>
+        <span>전자 우체통</span>
+      </button>
+
+      <button type="button" class="desk-icon" id="icon-jukebox">
+        <div class="desk-icon-box" style="background: #111111;">
+          <svg width="24" height="24" viewBox="0 0 16 16" shape-rendering="crispEdges"><path fill="#2ed573" d="M6 2h7v9h-1v2H9v-2h2V5H7v7H6v2H3v-2h2V2h1z"/></svg>
+        </div>
+        <span>주크박스 95</span>
+      </button>
+
+      <button type="button" class="desk-icon" id="icon-visualizer">
+        <div class="desk-icon-box" style="background: var(--brutal-sky);">
+          <svg width="24" height="24" viewBox="0 0 16 16" shape-rendering="crispEdges"><rect x="2" y="2" width="4" height="4" fill="#111"/><rect x="10" y="2" width="4" height="4" fill="#ff4757"/><rect x="6" y="10" width="4" height="4" fill="#ffd83b"/><path fill="#111" d="M6 4h4v1H6V4zM4 6h1v2h2v2H6V8H4V6zm7 0h1v2h-2v2H9V8h2V6z"/></svg>
+        </div>
+        <span>연관어 망 분석</span>
+      </button>
+
+      <button type="button" class="desk-icon" id="icon-memo">
+        <div class="desk-icon-box" style="background: var(--brutal-paper);">
+          <svg width="24" height="24" viewBox="0 0 16 16" shape-rendering="crispEdges"><path fill="#111" d="M2 1h9l3 3v11H2V1z"/><path fill="#fffef5" d="M3 2h7v3h3v9H3V2z"/><path fill="#808080" d="M4 6h7v1H4V6zm0 2h7v1H4V8zm0 2h5v1H4v-1z"/></svg>
+        </div>
+        <span>간이 메모장</span>
+      </button>
+
+      <button type="button" class="desk-icon" id="icon-gamepack">
+        <div class="desk-icon-box" style="background: var(--brutal-pink);">
+          <svg width="24" height="24" viewBox="0 0 16 16" shape-rendering="crispEdges"><path fill="#111" d="M1 4h14v8H1V4z"/><path fill="#c0c0c0" d="M2 5h12v6H2V5z"/><path fill="#111" d="M4 6h1v4H4V6zM3 7h3v2H3V7z"/><rect x="10" y="7" width="1" height="1" fill="#ff4757"/><rect x="12" y="8" width="1" height="1" fill="#000080"/></svg>
+        </div>
+        <span>오락실 95</span>
+      </button>
+
+      <button type="button" class="desk-icon" id="icon-portfolio" title="포트폴리오 가상 창 열기 (https://nlasdnfkl2.github.io/my-webpage/)">
+        <div class="desk-icon-box" style="background: #ff7675;">
+          <svg width="24" height="24" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true">
+            <path fill="#111" d="M1 3h14v10H1V3z"/>
+            <path fill="#fff" d="M2 5h12v7H2V5z"/>
+            <path fill="#000080" d="M2 3h12v2H2V3z"/>
+            <path fill="#ff7675" d="M10 6h3v3h-1V7h-2V6z"/>
+            <path fill="#111" d="M9 9h2v1H9V9zm2-2h1v2h-1V7z"/>
+          </svg>
+        </div>
+        <span>포트폴리오</span>
+      </button>
+    </nav>
+
+    <!-- 1. 메인 탐색기 창 -->
+    <section class="floating-win open focused main-explorer-win" id="win-main" data-win-title="C:\MY-ARCHIVE\EXPLORER.EXE" style="top: 38px; left: 215px; width: 960px;">
+      <div class="win-titlebar draggable">
+        <div class="win-title-left">
+          <span class="win-title-dot" style="background: var(--brutal-yellow);"></span>
+          <span id="win-main-title-text">C:\MY-ARCHIVE\EXPLORER.EXE — 문화·예술 감상 자료실 관리자</span>
+        </div>
+        <div class="win-controls">
+          <button type="button" class="win-ctrl-btn" data-action="minimize" data-target="win-main">_</button>
+          <button type="button" class="win-ctrl-btn close" data-action="close" data-target="win-main">X</button>
+        </div>
+      </div>
+
+      <div class="win-body">
+        <section class="kpi-grid" aria-label="자료실 핵심 요약 지표">
+          <div class="kpi-card yellow">
+            <div class="kpi-label">누적 감상록</div>
+            <div class="kpi-val" id="kpi-total">0건</div>
+            <div class="kpi-sub" id="kpi-recent-sub">중앙 자료실 연결 대기 중...</div>
+          </div>
+          <div class="kpi-card sky">
+            <div class="kpi-label">평균 만족도 평점</div>
+            <div class="kpi-val" id="kpi-avg-rating">0.0점</div>
+            <div class="kpi-sub">5.0점 만점 기준</div>
+          </div>
+          <div class="kpi-card green">
+            <div class="kpi-label">최다 감상 갈래</div>
+            <div class="kpi-val" id="kpi-top-cat">-</div>
+            <div class="kpi-sub" id="kpi-top-cat-sub">자료 없음</div>
+          </div>
+          <div class="kpi-card pink">
+            <div class="kpi-label">핵심 선호 분야</div>
+            <div class="kpi-val" id="kpi-top-genre">-</div>
+            <div class="kpi-sub" id="kpi-top-genre-sub">자료 없음</div>
+          </div>
+        </section>
+
+        <section id="charts-section" class="charts-grid" aria-label="매체별·월별 통계 차트">
+          <div class="sunken-box">
+            <div class="box-head"><span>매체별 소장 비중</span><span class="tag-mini">DOUGHNUT</span></div>
+            <div style="height: 155px; position: relative;"><canvas id="chart-category"></canvas></div>
+          </div>
+          <div class="sunken-box">
+            <div class="box-head"><span>월별 감상 추이</span><span class="tag-mini">MONTHLY</span></div>
+            <div style="height: 155px; position: relative;"><canvas id="chart-monthly"></canvas></div>
+          </div>
+        </section>
+
+        <section class="toolbar-box" aria-label="목록 분류 및 찾기">
+          <div id="cat-filter-group" class="pill-group">
+            <button type="button" class="pill-btn active" data-cat="ALL">전체</button>
+            <button type="button" class="pill-btn" data-cat="도서">도서</button>
+            <button type="button" class="pill-btn" data-cat="음악">음악</button>
+            <button type="button" class="pill-btn" data-cat="영상">영상</button>
+            <button type="button" class="pill-btn" data-cat="기타">기타</button>
+          </div>
+
+          <div class="filter-controls">
+            <select id="filter-rating" class="win95-select" aria-label="최소 평점 선택">
+              <option value="0">모든 평점</option>
+              <option value="5">★★★★★ (5점만)</option>
+              <option value="4">★★★★☆ (4점 이상)</option>
+              <option value="3">★★★☆☆ (3점 이상)</option>
+            </select>
+            <input type="text" id="filter-keyword" placeholder="제목·지은이·장르·감상평 찾기..." />
+            <button type="button" class="btn95 yellow sm" id="btn-open-register">[+ 새 감상록 등록]</button>
+          </div>
+        </section>
+
+        <section id="archive-grid" class="archive-grid" aria-label="감상 기록 카드 목록"></section>
+      </div>
+
+      <div class="win-statusbar">
+        <span id="status-left">명령 대기 중 (READY)</span>
+        <span id="status-right">총 0건의 자료가 검색됨</span>
+      </div>
+    </section>
+
+    <!-- 2. 월력 및 기념일 관리 창 -->
+    <section class="floating-win" id="win-calendar" data-win-title="[CAL] 월력 및 기념일" style="top: 64px; left: 165px; width: 780px;">
+      <div class="win-titlebar draggable" style="background: var(--brutal-sky); color: #111;">
+        <div class="win-title-left"><span class="win-title-dot" style="background: #111;"></span><span>CALENDAR95.EXE — 월별 감상 일력 및 목표 D-Day 관리</span></div>
+        <div class="win-controls">
+          <button type="button" class="win-ctrl-btn" data-action="minimize" data-target="win-calendar">_</button>
+          <button type="button" class="win-ctrl-btn close" data-action="close" data-target="win-calendar">X</button>
+        </div>
+      </div>
+      <div class="win-body" id="calendar-app-body"></div>
+    </section>
+
+    <!-- 3. 기분별 명작 추천기 -->
+    <section class="floating-win" id="win-mood" data-win-title="[MOOD] 기분별 명작 추천" style="top: 84px; left: 210px; width: 620px;">
+      <div class="win-titlebar draggable" style="background: var(--brutal-pink); color: #fff;">
+        <div class="win-title-left"><span class="win-title-dot" style="background: var(--brutal-yellow);"></span><span>MOODPICK.EXE — 오늘의 심경별 소장 명작 추천기</span></div>
+        <div class="win-controls">
+          <button type="button" class="win-ctrl-btn" data-action="minimize" data-target="win-mood">_</button>
+          <button type="button" class="win-ctrl-btn close" data-action="close" data-target="win-mood">X</button>
+        </div>
+      </div>
+      <div class="win-body" id="mood-app-body"></div>
+    </section>
+
+    <!-- 4. 기억력 퀴즈 95 -->
+    <section class="floating-win" id="win-quiz" data-win-title="[QUIZ] 기억력 퀴즈 95" style="top: 72px; left: 190px; width: 680px;">
+      <div class="win-titlebar draggable" style="background: #ff9f43; color: #111;">
+        <div class="win-title-left"><span class="win-title-dot" style="background: #111;"></span><span>QUIZ95.EXE — 내 감상록 기억력 퀴즈 및 초성 힌트</span></div>
+        <div class="win-controls">
+          <button type="button" class="win-ctrl-btn" data-action="minimize" data-target="win-quiz">_</button>
+          <button type="button" class="win-ctrl-btn close" data-action="close" data-target="win-quiz">X</button>
+        </div>
+      </div>
+      <div class="win-body" id="quiz-app-body"></div>
+    </section>
+
+    <!-- 5. 감상 연대기 & 성향 분석 -->
+    <section class="floating-win" id="win-timeline" data-win-title="[ANALYSIS] 감상 연대기" style="top: 56px; left: 145px; width: 840px;">
+      <div class="win-titlebar draggable" style="background: #a29bfe; color: #111;">
+        <div class="win-title-left"><span class="win-title-dot" style="background: var(--brutal-yellow);"></span><span>TIMELINE95.EXE — 시간순 감상 연대기 및 상·하반기 성향 비교</span></div>
+        <div class="win-controls">
+          <button type="button" class="win-ctrl-btn" data-action="minimize" data-target="win-timeline">_</button>
+          <button type="button" class="win-ctrl-btn close" data-action="close" data-target="win-timeline">X</button>
+        </div>
+      </div>
+      <div class="win-body" id="timeline-app-body"></div>
+    </section>
+
+    <!-- 6. 열람 인장 & 가계부 영수증 -->
+    <section class="floating-win" id="win-stamp" data-win-title="[STAMP] 인장 & 가계부 영수증" style="top: 68px; left: 175px; width: 760px;">
+      <div class="win-titlebar draggable yellow-bar">
+        <div class="win-title-left"><span class="win-title-dot"></span><span>STAMP95.EXE — 독파 열람 인장 및 문화생활 가계부 영수증</span></div>
+        <div class="win-controls">
+          <button type="button" class="win-ctrl-btn" data-action="minimize" data-target="win-stamp">_</button>
+          <button type="button" class="win-ctrl-btn close" data-action="close" data-target="win-stamp">X</button>
+        </div>
+      </div>
+      <div class="win-body" id="stamp-app-body"></div>
+    </section>
+
+    <!-- 7. 전자 우체통 & 단말기 전송 -->
+    <section class="floating-win" id="win-mailbox" data-win-title="[MAIL] 전자 우체통 & QR" style="top: 78px; left: 205px; width: 690px;">
+      <div class="win-titlebar draggable" style="background: var(--brutal-green); color: #111;">
+        <div class="win-title-left"><span class="win-title-dot" style="background: #111;"></span><span>MAILBOX95.EXE — 방문객 명작 추천 전자 우체통 및 휴대 단말기 전송</span></div>
+        <div class="win-controls">
+          <button type="button" class="win-ctrl-btn" data-action="minimize" data-target="win-mailbox">_</button>
+          <button type="button" class="win-ctrl-btn close" data-action="close" data-target="win-mailbox">X</button>
+        </div>
+      </div>
+      <div class="win-body" id="mailbox-app-body"></div>
+    </section>
+
+    <!-- 8. 간이 메모장, 주크박스, 연관어 망, 오락실 -->
+    <section class="floating-win" id="win-memo" data-win-title="[NOTE] NOTEPAD95.EXE" style="top: 90px; left: 230px; width: 540px;">
+      <div class="win-titlebar draggable">
+        <div class="win-title-left"><span class="win-title-dot" style="background: var(--brutal-yellow);"></span><span>NOTEPAD95.EXE — 감상 단상 및 비망록</span></div>
+        <div class="win-controls">
+          <button type="button" class="win-ctrl-btn" data-action="minimize" data-target="win-memo">_</button>
+          <button type="button" class="win-ctrl-btn close" data-action="close" data-target="win-memo">X</button>
+        </div>
+      </div>
+      <div class="win-body">
+        <form id="memo-form" class="sunken-box" style="margin-bottom: 12px; background: var(--win-gray);">
+          <div class="box-head"><span>새 비망록 작성</span><span id="memo-count-badge" class="tag-mini">0건</span></div>
+          <input type="text" id="memo-title" placeholder="제목 (예: 주말에 읽을 추천 도서 목록)" style="width: 100%; margin-bottom: 8px;" />
+          <textarea id="memo-content" rows="3" placeholder="기록할 단상이나 문장을 적으십시오..." required style="width: 100%; margin-bottom: 8px;"></textarea>
+          <div style="display: flex; justify-content: flex-end;">
+            <button type="submit" class="btn95 yellow sm" id="btn-save-memo">중앙 전산실에 저장</button>
+          </div>
+        </form>
+        <div id="memo-list-container" class="sunken-box" style="max-height: 260px; overflow-y: auto;"></div>
+      </div>
+    </section>
+
+    <section class="floating-win" id="win-jukebox" data-win-title="[PLAY] JUKEBOX95.EXE" style="top: 96px; left: 250px; width: 540px;">
+      <div class="win-titlebar draggable" style="background: #111; color: var(--brutal-green);">
+        <div class="win-title-left"><span class="win-title-dot" style="background: var(--brutal-green);"></span><span>JUKEBOX95.EXE — 스테레오 오디오 플레이어</span></div>
+        <div class="win-controls">
+          <button type="button" class="win-ctrl-btn" data-action="minimize" data-target="win-jukebox">_</button>
+          <button type="button" class="win-ctrl-btn close" data-action="close" data-target="win-jukebox">X</button>
+        </div>
+      </div>
+      <div class="win-body" id="jukebox-body"></div>
+    </section>
+
+    <section class="floating-win" id="win-visualizer" data-win-title="[NODE] DATANODE95.EXE" style="top: 62px; left: 155px; width: 820px;">
+      <div class="win-titlebar draggable" style="background: var(--brutal-sky); color: #111;">
+        <div class="win-title-left"><span class="win-title-dot" style="background: #111;"></span><span>DATANODE95.EXE — 핵심어 구름 및 연관어 망(網) 분석기</span></div>
+        <div class="win-controls">
+          <button type="button" class="win-ctrl-btn" data-action="minimize" data-target="win-visualizer">_</button>
+          <button type="button" class="win-ctrl-btn close" data-action="close" data-target="win-visualizer">X</button>
+        </div>
+      </div>
+      <div class="win-body" id="visualizer-body"></div>
+    </section>
+
+    <section class="floating-win" id="win-gamepack" data-win-title="[GAME] GAMEPACK95.EXE" style="top: 54px; left: 160px; width: 780px;">
+      <div class="win-titlebar draggable" style="background: var(--brutal-pink); color: #fff;">
+        <div class="win-title-left"><span class="win-title-dot" style="background: var(--brutal-yellow);"></span><span>GAMEPACK95.EXE — 고전 카드놀이 및 오락실 모음집</span></div>
+        <div class="win-controls">
+          <button type="button" class="win-ctrl-btn" data-action="minimize" data-target="win-gamepack">_</button>
+          <button type="button" class="win-ctrl-btn close" data-action="close" data-target="win-gamepack">X</button>
+        </div>
+      </div>
+      <div class="win-body" id="gamepack-body"></div>
+    </section>
+
+    <!-- 9. 전체 공개 자료실 광장 -->
+    <section class="floating-win" id="win-community" data-win-title="[BBS] 전체 공개 자료실" style="top: 46px; left: 140px; width: 880px;">
+      <div class="win-titlebar draggable" style="background: var(--brutal-green); color: #111;">
+        <div class="win-title-left"><span class="win-title-dot" style="background: #111;"></span><span>COMMUNITY95.EXE — 전체 공개 자료실 · 광장 (이용자 교류 게시판)</span></div>
+        <div class="win-controls">
+          <button type="button" class="win-ctrl-btn" data-action="minimize" data-target="win-community">_</button>
+          <button type="button" class="win-ctrl-btn close" data-action="close" data-target="win-community">X</button>
+        </div>
+      </div>
+      <div class="win-body" id="community-app-body"></div>
+    </section>
+
+    <!-- 10. Windows 95 작업 관리자 -->
+    <section class="floating-win" id="win-taskmgr" data-win-title="[TASK] 작업 관리자" style="top: 110px; left: 260px; width: 460px;">
+      <div class="win-titlebar draggable">
+        <div class="win-title-left"><span class="win-title-dot" style="background: var(--brutal-pink);"></span><span>TASKMGR95.EXE — 프로그램 강제 종료 (Ctrl+Alt+Del)</span></div>
+        <div class="win-controls">
+          <button type="button" class="win-ctrl-btn close" data-action="close" data-target="win-taskmgr">X</button>
+        </div>
+      </div>
+      <div class="win-body" style="background:var(--win-gray);">
+        <p style="font-size:0.78rem;font-weight:800;margin-bottom:8px;">현재 주기억장치(RAM)에서 실행 중인 응용 프로그램 목록입니다. 응답이 없는 창을 강제 종료하거나 시스템을 재시동할 수 있습니다.</p>
+        <div id="taskmgr-list" class="sunken-box" style="max-height:220px;overflow-y:auto;margin-bottom:10px;background:#fff;"></div>
+        <div style="display:flex;justify-content:space-between;gap:6px;">
+          <button type="button" class="btn95 sm" id="btn-tm-refresh">목록 새로고침</button>
+          <button type="button" class="btn95 yellow sm" id="btn-tm-reboot">시스템 재시동...</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 11. 포트폴리오 가상 브라우저 윈도우 -->
+    <section class="floating-win" id="win-portfolio" data-win-title="[WEB] 포트폴리오" style="top: 52px; left: 225px; width: 860px;">
+      <div class="win-titlebar draggable" style="background: var(--win-navy-grad); color: #ffffff;">
+        <div class="win-title-left">
+          <span class="win-title-dot" style="background: #ff7675;"></span>
+          <span>PORTFOLIO95.EXE — 문태양 포트폴리오 브라우저</span>
+        </div>
+        <div class="win-controls">
+          <button type="button" class="win-ctrl-btn" data-action="minimize" data-target="win-portfolio">_</button>
+          <button type="button" class="win-ctrl-btn close" data-action="close" data-target="win-portfolio">X</button>
+        </div>
+      </div>
+      <div class="win-body" id="portfolio-app-body" style="padding: 8px; background: var(--win-gray);">
+        <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 8px; flex-wrap: wrap;">
+          <button type="button" class="btn95 sm" id="btn-portfolio-reload">↻ 새로고침</button>
+          <input type="text" id="portfolio-url-bar" value="https://nlasdnfkl2.github.io/my-webpage/" readonly aria-label="포트폴리오 주소" style="flex: 1; min-width: 180px; background: #ffffff;" />
+          <a id="btn-portfolio-ext" href="https://nlasdnfkl2.github.io/my-webpage/" target="_blank" rel="noopener noreferrer" class="btn95 yellow sm">↗ 새 탭 열기</a>
+        </div>
+        <div class="sunken-box" style="padding: 0; height: 520px; background: #ffffff; overflow: hidden;">
+          <iframe id="portfolio-frame" src="" title="문태양 포트폴리오" style="width: 100%; height: 100%; border: 0; display: block; background: #ffffff;" loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe>
+        </div>
+      </div>
+      <div class="win-statusbar">
+        <span id="portfolio-status-left">가상 브라우저 대기 중</span>
+        <span id="portfolio-status-right">PORTFOLIO95.EXE</span>
+      </div>
+    </section>
+
+    <div id="dynamic-windows-container"></div>
+  </main>
+
+  <!-- 시작 메뉴 팝업 -->
+  <aside id="start-menu" class="start-menu-popup" aria-label="시작 메뉴">
+    <div class="start-banner"><span>MY-ARCHIVE <b>95</b></span></div>
+    <div class="start-list">
+      <button type="button" class="start-item" id="sm-new">[+] 새 감상록 등록하기</button>
+      <button type="button" class="start-item" id="sm-community" onclick="openCommunityBoard()">[BBS] 전체 공개 자료실 (광장)</button>
+      <button type="button" class="start-item" id="sm-browser">[WEB] 정보바다 탐색기 95</button>
+      <button type="button" class="start-item" id="sm-all">[DIR] 전체 서재 열기</button>
+      <button type="button" class="start-item" id="sm-book">[BOOK] 도서 서가</button>
+      <button type="button" class="start-item" id="sm-music">[BGM] 음반 서가</button>
+      <button type="button" class="start-item" id="sm-video">[VID] 영상 서가</button>
+      <div class="menu-sep"></div>
+      <button type="button" class="start-item" id="sm-calendar">[CAL] 월력 및 기념일 관리</button>
+      <button type="button" class="start-item" id="sm-mood">[MOOD] 기분별 명작 추천기</button>
+      <button type="button" class="start-item" id="sm-quiz">[QUIZ] 기억력 퀴즈 95</button>
+      <button type="button" class="start-item" id="sm-timeline">[CHART] 감상 연대기 분석</button>
+      <button type="button" class="start-item" id="sm-stamp">[STAMP] 열람 인장 &amp; 가계부</button>
+      <button type="button" class="start-item" id="sm-mailbox">[MAIL] 전자 우체통 &amp; 전송</button>
+      <div class="menu-sep"></div>
+      <button type="button" class="start-item" id="sm-display">[DISP] 디스플레이 등록 정보...</button>
+      <button type="button" class="start-item" id="sm-memo">[NOTE] 간이 메모장</button>
+      <button type="button" class="start-item" id="sm-reload">[SYNC] 중앙 전산실 자료 갱신</button>
+      <button type="button" class="start-item" id="sm-logoff">[KEY] 접속 종료 / 시스템 재시동...</button>
+    </div>
+  </aside>
+
+  <!-- 화면 보호기 -->
+  <div id="win95-screensaver" style="display:none;position:fixed;inset:0;z-index:250000;background:#000000;cursor:none;">
+    <canvas id="screensaver-canvas"></canvas>
+    <div style="position:fixed;bottom:14px;right:18px;color:#888;font-family:monospace;font-size:0.75rem;">Click or press any key to return to MY-ARCHIVE 95</div>
+  </div>
+
+  <!-- 하단 작업표시줄 -->
+  <footer class="os-taskbar">
+    <button type="button" id="btn-start" class="btn-start">
+      <span class="start-win-logo" aria-hidden="true">
+        <svg width="14" height="14" viewBox="0 0 16 16" shape-rendering="crispEdges">
+          <rect x="2" y="2" width="5" height="5" fill="#ff0000"/>
+          <rect x="9" y="2" width="5" height="5" fill="#00ff00"/>
+          <rect x="2" y="9" width="5" height="5" fill="#0000ff"/>
+          <rect x="9" y="9" width="5" height="5" fill="#ffff00"/>
+        </svg>
+      </span>
+      <span>시작 (Start)</span>
+    </button>
+    <div class="taskbar-divider"></div>
+    <div id="taskbar-windows" class="taskbar-windows"></div>
+    <div class="taskbar-tray">
+      <button type="button" id="tray-jukebox-mini" class="tray-btn" title="주크박스 95 열기" aria-label="주크박스 95 열기">
+        <svg width="12" height="12" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true">
+          <rect x="6" y="2" width="6" height="2" fill="#111"/>
+          <rect x="6" y="4" width="2" height="8" fill="#111"/>
+          <rect x="10" y="4" width="2" height="7" fill="#111"/>
+          <rect x="3" y="10" width="5" height="4" fill="#111"/>
+          <rect x="8" y="9" width="4" height="4" fill="#111"/>
+        </svg>
+      </button>
+      <span id="taskbar-clock" class="taskbar-clock">12:00</span>
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="js/config.js?v=20261125-v2"></script>
+  <script src="js/window-mgr.js?v=20261125-v2"></script>
+  <script src="js/jukebox.js?v=20261125-v2"></script>
+  <script src="js/gamepack.js?v=20261125-v2"></script>
+  <script src="js/visualizer.js?v=20261125-v2"></script>
+  <script src="js/archive-app.js?v=20261125-v2"></script>
+  <script src="js/browser-app.js?v=20261125-v2"></script>
+  <script src="js/community-app.js?v=20261125-v2"></script>
+  <script src="js/boot-screen.js?v=20261125-v2"></script>
+  <script src="js/win95-widgets.js?v=20261125-v2"></script>
+</body>
+</html>
