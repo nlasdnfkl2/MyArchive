@@ -402,7 +402,7 @@
         <span>오락실 95</span>
       </button>
 
-      <button type="button" class="desk-icon" id="icon-portfolio" title="포트폴리오 새 창 열기 (https://nlasdnfkl2.github.io/my-webpage/)">
+      <button type="button" class="desk-icon" id="icon-portfolio" title="포트폴리오 가상 창 열기 (https://nlasdnfkl2.github.io/my-webpage/)">
         <div class="desk-icon-box" style="background: #ff7675;">
           <svg width="24" height="24" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true">
             <path fill="#111" d="M1 3h14v10H1V3z"/>
@@ -651,6 +651,34 @@
       </div>
     </section>
 
+    <!-- 11. 포트폴리오 가상 브라우저 윈도우 -->
+    <section class="floating-win" id="win-portfolio" data-win-title="[WEB] 포트폴리오" style="top: 52px; left: 225px; width: 860px;">
+      <div class="win-titlebar draggable" style="background: var(--win-navy-grad); color: #ffffff;">
+        <div class="win-title-left">
+          <span class="win-title-dot" style="background: #ff7675;"></span>
+          <span>PORTFOLIO95.EXE — 문태양 포트폴리오 브라우저</span>
+        </div>
+        <div class="win-controls">
+          <button type="button" class="win-ctrl-btn" data-action="minimize" data-target="win-portfolio">_</button>
+          <button type="button" class="win-ctrl-btn close" data-action="close" data-target="win-portfolio">X</button>
+        </div>
+      </div>
+      <div class="win-body" id="portfolio-app-body" style="padding: 8px; background: var(--win-gray);">
+        <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 8px; flex-wrap: wrap;">
+          <button type="button" class="btn95 sm" id="btn-portfolio-reload">↻ 새로고침</button>
+          <input type="text" id="portfolio-url-bar" value="https://nlasdnfkl2.github.io/my-webpage/" readonly aria-label="포트폴리오 주소" style="flex: 1; min-width: 180px; background: #ffffff;" />
+          <a id="btn-portfolio-ext" href="https://nlasdnfkl2.github.io/my-webpage/" target="_blank" rel="noopener noreferrer" class="btn95 yellow sm">↗ 새 탭 열기</a>
+        </div>
+        <div class="sunken-box" style="padding: 0; height: 520px; background: #ffffff; overflow: hidden;">
+          <iframe id="portfolio-frame" src="" title="문태양 포트폴리오" style="width: 100%; height: 100%; border: 0; display: block; background: #ffffff;" loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe>
+        </div>
+      </div>
+      <div class="win-statusbar">
+        <span id="portfolio-status-left">가상 브라우저 대기 중</span>
+        <span id="portfolio-status-right">PORTFOLIO95.EXE</span>
+      </div>
+    </section>
+
     <div id="dynamic-windows-container"></div>
   </main>
 
@@ -727,20 +755,6 @@
   <script src="js/community-app.js?v=20261122-v9"></script>
   <script src="js/boot-screen.js?v=20261122-v9"></script>
   <script src="js/win95-widgets.js"></script>
-  <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      const portfolioIcon = document.getElementById('icon-portfolio');
-      if (!portfolioIcon) return;
-
-      portfolioIcon.addEventListener('click', (e) => {
-        e.preventDefault();
-        const url = 'https://nlasdnfkl2.github.io/my-webpage/';
-        if (typeof window.playRetroTone === 'function') {
-          try { window.playRetroTone('open'); } catch {}
-        }
-        window.open(url, '_blank', 'noopener,noreferrer');
-      });
-    });
-  </script>
+  <script src="js/portfolio-win.js?v=20261125-v1"></script>
 </body>
 </html>
