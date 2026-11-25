@@ -4,13 +4,12 @@
 
 (function () {
   window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-  window.__MOD_VERSIONS.brutalPreloader = 'v2026.11.25-weighted-4.5s-hold-1s';
+  window.__MOD_VERSIONS.brutalPreloader = 'v2026.11.25-win95-ready-4.5s-hold-1s';
 
   const TARGET_AVG_MS = 4500, HOLD_MS = 1000;
   const LOADER_ID = 'brutal-js-preloader', STYLE_ID = 'brutal-js-preloader-style';
   const START_TS = performance.now();
 
-  // 실제 모듈 규모 기반 상대 가중치
   const FILE_WEIGHTS = [
     ['js/archive-app.js', 6.8],
     ['js/browser-app.js', 4.6],
@@ -39,7 +38,6 @@
     return arr;
   }
 
-  // 파일 크기 가중치 + 랜덤 지터를 반영해 전체 합이 평균 4.5초(7.5초의 3/5)가 되도록 산출
   function computeWeightedDurations(entries) {
     const raw = entries.map(([, w]) => w * (0.75 + Math.random() * 0.5));
     const sum = raw.reduce((a, b) => a + b, 0) || 1;
@@ -94,7 +92,7 @@
   }
 
   const buildTicker = (files) => {
-    const line = `POP-BRUTAL MODULE PRELOADER ★ INITIALIZING ${files.length} SYSTEM MODULES ★ ${files.join(' /// ')} ★ `;
+    const line = `MY-ARCHIVE 95 WIN95 PRELOADER ★ INITIALIZING ${files.length} SYSTEM MODULES ★ ${files.join(' /// ')} ★ `;
     return `<span class="brutal-ticker-msg">${line}</span><span class="brutal-ticker-msg">${line}</span>`;
   };
 
@@ -116,14 +114,14 @@
       <div class="brutal-center-wrap">
         <div class="brutal-loader-card" id="brutal-loader-card">
           <div class="brutal-loader-top">
-            <span class="brutal-loader-badge" id="brutal-loader-badge">POP-BRUTAL LOADER</span>
+            <span class="brutal-loader-badge" id="brutal-loader-badge">WIN95 MODULE LOADER</span>
             <span class="brutal-loader-pct" id="brutal-loader-pct">0%</span>
           </div>
-          <h1 class="brutal-loader-title" id="brutal-loader-title">JAVASCRIPT MODULES INITIALIZING</h1>
+          <h1 class="brutal-loader-title" id="brutal-loader-title">WIN95 SYSTEM MODULES LOADING</h1>
           <div class="brutal-bar-stage">
             <div class="brutal-speech-bubble" id="brutal-speech-bubble">BOOTING MODULE...</div>
             <div class="popart-progress-track"><div class="popart-progress-fill" id="brutal-loader-fill"></div></div>
-            <div class="brutal-complete-stamp" id="brutal-complete-stamp">★ ALL MODULES LOADED — STANDBY FOR POWER OFF ★</div>
+            <div class="brutal-complete-stamp" id="brutal-complete-stamp">★ WIN95 SYSTEM MODULES READY — LAUNCHING MY-ARCHIVE 95 ★</div>
           </div>
           <div class="brutal-file-list" id="brutal-loader-list">
             ${files.map((f, i) => `<div class="brutal-file-item" data-file-idx="${i}" title="${f}">${f}</div>`).join('')}
@@ -187,10 +185,10 @@
     const pct = document.getElementById('brutal-loader-pct');
     const title = document.getElementById('brutal-loader-title');
     const bubble = document.getElementById('brutal-speech-bubble');
-    if (badge) { badge.textContent = 'LOAD COMPLETE!'; badge.classList.add('is-complete'); }
+    if (badge) { badge.textContent = 'WIN95 READY'; badge.classList.add('is-complete'); }
     if (pct) { pct.textContent = '100%'; pct.classList.add('is-complete'); }
-    if (title) title.textContent = 'ALL JAVASCRIPT MODULES READY!';
-    if (bubble) { bubble.textContent = `✔ ${count} MODULES LOADED!`; bubble.classList.add('is-complete'); reanimate(bubble, 'is-popping'); }
+    if (title) title.textContent = 'WIN95 MODULES LOADED — READY!';
+    if (bubble) { bubble.textContent = `✔ ${count} WIN95 MODULES LOADED!`; bubble.classList.add('is-complete'); reanimate(bubble, 'is-popping'); }
     document.getElementById('brutal-complete-stamp')?.classList.add('is-visible');
     const listEl = document.getElementById('brutal-loader-list');
     if (listEl) {
@@ -226,7 +224,7 @@
   function finishSequence(files) {
     if (powerOffQueued || done) return;
     powerOffQueued = true;
-    updateProgress(1, `${files[files.length - 1] || 'ALL MODULES READY'} — DONE!`, files.length, files.length);
+    updateProgress(1, `${files[files.length - 1] || 'WIN95 MODULES'} — LOADED!`, files.length, files.length);
     showComplete(files.length);
     setTimeout(powerOffNow, HOLD_MS);
   }
