@@ -4,10 +4,11 @@
 // ============================================================
 
 window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-window.__MOD_VERSIONS.browserApp = 'v2026.11.25-04';
+window.__MOD_VERSIONS.browserApp = 'v2026.11.25-05';
 
 const BROWSER_BM_CACHE_KEY = 'myarchive95_bookmarks_v1';
 const OS_PREFS_STORAGE_KEY = 'myarchive95_os_prefs_v2';
+const INITIAL_SETUP_STORAGE_KEY = 'myarchive95_setup_v1';
 
 const DISPLAY_WALLPAPERS = [
   { id: 'solid-teal', label: '단색 — 클래식 틸', swatch: '#008080', mode: 'solid' },
@@ -23,7 +24,8 @@ const DISPLAY_WALLPAPERS = [
 const ALL_THEME_CLASSES = [
   'theme-teal', 'theme-navy', 'theme-olive', 'theme-plum', 'theme-brick', 'theme-matrix',
   'theme-solid-teal', 'theme-solid-navy', 'theme-solid-paper', 'theme-solid-charcoal',
-  'theme-grid', 'wp-solid', 'wp-brick', 'wp-grid'
+  'theme-paper', 'theme-charcoal', 'theme-grid',
+  'wp-solid', 'wp-brick', 'wp-grid'
 ];
 
 const browserState = {
@@ -107,6 +109,7 @@ function inferCategoryFromUrlOrTitle(url, title) {
 }
 
 function normalizeWallpaperId(raw) {
+  const cleaned = String(raw || '').trim().replace(/^theme-/, '');
   const map = {
     teal: 'solid-teal',
     navy: 'solid-navy',
@@ -114,9 +117,13 @@ function normalizeWallpaperId(raw) {
     charcoal: 'solid-charcoal',
     matrix: 'solid-charcoal'
   };
-  const key = String(raw || 'solid-teal').trim();
-  const mapped = map[key] || key;
+  const mapped = map[cleaned] || cleaned || 'solid-teal';
   return DISPLAY_WALLPAPERS.some(w => w.id === mapped) ? mapped : 'solid-teal';
+}
+
+function getWallpaperMeta(rawId) {
+  const normId = normalizeWallpaperId(rawId);
+  return DISPLAY_WALLPAPERS.find(w => w.id === normId) || DISPLAY_WALLPAPERS[0];
 }
 
 // ============================================================
@@ -142,11 +149,17 @@ function loadOsPrefs() {
   const basePrefs = (typeof loadLocalCache === 'function' && typeof STORAGE_KEYS !== 'undefined')
     ? (loadLocalCache(STORAGE_KEYS.PREFS, {}) || {})
     : {};
+  const initSetup = readRawJsonStorage(INITIAL_SETUP_STORAGE_KEY);
   const me = typeof getCurrentUser === 'function' ? getCurrentUser() : null;
 
-  const mergedTime = Math.max(Number(directPrefs.updatedAt || 0), Number(basePrefs.updatedAt || 0));
-  const useDirect = Number(directPrefs.updatedAt || 0) >= Number(basePrefs.updatedAt || 0);
-  const src = useDirect ? { ...basePrefs, ...directPrefs } : { ...directPrefs, ...basePrefs };
+  const tDirect = Number(directPrefs.updatedAt || 0);
+  const tBase = Number(basePrefs.updatedAt || 0);
+  const mergedTime = Math.max(tDirect, tBase, 0);
+
+  // 최신 타임스탬프가 있는 저장소를 우선하되 누락 필드는 다른 저장소/초기설정에서 보완
+  const primary = tDirect >= tBase ? directPrefs : basePrefs;
+  const secondary = tDirect >= tBase ? basePrefs : directPrefs;
+  const src = { ...initSetup, ...secondary, ...primary };
 
   const wallpaper = normalizeWallpaperId(src.wallpaper || src.theme || 'solid-teal');
   const crtScanline = typeof src.crtScanline === 'boolean'
@@ -154,7 +167,7 @@ function loadOsPrefs() {
     : (typeof src.crt === 'boolean' ? src.crt : false);
 
   return {
-    ownerName: src.ownerName || (me && me.username) || '문태양',
+    ownerName: String(src.ownerName || (me && me.username) || '문태양').trim() || '문태양',
     wallpaper,
     crtScanline,
     autoSort: Boolean(src.autoSort),
@@ -162,19 +175,28 @@ function loadOsPrefs() {
   };
 }
 
-function saveOsPrefs(nextPartial) {
+function saveOsPrefs(nextPartial = {}) {
   const current = loadOsPrefs();
   const me = typeof getCurrentUser === 'function' ? getCurrentUser() : null;
+
+  const nextWallpaperRaw = Object.prototype.hasOwnProperty.call(nextPartial, 'wallpaper')
+    ? nextPartial.wallpaper
+    : (Object.prototype.hasOwnProperty.call(nextPartial, 'theme') ? nextPartial.theme : current.wallpaper);
+
+  const nextCrtRaw = Object.prototype.hasOwnProperty.call(nextPartial, 'crtScanline')
+    ? nextPartial.crtScanline
+    : (Object.prototype.hasOwnProperty.call(nextPartial, 'crt') ? nextPartial.crt : current.crtScanline);
+
   const merged = {
     ...current,
     ...nextPartial,
-    wallpaper: normalizeWallpaperId(
-      nextPartial.wallpaper || nextPartial.theme || current.wallpaper || 'solid-teal'
-    ),
-    crtScanline: typeof nextPartial.crtScanline === 'boolean'
-      ? nextPartial.crtScanline
-      : (typeof nextPartial.crt === 'boolean' ? nextPartial.crt : Boolean(current.crtScanline)),
-    ownerName: (nextPartial.ownerName ?? current.ownerName ?? (me && me.username) ?? '문태양').trim() || '문태양',
+    wallpaper: normalizeWallpaperId(nextWallpaperRaw),
+    crtScanline: Boolean(nextCrtRaw),
+    ownerName: (
+      Object.prototype.hasOwnProperty.call(nextPartial, 'ownerName')
+        ? nextPartial.ownerName
+        : current.ownerName
+    )?.trim() || (me && me.username) || '문태양',
     updatedAt: Date.now()
   };
 
@@ -194,15 +216,55 @@ function saveOsPrefs(nextPartial) {
     });
   }
 
+  const existingSetup = readRawJsonStorage(INITIAL_SETUP_STORAGE_KEY);
+  if (Object.keys(existingSetup).length > 0) {
+    writeRawJsonStorage(INITIAL_SETUP_STORAGE_KEY, {
+      ...existingSetup,
+      theme: merged.wallpaper,
+      crt: merged.crtScanline
+    });
+  }
+
   applyOsPrefsToDom(merged);
   window.dispatchEvent(new CustomEvent('os:prefs-changed', { detail: merged }));
   return merged;
 }
 
+function applyWallpaperToSurface(el, wpMeta) {
+  if (!el) return;
+  el.style.setProperty('background-color', wpMeta.swatch, 'important');
+
+  if (wpMeta.mode === 'brick') {
+    el.style.setProperty(
+      'background-image',
+      `linear-gradient(335deg, rgba(17,17,17,0.42) 23px, transparent 23px),
+       linear-gradient(155deg, rgba(17,17,17,0.42) 23px, transparent 23px),
+       linear-gradient(335deg, rgba(17,17,17,0.42) 23px, transparent 23px),
+       linear-gradient(155deg, rgba(17,17,17,0.42) 23px, transparent 23px)`,
+      'important'
+    );
+    el.style.setProperty('background-size', '58px 58px', 'important');
+    el.style.setProperty('background-position', '0px 2px, 4px 35px, 29px 31px, 33px 6px', 'important');
+  } else if (wpMeta.mode === 'grid') {
+    el.style.setProperty(
+      'background-image',
+      `linear-gradient(to right, rgba(255,255,255,0.16) 1px, transparent 1px),
+       linear-gradient(to bottom, rgba(255,255,255,0.16) 1px, transparent 1px)`,
+      'important'
+    );
+    el.style.setProperty('background-size', '24px 24px', 'important');
+    el.style.setProperty('background-position', '0 0', 'important');
+  } else {
+    el.style.setProperty('background-image', 'none', 'important');
+    el.style.removeProperty('background-size');
+    el.style.removeProperty('background-position');
+  }
+}
+
 function applyOsPrefsToDom(prefs) {
   const p = prefs || loadOsPrefs();
-  const wpId = normalizeWallpaperId(p.wallpaper);
-  const wpMeta = DISPLAY_WALLPAPERS.find(w => w.id === wpId) || DISPLAY_WALLPAPERS[0];
+  const wpMeta = getWallpaperMeta(p.wallpaper);
+  const wpId = wpMeta.id;
 
   document.body.classList.remove(...ALL_THEME_CLASSES);
   document.body.classList.add(`theme-${wpId}`, `wp-${wpMeta.mode}`);
@@ -210,36 +272,17 @@ function applyOsPrefsToDom(prefs) {
   document.body.dataset.wallpaperMode = wpMeta.mode;
   document.body.style.setProperty('--os-wallpaper-color', wpMeta.swatch);
 
-  // 바탕화면 영역 직접 색상/패턴 보정 (단색 / 벽돌 / 격자)
-  const desktopEl = document.getElementById('desktop') || document.querySelector('.desktop');
-  if (desktopEl) {
-    desktopEl.style.backgroundColor = wpMeta.swatch;
-    if (wpMeta.mode === 'brick') {
-      desktopEl.style.backgroundImage = `
-        linear-gradient(335deg, rgba(17,17,17,0.42) 23px, transparent 23px),
-        linear-gradient(155deg, rgba(17,17,17,0.42) 23px, transparent 23px),
-        linear-gradient(335deg, rgba(17,17,17,0.42) 23px, transparent 23px),
-        linear-gradient(155deg, rgba(17,17,17,0.42) 23px, transparent 23px)
-      `;
-      desktopEl.style.backgroundSize = '58px 58px';
-      desktopEl.style.backgroundPosition = '0px 2px, 4px 35px, 29px 31px, 33px 6px';
-    } else if (wpMeta.mode === 'grid') {
-      desktopEl.style.backgroundImage = `
-        linear-gradient(to right, rgba(255,255,255,0.16) 1px, transparent 1px),
-        linear-gradient(to bottom, rgba(255,255,255,0.16) 1px, transparent 1px)
-      `;
-      desktopEl.style.backgroundSize = '24px 24px';
-      desktopEl.style.backgroundPosition = '0 0';
-    } else {
-      desktopEl.style.backgroundImage = 'none';
-      desktopEl.style.backgroundSize = '';
-      desktopEl.style.backgroundPosition = '';
-    }
-  }
+  const surfaces = [
+    document.body,
+    document.getElementById('desktop'),
+    document.querySelector('.desktop'),
+    document.querySelector('.os-desktop')
+  ].filter(Boolean);
 
-  // CRT 스캔라인 상태 동기화 (체크 해제 시 확실히 숨김)
+  surfaces.forEach(el => applyWallpaperToSurface(el, wpMeta));
+
   const crtEnabled = Boolean(p.crtScanline);
-  const crtOverlay = document.getElementById('crt-overlay');
+  const crtOverlay = document.getElementById('crt-overlay') || document.querySelector('.crt-overlay');
   if (crtOverlay) {
     crtOverlay.classList.toggle('hidden', !crtEnabled);
     crtOverlay.style.display = crtEnabled ? '' : 'none';
@@ -251,17 +294,17 @@ function applyOsPrefsToDom(prefs) {
   const dispChk = document.getElementById('chk-crt-scanline');
   if (dispChk && dispChk.checked !== crtEnabled) dispChk.checked = crtEnabled;
 
-  // 디스플레이 창이 열려 있다면 활성 버튼/입력값 동기화
-  syncDisplayWindowUI(p);
+  syncDisplayWindowUI({ ...p, wallpaper: wpId, crtScanline: crtEnabled });
 }
 
 function syncDisplayWindowUI(prefs) {
   const p = prefs || loadOsPrefs();
+  const activeWpId = normalizeWallpaperId(p.wallpaper);
   const win = document.getElementById('win-display-props');
   if (!win) return;
 
   win.querySelectorAll('[data-wp]').forEach(btn => {
-    const isActive = btn.dataset.wp === p.wallpaper;
+    const isActive = normalizeWallpaperId(btn.dataset.wp) === activeWpId;
     btn.classList.toggle('yellow', isActive);
     btn.style.outline = isActive ? '2px solid #111111' : '';
     btn.style.fontWeight = isActive ? '900' : '800';
@@ -279,23 +322,27 @@ function syncDisplayWindowUI(prefs) {
 function initOsWallpaperAndCrt() {
   applyOsPrefsToDom(loadOsPrefs());
 
-  // 상단 툴바 CRT 체크박스 변경 시 양방향 동기화
   document.getElementById('chk-crt')?.addEventListener('change', e => {
     saveOsPrefs({ crtScanline: Boolean(e.target.checked) });
     if (typeof playRetroTone === 'function') playRetroTone('click');
   });
 
-  // 외부 저장소/테마 변경 시 동기화
   window.addEventListener('storage', e => {
-    if (!e || e.key === OS_PREFS_STORAGE_KEY || (typeof STORAGE_KEYS !== 'undefined' && e.key === STORAGE_KEYS.PREFS)) {
+    if (
+      !e ||
+      e.key === OS_PREFS_STORAGE_KEY ||
+      e.key === INITIAL_SETUP_STORAGE_KEY ||
+      (typeof STORAGE_KEYS !== 'undefined' && e.key === STORAGE_KEYS.PREFS)
+    ) {
       applyOsPrefsToDom(loadOsPrefs());
     }
   });
+
   window.addEventListener('os:prefs-changed', ev => {
     if (ev && ev.detail) applyOsPrefsToDom(ev.detail);
   });
 
-  // 1. 바탕화면 아이콘 이벤트 연결 (없으면 생성 후 연결)
+  // 1. 바탕화면 아이콘 이벤트 연결
   let iconBtn = document.getElementById('icon-browser');
   const iconContainer = document.querySelector('.desktop-icons');
   if (!iconBtn && iconContainer) {
@@ -311,7 +358,7 @@ function initOsWallpaperAndCrt() {
   }
   iconBtn?.addEventListener('click', () => openVirtualBrowser());
 
-  // 2. 시작 메뉴 항목 이벤트 연결 (없으면 생성 후 연결)
+  // 2. 시작 메뉴 항목 이벤트 연결
   const startMenuList = document.querySelector('#start-menu .start-menu-items') || document.getElementById('start-menu');
   let itemBrowser = document.getElementById('sm-browser');
   if (!itemBrowser && startMenuList) {
@@ -335,7 +382,7 @@ function initOsWallpaperAndCrt() {
   }
   itemDisplay?.addEventListener('click', () => openDisplayPropsWindow());
 
-  // 3. 상단 메뉴바 이벤트 연결 (없으면 생성 후 연결)
+  // 3. 상단 메뉴바 이벤트 연결
   const firstMenuDrop = document.querySelector('.menu-item-wrap .menu-dropdown');
   let mnuBr = document.getElementById('mnu-open-browser');
   if (!mnuBr && firstMenuDrop) {
@@ -348,7 +395,6 @@ function initOsWallpaperAndCrt() {
   }
   mnuBr?.addEventListener('click', () => openVirtualBrowser());
 
-  // 상단 Window 메뉴의 디스플레이 등록 정보 버튼이 있을 경우 함께 연결
   document.getElementById('mnu-open-display')?.addEventListener('click', () => openDisplayPropsWindow());
 
   // 4. 창 제목 표시줄 더블클릭 시 최대화/원래 크기 토글
@@ -500,15 +546,15 @@ function openDisplayPropsWindow() {
       });
     });
 
-    document.getElementById('chk-crt-scanline')?.addEventListener('change', e => {
+    win.querySelector('#chk-crt-scanline')?.addEventListener('change', e => {
       saveOsPrefs({ crtScanline: Boolean(e.target.checked) });
       playRetroTone('click');
     });
 
-    document.getElementById('btn-save-os-prefs')?.addEventListener('click', () => {
+    win.querySelector('#btn-save-os-prefs')?.addEventListener('click', () => {
       const me = typeof getCurrentUser === 'function' ? getCurrentUser() : null;
-      const nextOwner = document.getElementById('inp-os-owner')?.value.trim() || (me && me.username) || '문태양';
-      const nextCrt = Boolean(document.getElementById('chk-crt-scanline')?.checked);
+      const nextOwner = win.querySelector('#inp-os-owner')?.value.trim() || (me && me.username) || '문태양';
+      const nextCrt = Boolean(win.querySelector('#chk-crt-scanline')?.checked);
       saveOsPrefs({ ownerName: nextOwner, crtScanline: nextCrt });
       playRetroTone('open');
       closeWindow('win-display-props');
@@ -547,7 +593,6 @@ function ensureVirtualBrowserWindow() {
     </div>
 
     <div class="win-body" style="padding:8px;">
-      <!-- IE 95 툴바 버튼 줄 -->
       <div style="display:flex; flex-wrap:wrap; gap:4px; align-items:center; margin-bottom:6px; padding-bottom:6px; border-bottom:2px solid #808080;">
         <button type="button" class="btn95 sm" id="br-btn-back" disabled>&lt; 뒤로</button>
         <button type="button" class="btn95 sm" id="br-btn-fwd" disabled>앞으로 &gt;</button>
@@ -561,7 +606,6 @@ function ensureVirtualBrowserWindow() {
         </div>
       </div>
 
-      <!-- 주소(Address) & 유튜브 검색 통합 바 -->
       <form id="br-addr-form" style="display:flex; gap:5px; align-items:center; margin-bottom:7px;">
         <span style="font-size:0.76rem; font-weight:900; padding:0 4px;">주소(D):</span>
         <input type="text" id="br-addr-inp" placeholder="웹 URL(https://...) 또는 유튜브 검색어 입력 (예: yt: 잔나비 주저하는 연인들을 위해)" style="flex:1; font-family:var(--font-mono); font-size:0.8rem;" />
@@ -569,7 +613,6 @@ function ensureVirtualBrowserWindow() {
         <button type="button" class="btn95 sm" id="br-btn-mode" title="표시 방식 전환">뷰: 리더모드</button>
       </form>
 
-      <!-- 즉석 감상 기록 슬라이드 패널 (클릭 시 열림) -->
       <form id="br-clip-drawer" class="sunken-box" style="display:none; margin-bottom:8px; background:#fffbe6; border:2px solid #111;">
         <div class="box-head" style="margin-bottom:6px;">
           <span>[ARCHIVE CLIPPER] 현재 탐색 중인 페이지·영상 즉석 아카이브 저장</span>
@@ -602,9 +645,7 @@ function ensureVirtualBrowserWindow() {
         </div>
       </form>
 
-      <!-- 메인 뷰포트 + 즐겨찾기 사이드바 -->
       <div style="display:grid; grid-template-columns:1fr; gap:8px;" id="br-main-split">
-        <!-- 즐겨찾기 서랍 (토글) -->
         <div id="br-bm-sidebar" class="sunken-box" style="display:none; background:var(--win-gray); max-height:430px; overflow-y:auto;">
           <div class="box-head">
             <span>[BM] 내 즐겨찾기 폴더</span>
@@ -618,12 +659,10 @@ function ensureVirtualBrowserWindow() {
           <div id="br-bm-list" style="display:flex; flex-direction:column; gap:5px;"></div>
         </div>
 
-        <!-- 가상 브라우저 뷰포트 -->
         <div id="br-viewport" class="sunken-box" style="background:#ffffff; min-height:390px; max-height:440px; overflow-y:auto; padding:12px;">
         </div>
       </div>
 
-      <!-- IE 95 하단 상태 표시줄 -->
       <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px; padding:3px 7px; background:var(--win-gray); border:1.5px solid #808080; font-size:0.72rem; font-weight:800;">
         <span id="br-status-text">준비 완료 — MY-PORTAL 95</span>
         <span style="font-family:var(--font-mono);">[NET] 56.6 Kbps Connected · [정보바다 영역]</span>
