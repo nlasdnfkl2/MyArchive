@@ -9,9 +9,9 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="MY-ARCHIVE 95" />
   <title>MY-ARCHIVE 95 OS — 개인 문화·예술 감상 자료실</title>
-  
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://w3.org' viewBox='0 0 16 16'><rect width='16' height='16' fill='%23008080'/><rect x='2' y='2' width='12' height='12' fill='%23c0c0c0' stroke='%23000000' stroke-width='1.5'/><rect x='3' y='3' width='10' height='3' fill='%23000080'/></svg>">
-  <link rel="manifest" href='data:application/manifest+json,{"name":"MY-ARCHIVE 95 OS","short_name":"ARCHIVE95","start_url":"./index.html","display":"standalone","background_color":"%23008080","theme_color":"%23000080","description":"Windows 95 + Neo-Brutalism 개인 문화 감상 자료실 OS"}'>
+
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' fill='%23008080'/><rect x='2' y='2' width='12' height='12' fill='%23c0c0c0' stroke='%23000000' stroke-width='1.5'/><rect x='3' y='3' width='10' height='3' fill='%23000080'/></svg>" />
+  <link rel="manifest" href='data:application/manifest+json,{"name":"MY-ARCHIVE 95 OS","short_name":"ARCHIVE95","start_url":"./index.html","display":"standalone","background_color":"%23008080","theme_color":"%23000080","description":"Windows 95 + Neo-Brutalism 개인 문화 감상 자료실 OS"}' />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
   <link rel="stylesheet" href="./css/style.css" />
   <style>
@@ -24,7 +24,7 @@
       animation: archiveSyncSpin 0.9s linear infinite;
     }
 
-    /* 레트로 신호 대기(노이즈) 화면: 호러틱하지 않은 경쾌한 90년대 모니터/방송 스타일 */
+    /* 레트로 신호 대기(노이즈) 화면 */
     #retro-noise-gate {
       position: fixed;
       inset: 0;
@@ -124,6 +124,7 @@
   <script>
     (function () {
       window.__ARCHIVE_LOGGED_IN = false;
+      window.__ARCHIVE_GATE_DISMISSED = false;
 
       function setPreLoginLock(locked) {
         if (!document.body) return;
@@ -136,8 +137,22 @@
         }
       }
 
+      function hideNoiseGate() {
+        window.__ARCHIVE_GATE_DISMISSED = true;
+        var gate = document.getElementById('retro-noise-gate');
+        if (!gate) return;
+        gate.classList.add('hidden');
+        gate.style.pointerEvents = 'none';
+        window.setTimeout(function () {
+          if (gate.classList.contains('hidden')) {
+            gate.style.display = 'none';
+          }
+        }, 230);
+      }
+
       function showNoiseGate() {
         if (window.__ARCHIVE_LOGGED_IN) return;
+        window.__ARCHIVE_GATE_DISMISSED = false;
         setPreLoginLock(true);
         var gate = document.getElementById('retro-noise-gate');
         if (gate) {
@@ -148,30 +163,29 @@
         }
       }
 
-      function enterBootAfterNoiseClick() {
-        var gate = document.getElementById('retro-noise-gate');
-        if (gate) {
-          gate.classList.add('hidden');
-          gate.style.pointerEvents = 'none';
-          setTimeout(function () {
-            if (gate.classList.contains('hidden')) {
-              gate.style.display = 'none';
-            }
-          }, 230);
-        }
-
+      function runBootTarget() {
         var overlay = document.getElementById('os-boot-overlay');
         if (overlay) {
           overlay.style.display = 'flex';
         }
 
-        if (typeof window.__origStartBiosBootSequence === 'function') {
-          window.__origStartBiosBootSequence();
-        } else if (typeof window.startBiosBootSequence === 'function') {
-          window.startBiosBootSequence();
-        } else if (typeof window.openInitialSetupScreen === 'function') {
-          window.openInitialSetupScreen(false);
+        if (typeof window.__runActualBiosSequence === 'function') {
+          return window.__runActualBiosSequence();
         }
+        if (typeof window.__origStartBiosBootSequence === 'function') {
+          return window.__origStartBiosBootSequence();
+        }
+        if (typeof window.startBiosBootSequence === 'function') {
+          return window.startBiosBootSequence();
+        }
+        if (typeof window.openInitialSetupScreen === 'function') {
+          return window.openInitialSetupScreen(false);
+        }
+      }
+
+      function enterBootAfterNoiseClick() {
+        hideNoiseGate();
+        runBootTarget();
       }
 
       window.__showRetroNoiseGate = showNoiseGate;
@@ -181,15 +195,17 @@
         if (typeof window.startBiosBootSequence === 'function' && !window.__origStartBiosBootSequence) {
           window.__origStartBiosBootSequence = window.startBiosBootSequence;
           var allowDirectCall = false;
+
           window.startBiosBootSequence = function () {
             if (!window.__ARCHIVE_LOGGED_IN) {
               setPreLoginLock(true);
             }
-            if (!allowDirectCall && document.getElementById('retro-noise-gate')?.style.display !== 'none') {
+            if (!allowDirectCall && !window.__ARCHIVE_GATE_DISMISSED) {
               return;
             }
             return window.__origStartBiosBootSequence.apply(this, arguments);
           };
+
           window.__runActualBiosSequence = function () {
             allowDirectCall = true;
             try {
@@ -200,16 +216,41 @@
           };
         }
 
-        if (typeof window.finishDesktopLogin === 'function' && !window.__loginHooked) {
+        if (typeof window.finishDesktopLogin === 'function' && !window.finishDesktopLogin.__archiveHooked) {
           var origFinish = window.finishDesktopLogin;
-          window.finishDesktopLogin = function () {
+          var wrappedFinish = function () {
             window.__ARCHIVE_LOGGED_IN = true;
+            hideNoiseGate();
             var res = origFinish.apply(this, arguments);
             setPreLoginLock(false);
             return res;
           };
-          window.__loginHooked = true;
+          wrappedFinish.__archiveHooked = true;
+          window.finishDesktopLogin = wrappedFinish;
         }
+      }
+
+      // 전역 보조 핸들러 안전 래퍼 (스크립트 로드 순서 차이 대비)
+      if (typeof window.openCommunityBoard !== 'function') {
+        window.openCommunityBoard = function () {
+          var winEl = document.getElementById('win-community');
+          if (winEl) {
+            winEl.classList.add('open', 'focused');
+            winEl.style.display = 'block';
+          }
+        };
+      }
+
+      if (typeof window.openAccountSettingsModal !== 'function') {
+        window.openAccountSettingsModal = function () {
+          var loginStage = document.getElementById('boot-stage-login');
+          var overlay = document.getElementById('os-boot-overlay');
+          if (overlay && loginStage) {
+            setPreLoginLock(true);
+            overlay.style.display = 'flex';
+            loginStage.style.display = 'flex';
+          }
+        };
       }
 
       document.addEventListener('DOMContentLoaded', function () {
@@ -218,22 +259,59 @@
 
         var gate = document.getElementById('retro-noise-gate');
         if (gate) {
-          gate.addEventListener('click', function () {
-            if (window.__runActualBiosSequence) {
-              var g = document.getElementById('retro-noise-gate');
-              if (g) {
-                g.classList.add('hidden');
-                g.style.pointerEvents = 'none';
-                setTimeout(function () {
-                  if (g.classList.contains('hidden')) g.style.display = 'none';
-                }, 230);
-              }
-              var ov = document.getElementById('os-boot-overlay');
-              if (ov) ov.style.display = 'flex';
-              window.__runActualBiosSequence();
-            } else {
-              enterBootAfterNoiseClick();
+          var triggerGate = function (e) {
+            if (e && e.type === 'keydown' && e.key !== 'Enter' && e.key !== ' ') {
+              return;
             }
+            if (e && e.type === 'keydown') {
+              e.preventDefault();
+            }
+            enterBootAfterNoiseClick();
+          };
+          gate.addEventListener('click', triggerGate);
+          gate.addEventListener('keydown', triggerGate);
+        }
+
+        // 포트폴리오 가상 창 연동
+        var portfolioIcon = document.getElementById('icon-portfolio');
+        var portfolioWin = document.getElementById('win-portfolio');
+        var portfolioFrame = document.getElementById('portfolio-frame');
+        var portfolioUrlBar = document.getElementById('portfolio-url-bar');
+        var portfolioReloadBtn = document.getElementById('btn-portfolio-reload');
+        var portfolioStatusLeft = document.getElementById('portfolio-status-left');
+        var portfolioUrl = 'https://nlasdnfkl2.github.io/my-webpage/';
+
+        function ensurePortfolioLoaded(forceReload) {
+          if (!portfolioFrame) return;
+          var targetUrl = (portfolioUrlBar && portfolioUrlBar.value.trim()) || portfolioUrl;
+          if (!portfolioFrame.getAttribute('src') || forceReload) {
+            if (portfolioStatusLeft) portfolioStatusLeft.textContent = '포트폴리오 불러오는 중...';
+            portfolioFrame.setAttribute('src', targetUrl);
+          }
+        }
+
+        if (portfolioFrame) {
+          portfolioFrame.addEventListener('load', function () {
+            if (portfolioFrame.getAttribute('src') && portfolioStatusLeft) {
+              portfolioStatusLeft.textContent = '연결 완료 — ' + portfolioFrame.getAttribute('src');
+            }
+          });
+        }
+
+        if (portfolioIcon) {
+          portfolioIcon.addEventListener('click', function () {
+            if (portfolioWin) {
+              portfolioWin.classList.remove('minimized');
+              portfolioWin.classList.add('open', 'focused');
+              portfolioWin.style.display = '';
+            }
+            ensurePortfolioLoaded(false);
+          });
+        }
+
+        if (portfolioReloadBtn) {
+          portfolioReloadBtn.addEventListener('click', function () {
+            ensurePortfolioLoaded(true);
           });
         }
 
@@ -268,7 +346,12 @@
         }
       });
 
-      window.addEventListener('load', hookBootLifecycle, { once: true });
+      window.addEventListener('load', function () {
+        hookBootLifecycle();
+        if (window.__ARCHIVE_GATE_DISMISSED && !window.__ARCHIVE_LOGGED_IN) {
+          runBootTarget();
+        }
+      }, { once: true });
     })();
   </script>
 </head>
