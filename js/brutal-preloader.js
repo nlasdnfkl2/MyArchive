@@ -41,6 +41,10 @@
     } catch { return true; }
   };
 
+  function releaseRewindLockOnly() {
+    window.__PRELOAD_REWIND_ACTIVE = false;
+  }
+
   function releaseRewindLockAndStartForward() {
     window.__PRELOAD_REWIND_ACTIVE = false;
     if (typeof window.__allowWaitForwardLoop === 'function') {
@@ -54,17 +58,13 @@
     const bpm = 90;
     const beatSec = 60 / bpm; // 90 BPM -> 1박 약 0.6667초
 
-    // [주파수(Hz), 박수(beats)] — 총 22박
+    // [주파수(Hz), 박수(beats)]
     // 라(440) --(2박) 솔(392) ---(3박) / 라(440) --(2박) 솔(392) ---(3박) /
     // 레(293.66) 솔(392) --(2박) 파(349.23) ---(3박) 레(293.66) 솔(392) --(2박) 파(349.23) ---(3박)
     const melodyNotes = [
-      // 마디 1: 라--솔--- (3 + 4 = 7박)
       [440.00, 3], [392.00, 4],
-      // 마디 2: 라--솔--- (3 + 4 = 7박)
       [440.00, 3], [392.00, 4],
-      // 마디 3: 레솔--파--- (1 + 3 + 4 = 8박)
       [293.66, 1], [392.00, 3], [349.23, 4],
-      // 마디 4: 레솔--파--- (1 + 3 + 4 = 8박) -> 총 30박
       [293.66, 1], [392.00, 3], [349.23, 4]
     ];
 
@@ -153,12 +153,12 @@
   function startRewindAudio() {
     window.__PRELOAD_REWIND_ACTIVE = true;
     if (rewindCtl || !isSoundAllowed()) {
-      if (!isSoundAllowed()) releaseRewindLockAndStartForward();
+      if (!isSoundAllowed()) releaseRewindLockOnly();
       return rewindCtl;
     }
     const AudioCtx = window.AudioContext || window.webkitAudioContext;
     if (!AudioCtx) {
-      releaseRewindLockAndStartForward();
+      releaseRewindLockOnly();
       return null;
     }
 
@@ -209,7 +209,7 @@
     try {
       ctx = typeof window.getWaitAudioContext === 'function' ? window.getWaitAudioContext() : new AudioCtx();
       if (!ctx) {
-        releaseRewindLockAndStartForward();
+        releaseRewindLockOnly();
         return null;
       }
       if (ctx.state === 'running') {
@@ -224,7 +224,7 @@
         window.addEventListener('keydown', unlockBound, { once: true, passive: true });
       }
     } catch {
-      releaseRewindLockAndStartForward();
+      releaseRewindLockOnly();
       return null;
     }
 
@@ -247,7 +247,7 @@
           try { src?.disconnect(); filter?.disconnect(); gain?.disconnect(); } catch {}
         } catch {}
         rewindCtl = null;
-        releaseRewindLockAndStartForward();
+        releaseRewindLockOnly();
       }
     };
     return rewindCtl;
@@ -408,7 +408,7 @@
     bannerShown = true;
     currentRatio = 1;
     rewindCtl?.stop?.();
-    releaseRewindLockAndStartForward();
+    releaseRewindLockOnly();
     document.getElementById('brutal-loader-card')?.classList.add('is-complete');
     const badge = document.getElementById('brutal-loader-badge');
     const pct = document.getElementById('brutal-loader-pct');
@@ -442,7 +442,7 @@
     if (done) return;
     done = true;
     rewindCtl?.stop?.();
-    releaseRewindLockAndStartForward();
+    releaseRewindLockOnly();
     const el = document.getElementById(LOADER_ID);
     if (!el) return triggerNextScreen();
 
