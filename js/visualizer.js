@@ -1,14 +1,22 @@
 // ============================================================
 // MY-ARCHIVE 95 OS — Keyword WordCloud, Physics Node Map & Stats
-// (1995 Dot-Pixel UI, Scope Filter & Force-Directed Node Graph)
+// (1995 Dot-Pixel UI, Stepped Win95 Motion & Force-Directed Graph)
 // ============================================================
 
 window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-window.__MOD_VERSIONS.visualizer = typeof APP_BUILD_VERSION !== 'undefined' ? APP_BUILD_VERSION : 'v2026.11.22-03';
+window.__MOD_VERSIONS.visualizer = typeof APP_BUILD_VERSION !== 'undefined' ? APP_BUILD_VERSION : 'v2026.11.22-04';
 
 let nodeSimAnimId = null;
 let selectedCloudKeyword = '';
 let visualizerScope = null; // null(초기 자동 감지) | 'MY' (현재 계정 전체) | 'SHARED' (공개 + 공용 계정 전체)
+
+// Win95 레트로 스텝 프레임 설정 (약 12.5fps, 정수 픽셀 스냅)
+const WIN95_STEP_MS = 80;
+const PIXEL_SNAP = 2;
+
+function snapPx(val, step = PIXEL_SNAP) {
+  return Math.round(val / step) * step;
+}
 
 // 1995년 16x16 도트 픽셀 SVG 아이콘 (이모지 미사용)
 const VISUALIZER_PIXEL_ICONS = {
@@ -56,10 +64,8 @@ function getVisualizerItemsByScope(requestedScope) {
   const myName = me && me.username ? String(me.username).trim() : '';
   const isGuestMode = !me || me.isGuest || me.role === 'public' || isPublicArchiveOwner(myName);
 
-  // 초기 진입 시 공용 계정은 'SHARED', 개인/관리자 계정은 'MY'로 자동 설정
   const effectiveScope = requestedScope || (isGuestMode ? 'SHARED' : 'MY');
 
-  // 1) 현재 계정(내 기록 전체 — 비공개 포함)
   const myItems = typeof getMyVisibleArchiveItems === 'function'
     ? getMyVisibleArchiveItems()
     : all.filter(it => {
@@ -70,7 +76,6 @@ function getVisualizerItemsByScope(requestedScope) {
         return owner.toLowerCase() === myName.toLowerCase();
       });
 
-  // 2) 공개된 기록 + 공용 계정에서 올린 모든 기록
   const publicAndGuestItems = all.filter(it => {
     const owner = String(it.owner || '').trim();
     const isShared = String(it.shared || 'Y').toUpperCase() !== 'N';
@@ -149,17 +154,17 @@ function renderVisualizerWorkspace() {
         <span>노드 구성:</span>
         <span style="display:inline-flex;align-items:center;gap:4px;"><span style="display:inline-block;width:10px;height:10px;background:#48dbfb;border:1.5px solid #111;"></span>매체</span>
         <span>—</span>
-        <span style="display:inline-flex;align-items:center;gap:4px;"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#ff4757;border:1.5px solid #111;"></span>장르</span>
+        <span style="display:inline-flex;align-items:center;gap:4px;"><span style="display:inline-block;width:10px;height:10px;background:#ff4757;border:1.5px solid #111;"></span>장르</span>
         <span>—</span>
-        <span style="display:inline-flex;align-items:center;gap:4px;"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#2ed573;border:1.5px solid #111;"></span>작품 (클릭 시 상세창 열기)</span>
+        <span style="display:inline-flex;align-items:center;gap:4px;"><span style="display:inline-block;width:10px;height:10px;background:#2ed573;border:1.5px solid #111;"></span>작품 (클릭 시 상세창 열기)</span>
       </div>
       <span class="tag-mini">${visualizerScope === 'MY' ? '내 아카이브 분석 모드' : '공개·공용 통합 분석 모드'}</span>
     </div>
 
-    <!-- 1. Canvas 물리 기반 인터랙티브 데이터 노드 맵 -->
-    <div class="sunken-box" style="padding:8px;background:#111111;margin-bottom:12px;position:relative;">
-      <canvas id="node-physics-canvas" width="780" height="340" style="width:100%;height:auto;display:block;cursor:grab;"></canvas>
-      <div id="node-hover-tip" style="display:none;position:absolute;pointer-events:none;background:#ffd83b;color:#111;border:2px solid #111;padding:3px 8px;font-size:0.74rem;font-weight:900;box-shadow:2px 2px 0 #000;"></div>
+    <!-- 1. Win95 도트 스타일 물리 노드 맵 -->
+    <div class="sunken-box" style="padding:6px;background:#080808;margin-bottom:12px;position:relative;image-rendering:pixelated;">
+      <canvas id="node-physics-canvas" width="780" height="340" style="width:100%;height:auto;display:block;cursor:grab;image-rendering:pixelated;"></canvas>
+      <div id="node-hover-tip" style="display:none;position:absolute;pointer-events:none;background:#ffd83b;color:#111;border:2px solid #111;padding:2px 7px;font-size:0.72rem;font-weight:900;font-family:var(--font-mono);box-shadow:2px 2px 0 #000;"></div>
     </div>
 
     <div class="charts-grid" style="margin-bottom:12px;">
@@ -215,7 +220,6 @@ function renderVisualizerWorkspace() {
 
   bindVisualizerScopeButtons(body);
 
-  // 워드클라우드 키워드 클릭 필터 바인딩
   body.querySelectorAll('.wc-tag-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       if (typeof playRetroTone === 'function') playRetroTone('click');
@@ -326,7 +330,6 @@ function buildArchiveStatsAndBias(items) {
     return { category: cat, count, pct, avgRating };
   }).filter(r => r.count > 0);
 
-  // 최장 연속 감상 일수(Streak) 계산
   const uniqueDates = Array.from(
     new Set(items.map(i => String(i.watchDate || '').slice(0, 10)).filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d)))
   ).sort();
@@ -345,7 +348,6 @@ function buildArchiveStatsAndBias(items) {
     }
   }
 
-  // 강점·편중도 진단 메시지 생성
   const sortedByCount = [...rows].sort((a, b) => b.count - a.count);
   const top = sortedByCount[0];
   const low = categories.find(c => !rows.some(r => r.category === c)) || sortedByCount[sortedByCount.length - 1]?.category;
@@ -362,14 +364,57 @@ function buildArchiveStatsAndBias(items) {
 }
 
 // ============================================================
-// 3. Canvas 물리 기반 인터랙티브 데이터 노드 맵 엔진
+// 3. Win95 도트 스타일 스텝형 물리 노드 맵 엔진
 // ============================================================
+function drawDotStippleLine(ctx, x0, y0, x1, y1, color, step = 4) {
+  const sx0 = snapPx(x0, 2);
+  const sy0 = snapPx(y0, 2);
+  const sx1 = snapPx(x1, 2);
+  const sy1 = snapPx(y1, 2);
+
+  const dx = sx1 - sx0;
+  const dy = sy1 - sy0;
+  const steps = Math.max(1, Math.floor(Math.hypot(dx, dy) / step));
+
+  ctx.fillStyle = color;
+  for (let i = 0; i <= steps; i++) {
+    const t = i / steps;
+    const px = snapPx(sx0 + dx * t, 2);
+    const py = snapPx(sy0 + dy * t, 2);
+    ctx.fillRect(px, py, 2, 2);
+  }
+}
+
+function drawPixelBlockNode(ctx, cx, cy, halfSize, fillColor, isHover) {
+  const h = snapPx(halfSize + (isHover ? 2 : 0), 2);
+  const x = snapPx(cx - h, 2);
+  const y = snapPx(cy - h, 2);
+  const size = h * 2;
+
+  // Win95 스타일 드롭 섀도우 (2px)
+  ctx.fillStyle = '#000000';
+  ctx.fillRect(x + 2, y + 2, size, size);
+
+  // 외곽 픽셀 테두리
+  ctx.fillStyle = '#111111';
+  ctx.fillRect(x, y, size, size);
+
+  // 내부 채우기 (2px 베벨 보더)
+  ctx.fillStyle = isHover ? '#ffd83b' : fillColor;
+  ctx.fillRect(x + 2, y + 2, Math.max(2, size - 4), Math.max(2, size - 4));
+
+  // 좌상단 하이라이트 도트
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(x + 2, y + 2, Math.max(2, size - 6), 2);
+}
+
 function startPhysicsNodeSimulation(items) {
   const canvas = document.getElementById('node-physics-canvas');
   const tipEl = document.getElementById('node-hover-tip');
   if (!canvas) return;
 
   const ctx = canvas.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
   const W = canvas.width;
   const H = canvas.height;
 
@@ -386,8 +431,8 @@ function startPhysicsNodeSimulation(items) {
       radius,
       color,
       itemObj,
-      x: W / 2 + (Math.random() - 0.5) * 260,
-      y: H / 2 + (Math.random() - 0.5) * 160,
+      x: snapPx(W / 2 + (Math.random() - 0.5) * 260, 4),
+      y: snapPx(H / 2 + (Math.random() - 0.5) * 160, 4),
       vx: 0,
       vy: 0
     };
@@ -396,7 +441,6 @@ function startPhysicsNodeSimulation(items) {
     return n;
   };
 
-  // 최근 최대 28개 작품으로 노드 밀도 최적화
   const sampleItems = items.slice(0, 28);
   sampleItems.forEach(item => {
     const cat = item.category || '기타';
@@ -405,17 +449,18 @@ function startPhysicsNodeSimulation(items) {
     const genreId = `GEN:${cat}:${genre}`;
     const itemId = `ITM:${item.id}`;
 
-    const catNode = addNode(catId, cat, 'category', 20, '#48dbfb');
-    const genreNode = addNode(genreId, genre, 'genre', 13, '#ff4757');
+    const catNode = addNode(catId, cat, 'category', 16, '#48dbfb');
+    const genreNode = addNode(genreId, genre, 'genre', 11, '#ff4757');
     const itemNode = addNode(itemId, item.title, 'item', 8, '#2ed573', item);
 
-    edges.push({ source: catNode, target: genreNode, dist: 72 });
-    edges.push({ source: genreNode, target: itemNode, dist: 48 });
+    edges.push({ source: catNode, target: genreNode, dist: 76 });
+    edges.push({ source: genreNode, target: itemNode, dist: 50 });
   });
 
   let draggedNode = null;
   let hoveredNode = null;
   let dragMoved = false;
+  let lastStepTime = 0;
 
   const getCanvasPos = (clientX, clientY) => {
     const rect = canvas.getBoundingClientRect();
@@ -428,9 +473,8 @@ function startPhysicsNodeSimulation(items) {
   const findNodeAt = (x, y) => {
     for (let i = nodes.length - 1; i >= 0; i--) {
       const n = nodes[i];
-      const dx = x - n.x;
-      const dy = y - n.y;
-      if (dx * dx + dy * dy <= (n.radius + 5) * (n.radius + 5)) return n;
+      const pad = n.radius + 6;
+      if (Math.abs(x - n.x) <= pad && Math.abs(y - n.y) <= pad) return n;
     }
     return null;
   };
@@ -449,8 +493,8 @@ function startPhysicsNodeSimulation(items) {
     const pos = getCanvasPos(e.clientX, e.clientY);
     if (draggedNode) {
       dragMoved = true;
-      draggedNode.x = Math.max(24, Math.min(W - 24, pos.x));
-      draggedNode.y = Math.max(24, Math.min(H - 24, pos.y));
+      draggedNode.x = snapPx(Math.max(24, Math.min(W - 24, pos.x)), 2);
+      draggedNode.y = snapPx(Math.max(24, Math.min(H - 24, pos.y)), 2);
       draggedNode.vx = 0;
       draggedNode.vy = 0;
       return;
@@ -464,8 +508,8 @@ function startPhysicsNodeSimulation(items) {
       if (hit) {
         const rect = canvas.getBoundingClientRect();
         tipEl.style.display = 'block';
-        tipEl.style.left = `${Math.min(rect.width - 180, Math.max(8, e.clientX - rect.left + 12))}px`;
-        tipEl.style.top = `${Math.max(8, e.clientY - rect.top - 26)}px`;
+        tipEl.style.left = `${snapPx(Math.min(rect.width - 180, Math.max(8, e.clientX - rect.left + 12)), 2)}px`;
+        tipEl.style.top = `${snapPx(Math.max(8, e.clientY - rect.top - 26), 2)}px`;
         tipEl.textContent = hit.type === 'item'
           ? `[클릭하여 상세 보기] ${hit.label} (${hit.itemObj?.rating || 5}점)`
           : `[${hit.type === 'category' ? '매체' : '장르'}] ${hit.label}`;
@@ -494,110 +538,122 @@ function startPhysicsNodeSimulation(items) {
   document.getElementById('btn-vis-reheat')?.addEventListener('click', () => {
     if (typeof playRetroTone === 'function') playRetroTone('click');
     nodes.forEach(n => {
-      n.vx += (Math.random() - 0.5) * 14;
-      n.vy += (Math.random() - 0.5) * 14;
+      n.vx += snapPx((Math.random() - 0.5) * 24, 4);
+      n.vy += snapPx((Math.random() - 0.5) * 24, 4);
     });
   });
 
-  const tick = () => {
+  const renderFrame = () => {
+    ctx.imageSmoothingEnabled = false;
+    ctx.fillStyle = '#080808';
+    ctx.fillRect(0, 0, W, H);
+
+    // Win95 도트 패턴 그리드 (2px 점선 격자)
+    ctx.fillStyle = '#242424';
+    for (let gx = 0; gx < W; gx += 20) {
+      for (let gy = 0; gy < H; gy += 20) {
+        ctx.fillRect(gx, gy, 2, 2);
+      }
+    }
+
+    // 도트 스티플 연결선 그리기
+    edges.forEach(edge => {
+      const activeEdge = hoveredNode && (edge.source === hoveredNode || edge.target === hoveredNode);
+      drawDotStippleLine(
+        ctx,
+        edge.source.x,
+        edge.source.y,
+        edge.target.x,
+        edge.target.y,
+        activeEdge ? '#ffd83b' : '#7a7a7a',
+        4
+      );
+    });
+
+    // 도트 블록 노드 및 고정폭 라벨 그리기
+    nodes.forEach(n => {
+      const isHover = hoveredNode === n;
+      drawPixelBlockNode(ctx, n.x, n.y, n.radius, n.color, isHover);
+
+      ctx.font = n.type === 'category'
+        ? 'bold 11px "DungGeunMo", monospace'
+        : '10px "DungGeunMo", monospace';
+      ctx.textAlign = 'center';
+      const shortLabel = n.label.length > 10 ? n.label.slice(0, 10) + '..' : n.label;
+      const lx = snapPx(n.x, 2);
+      const ly = snapPx(n.y + n.radius + 14, 2);
+
+      // 가독성을 위한 1px 도트 외곽 그림자
+      ctx.fillStyle = '#000000';
+      ctx.fillText(shortLabel, lx + 1, ly + 1);
+      ctx.fillStyle = isHover ? '#ffd83b' : '#f0f0f0';
+      ctx.fillText(shortLabel, lx, ly);
+    });
+  };
+
+  const tick = (now = 0) => {
     const winEl = document.getElementById('win-visualizer');
     if (!document.body.contains(canvas) || !winEl || !winEl.classList.contains('open') || winEl.classList.contains('minimized')) {
       nodeSimAnimId = null;
       return;
     }
 
-    // 1. 노드 간 척력 (Repulsion)
-    for (let i = 0; i < nodes.length; i++) {
-      for (let j = i + 1; j < nodes.length; j++) {
-        const a = nodes[i];
-        const b = nodes[j];
-        let dx = b.x - a.x;
-        let dy = b.y - a.y;
-        let distSq = dx * dx + dy * dy || 1;
-        if (distSq < 18000) {
-          const force = 520 / distSq;
-          const dist = Math.sqrt(distSq);
-          const fx = (dx / dist) * force;
-          const fy = (dy / dist) * force;
-          if (a !== draggedNode) { a.vx -= fx; a.vy -= fy; }
-          if (b !== draggedNode) { b.vx += fx; b.vy += fy; }
+    if (now - lastStepTime >= WIN95_STEP_MS) {
+      lastStepTime = now;
+
+      // 1. 노드 간 척력
+      for (let i = 0; i < nodes.length; i++) {
+        for (let j = i + 1; j < nodes.length; j++) {
+          const a = nodes[i];
+          const b = nodes[j];
+          let dx = b.x - a.x;
+          let dy = b.y - a.y;
+          let distSq = dx * dx + dy * dy || 1;
+          if (distSq < 18000) {
+            const force = 620 / distSq;
+            const dist = Math.sqrt(distSq);
+            const fx = (dx / dist) * force;
+            const fy = (dy / dist) * force;
+            if (a !== draggedNode) { a.vx -= fx; a.vy -= fy; }
+            if (b !== draggedNode) { b.vx += fx; b.vy += fy; }
+          }
         }
       }
+
+      // 2. 엣지 용수철 인력
+      edges.forEach(edge => {
+        const { source, target, dist } = edge;
+        const dx = target.x - source.x;
+        const dy = target.y - source.y;
+        const curDist = Math.sqrt(dx * dx + dy * dy) || 1;
+        const diff = (curDist - dist) * 0.085;
+        const fx = (dx / curDist) * diff;
+        const fy = (dy / curDist) * diff;
+        if (source !== draggedNode) { source.vx += fx; source.vy += fy; }
+        if (target !== draggedNode) { target.vx -= fx; target.vy -= fy; }
+      });
+
+      // 3. 중앙 인력, 감쇠 및 정수 픽셀 스냅 적분
+      nodes.forEach(n => {
+        if (n === draggedNode) return;
+        n.vx += (W / 2 - n.x) * 0.012;
+        n.vy += (H / 2 - n.y) * 0.012;
+        n.vx *= 0.72;
+        n.vy *= 0.72;
+        if (Math.abs(n.vx) < 0.35) n.vx = 0;
+        if (Math.abs(n.vy) < 0.35) n.vy = 0;
+
+        n.x = snapPx(Math.max(26, Math.min(W - 26, n.x + n.vx)), PIXEL_SNAP);
+        n.y = snapPx(Math.max(26, Math.min(H - 26, n.y + n.vy)), PIXEL_SNAP);
+      });
+
+      renderFrame();
     }
-
-    // 2. 엣지 용수철 인력 (Spring Attraction)
-    edges.forEach(edge => {
-      const { source, target, dist } = edge;
-      const dx = target.x - source.x;
-      const dy = target.y - source.y;
-      const curDist = Math.sqrt(dx * dx + dy * dy) || 1;
-      const diff = (curDist - dist) * 0.035;
-      const fx = (dx / curDist) * diff;
-      const fy = (dy / curDist) * diff;
-      if (source !== draggedNode) { source.vx += fx; source.vy += fy; }
-      if (target !== draggedNode) { target.vx -= fx; target.vy -= fy; }
-    });
-
-    // 3. 중앙 인력 및 감쇠 적분
-    nodes.forEach(n => {
-      if (n === draggedNode) return;
-      n.vx += (W / 2 - n.x) * 0.0045;
-      n.vy += (H / 2 - n.y) * 0.0045;
-      n.vx *= 0.84;
-      n.vy *= 0.84;
-      n.x = Math.max(26, Math.min(W - 26, n.x + n.vx));
-      n.y = Math.max(26, Math.min(H - 26, n.y + n.vy));
-    });
-
-    // 4. Canvas 렌더링
-    ctx.clearRect(0, 0, W, H);
-
-    // 배경 그리드 라인
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.07)';
-    ctx.lineWidth = 1;
-    for (let gx = 0; gx < W; gx += 40) {
-      ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, H); ctx.stroke();
-    }
-    for (let gy = 0; gy < H; gy += 40) {
-      ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(W, gy); ctx.stroke();
-    }
-
-    // 연결선(Edge) 그리기
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
-    ctx.lineWidth = 1.5;
-    edges.forEach(edge => {
-      ctx.beginPath();
-      ctx.moveTo(edge.source.x, edge.source.y);
-      ctx.lineTo(edge.target.x, edge.target.y);
-      ctx.stroke();
-    });
-
-    // 노드(Node) 및 라벨 그리기
-    nodes.forEach(n => {
-      const isHover = hoveredNode === n;
-      ctx.beginPath();
-      if (n.type === 'category') {
-        const half = (isHover ? n.radius + 3 : n.radius) * 0.88;
-        ctx.rect(n.x - half, n.y - half, half * 2, half * 2);
-      } else {
-        ctx.arc(n.x, n.y, isHover ? n.radius + 3 : n.radius, 0, Math.PI * 2);
-      }
-      ctx.fillStyle = isHover ? '#ffd83b' : n.color;
-      ctx.fill();
-      ctx.lineWidth = 2;
-      ctx.strokeStyle = '#111111';
-      ctx.stroke();
-
-      ctx.fillStyle = '#ffffff';
-      ctx.font = n.type === 'category' ? 'bold 12px sans-serif' : '11px sans-serif';
-      ctx.textAlign = 'center';
-      const shortLabel = n.label.length > 10 ? n.label.slice(0, 10) + '..' : n.label;
-      ctx.fillText(shortLabel, n.x, n.y + n.radius + 13);
-    });
 
     nodeSimAnimId = requestAnimationFrame(tick);
   };
 
+  renderFrame();
   nodeSimAnimId = requestAnimationFrame(tick);
 }
 
