@@ -1,9 +1,10 @@
 // ============================================================
 // MY-ARCHIVE 95 OS — Pre-Click Wait Screen
+// (Blurred 3D CRT Backdrop + Static Noise + Brutalist Marquee & 3D Title + "Ddal-Kkak")
 // ============================================================
 
 window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-window.__MOD_VERSIONS.bootWait = 'v2026.11.25-ddal-kkak-split';
+window.__MOD_VERSIONS.bootWait = 'v2026.11.25-ddal-kkak-blur3d';
 
 const WAIT_SETUP_KEY = 'myarchive95_setup_v1';
 
@@ -97,7 +98,7 @@ function playButtonClickSound(options = {}) {
     const releaseGapSec = typeof options.gapSec === 'number' ? options.gapSec : 0.065;
     const volumeScale = typeof options.volume === 'number' ? options.volume : 1.0;
 
-    // [1] 들어가는 소리 ("딸"): 1550Hz -> 310Hz로 떨어지며 하우징에 닿는 소리
+    // [1] 들어가는 소리 ("딸"): 1550Hz -> 310Hz
     const tIn = now;
     const oscIn = ctx.createOscillator();
     const gainIn = ctx.createGain();
@@ -116,7 +117,7 @@ function playButtonClickSound(options = {}) {
 
     createSwitchTransientBurst(ctx, tIn, 0.024, 1450, 0.22 * volumeScale, 550);
 
-    // [2] 나오는 소리 ("깍"): 간격 후 920Hz -> 2480Hz로 튀어 오르며 복귀하는 소리
+    // [2] 나오는 소리 ("깍"): 920Hz -> 2480Hz
     const tOut = now + releaseGapSec;
     const oscOut = ctx.createOscillator();
     const gainOut = ctx.createGain();
@@ -206,6 +207,141 @@ function startSubtleStaticNoise() {
   } catch {
     return null;
   }
+}
+
+// ============================================================
+// 뒤편 흐리게(초점 X) 표시되는 3D CRT 모니터 프리뷰 레이어
+// ============================================================
+function startBlurredBackground3dCrt() {
+  const prev = document.getElementById('pre-click-blurred-3d-crt');
+  if (prev) prev.remove();
+
+  const backdrop = document.createElement('div');
+  backdrop.id = 'pre-click-blurred-3d-crt';
+  backdrop.style.cssText = `
+    position: fixed;
+    inset: 0;
+    z-index: 1000001;
+    pointer-events: none;
+    background: #05070a;
+    filter: blur(8px) brightness(0.68) contrast(1.06);
+    transform: scale(1.05);
+    opacity: 1;
+    transition: filter 0.45s ease, transform 0.45s ease, opacity 0.35s ease;
+    overflow: hidden;
+  `;
+  document.body.appendChild(backdrop);
+
+  let rafId = 0;
+  let renderer = null;
+  let stopped = false;
+
+  const ensureThree = () => {
+    if (window.THREE) return Promise.resolve(window.THREE);
+    if (typeof window.loadThreeJsLibrary === 'function') return window.loadThreeJsLibrary();
+    return new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js';
+      s.async = true;
+      s.onload = () => (window.THREE ? resolve(window.THREE) : reject(new Error('THREE missing')));
+      s.onerror = reject;
+      document.head.appendChild(s);
+    });
+  };
+
+  const buildFallbackCrt = THREE => {
+    if (typeof window.buildLowPolyCrt3dGroup === 'function') {
+      return window.buildLowPolyCrt3dGroup(THREE);
+    }
+    const g = new THREE.Group();
+    const shell = new THREE.Mesh(
+      new THREE.BoxGeometry(3.2, 2.5, 1.4),
+      new THREE.MeshStandardMaterial({ color: 0xc8c3b4, roughness: 0.8, flatShading: true })
+    );
+    const screen = new THREE.Mesh(
+      new THREE.BoxGeometry(2.4, 1.8, 0.2),
+      new THREE.MeshStandardMaterial({ color: 0x163848, emissive: 0x0d2836, flatShading: true })
+    );
+    screen.position.set(0, 0.05, 0.68);
+    g.add(shell, screen);
+    return g;
+  };
+
+  let onResize = null;
+
+  ensureThree()
+    .then(THREE => {
+      if (stopped) return;
+      const w = window.innerWidth || 1280;
+      const h = window.innerHeight || 720;
+
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x06080c);
+
+      const camera = new THREE.PerspectiveCamera(42, w / h, 0.05, 100);
+      camera.position.set(0.35, 0.25, 7.6);
+      camera.lookAt(0, -0.1, 0);
+
+      renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+      renderer.setSize(w, h);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+      backdrop.appendChild(renderer.domElement);
+
+      scene.add(new THREE.AmbientLight(0xffffff, 1.15));
+      const key = new THREE.DirectionalLight(0xfff7e6, 1.9);
+      key.position.set(4.5, 5.5, 6.0);
+      scene.add(key);
+
+      const rim = new THREE.DirectionalLight(0x9ec5ff, 0.9);
+      rim.position.set(-5.0, 2.0, -4.0);
+      scene.add(rim);
+
+      const crt = buildFallbackCrt(THREE);
+      crt.position.set(0.65, -0.05, -0.8);
+      crt.rotation.set(0.08, 0.78, 0);
+      scene.add(crt);
+
+      onResize = () => {
+        if (stopped || !renderer) return;
+        const nw = window.innerWidth || 1280;
+        const nh = window.innerHeight || 720;
+        camera.aspect = nw / nh;
+        camera.updateProjectionMatrix();
+        renderer.setSize(nw, nh);
+      };
+      window.addEventListener('resize', onResize);
+
+      const renderLoop = now => {
+        if (stopped) return;
+        crt.rotation.y = 0.78 + Math.sin(now * 0.0008) * 0.06;
+        crt.position.y = -0.05 + Math.cos(now * 0.0011) * 0.04;
+        renderer.render(scene, camera);
+        rafId = requestAnimationFrame(renderLoop);
+      };
+      rafId = requestAnimationFrame(renderLoop);
+    })
+    .catch(() => {});
+
+  return {
+    focusAndClear: () => {
+      backdrop.style.filter = 'blur(0px) brightness(1) contrast(1)';
+      backdrop.style.transform = 'scale(1)';
+    },
+    stop: () => {
+      if (stopped) return;
+      stopped = true;
+      if (onResize) window.removeEventListener('resize', onResize);
+      if (rafId) cancelAnimationFrame(rafId);
+      backdrop.style.opacity = '0';
+      setTimeout(() => {
+        try {
+          renderer?.dispose();
+          renderer?.domElement?.remove();
+        } catch {}
+        backdrop.remove();
+      }, 360);
+    }
+  };
 }
 
 // ============================================================
@@ -525,7 +661,7 @@ function startPreClickNoiseTitleLayer() {
     curRotX += (goalX - curRotX) * 0.09;
 
     if (box) {
-      box.style.transform = `rotateX(${curRotX.toFixed(2)}deg) rotateY(${curRotY.toFixed(2)}deg) translate3d(${(curRotY * 1.1).toFixed(1)}px,${(-curRotX * 0.9).toFixed(1)}px, 0)`;
+      box.style.transform = `rotateX(${curRotX.toFixed(2)}deg) rotateY(${curRotY.toFixed(2)}deg) translate3d(${(curRotY * 1.1).toFixed(1)}px, ${(-curRotX * 0.9).toFixed(1)}px, 0)`;
     }
     rafId = requestAnimationFrame(tick3dGaze);
   };
@@ -649,8 +785,77 @@ function startFullScreenStaticEffect() {
   };
 }
 
+// ============================================================
+// 시작 화면 통합 진입점: [흐릿한 3D CRT + 치지직 + 마키/3D 타이틀]
+// 클릭 시 "딸-깍" 재생 후 초점을 맞추며 부팅으로 전환
+// ============================================================
+function mountPreClickStartScreen(onStartBoot) {
+  const existing = document.getElementById('pre-click-start-hit-layer');
+  if (existing) existing.remove();
+
+  const hitLayer = document.createElement('div');
+  hitLayer.id = 'pre-click-start-hit-layer';
+  hitLayer.setAttribute('role', 'button');
+  hitLayer.setAttribute('tabindex', '0');
+  hitLayer.setAttribute('aria-label', '화면을 클릭하여 부팅 시작');
+  hitLayer.style.cssText = `
+    position: fixed;
+    inset: 0;
+    z-index: 1000020;
+    background: transparent;
+    cursor: pointer;
+  `;
+  document.body.appendChild(hitLayer);
+
+  const blur3d = startBlurredBackground3dCrt();
+  const stopTitle = startPreClickNoiseTitleLayer();
+  const stopStatic = startFullScreenStaticEffect();
+  const noiseAudio = startSubtleStaticNoise();
+
+  let triggered = false;
+
+  const triggerStart = e => {
+    if (triggered) return;
+    if (e && e.type === 'keydown' && e.key !== 'Enter' && e.key !== ' ') return;
+    if (e && e.type === 'keydown') e.preventDefault();
+    triggered = true;
+
+    hitLayer.style.pointerEvents = 'none';
+    playButtonClickSound({ gapSec: 0.065, volume: 1.05 });
+    if (noiseAudio?.resume) noiseAudio.resume();
+
+    stopTitle();
+    stopStatic();
+    blur3d.focusAndClear();
+
+    setTimeout(() => {
+      blur3d.stop();
+      noiseAudio?.stop();
+      hitLayer.remove();
+      if (typeof onStartBoot === 'function') {
+        onStartBoot();
+      }
+    }, 360);
+  };
+
+  hitLayer.addEventListener('click', triggerStart);
+  hitLayer.addEventListener('keydown', triggerStart);
+
+  return () => {
+    triggered = true;
+    hitLayer.removeEventListener('click', triggerStart);
+    hitLayer.removeEventListener('keydown', triggerStart);
+    stopTitle();
+    stopStatic();
+    blur3d.stop();
+    noiseAudio?.stop();
+  };
+}
+
 window.getWaitAudioContext = getWaitAudioContext;
 window.playButtonClickSound = playButtonClickSound;
 window.startSubtleStaticNoise = startSubtleStaticNoise;
+window.startBlurredBackground3dCrt = startBlurredBackground3dCrt;
 window.startPreClickNoiseTitleLayer = startPreClickNoiseTitleLayer;
 window.startFullScreenStaticEffect = startFullScreenStaticEffect;
+window.mountPreClickStartScreen = mountPreClickStartScreen;
