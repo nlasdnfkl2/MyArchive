@@ -4,7 +4,7 @@
 
 (function () {
   window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-  window.__MOD_VERSIONS.win95Widgets = 'v2026.11.25-06';
+  window.__MOD_VERSIONS.win95Widgets = 'v2026.11.25-07-chaos-noise';
 
   const WIDGET_STATE_KEY = 'myarchive95_widgets_state_v1';
   const FALLBACK_ALBUM_ART =
@@ -311,7 +311,8 @@
     },
     grayNoise: {
       lastId: '',
-      current: null
+      current: null,
+      spawnSeq: 0
     }
   };
 
@@ -363,10 +364,12 @@
   function clampWidgetPos(left, top, width = 280, height = 180) {
     const vw = window.innerWidth || 1024;
     const vh = window.innerHeight || 768;
-    const minLeft = 24;
-    const minTop = 52;
-    const maxLeft = Math.max(minLeft, vw - Math.max(120, Number(width) || 280) - 16);
-    const maxTop = Math.max(minTop, vh - Math.max(90, Number(height) || 180) - 44);
+    const w = Math.min(Math.max(140, Number(width) || 280), Math.max(140, vw - 24));
+    const h = Math.min(Math.max(96, Number(height) || 180), Math.max(96, vh - 88));
+    const minLeft = 12;
+    const minTop = 44;
+    const maxLeft = Math.max(minLeft, vw - w - 12);
+    const maxTop = Math.max(minTop, vh - h - 44);
     const safeLeft = Number.isFinite(Number(left))
       ? Math.min(maxLeft, Math.max(minLeft, Number(left)))
       : minLeft;
@@ -374,6 +377,22 @@
       ? Math.min(maxTop, Math.max(minTop, Number(top)))
       : minTop;
     return { left: safeLeft, top: safeTop };
+  }
+
+  // 창 크기를 고려해 화면 밖으로 잘리지 않는 랜덤 좌표 생성
+  function getSafeRandomWidgetPos(width = 320, height = 230) {
+    const vw = window.innerWidth || 1024;
+    const vh = window.innerHeight || 768;
+    const w = Math.min(Math.max(140, Number(width) || 320), Math.max(140, vw - 24));
+    const h = Math.min(Math.max(96, Number(height) || 230), Math.max(96, vh - 88));
+    const minLeft = 12;
+    const minTop = 44;
+    const maxLeft = Math.max(minLeft, vw - w - 12);
+    const maxTop = Math.max(minTop, vh - h - 44);
+
+    const randLeft = minLeft + Math.random() * Math.max(0, maxLeft - minLeft);
+    const randTop = minTop + Math.random() * Math.max(0, maxTop - minTop);
+    return clampWidgetPos(Math.round(randLeft), Math.round(randTop), w, h);
   }
 
   function loadSavedWidgetPositions() {
@@ -391,6 +410,21 @@
       all[id] = { left, top, open: Boolean(open) };
       localStorage.setItem(WIDGET_STATE_KEY, JSON.stringify(all));
     } catch {}
+  }
+
+  function stopWidgetMedia(el) {
+    if (!el) return;
+    el.querySelectorAll('audio, video').forEach(media => {
+      try {
+        media.pause();
+        media.currentTime = 0;
+      } catch {}
+    });
+    el.querySelectorAll('iframe').forEach(frame => {
+      try {
+        frame.setAttribute('src', 'about:blank');
+      } catch {}
+    });
   }
 
   function ensureWidgetStyles() {
@@ -797,7 +831,7 @@
     });
   }
 
-  function makeDraggable(el, id) {
+  function makeDraggable(el, id, { persistPosition = true } = {}) {
     const bar = el.querySelector('.w95-w-titlebar');
     if (!bar || bar.dataset.dragBound === 'true') return;
     bar.dataset.dragBound = 'true';
@@ -850,7 +884,9 @@
           el.offsetWidth || 260,
           el.offsetHeight || 160
         );
-        saveWidgetPosition(id, savedPos.left, savedPos.top, !el.classList.contains('hidden'));
+        if (persistPosition) {
+          saveWidgetPosition(id, savedPos.left, savedPos.top, !el.classList.contains('hidden'));
+        }
       };
 
       window.addEventListener('pointermove', onMove);
@@ -859,11 +895,21 @@
     });
   }
 
-  function createWidgetShell({ id, title, iconSvg, width, defaultLeft, defaultTop, bodyHtml }) {
+  function createWidgetShell({
+    id,
+    title,
+    iconSvg,
+    width,
+    defaultLeft,
+    defaultTop,
+    bodyHtml,
+    persistPosition = true,
+    destroyOnClose = false
+  }) {
     ensureWidgetStyles();
     const w = Number(width) || 260;
 
-    if (widgetStore.widgets.has(id)) {
+    if (!destroyOnClose && widgetStore.widgets.has(id)) {
       const existing = widgetStore.widgets.get(id);
       existing.classList.remove('hidden');
       const curRect = existing.getBoundingClientRect();
@@ -879,7 +925,7 @@
       return existing;
     }
 
-    const saved = loadSavedWidgetPositions()[id] || {};
+    const saved = persistPosition ? (loadSavedWidgetPositions()[id] || {}) : {};
     const rawLeft = typeof saved.left === 'number' ? saved.left : (defaultLeft ?? 120);
     const rawTop = typeof saved.top === 'number' ? saved.top : (defaultTop ?? 80);
     const { left, top } = clampWidgetPos(rawLeft, rawTop, w, 180);
@@ -909,17 +955,27 @@
     el.querySelector('[data-w-act="min"]')?.addEventListener('click', () => {
       beep('click');
       el.classList.add('hidden');
-      saveWidgetPosition(id, el.offsetLeft, el.offsetTop, false);
+      if (persistPosition) {
+        saveWidgetPosition(id, el.offsetLeft, el.offsetTop, false);
+      }
     });
     el.querySelector('[data-w-act="close"]')?.addEventListener('click', () => {
       beep('close');
-      el.classList.add('hidden');
-      saveWidgetPosition(id, el.offsetLeft, el.offsetTop, false);
+      stopWidgetMedia(el);
+      if (destroyOnClose) {
+        widgetStore.widgets.delete(id);
+        el.remove();
+      } else {
+        el.classList.add('hidden');
+        if (persistPosition) {
+          saveWidgetPosition(id, el.offsetLeft, el.offsetTop, false);
+        }
+      }
     });
 
     (document.getElementById('dynamic-windows-container') || document.body).appendChild(el);
     widgetStore.widgets.set(id, el);
-    makeDraggable(el, id);
+    makeDraggable(el, id, { persistPosition });
     focusWidget(id);
     return el;
   }
@@ -1063,7 +1119,7 @@
 
         const iframe = jukeboxWin.querySelector('iframe');
         if (iframe && vid) {
-          iframe.src = `https://www.youtube.com/embed/${vid}?autoplay=1&enablejsapi=1&rel=0`;
+          iframe.src = `https://www.youtube.com/embed/${vid}?autoplay=1&vq=large&enablejsapi=1&rel=0`;
           widgetStore.cdState.syncStatus = 'YouTube 직결 재생 중';
           return true;
         }
@@ -1424,7 +1480,7 @@
   }
 
   // ------------------------------------------------------------
-  // 3. 로컬 AI 기분별 음악 추천 엔진 & 위젯 + '회색소음' 팝업
+  // 3. 로컬 AI 기분별 음악 추천 엔진 & 위젯 + '회색소음' 다중 팝업
   // ------------------------------------------------------------
   function pickRandomGrayNoiseItem() {
     const pool = GRAY_NOISE_POOL;
@@ -1438,11 +1494,38 @@
     return chosen;
   }
 
-  function openGrayNoiseEasterEgg() {
+  function buildGrayNoiseEmbedUrl(videoId) {
+    const params = new URLSearchParams({
+      autoplay: '1',
+      rel: '0',
+      playsinline: '1',
+      vq: 'large'
+    });
+    return `https://www.youtube.com/embed/${encodeURIComponent(videoId)}?${params.toString()}`;
+  }
+
+  function openGrayNoiseEasterEgg(spawnNew = false) {
     beep('open');
     const item = pickRandomGrayNoiseItem();
     const vid = extractYouTubeVideoId(item.sourceUrl || item.videoId) || 'vvbGUFe18ig';
-    const embedUrl = `https://www.youtube.com/embed/${encodeURIComponent(vid)}?autoplay=1&rel=0&playsinline=1`;
+    const embedUrl = buildGrayNoiseEmbedUrl(vid);
+
+    const winWidth = 320;
+    const estWinHeight = 236;
+    const isExtraWindow = Boolean(spawnNew);
+    const seqNum = isExtraWindow ? ++widgetStore.grayNoise.spawnSeq : 0;
+    const widgetId = isExtraWindow
+      ? `widget-gray-noise-popup-${seqNum}`
+      : 'widget-gray-noise-popup';
+
+    const pos = isExtraWindow
+      ? getSafeRandomWidgetPos(winWidth, estWinHeight)
+      : clampWidgetPos(
+          Math.min(Math.max(24, (window.innerWidth || 1024) - 348), 460),
+          110,
+          winWidth,
+          estWinHeight
+        );
 
     const noiseIcon = `
       <svg width="14" height="14" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true">
@@ -1450,19 +1533,25 @@
         <path fill="#ffd83b" d="M5 5h6v2H8v4H6V7H5V5z"/>
       </svg>`;
 
+    const titleText = isExtraWindow
+      ? `GRAY NOISE #${seqNum} — ${item.tag}`
+      : `GRAY NOISE — ${item.tag}`;
+
     const el = createWidgetShell({
-      id: 'widget-gray-noise-popup',
-      title: `GRAY NOISE — ${item.tag}`,
+      id: widgetId,
+      title: titleText,
       iconSvg: noiseIcon,
-      width: 320,
-      defaultLeft: Math.min(Math.max(24, (window.innerWidth || 1024) - 348), 460),
-      defaultTop: 110,
+      width: winWidth,
+      defaultLeft: pos.left,
+      defaultTop: pos.top,
+      persistPosition: !isExtraWindow,
+      destroyOnClose: isExtraWindow,
       bodyHtml: `
         <div style="background:#19191f;color:#d0d0d0;border:2px solid #111;padding:6px 8px;margin-bottom:8px;font-family:'Consolas',monospace;font-size:0.74rem;display:flex;justify-content:space-between;align-items:center;gap:6px;">
-          <span id="w95-gn-title" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:900;color:#ffd83b;">${safeEsc(item.title)}</span>
-          <span style="font-size:0.65rem;background:#333;padding:1px 5px;border:1px solid #777;flex-shrink:0;">BONUS</span>
+          <span class="w95-gn-title" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:900;color:#ffd83b;">${safeEsc(item.title)}</span>
+          <span style="font-size:0.65rem;background:#333;padding:1px 5px;border:1px solid #777;flex-shrink:0;">${isExtraWindow ? `LAYER ${seqNum}` : 'BONUS'}</span>
         </div>
-        <div id="w95-gn-frame" style="width:100%;aspect-ratio:16/9;background:#000;border:2px solid #111;overflow:hidden;margin-bottom:8px;">
+        <div class="w95-gn-frame" style="width:100%;aspect-ratio:16/9;background:#000;border:2px solid #111;overflow:hidden;margin-bottom:8px;">
           <iframe
             src="${embedUrl}"
             title="${safeEsc(item.title)}"
@@ -1473,39 +1562,41 @@
           </iframe>
         </div>
         <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;">
-          <button type="button" class="w95-mini-btn gray-noise" id="w95-gn-reroll" style="flex:1;">다른 소음 랜덤 재생</button>
-          <a id="w95-gn-ext" href="${safeEsc(item.sourceUrl)}" target="_blank" rel="noopener noreferrer" class="w95-mini-btn" style="text-decoration:none;font-size:0.72rem;">YT 창</a>
+          <button type="button" class="w95-mini-btn gray-noise w95-gn-reroll" style="flex:1;">다른 소음 랜덤 재생</button>
+          <a class="w95-mini-btn w95-gn-ext" href="${safeEsc(item.sourceUrl)}" target="_blank" rel="noopener noreferrer" style="text-decoration:none;font-size:0.72rem;">YT 창</a>
         </div>
       `
     });
 
-    const titleBarSpan = el.querySelector('.w95-w-title-left span');
-    if (titleBarSpan) titleBarSpan.textContent = `GRAY NOISE — ${item.tag}`;
+    if (!isExtraWindow) {
+      const titleBarSpan = el.querySelector('.w95-w-title-left span');
+      if (titleBarSpan) titleBarSpan.textContent = titleText;
 
-    const titleEl = el.querySelector('#w95-gn-title');
-    if (titleEl) titleEl.textContent = item.title;
+      const titleEl = el.querySelector('.w95-gn-title');
+      if (titleEl) titleEl.textContent = item.title;
 
-    const extEl = el.querySelector('#w95-gn-ext');
-    if (extEl) extEl.setAttribute('href', item.sourceUrl);
+      const extEl = el.querySelector('.w95-gn-ext');
+      if (extEl) extEl.setAttribute('href', item.sourceUrl);
 
-    const frameEl = el.querySelector('#w95-gn-frame');
-    if (frameEl) {
-      frameEl.innerHTML = `
-        <iframe
-          src="${embedUrl}"
-          title="${safeEsc(item.title)}"
-          style="width:100%;height:100%;border:0;display:block;"
-          allow="autoplay; encrypted-media; picture-in-picture"
-          referrerpolicy="strict-origin-when-cross-origin"
-          allowfullscreen>
-        </iframe>
-      `;
+      const frameEl = el.querySelector('.w95-gn-frame');
+      if (frameEl) {
+        frameEl.innerHTML = `
+          <iframe
+            src="${embedUrl}"
+            title="${safeEsc(item.title)}"
+            style="width:100%;height:100%;border:0;display:block;"
+            allow="autoplay; encrypted-media; picture-in-picture"
+            referrerpolicy="strict-origin-when-cross-origin"
+            allowfullscreen>
+          </iframe>
+        `;
+      }
     }
 
     if (!el.dataset.gnBound) {
       el.dataset.gnBound = 'true';
-      el.querySelector('#w95-gn-reroll')?.addEventListener('click', () => {
-        openGrayNoiseEasterEgg();
+      el.querySelector('.w95-gn-reroll')?.addEventListener('click', () => {
+        openGrayNoiseEasterEgg(true);
       });
     }
   }
@@ -1754,7 +1845,7 @@
       });
 
       el.querySelector('#w95-mood-gray-noise')?.addEventListener('click', () => {
-        openGrayNoiseEasterEgg();
+        openGrayNoiseEasterEgg(false);
       });
     }
 
