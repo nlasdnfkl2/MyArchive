@@ -3,7 +3,7 @@
 // ============================================================
 
 window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-window.__MOD_VERSIONS.bootAnimation = 'v2026.11.25-split-3d-sync';
+window.__MOD_VERSIONS.bootAnimation = 'v2026.11.25-auto-boot';
 
 const ANIM_SETUP_KEY = 'myarchive95_setup_v1';
 
@@ -505,10 +505,11 @@ function play3dCrtMonitorAnimation(options = {}) {
     if (prev) prev.remove();
 
     const alreadyClicked = Boolean(options.alreadyClicked);
+    const autoStart = alreadyClicked || options.autoStart !== false;
 
     const stage = document.createElement('div');
     stage.id = 'retro-3d-crt-stage';
-    stage.title = alreadyClicked ? 'CLICK TO SKIP 3D BOOT' : 'CLICK TO RETRACE';
+    stage.title = 'CLICK TO SKIP 3D BOOT';
     stage.style.cssText = `
       position: fixed;
       inset: 0;
@@ -523,16 +524,16 @@ function play3dCrtMonitorAnimation(options = {}) {
     let finished = false;
     let rafId = 0;
     let renderer = null;
-    let rotationStarted = alreadyClicked;
-    let turnStartTime = alreadyClicked ? performance.now() : 0;
+    let rotationStarted = autoStart;
+    let turnStartTime = autoStart ? performance.now() : 0;
 
-    let stopNoiseTitleLayer = (!alreadyClicked && typeof window.startPreClickNoiseTitleLayer === 'function')
+    let stopNoiseTitleLayer = (!autoStart && typeof window.startPreClickNoiseTitleLayer === 'function')
       ? window.startPreClickNoiseTitleLayer()
       : null;
-    let stopStaticVisual = (!alreadyClicked && typeof window.startFullScreenStaticEffect === 'function')
+    let stopStaticVisual = (!autoStart && typeof window.startFullScreenStaticEffect === 'function')
       ? window.startFullScreenStaticEffect()
       : null;
-    let stopNoiseAudio = (!alreadyClicked && typeof window.startSubtleStaticNoise === 'function')
+    let stopNoiseAudio = (!autoStart && typeof window.startSubtleStaticNoise === 'function')
       ? window.startSubtleStaticNoise()
       : null;
 
@@ -866,19 +867,21 @@ function runBiosPostSequenceOnly(seqId, bootState, onSetStage) {
     bootState.timers.push(tid);
   });
 
+  // BIOS -> 로딩 스플래시 자동 진입
   bootState.timers.push(setTimeout(() => {
     if (seqId === bootState.bootSeqId && bootState.stage === 'bios') onSetStage('splash');
   }, 2050));
 
+  // 로딩 스플래시 재생 완료 후 클릭 없이 자동으로 로그온 화면 전환
   bootState.timers.push(setTimeout(() => {
     if (seqId === bootState.bootSeqId && bootState.stage === 'splash') onSetStage('login');
-  }, 3250));
+  }, 3500));
 
   bootState.timers.push(setTimeout(() => {
     if (seqId === bootState.bootSeqId && (bootState.stage === 'bios' || bootState.stage === 'splash')) {
       onSetStage('login');
     }
-  }, 4700));
+  }, 4800));
 }
 
 window.loadInitialSetup = loadInitialSetup;
