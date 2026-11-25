@@ -3,7 +3,7 @@
 // ============================================================
 
 window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-window.__MOD_VERSIONS.bootWait = 'v2026.11.25-wait-after-rewind-stop-on-bios';
+window.__MOD_VERSIONS.bootWait = 'v2026.11.25-90bpm-wait-after-rewind-stop-on-bios';
 
 const WAIT_SETUP_KEY = 'myarchive95_setup_v1';
 
@@ -68,7 +68,7 @@ function playButtonClickSound(options = {}) {
     bodyIn.type = 'square'; bodyIn.frequency.setValueAtTime(260, now); bodyIn.frequency.exponentialRampToValueAtTime(115, now + 0.022);
     bodyGainIn.gain.setValueAtTime(0.11 * vol, now); bodyGainIn.gain.exponentialRampToValueAtTime(0.0004, now + 0.024);
     gainIn.gain.setValueAtTime(0.0005, now); gainIn.gain.linearRampToValueAtTime(0.26 * vol, now + 0.0025); gainIn.gain.exponentialRampToValueAtTime(0.0004, now + 0.034);
-    oscIn.connect(gainIn); bodyIn.connect(bodyGainIn); bodyGainIn.connect(gainIn); gainIn.connect(ctx.destination);
+    oscIn.connect(gainIn); bodyIn.connect(bodyGainIn); bodyIn.connect(gainIn); gainIn.connect(ctx.destination);
     oscIn.start(now); bodyIn.start(now); oscIn.stop(now + 0.038); bodyIn.stop(now + 0.03);
     createSwitchTransientBurst(ctx, now, 0.028, 980, 0.26 * vol, 380, 1.8, 3.2);
 
@@ -85,42 +85,47 @@ function playButtonClickSound(options = {}) {
   } catch {}
 }
 
-// 클릭 대기 화면 진입 시 순방향으로 반복 재생되는 노스탤직 패러디 음원
+// 클릭 대기 화면 진입 시 순방향으로 반복 재생되는 90 BPM 노스탤직 패러디 음원
 function createForwardParodyBuffer(ctx) {
-  const sr = ctx.sampleRate, stepSec = 0.165;
-  const leadFreqs = [
-    392.00, 392.00, 440.00, 493.88, 587.33, 523.25, 493.88, 440.00,
-    392.00, 440.00, 493.88, 587.33, 659.25, 587.33, 523.25, 493.88,
-    329.63, 329.63, 392.00, 440.00, 493.88, 440.00, 392.00, 329.63,
-    349.23, 392.00, 440.00, 523.25, 493.88, 440.00, 392.00, 349.23
+  if (typeof window.createNostalgicParodyForwardBuffer === 'function') {
+    return window.createNostalgicParodyForwardBuffer(ctx);
+  }
+  const sr = ctx.sampleRate;
+  const beatSec = 60 / 90;
+  const melodyNotes = [
+    [440.00, 3], [392.00, 4],
+    [440.00, 3], [392.00, 4],
+    [293.66, 1], [392.00, 3], [349.23, 4],
+    [293.66, 1], [392.00, 3], [349.23, 4]
   ];
-  const bassFreqs = [
-    130.81, 130.81, 196.00, 130.81, 164.81, 164.81, 246.94, 164.81,
-    146.83, 146.83, 220.00, 146.83, 196.00, 196.00, 146.83, 130.81
-  ];
-
-  const len = Math.max(1, Math.floor(sr * leadFreqs.length * stepSec));
+  const totalBeats = melodyNotes.reduce((acc, [, b]) => acc + b, 0);
+  const len = Math.max(1, Math.floor(sr * totalBeats * beatSec));
   const buf = ctx.createBuffer(1, len, sr);
   const ch = buf.getChannelData(0);
 
+  const segments = [];
+  let cursor = 0;
+  for (const [freq, beats] of melodyNotes) {
+    const startSec = cursor * beatSec;
+    const durSec = beats * beatSec;
+    segments.push({ freq, startSec, endSec: startSec + durSec, durSec });
+    cursor += beats;
+  }
+
+  let segIdx = 0;
   for (let i = 0; i < len; i++) {
     const t = i / sr;
-    const step = Math.floor(t / stepSec) % leadFreqs.length;
-    const localT = t - step * stepSec;
-    const fLead = leadFreqs[step];
-    const fBass = bassFreqs[step % bassFreqs.length];
-    const env = Math.min(1, localT / 0.014) * Math.exp(-localT * 5.2);
-
-    const leadTone =
-      Math.sin(2 * Math.PI * fLead * t) * 0.52 +
-      Math.sin(2 * Math.PI * fLead * 2 * t) * 0.16 +
-      Math.sin(2 * Math.PI * fLead * 1.5 * t) * 0.08;
-    const bassTone =
-      Math.sin(2 * Math.PI * fBass * t) * 0.34 +
-      Math.sin(2 * Math.PI * (fBass * 1.5) * t) * 0.08;
-    const wow = 1 + 0.005 * Math.sin(2 * Math.PI * 2.2 * t);
-    const sample = (leadTone * 0.65 + bassTone * 0.35) * env;
-    ch[i] = Math.max(-0.95, Math.min(0.95, sample * (0.94 + 0.06 * wow)));
+    while (segIdx < segments.length - 1 && t >= segments[segIdx].endSec) segIdx++;
+    const seg = segments[segIdx];
+    const localT = Math.max(0, t - seg.startSec);
+    const remainT = Math.max(0, seg.endSec - t);
+    const env = Math.min(1, localT / 0.022) * Math.min(1, remainT / 0.045) * (0.68 + 0.32 * Math.exp(-localT * 1.45));
+    const tone =
+      Math.sin(2 * Math.PI * seg.freq * t) * 0.56 +
+      Math.sin(2 * Math.PI * seg.freq * 2 * t) * 0.14 +
+      Math.sin(2 * Math.PI * seg.freq * 0.5 * t) * 0.22;
+    const wow = 1 + 0.0045 * Math.sin(2 * Math.PI * 2.1 * t);
+    ch[i] = Math.max(-0.95, Math.min(0.95, tone * env * (0.94 + 0.06 * wow)));
   }
   return buf;
 }
