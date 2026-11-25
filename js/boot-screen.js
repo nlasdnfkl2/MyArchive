@@ -3,7 +3,7 @@
 // ============================================================
 
 window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-window.__MOD_VERSIONS.bootScreen = 'v2026.11.25-07';
+window.__MOD_VERSIONS.bootScreen = 'v2026.11.25-08';
 
 const SESSION_USER_KEY = 'myarchive95_current_user_v2';
 const USERS_CACHE_KEY = 'myarchive95_users_cache_v2';
@@ -69,7 +69,9 @@ function safeBootTone(type) {
 // 로그온 화면 & 다중 해상도 (640px ~ 1920px+) 스타일 주입
 // ============================================================
 function injectLogonAndResponsiveStyles() {
-  if (document.getElementById('boot-logon-responsive-styles')) return;
+  const existing = document.getElementById('boot-logon-responsive-styles');
+  if (existing) existing.remove();
+
   const style = document.createElement('style');
   style.id = 'boot-logon-responsive-styles';
   style.textContent = `
@@ -84,6 +86,7 @@ function injectLogonAndResponsiveStyles() {
       font-family: 'Galmuri11', 'DungGeunMo', monospace;
       box-sizing: border-box;
     }
+
     #boot-stage-bios {
       width: 100%;
       min-height: 100vh;
@@ -95,19 +98,21 @@ function injectLogonAndResponsiveStyles() {
       justify-content: space-between;
       box-sizing: border-box;
     }
+
     #boot-stage-login {
       width: 100%;
       min-height: 100vh;
-      padding: clamp(10px, 2.5vw, 28px);
+      padding: clamp(12px, 2.5vw, 28px);
       background: #008080;
       display: flex;
       align-items: center;
       justify-content: center;
       box-sizing: border-box;
     }
+
     .win95-logon-window {
       width: 100%;
-      max-width: 540px;
+      max-width: 560px;
       background: #c0c0c0;
       color: #000000;
       border-top: 2px solid #ffffff;
@@ -118,6 +123,7 @@ function injectLogonAndResponsiveStyles() {
       padding: 3px;
       box-sizing: border-box;
     }
+
     .win95-logon-titlebar {
       background: linear-gradient(90deg, #000080, #1084d0);
       color: #ffffff;
@@ -126,15 +132,17 @@ function injectLogonAndResponsiveStyles() {
       align-items: center;
       justify-content: space-between;
       gap: 8px;
-      font-size: clamp(0.74rem, 1.4vw, 0.84rem);
+      font-size: clamp(0.75rem, 1.35vw, 0.84rem);
       font-weight: 700;
     }
+
     .win95-logon-tabs {
       display: flex;
       gap: 2px;
       padding: 6px 6px 0 6px;
       flex-wrap: wrap;
     }
+
     .win95-logon-tab {
       background: #c0c0c0;
       color: #000000;
@@ -142,24 +150,26 @@ function injectLogonAndResponsiveStyles() {
       border-left: 2px solid #ffffff;
       border-right: 2px solid #404040;
       border-bottom: none;
-      padding: 5px 10px;
+      padding: 5px 11px;
       font-family: inherit;
-      font-size: clamp(0.72rem, 1.3vw, 0.78rem);
+      font-size: clamp(0.73rem, 1.25vw, 0.78rem);
       font-weight: 700;
       cursor: pointer;
       position: relative;
       top: 2px;
       white-space: nowrap;
     }
+
     .win95-logon-tab.active {
       background: #c0c0c0;
       padding-bottom: 7px;
       top: 0;
       z-index: 2;
     }
+
     .win95-logon-sheet {
       margin: 0 6px 6px 6px;
-      padding: clamp(10px, 2vw, 14px);
+      padding: clamp(12px, 2vw, 15px);
       background: #c0c0c0;
       border-top: 2px solid #ffffff;
       border-left: 2px solid #ffffff;
@@ -167,51 +177,105 @@ function injectLogonAndResponsiveStyles() {
       border-bottom: 2px solid #404040;
       box-shadow: inset 1px 1px 0 #dfdfdf, inset -1px -1px 0 #808080;
     }
+
     .win95-logon-intro {
       display: flex;
       align-items: flex-start;
       gap: 10px;
-      margin-bottom: 12px;
-      font-size: clamp(0.74rem, 1.3vw, 0.8rem);
+      margin-bottom: 13px;
+      font-size: clamp(0.74rem, 1.25vw, 0.8rem);
       line-height: 1.45;
       font-weight: 700;
     }
+
     .win95-logon-row {
       display: grid;
-      grid-template-columns: 126px minmax(0, 1fr);
+      grid-template-columns: 128px minmax(0, 1fr);
       align-items: center;
       gap: 8px;
-      margin-bottom: 9px;
-      font-size: clamp(0.74rem, 1.3vw, 0.8rem);
+      margin-bottom: 10px;
+      font-size: clamp(0.74rem, 1.25vw, 0.8rem);
       font-weight: 700;
     }
+
     .win95-logon-row > label {
       white-space: nowrap;
+      line-height: 1.2;
     }
+
     .win95-logon-field-wrap {
       display: flex;
       align-items: center;
-      gap: 4px;
+      gap: 5px;
       min-width: 0;
       width: 100%;
     }
-    .win95-logon-sheet input[type="text"],
-    .win95-logon-sheet input[type="password"] {
+
+    #login-user-search-row {
+      display: none;
+      align-items: center;
+      gap: 6px;
       width: 100%;
       min-width: 0;
-      padding: 4px 6px;
+      margin-top: 6px;
+    }
+
+    #login-user-search-row[style*="display: flex"] {
+      display: flex !important;
+    }
+
+    #login-user-search-input {
+      flex: 1 1 auto;
+      min-width: 140px;
+      width: 100%;
+      height: 25px;
+      padding: 3px 6px;
       background: #ffffff;
       color: #000000;
       border-top: 2px solid #808080;
       border-left: 2px solid #808080;
       border-right: 2px solid #ffffff;
       border-bottom: 2px solid #ffffff;
-      box-shadow: inset 1px 1px 0 #000000;
+      box-shadow: inset 1px 1px 0 #000000, inset -1px -1px 0 #dfdfdf;
       font-family: inherit;
       font-size: 0.78rem;
       font-weight: 700;
       box-sizing: border-box;
     }
+
+    #login-user-search-count {
+      flex-shrink: 0;
+      white-space: nowrap;
+      font-size: 0.74rem;
+      font-weight: 700;
+      color: #000000;
+    }
+
+    .win95-logon-sheet input[type="text"],
+    .win95-logon-sheet input[type="password"] {
+      width: 100%;
+      min-width: 0;
+      min-height: 25px;
+      padding: 3px 6px;
+      background: #ffffff;
+      color: #000000;
+      border-top: 2px solid #808080;
+      border-left: 2px solid #808080;
+      border-right: 2px solid #ffffff;
+      border-bottom: 2px solid #ffffff;
+      box-shadow: inset 1px 1px 0 #000000, inset -1px -1px 0 #dfdfdf;
+      font-family: inherit;
+      font-size: 0.78rem;
+      font-weight: 700;
+      box-sizing: border-box;
+    }
+
+    .win95-logon-sheet input[type="text"]:focus,
+    .win95-logon-sheet input[type="password"]:focus {
+      outline: 1px dotted #000000;
+      outline-offset: -3px;
+    }
+
     .win95-logon-icon-btn {
       flex-shrink: 0;
       width: 24px;
@@ -225,55 +289,92 @@ function injectLogonAndResponsiveStyles() {
       border-left: 2px solid #ffffff;
       border-right: 2px solid #404040;
       border-bottom: 2px solid #404040;
+      box-shadow: inset -1px -1px 0 #808080;
       cursor: pointer;
       padding: 0;
     }
+
+    .win95-logon-icon-btn:active,
     .win95-logon-icon-btn.active {
       border-top: 2px solid #404040;
       border-left: 2px solid #404040;
       border-right: 2px solid #ffffff;
       border-bottom: 2px solid #ffffff;
-      background: #b0b0b0;
+      box-shadow: none;
+      background: #b4b4b4;
     }
-    .win95-profile-fieldset {
-      margin: 10px 0 8px 0;
-      padding: 8px 10px;
+
+    .win95-profile-fieldset,
+    #win95-pane-signin fieldset {
+      margin: 10px 0 10px 0;
+      padding: 9px 11px;
+      background: #c0c0c0;
       border-top: 2px solid #808080;
       border-left: 2px solid #808080;
       border-right: 2px solid #ffffff;
       border-bottom: 2px solid #ffffff;
       box-shadow: inset 1px 1px 0 #dfdfdf;
-      font-size: 0.75rem;
+      font-size: 0.76rem;
+      box-sizing: border-box;
     }
-    .win95-profile-fieldset legend {
-      padding: 0 4px;
+
+    .win95-profile-fieldset legend,
+    #win95-pane-signin fieldset legend {
+      padding: 0 5px;
       font-weight: 700;
-      font-size: 0.74rem;
+      font-size: 0.75rem;
+      white-space: nowrap;
     }
+
+    .w95-profile-card-clean {
+      display: grid;
+      grid-template-columns: 44px minmax(0, 1fr);
+      align-items: center;
+      gap: 10px;
+    }
+
+    .w95-profile-meta-clean {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      min-width: 0;
+      line-height: 1.35;
+      font-weight: 700;
+    }
+
+    #login-cloud-status,
+    #login-cloud-led,
+    .win95-logon-status-bar {
+      display: none !important;
+    }
+
     .win95-avatar-grid {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 5px;
+      gap: 6px;
       width: 100%;
     }
+
     .win95-avatar-choice {
       display: inline-flex;
       align-items: center;
       justify-content: flex-start;
       gap: 6px;
-      padding: 4px 7px;
+      padding: 4px 8px;
       background: #c0c0c0;
       color: #000000;
       border-top: 2px solid #ffffff;
       border-left: 2px solid #ffffff;
       border-right: 2px solid #404040;
       border-bottom: 2px solid #404040;
+      box-shadow: inset -1px -1px 0 #808080;
       font-family: inherit;
       font-size: 0.74rem;
       font-weight: 700;
       cursor: pointer;
       white-space: nowrap;
     }
+
     .win95-avatar-choice.selected {
       background: #000080;
       color: #ffffff;
@@ -281,7 +382,9 @@ function injectLogonAndResponsiveStyles() {
       border-left: 2px solid #404040;
       border-right: 2px solid #ffffff;
       border-bottom: 2px solid #ffffff;
+      box-shadow: none;
     }
+
     .win95-logon-actions {
       display: flex;
       justify-content: flex-end;
@@ -289,6 +392,7 @@ function injectLogonAndResponsiveStyles() {
       flex-wrap: wrap;
       margin-top: 12px;
     }
+
     .win95-logon-btn {
       display: inline-flex;
       align-items: center;
@@ -305,13 +409,17 @@ function injectLogonAndResponsiveStyles() {
       font-size: 0.76rem;
       font-weight: 700;
       cursor: pointer;
+      white-space: nowrap;
     }
+
     .win95-logon-btn:active {
       border-top: 2px solid #404040;
       border-left: 2px solid #404040;
       border-right: 2px solid #ffffff;
       border-bottom: 2px solid #ffffff;
+      box-shadow: none;
     }
+
     @media (max-width: 680px) {
       .win95-logon-row {
         grid-template-columns: 1fr;
@@ -328,13 +436,58 @@ function injectLogonAndResponsiveStyles() {
         justify-content: center;
       }
     }
+
     @media (min-width: 1600px) {
       .win95-logon-window {
-        max-width: 560px;
+        max-width: 600px;
       }
     }
   `;
   document.head.appendChild(style);
+}
+
+function reconcileLogonScreenLayout() {
+  injectLogonAndResponsiveStyles();
+
+  const statusEl = document.getElementById('login-cloud-status');
+  const ledEl = document.getElementById('login-cloud-led');
+  if (statusEl) {
+    statusEl.textContent = '';
+    statusEl.style.display = 'none';
+    if (statusEl.parentElement && statusEl.parentElement.childNodes.length <= 2) {
+      statusEl.parentElement.style.display = 'none';
+    }
+  }
+  if (ledEl) ledEl.style.display = 'none';
+
+  const searchRow = document.getElementById('login-user-search-row');
+  const accountSelect = document.getElementById('login-account-select');
+  const rightCol = accountSelect?.closest('.win95-logon-field-wrap')?.parentElement || accountSelect?.parentElement;
+  if (searchRow && rightCol && searchRow.parentElement !== rightCol) {
+    rightCol.appendChild(searchRow);
+  }
+
+  const avatarBox = document.getElementById('login-profile-avatar');
+  const nameBox = document.getElementById('login-profile-name');
+  const hintBox = document.getElementById('login-account-hint');
+  const fieldset = avatarBox?.closest('fieldset') || nameBox?.closest('fieldset');
+  if (fieldset) {
+    fieldset.classList.add('win95-profile-fieldset');
+    let metaWrap = fieldset.querySelector('.w95-profile-meta-clean');
+    if (!metaWrap && nameBox && hintBox) {
+      const cardWrap = document.createElement('div');
+      cardWrap.className = 'w95-profile-card-clean';
+      metaWrap = document.createElement('div');
+      metaWrap.className = 'w95-profile-meta-clean';
+      if (avatarBox?.parentElement === fieldset) {
+        fieldset.insertBefore(cardWrap, avatarBox);
+        cardWrap.appendChild(avatarBox);
+        cardWrap.appendChild(metaWrap);
+        metaWrap.appendChild(nameBox);
+        metaWrap.appendChild(hintBox);
+      }
+    }
+  }
 }
 
 // ============================================================
@@ -873,14 +1026,11 @@ async function syncRegisteredUsersList() {
 function updateLogonStatusLine() {
   const statusEl = document.getElementById('login-cloud-status');
   const ledEl = document.getElementById('login-cloud-led');
-  if (!statusEl) return;
-
-  const personalCount = getPersonalUsersList().length;
-  const archiveCount = Array.isArray(window.archiveItems) ? window.archiveItems.length : 0;
-  statusEl.textContent = archiveCount > 0
-    ? `중앙 아카이브 서버 접속 완료 (등록 이용자 ${personalCount}명 · 전체 자료 ${archiveCount}건)`
-    : `사용자 인증 및 아카이브 단말기 준비 완료 (등록 이용자 ${personalCount}명)`;
-  if (ledEl) ledEl.style.background = '#008000';
+  if (statusEl) {
+    statusEl.textContent = '';
+    statusEl.style.display = 'none';
+  }
+  if (ledEl) ledEl.style.display = 'none';
 }
 
 function populateLoginAccountSelect() {
@@ -1070,6 +1220,7 @@ function setBootStage(stageName) {
     if (searchBtn) searchBtn.classList.remove('active');
     if (searchInput) searchInput.value = '';
 
+    reconcileLogonScreenLayout();
     switchLoginTab('signin');
     renderSignupAvatarPicker();
     syncRegisteredUsersList();
@@ -1104,6 +1255,8 @@ function switchLoginTab(tabName) {
     tabSignup.classList.toggle('active', targetTab === 'signup');
     tabSignup.setAttribute('aria-selected', String(targetTab === 'signup'));
   }
+
+  reconcileLogonScreenLayout();
 }
 
 function showLoginError(msg) {
@@ -1470,6 +1623,7 @@ function bindBootScreenEvents() {
 
   document.getElementById('btn-toggle-user-search')?.addEventListener('click', () => {
     safeBootTone('click');
+    reconcileLogonScreenLayout();
     bootState.userSearchOpen = !bootState.userSearchOpen;
     const searchRow = document.getElementById('login-user-search-row');
     const searchBtn = document.getElementById('btn-toggle-user-search');
@@ -1564,6 +1718,7 @@ window.switchLoginTab = switchLoginTab;
 
 document.addEventListener('DOMContentLoaded', () => {
   injectLogonAndResponsiveStyles();
+  reconcileLogonScreenLayout();
   renderSignupAvatarPicker();
   bindBootScreenEvents();
   startBiosBootSequence();
