@@ -38,7 +38,7 @@
   --win-navy-light: #1084d0;
   --win-teal: #008080;
 
-  /* VGA 16-Color Retro Accents (기존 변수명 호환 유지) */
+  /* VGA 16-Color Retro Accents */
   --brutal-ink: #000000;
   --brutal-paper: #c0c0c0;
   --brutal-yellow: #ffff00;
@@ -88,10 +88,10 @@
   --font-mono: 'DungGeunMo', 'Galmuri11', 'Fixedsys', 'Consolas', monospace;
 
   /* Layout Safe Area & Audio Reactive Variables */
-  --desktop-safe-left: 204px;
-  --desktop-safe-right: 16px;
-  --desktop-safe-top: 38px;
-  --desktop-safe-bottom: 44px;
+  --desktop-safe-left: 164px;
+  --desktop-safe-right: 12px;
+  --desktop-safe-top: 34px;
+  --desktop-safe-bottom: 38px;
   --bass-level: 0;
   --audio-energy: 0;
 }
@@ -114,8 +114,8 @@ body {
   height: 100%;
   overflow: hidden;
   font-family: var(--font-sans);
-  font-size: 13px;
-  line-height: 1.45;
+  font-size: 12px;
+  line-height: 1.35;
   color: #000000;
   background-color: var(--win-teal);
   user-select: none;
@@ -124,10 +124,10 @@ body {
   font-smooth: never;
 }
 
-/* Classic Windows 95 16px Scrollbar */
+/* Classic Windows 95 14px Scrollbar */
 ::-webkit-scrollbar {
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
   background-color: #dfdfdf;
   background-image: var(--dither-bg);
   background-size: 2px 2px;
@@ -140,8 +140,8 @@ body {
 }
 
 ::-webkit-scrollbar-button {
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
   background-color: var(--win-gray);
   box-shadow: var(--bevel-btn);
 }
@@ -150,7 +150,7 @@ body {
   background-color: var(--win-gray);
 }
 
-/* Desktop Wallpapers (디스플레이 등록 정보 6종 + 호환 테마) */
+/* Desktop Wallpapers */
 body.theme-teal {
   background-color: #008080;
   background-image: none;
@@ -221,19 +221,19 @@ body.theme-grid {
 .boot-stage {
   display: flex;
   flex-direction: column;
-  padding: 24px 32px;
+  padding: 20px 26px;
 }
 
 .bios-top-row {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 16px;
+  gap: 14px;
   border-bottom: 1px dashed #666666;
-  padding-bottom: 12px;
-  margin-bottom: 14px;
-  font-size: 0.9rem;
-  line-height: 1.5;
+  padding-bottom: 10px;
+  margin-bottom: 12px;
+  font-size: 0.82rem;
+  line-height: 1.45;
 }
 
 .bios-brand {
@@ -243,33 +243,33 @@ body.theme-grid {
 
 .bios-energy-box {
   border: 2px solid #55ff55;
-  padding: 6px 12px;
+  padding: 5px 10px;
   text-align: center;
-  line-height: 1.3;
+  line-height: 1.25;
 }
 
 .bios-spec-block {
-  margin-bottom: 12px;
-  font-size: 0.88rem;
-  line-height: 1.6;
+  margin-bottom: 10px;
+  font-size: 0.8rem;
+  line-height: 1.5;
   color: #ffffff;
 }
 
 .bios-log-area {
   flex: 1;
   overflow-y: auto;
-  font-size: 0.86rem;
-  line-height: 1.55;
+  font-size: 0.8rem;
+  line-height: 1.45;
   color: #55ff55;
 }
 
 .bios-cmos-box {
-  margin-top: 10px;
-  padding: 10px 14px;
+  margin-top: 8px;
+  padding: 8px 12px;
   border: 1px solid #ffff55;
   background: #000080;
-  font-size: 0.84rem;
-  line-height: 1.5;
+  font-size: 0.78rem;
+  line-height: 1.45;
 }
 
 .bios-footer-bar {
@@ -277,9 +277,9 @@ body.theme-grid {
   justify-content: space-between;
   align-items: center;
   border-top: 1px dashed #666666;
-  padding-top: 10px;
-  margin-top: 12px;
-  font-size: 0.85rem;
+  padding-top: 8px;
+  margin-top: 10px;
+  font-size: 0.78rem;
   color: #ffffff;
 }
 
@@ -295,19 +295,19 @@ body.theme-grid {
   background: var(--win-gray);
   color: #000000;
   box-shadow: var(--bevel-win);
-  padding: 26px 36px;
+  padding: 20px 28px;
   text-align: center;
-  max-width: 470px;
-  width: calc(100% - 32px);
+  max-width: 420px;
+  width: calc(100% - 24px);
 }
 
 .win95-flag-grid {
   display: grid;
-  grid-template-columns: repeat(2, 18px);
-  grid-template-rows: repeat(2, 18px);
+  grid-template-columns: repeat(2, 16px);
+  grid-template-rows: repeat(2, 16px);
   gap: 2px;
   justify-content: center;
-  margin: 0 auto 14px;
+  margin: 0 auto 10px;
 }
 
 .win95-flag-grid span {
@@ -316,29 +316,29 @@ body.theme-grid {
 }
 
 .win95-splash-sub {
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   font-weight: 700;
   color: #404040;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 
 .win95-splash-title {
   font-family: var(--font-sans);
-  font-size: 1.85rem;
+  font-size: 1.5rem;
   font-weight: 700;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
 .win95-splash-95 {
   display: inline-block;
-  padding: 0 7px;
+  padding: 0 6px;
   background: var(--win-navy);
   color: #ffffff;
 }
 
 .win95-splash-desc {
   font-family: var(--font-sans);
-  font-size: 0.85rem;
+  font-size: 0.78rem;
 }
 
 .win95-boot-track {
@@ -346,7 +346,7 @@ body.theme-grid {
   bottom: 0;
   left: 0;
   right: 0;
-  height: 16px;
+  height: 14px;
   background: #c0c0c0;
   box-shadow: var(--bevel-thin-sunken);
   overflow: hidden;
@@ -372,44 +372,44 @@ body.theme-grid {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 16px;
+  padding: 12px;
   font-family: var(--font-sans);
   color: #000000;
 }
 
 .win95-login-dialog {
-  width: min(510px, 100%);
+  width: min(460px, 100%);
   background: var(--win-gray);
   box-shadow: var(--bevel-win);
-  padding: 3px;
+  padding: 2px;
 }
 
 .win95-logon-titlebar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 4px 6px;
+  padding: 3px 5px;
   background: linear-gradient(90deg, var(--win-navy), var(--win-navy-light));
   color: #ffffff;
-  font-size: 0.85rem;
+  font-size: 0.78rem;
   font-weight: 700;
 }
 
 .win95-logon-title-left {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
 }
 
 .win95-title-help-btn {
-  width: 18px;
-  height: 16px;
+  width: 16px;
+  height: 14px;
   background: var(--win-gray);
   color: #000000;
   border: none;
   box-shadow: var(--bevel-btn);
   font-weight: 700;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   cursor: pointer;
 }
 
@@ -420,13 +420,13 @@ body.theme-grid {
 .win95-logon-tabs {
   display: flex;
   gap: 2px;
-  padding: 8px 10px 0;
+  padding: 6px 8px 0;
 }
 
 .win95-logon-tab {
-  padding: 5px 12px;
+  padding: 4px 10px;
   font-family: var(--font-sans);
-  font-size: 0.82rem;
+  font-size: 0.75rem;
   background: var(--win-gray);
   color: #000000;
   border: none;
@@ -443,50 +443,50 @@ body.theme-grid {
   font-weight: 700;
   position: relative;
   top: 2px;
-  padding-bottom: 7px;
+  padding-bottom: 6px;
   z-index: 2;
 }
 
 .win95-logon-body {
-  margin: 0 10px 10px;
-  padding: 14px;
+  margin: 0 8px 8px;
+  padding: 11px;
   background: var(--win-gray);
   box-shadow: var(--bevel-btn);
 }
 
 .win95-login-error {
-  padding: 7px 10px;
-  margin-bottom: 10px;
+  padding: 6px 8px;
+  margin-bottom: 8px;
   background: #800000;
   color: #ffffff;
   box-shadow: var(--bevel-thin-sunken);
-  font-size: 0.82rem;
+  font-size: 0.75rem;
 }
 
 .win95-logon-intro {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 12px;
-  font-size: 0.82rem;
-  line-height: 1.45;
+  gap: 10px;
+  margin-bottom: 10px;
+  font-size: 0.75rem;
+  line-height: 1.4;
 }
 
 .win95-logon-grid {
   display: grid;
-  grid-template-columns: 96px 1fr;
-  gap: 8px 10px;
+  grid-template-columns: 84px 1fr;
+  gap: 6px 8px;
   align-items: center;
 }
 
 .win95-logon-label {
-  font-size: 0.82rem;
+  font-size: 0.75rem;
   white-space: nowrap;
 }
 
 .win95-account-row {
   display: flex;
-  gap: 6px;
+  gap: 5px;
 }
 
 .win95-select-wrap {
@@ -497,14 +497,14 @@ body.theme-grid {
 .win95-logon-select,
 .win95-logon-input {
   width: 100%;
-  height: 27px;
-  padding: 3px 7px;
+  height: 24px;
+  padding: 2px 6px;
   background: #ffffff;
   color: #000000;
   border: none;
   box-shadow: var(--bevel-sunken);
   font-family: var(--font-sans);
-  font-size: 0.82rem;
+  font-size: 0.75rem;
   appearance: none;
 }
 
@@ -518,7 +518,7 @@ body.theme-grid {
   right: 2px;
   top: 2px;
   bottom: 2px;
-  width: 18px;
+  width: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -529,14 +529,14 @@ body.theme-grid {
 
 .win95-user-search-btn,
 .win95-mini-btn {
-  height: 27px;
-  padding: 0 8px;
+  height: 24px;
+  padding: 0 7px;
   background: var(--win-gray);
   color: #000000;
   border: none;
   box-shadow: var(--bevel-btn);
   font-family: var(--font-sans);
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   white-space: nowrap;
   cursor: pointer;
 }
@@ -551,41 +551,40 @@ body.theme-grid {
   grid-column: 2;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
 }
 
 .win95-search-count {
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   white-space: nowrap;
 }
 
-/* Windows 95 Etched GroupBox (이용자 신상 명세) */
 .win95-profile-fieldset {
-  margin-top: 12px;
-  padding: 8px 10px 10px;
+  margin-top: 10px;
+  padding: 6px 8px 8px;
   border: 1px solid #808080;
   box-shadow: inset 1px 1px 0 #ffffff, 1px 1px 0 #ffffff;
   background: var(--win-gray);
 }
 
 .win95-profile-fieldset legend {
-  padding: 0 6px;
+  padding: 0 5px;
   margin-left: 2px;
   background: var(--win-gray);
   color: #000000;
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   font-weight: 700;
 }
 
 .win95-profile-inner {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .win95-profile-avatar-box {
-  width: 40px;
-  height: 40px;
+  width: 34px;
+  height: 34px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -595,31 +594,31 @@ body.theme-grid {
 }
 
 .win95-profile-name {
-  font-size: 0.86rem;
+  font-size: 0.78rem;
   font-weight: 700;
   color: var(--win-navy);
 }
 
 .win95-profile-bio {
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   color: #222222;
-  margin-top: 2px;
+  margin-top: 1px;
 }
 
 .win95-status-bar-box {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-top: 10px;
-  padding: 4px 8px;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 3px 6px;
   background: var(--win-gray);
   box-shadow: var(--bevel-thin-sunken);
-  font-size: 0.78rem;
+  font-size: 0.72rem;
 }
 
 .win95-status-led {
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
   background: #008000;
   border: 1px solid #000000;
   flex-shrink: 0;
@@ -629,23 +628,23 @@ body.theme-grid {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 8px;
-  margin-top: 12px;
+  gap: 6px;
+  margin-top: 10px;
 }
 
 .win95-dlg-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  height: 28px;
-  padding: 0 14px;
+  gap: 5px;
+  height: 24px;
+  padding: 0 11px;
   background: var(--win-gray);
   color: #000000;
   border: none;
   box-shadow: var(--bevel-btn);
   font-family: var(--font-sans);
-  font-size: 0.82rem;
+  font-size: 0.75rem;
   white-space: nowrap;
   cursor: pointer;
 }
@@ -657,19 +656,18 @@ body.theme-grid {
 
 .win95-dlg-btn:focus-visible {
   outline: 1px dotted #000000;
-  outline-offset: -4px;
+  outline-offset: -3px;
 }
 
 .win95-dlg-btn:active {
   box-shadow: var(--bevel-btn-pressed);
-  padding: 1px 13px 0 15px;
+  padding: 1px 10px 0 12px;
 }
 
-/* 도트 초상화 3x2 균형 그리드 */
 .win95-avatar-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 5px;
+  gap: 4px;
 }
 
 .win95-avatar-grid button,
@@ -677,15 +675,15 @@ body.theme-grid {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
-  height: 30px;
-  padding: 2px 6px;
+  gap: 4px;
+  height: 26px;
+  padding: 2px 5px;
   background: var(--win-gray);
   color: #000000;
   border: none;
   box-shadow: var(--bevel-btn);
   font-family: var(--font-sans);
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   white-space: nowrap;
   cursor: pointer;
 }
@@ -709,12 +707,12 @@ body.theme-grid {
   top: 0;
   left: 0;
   right: 0;
-  height: 28px;
+  height: 24px;
   z-index: 90000;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 6px;
+  padding: 0 4px;
   background: var(--win-gray);
   box-shadow: inset 0 -1px 0 #808080, 0 1px 0 #ffffff;
 }
@@ -726,11 +724,11 @@ body.theme-grid {
 }
 
 .os-brand-badge {
-  padding: 2px 7px;
-  margin-right: 4px;
+  padding: 1px 6px;
+  margin-right: 3px;
   background: var(--win-navy);
   color: #ffffff;
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   font-weight: 700;
 }
 
@@ -739,13 +737,13 @@ body.theme-grid {
 }
 
 .menu-root {
-  height: 22px;
-  padding: 0 8px;
+  height: 19px;
+  padding: 0 6px;
   background: transparent;
   color: #000000;
   border: none;
   font-family: var(--font-sans);
-  font-size: 0.8rem;
+  font-size: 0.74rem;
   cursor: pointer;
 }
 
@@ -760,8 +758,8 @@ body.theme-grid {
   position: absolute;
   top: 100%;
   left: 0;
-  min-width: 240px;
-  padding: 3px;
+  min-width: 210px;
+  padding: 2px;
   background: var(--win-gray);
   box-shadow: var(--bevel-win);
   z-index: 95000;
@@ -776,12 +774,12 @@ body.theme-grid {
   display: block;
   width: 100%;
   text-align: left;
-  padding: 4px 10px;
+  padding: 3px 8px;
   background: transparent;
   color: #000000;
   border: none;
   font-family: var(--font-sans);
-  font-size: 0.8rem;
+  font-size: 0.74rem;
   cursor: pointer;
 }
 
@@ -792,20 +790,20 @@ body.theme-grid {
 
 .menu-sep {
   height: 2px;
-  margin: 3px 2px;
+  margin: 2px 2px;
   border-top: 1px solid #808080;
   border-bottom: 1px solid #ffffff;
 }
 
 .status-pill {
-  height: 21px;
-  padding: 1px 7px;
+  height: 18px;
+  padding: 0 6px;
   background: var(--win-gray) !important;
   color: #000000 !important;
   border: none;
   box-shadow: var(--bevel-thin-sunken);
   font-family: var(--font-sans);
-  font-size: 0.76rem;
+  font-size: 0.7rem;
 }
 
 button.status-pill {
@@ -817,31 +815,31 @@ button.status-pill:active {
 }
 
 .pixel-svg-14 {
-  width: 14px;
-  height: 14px;
+  width: 12px;
+  height: 12px;
   flex-shrink: 0;
 }
 
 /* ============================================================
-3. DESKTOP WORKSPACE & SHORTCUT ICONS
+3. DESKTOP WORKSPACE & SHORTCUT ICONS (WIN95 SCALE)
    ============================================================ */
 .desktop-workspace {
   position: fixed;
-  top: 29px;
+  top: 25px;
   left: 0;
   right: 0;
-  bottom: 34px;
+  bottom: 28px;
   overflow: hidden;
 }
 
 .desktop-icons {
   position: absolute;
-  top: 10px;
-  left: 10px;
-  width: 174px;
+  top: 8px;
+  left: 8px;
+  width: 144px;
   display: grid;
-  grid-template-columns: repeat(2, 82px);
-  gap: 8px 8px;
+  grid-template-columns: repeat(2, 68px);
+  gap: 6px 6px;
   z-index: 10;
   max-height: calc(100vh - var(--desktop-safe-top) - var(--desktop-safe-bottom));
   align-content: start;
@@ -851,8 +849,8 @@ button.status-pill:active {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  padding: 4px 2px;
+  gap: 2px;
+  padding: 2px 1px;
   background: transparent;
   border: 1px solid transparent;
   cursor: pointer;
@@ -870,8 +868,8 @@ button.status-pill:active {
 }
 
 .desk-icon-box {
-  width: 36px;
-  height: 36px;
+  width: 28px;
+  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -882,17 +880,17 @@ button.status-pill:active {
 }
 
 .desk-icon-box svg {
-  width: 30px;
-  height: 30px;
+  width: 24px;
+  height: 24px;
 }
 
 .desk-icon span {
-  padding: 1px 3px;
+  padding: 1px 2px;
   background: transparent;
   color: #ffffff;
   text-shadow: 1px 1px 0 #000000;
-  font-size: 0.76rem;
-  line-height: 1.25;
+  font-size: 0.7rem;
+  line-height: 1.2;
   word-break: keep-all;
 }
 
@@ -908,9 +906,9 @@ button.status-pill:active {
   display: none;
   position: absolute;
   flex-direction: column;
-  max-width: calc(100vw - 20px);
-  max-height: calc(100vh - 72px);
-  padding: 3px;
+  max-width: calc(100vw - 16px);
+  max-height: calc(100vh - 58px);
+  padding: 2px;
   background: var(--win-gray);
   box-shadow: var(--bevel-win);
   z-index: 100;
@@ -924,18 +922,17 @@ button.status-pill:active {
   z-index: 500;
 }
 
-/* Inactive vs Focused Titlebar */
 .win-titlebar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  min-height: 24px;
-  padding: 2px 4px 2px 6px;
+  gap: 6px;
+  min-height: 20px;
+  padding: 1px 3px 1px 5px;
   background: #808080 !important;
   color: #dfdfdf !important;
   font-family: var(--font-sans);
-  font-size: 0.82rem;
+  font-size: 0.76rem;
   font-weight: 700;
   cursor: move;
   flex-shrink: 0;
@@ -949,15 +946,15 @@ button.status-pill:active {
 .win-title-left {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
 }
 
 .win-title-dot {
-  width: 11px;
-  height: 11px;
+  width: 9px;
+  height: 9px;
   background: #ffff00 !important;
   border: 1px solid #000000;
   flex-shrink: 0;
@@ -971,14 +968,14 @@ button.status-pill:active {
 }
 
 .win-ctrl-btn {
-  width: 18px;
-  height: 16px;
+  width: 15px;
+  height: 14px;
   background: var(--win-gray);
   color: #000000;
   border: none;
   box-shadow: var(--bevel-btn);
   font-family: var(--font-mono);
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   font-weight: 700;
   line-height: 1;
   cursor: pointer;
@@ -989,7 +986,7 @@ button.status-pill:active {
 }
 
 .win-ctrl-btn.close {
-  margin-left: 2px;
+  margin-left: 1px;
   background: var(--win-gray);
   color: #000000;
 }
@@ -998,7 +995,7 @@ button.status-pill:active {
   flex: 1;
   overflow-y: auto;
   margin-top: 2px;
-  padding: 10px;
+  padding: 7px;
   background: var(--win-gray);
   user-select: text;
 }
@@ -1008,30 +1005,30 @@ button.status-pill:active {
   justify-content: space-between;
   align-items: center;
   gap: 4px;
-  margin-top: 3px;
-  padding: 2px 6px;
+  margin-top: 2px;
+  padding: 2px 5px;
   background: var(--win-gray);
   box-shadow: var(--bevel-thin-sunken);
   font-family: var(--font-sans);
-  font-size: 0.76rem;
+  font-size: 0.7rem;
   flex-shrink: 0;
 }
 
 /* ============================================================
-5. EXPLORER COMPONENTS (KPI, CHARTS, TOOLBAR, CARDS, FORMS)
+5. EXPLORER COMPONENTS (COMPACT WIN95 FEED & WIDGETS)
    ============================================================ */
 .kpi-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
-  margin-bottom: 10px;
+  gap: 6px;
+  margin-bottom: 7px;
 }
 
 .kpi-card {
-  padding: 8px 10px;
+  padding: 5px 7px;
   background: #ffffff;
   box-shadow: var(--bevel-sunken);
-  border-top: 4px solid var(--win-navy);
+  border-top: 3px solid var(--win-navy);
 }
 
 .kpi-card.yellow { border-top-color: #808000; }
@@ -1040,31 +1037,34 @@ button.status-pill:active {
 .kpi-card.pink   { border-top-color: #800080; color: #000000; }
 
 .kpi-label {
-  font-size: 0.76rem;
+  font-size: 0.7rem;
   color: #404040;
 }
 
 .kpi-val {
-  font-size: 1.25rem;
+  font-size: 1.02rem;
   font-weight: 700;
   color: var(--win-navy);
-  margin: 2px 0;
+  margin: 1px 0;
 }
 
 .kpi-sub {
-  font-size: 0.74rem;
+  font-size: 0.68rem;
   color: #555555;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .charts-grid {
   display: grid;
   grid-template-columns: 1fr 1.6fr;
-  gap: 8px;
-  margin-bottom: 10px;
+  gap: 6px;
+  margin-bottom: 7px;
 }
 
 .sunken-box {
-  padding: 9px 10px;
+  padding: 6px 8px;
   background: #ffffff;
   box-shadow: var(--bevel-sunken);
 }
@@ -1073,19 +1073,19 @@ button.status-pill:active {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 2px 6px;
-  margin-bottom: 8px;
+  padding: 2px 5px;
+  margin-bottom: 6px;
   background: var(--win-gray);
   box-shadow: var(--bevel-btn);
-  font-size: 0.8rem;
+  font-size: 0.74rem;
   font-weight: 700;
 }
 
 .tag-mini {
-  padding: 1px 5px;
+  padding: 1px 4px;
   background: var(--win-navy);
   color: #ffffff;
-  font-size: 0.72rem;
+  font-size: 0.66rem;
 }
 
 .toolbar-box {
@@ -1093,9 +1093,9 @@ button.status-pill:active {
   flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
-  gap: 8px;
-  padding: 6px 8px;
-  margin-bottom: 10px;
+  gap: 6px;
+  padding: 4px 6px;
+  margin-bottom: 7px;
   background: var(--win-gray);
   box-shadow: var(--bevel-thin-sunken);
 }
@@ -1105,17 +1105,17 @@ button.status-pill:active {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
 }
 
 .pill-btn {
-  padding: 4px 10px;
+  padding: 2px 7px;
   background: var(--win-gray);
   color: #000000;
   border: none;
   box-shadow: var(--bevel-btn);
   font-family: var(--font-sans);
-  font-size: 0.8rem;
+  font-size: 0.72rem;
   cursor: pointer;
 }
 
@@ -1136,38 +1136,37 @@ button.status-pill:active {
 .win-body input[type="url"],
 .win-body select,
 .win-body textarea {
-  padding: 4px 7px;
+  padding: 2px 5px;
   background: #ffffff;
   color: #000000;
   border: none;
   box-shadow: var(--bevel-sunken);
   font-family: var(--font-sans);
-  font-size: 0.8rem;
+  font-size: 0.74rem;
 }
 
 #filter-keyword {
-  min-width: 210px;
+  min-width: 150px;
 }
 
-/* Authentic Windows 95 Bevel Buttons */
 .btn95 {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
-  padding: 5px 11px;
+  gap: 4px;
+  padding: 3px 8px;
   background: var(--win-gray);
   color: #000000;
   border: none;
   box-shadow: var(--bevel-btn);
   font-family: var(--font-sans);
-  font-size: 0.8rem;
+  font-size: 0.74rem;
   cursor: pointer;
 }
 
 .btn95.sm {
-  padding: 3px 8px;
-  font-size: 0.78rem;
+  padding: 2px 6px;
+  font-size: 0.7rem;
 }
 
 .btn95.yellow {
@@ -1195,7 +1194,7 @@ button.status-pill:active {
 
 .btn95:focus-visible {
   outline: 1px dotted #000000;
-  outline-offset: -4px;
+  outline-offset: -3px;
 }
 
 .btn95:active {
@@ -1203,39 +1202,112 @@ button.status-pill:active {
   transform: translate(1px, 1px);
 }
 
-/* Archive Cards Grid (균형 그리드 & 표지 크기 고정) */
+/* Archive Feed Cards (소형 95 그리드 & 컴팩트 썸네일) */
 .archive-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 8px;
-  padding: 8px;
+  grid-template-columns: repeat(auto-fill, minmax(156px, 1fr));
+  gap: 6px;
+  padding: 6px;
   background: #ffffff;
   box-shadow: var(--bevel-sunken);
 }
 
-.archive-card {
+.archive-card,
+.item-card {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  gap: 6px;
-  padding: 8px;
+  gap: 4px;
+  padding: 5px;
   background: var(--win-gray);
   box-shadow: var(--bevel-btn);
   overflow: hidden;
+  cursor: pointer;
 }
 
-.archive-card img {
+.archive-card img,
+.item-card .item-thumb {
   width: 100%;
-  height: 165px;
+  height: 112px;
   object-fit: cover;
   background: #dfdfdf;
   border: 1px solid #000000;
   display: block;
 }
 
-.archive-card:hover {
+.item-card-bar {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.66rem;
+  font-weight: 700;
+  color: #222222;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.item-thumb-box {
+  position: relative;
+}
+
+.cat-sticker,
+.star-sticker {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 0.66rem;
+  font-weight: 700;
+  padding: 1px 4px;
+  background: #ffffff;
+  border: 1px solid #000000;
+  margin-top: 3px;
+  margin-right: 3px;
+}
+
+.item-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.item-title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #000000;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.item-creator {
+  font-size: 0.68rem;
+  color: #333333;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.item-memo {
+  font-size: 0.7rem;
+  color: #111111;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.item-footer {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.66rem;
+  color: #404040;
+  margin-top: 2px;
+}
+
+.archive-card:hover,
+.item-card:hover {
   outline: 1px dotted #000000;
-  outline-offset: -4px;
+  outline-offset: -3px;
 }
 
 /* ============================================================
@@ -1245,9 +1317,9 @@ button.status-pill:active {
   display: none;
   position: fixed;
   left: 2px;
-  bottom: 34px;
-  width: 248px;
-  padding: 3px;
+  bottom: 28px;
+  width: 215px;
+  padding: 2px;
   background: var(--win-gray);
   box-shadow: var(--bevel-win);
   z-index: 98000;
@@ -1258,22 +1330,22 @@ button.status-pill:active {
 }
 
 .start-banner {
-  width: 26px;
+  width: 22px;
   background: linear-gradient(180deg, #000080 0%, #000000 100%);
   color: #c0c0c0;
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  padding-bottom: 8px;
+  padding-bottom: 6px;
 }
 
 .start-banner span {
   writing-mode: vertical-rl;
   transform: rotate(180deg);
   font-family: var(--font-sans);
-  font-size: 0.9rem;
+  font-size: 0.78rem;
   font-weight: 700;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
 }
 
 .start-banner b {
@@ -1282,19 +1354,19 @@ button.status-pill:active {
 
 .start-list {
   flex: 1;
-  padding: 2px 3px;
+  padding: 2px;
 }
 
 .start-item {
   display: block;
   width: 100%;
   text-align: left;
-  padding: 5px 8px;
+  padding: 3px 6px;
   background: transparent;
   color: #000000;
   border: none;
   font-family: var(--font-sans);
-  font-size: 0.8rem;
+  font-size: 0.74rem;
   cursor: pointer;
 }
 
@@ -1308,12 +1380,12 @@ button.status-pill:active {
   left: 0;
   right: 0;
   bottom: 0;
-  height: 34px;
+  height: 28px;
   z-index: 95000;
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 3px 4px;
+  gap: 3px;
+  padding: 2px 3px;
   background: var(--win-gray);
   box-shadow: inset 0 1px 0 #ffffff, inset 0 2px 0 #dfdfdf;
 }
@@ -1321,15 +1393,15 @@ button.status-pill:active {
 .btn-start {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  height: 26px;
-  padding: 0 8px;
+  gap: 4px;
+  height: 22px;
+  padding: 0 6px;
   background: var(--win-gray);
   color: #000000;
   border: none;
   box-shadow: var(--bevel-btn);
   font-family: var(--font-sans);
-  font-size: 0.82rem;
+  font-size: 0.76rem;
   font-weight: 700;
   cursor: pointer;
   flex-shrink: 0;
@@ -1341,7 +1413,7 @@ button.status-pill:active {
 
 .taskbar-divider {
   width: 2px;
-  height: 22px;
+  height: 18px;
   border-left: 1px solid #808080;
   border-right: 1px solid #ffffff;
 }
@@ -1350,7 +1422,7 @@ button.status-pill:active {
   flex: 1;
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
   overflow-x: auto;
 }
 
@@ -1358,16 +1430,16 @@ button.status-pill:active {
 .taskbar-tab {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  height: 25px;
-  max-width: 175px;
-  padding: 0 7px;
+  gap: 4px;
+  height: 21px;
+  max-width: 150px;
+  padding: 0 6px;
   background: var(--win-gray);
   color: #000000;
   border: none;
   box-shadow: var(--bevel-btn);
   font-family: var(--font-sans);
-  font-size: 0.76rem;
+  font-size: 0.72rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1401,9 +1473,9 @@ button.status-pill:active {
 .taskbar-tray {
   display: flex;
   align-items: center;
-  gap: 6px;
-  height: 25px;
-  padding: 0 8px;
+  gap: 5px;
+  height: 21px;
+  padding: 0 6px;
   background: var(--win-gray);
   box-shadow: var(--bevel-thin-sunken);
   flex-shrink: 0;
@@ -1420,15 +1492,15 @@ button.status-pill:active {
 
 .taskbar-clock {
   font-family: var(--font-sans);
-  font-size: 0.78rem;
+  font-size: 0.72rem;
 }
 
 /* ============================================================
    [MODULE UI] COMMUNITY95.EXE & GAMEPACK95.EXE 전용 스타일
    ============================================================ */
 .sns-avatar-box {
-  width: 36px;
-  height: 36px;
+  width: 30px;
+  height: 30px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1438,7 +1510,7 @@ button.status-pill:active {
 }
 
 .sns-post-card {
-  padding: 10px 12px;
+  padding: 8px 10px;
   background: var(--win-gray);
   box-shadow: var(--bevel-btn);
 }
@@ -1448,17 +1520,17 @@ button.status-pill:active {
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
-  gap: 8px;
-  padding-bottom: 7px;
-  margin-bottom: 9px;
+  gap: 6px;
+  padding-bottom: 5px;
+  margin-bottom: 7px;
   border-bottom: 1px solid #808080;
   box-shadow: 0 1px 0 #ffffff;
 }
 
 .sns-role-tag {
   display: inline-block;
-  padding: 1px 5px;
-  font-size: 0.72rem;
+  padding: 1px 4px;
+  font-size: 0.68rem;
   box-shadow: var(--bevel-thin-sunken);
 }
 
@@ -1475,15 +1547,15 @@ button.status-pill:active {
 .sns-post-body {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
-  padding: 8px;
+  gap: 8px;
+  padding: 6px;
   background: #ffffff;
   box-shadow: var(--bevel-sunken);
 }
 
 .sns-post-cover {
-  width: 90px;
-  height: 124px;
+  width: 72px;
+  height: 98px;
   object-fit: cover;
   background: #dfdfdf;
   border: 1px solid #000000;
@@ -1491,8 +1563,8 @@ button.status-pill:active {
 }
 
 .sns-post-review {
-  font-size: 0.82rem;
-  line-height: 1.55;
+  font-size: 0.75rem;
+  line-height: 1.45;
   color: #000000;
   white-space: pre-wrap;
   word-break: keep-all;
@@ -1501,13 +1573,13 @@ button.status-pill:active {
 .sns-post-actions {
   display: flex;
   align-items: center;
-  gap: 6px;
-  margin-top: 8px;
+  gap: 5px;
+  margin-top: 6px;
 }
 
 .sns-cmt-drawer {
-  margin-top: 8px;
-  padding: 8px;
+  margin-top: 6px;
+  padding: 6px;
   background: var(--win-gray);
   box-shadow: var(--bevel-thin-sunken);
 }
@@ -1515,21 +1587,21 @@ button.status-pill:active {
 .flip-card-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 6px;
+  gap: 5px;
   padding: 4px 0;
 }
 
 .flip-card {
-  height: 64px;
+  height: 54px;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 6px;
+  padding: 4px;
   text-align: center;
   background: var(--win-navy);
   color: #ffff00;
   box-shadow: var(--bevel-btn);
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   word-break: keep-all;
   cursor: pointer;
 }
@@ -1560,8 +1632,8 @@ button.status-pill:active {
 }
 
 .floating-win.win-collapsed {
-  width: 260px !important;
-  min-width: 220px !important;
+  width: 220px !important;
+  min-width: 180px !important;
 }
 
 .floating-win.stats-docked-right {
@@ -1593,7 +1665,7 @@ body.audio-reactive-on::before {
   z-index: 150000;
   align-items: flex-start;
   justify-content: center;
-  padding-top: 13vh;
+  padding-top: 12vh;
 }
 
 #os-spotlight-overlay.open {
@@ -1601,31 +1673,31 @@ body.audio-reactive-on::before {
 }
 
 .spotlight-dialog {
-  width: min(540px, calc(100vw - 24px));
-  padding: 3px;
+  width: min(480px, calc(100vw - 20px));
+  padding: 2px;
   background: var(--win-gray);
   box-shadow: var(--bevel-win);
 }
 
 .spotlight-input-wrap {
-  padding: 8px;
+  padding: 6px;
   background: var(--win-gray);
 }
 
 .spotlight-input {
   width: 100%;
-  height: 32px;
-  padding: 4px 8px;
+  height: 26px;
+  padding: 3px 6px;
   background: #ffffff;
   box-shadow: var(--bevel-sunken);
   font-family: var(--font-sans);
-  font-size: 0.9rem !important;
+  font-size: 0.78rem !important;
 }
 
 .spotlight-results {
-  max-height: 300px;
+  max-height: 240px;
   overflow-y: auto;
-  margin: 0 8px 8px;
+  margin: 0 6px 6px;
   background: #ffffff;
   box-shadow: var(--bevel-sunken);
 }
@@ -1634,9 +1706,9 @@ body.audio-reactive-on::before {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  padding: 6px 10px;
-  font-size: 0.82rem;
+  gap: 8px;
+  padding: 5px 8px;
+  font-size: 0.74rem;
   cursor: pointer;
 }
 
@@ -1647,8 +1719,8 @@ body.audio-reactive-on::before {
 }
 
 .spotlight-badge {
-  font-size: 0.72rem;
-  padding: 1px 5px;
+  font-size: 0.66rem;
+  padding: 1px 4px;
   background: var(--win-gray);
   color: #000000;
   box-shadow: var(--bevel-btn);
@@ -1657,14 +1729,14 @@ body.audio-reactive-on::before {
 .timemachine-bar {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 6px 10px;
-  margin-bottom: 10px;
+  gap: 8px;
+  padding: 5px 8px;
+  margin-bottom: 8px;
   background: #000000;
   color: #55ff55;
   box-shadow: var(--bevel-sunken);
   font-family: var(--font-mono);
-  font-size: 0.8rem;
+  font-size: 0.74rem;
 }
 
 .timemachine-bar input[type="range"] {
@@ -1700,13 +1772,13 @@ body.audio-reactive-on::before {
 
 .desktop-postit {
   position: absolute;
-  width: 175px;
-  padding: 8px 9px;
+  width: 155px;
+  padding: 6px 7px;
   background: #ffffc0;
   color: #000000;
   box-shadow: var(--bevel-btn);
-  font-size: 0.78rem;
-  line-height: 1.4;
+  font-size: 0.72rem;
+  line-height: 1.35;
   pointer-events: auto;
   cursor: grab;
 }
@@ -1714,11 +1786,11 @@ body.audio-reactive-on::before {
 .desktop-postit-head {
   display: flex;
   justify-content: space-between;
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   font-weight: 700;
   border-bottom: 1px solid #808080;
-  padding-bottom: 3px;
-  margin-bottom: 5px;
+  padding-bottom: 2px;
+  margin-bottom: 4px;
 }
 
 @media (max-width: 768px) {
@@ -1735,22 +1807,24 @@ body.audio-reactive-on::before {
 }
 
 @media (max-width: 600px) {
+  .archive-grid {
+    grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+  }
   .sns-post-body {
     flex-direction: column;
   }
   .sns-post-cover {
     width: 100%;
-    height: 160px;
+    height: 120px;
   }
   .flip-card-grid {
     grid-template-columns: repeat(3, 1fr);
   }
 }
+
 /* ============================================================
    [WIN95 NATIVE CONTROLS] 1995 ComboBox Dropdown & Modal Popups
    ============================================================ */
-
-/* 원본 네이티브 select 숨김 (이벤트 및 폼 데이터 동기화용으로만 유지) */
 select.w95-native-select-hidden {
   position: absolute !important;
   width: 1px !important;
@@ -1761,18 +1835,16 @@ select.w95-native-select-hidden {
   padding: 0 !important;
 }
 
-/* 기존 로그인창 보조 화살표 숨김 */
 .win95-select-wrap .win95-select-arrow {
   display: none !important;
 }
 
-/* Windows 95 콤보박스 외형 */
 .w95-combo {
   position: relative;
   display: inline-flex;
   align-items: stretch;
-  min-width: 112px;
-  height: 25px;
+  min-width: 96px;
+  height: 21px;
   background: #ffffff;
   box-shadow: var(--bevel-sunken);
   vertical-align: middle;
@@ -1780,7 +1852,7 @@ select.w95-native-select-hidden {
 
 .w95-combo.w95-combo-logon {
   width: 100%;
-  height: 27px;
+  height: 24px;
 }
 
 .w95-combo-btn {
@@ -1789,12 +1861,12 @@ select.w95-native-select-hidden {
   justify-content: space-between;
   width: 100%;
   height: 100%;
-  padding: 2px 2px 2px 7px;
+  padding: 1px 2px 1px 5px;
   background: transparent;
   color: #000000;
   border: none;
   font-family: var(--font-sans);
-  font-size: 0.8rem;
+  font-size: 0.74rem;
   text-align: left;
   cursor: pointer;
 }
@@ -1815,11 +1887,11 @@ select.w95-native-select-hidden {
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
-  padding: 1px 4px 1px 1px;
+  padding: 1px 3px 1px 1px;
 }
 
 .w95-combo-arrow {
-  width: 18px;
+  width: 15px;
   height: 100%;
   display: flex;
   align-items: center;
@@ -1836,11 +1908,10 @@ select.w95-native-select-hidden {
   padding-left: 1px;
 }
 
-/* Windows 95 펼쳐지는 드롭다운 팝업 목록 */
 .w95-combo-popup {
   position: fixed;
   z-index: 295000;
-  max-height: 210px;
+  max-height: 180px;
   overflow-y: auto;
   padding: 2px;
   background: #ffffff;
@@ -1848,11 +1919,11 @@ select.w95-native-select-hidden {
   border: 1px solid #000000;
   box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.35);
   font-family: var(--font-sans);
-  font-size: 0.8rem;
+  font-size: 0.74rem;
 }
 
 .w95-combo-option {
-  padding: 3px 8px;
+  padding: 2px 6px;
   color: #000000;
   white-space: nowrap;
   cursor: pointer;
@@ -1870,9 +1941,6 @@ select.w95-native-select-hidden {
   cursor: default;
 }
 
-/* ============================================================
-   Windows 95 팝업 / 메시지 박스 / 동적 모달 공통 크롬
-   ============================================================ */
 .w95-popup-overlay,
 .win95-modal-overlay,
 .modal-overlay {
@@ -1883,14 +1951,14 @@ select.w95-native-select-hidden {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 16px;
+  padding: 12px;
 }
 
 .w95-popup-dialog,
 .win95-modal-box,
 .win95-msgbox {
-  width: min(440px, 100%);
-  padding: 3px;
+  width: min(380px, 100%);
+  padding: 2px;
   background: var(--win-gray);
   box-shadow: var(--bevel-win);
   color: #000000;
@@ -1901,28 +1969,28 @@ select.w95-native-select-hidden {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 3px 5px 3px 7px;
+  padding: 2px 4px 2px 6px;
   background: linear-gradient(90deg, #000080 0%, #1084d0 100%);
   color: #ffffff;
-  font-size: 0.82rem;
+  font-size: 0.76rem;
   font-weight: 700;
 }
 
 .w95-popup-body {
-  padding: 14px 14px 12px;
+  padding: 10px 12px 10px;
   background: var(--win-gray);
 }
 
 .w95-popup-content {
   display: flex;
   align-items: flex-start;
-  gap: 14px;
-  margin-bottom: 14px;
+  gap: 10px;
+  margin-bottom: 10px;
 }
 
 .w95-popup-icon {
-  width: 32px;
-  height: 32px;
+  width: 26px;
+  height: 26px;
   flex-shrink: 0;
 }
 
@@ -1932,27 +2000,27 @@ select.w95-native-select-hidden {
 }
 
 .w95-popup-msg {
-  font-size: 0.82rem;
-  line-height: 1.5;
+  font-size: 0.76rem;
+  line-height: 1.45;
   white-space: pre-wrap;
   word-break: keep-all;
 }
 
 .w95-popup-input {
   width: 100%;
-  height: 27px;
-  margin-top: 9px;
-  padding: 3px 7px;
+  height: 24px;
+  margin-top: 7px;
+  padding: 2px 6px;
   background: #ffffff;
   color: #000000;
   border: none;
   box-shadow: var(--bevel-sunken);
   font-family: var(--font-sans);
-  font-size: 0.82rem;
+  font-size: 0.76rem;
 }
 
 .w95-popup-actions {
   display: flex;
   justify-content: center;
-  gap: 8px;
+  gap: 6px;
 }
