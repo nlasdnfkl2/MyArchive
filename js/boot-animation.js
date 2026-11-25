@@ -792,4 +792,96 @@ function playWin95StartupSound(forceOnce = true, bootState = null) {
 
       gain.gain.setValueAtTime(0.0001, now);
       gain.gain.setValueAtTime(0.0001, toneStart);
-      gain
+      gain.gain.linearRampToValueAtTime(0.25, toneStart + 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.001, toneStart + 1.5);
+
+      osc.connect(gain);
+      gain.connect(masterGain);
+      osc.start(now);
+      osc.stop(toneStart + 1.6);
+    });
+  } catch {}
+}
+
+function runBiosPostSequenceOnly(seqId, bootState, onSetStage) {
+  const biosEl = document.getElementById('boot-stage-bios');
+  triggerCrtPowerOnFlash(biosEl);
+
+  const ramEl = document.getElementById('bios-ram-count');
+  const logEl = document.getElementById('bios-log-lines');
+  const syncBadge = document.getElementById('bios-sync-badge');
+
+  if (logEl) logEl.innerHTML = '';
+  if (ramEl) ramEl.textContent = '640';
+
+  let ramVal = 640;
+  bootState.ramInterval = setInterval(() => {
+    if (seqId !== bootState.bootSeqId) return;
+    ramVal += 4096;
+    if (ramVal >= 65536) {
+      ramVal = 65536;
+      clearInterval(bootState.ramInterval);
+      bootState.ramInterval = null;
+      if (!bootState.biosBeepPlayed && bootState.stage === 'bios') {
+        bootState.biosBeepPlayed = true;
+        playBiosPostBeep(920, 0.12);
+      }
+    }
+    if (ramEl) ramEl.textContent = String(ramVal);
+  }, 45);
+
+  const postSteps = [
+    { delay: 220, text: 'Detecting IDE Primary Master   ... MY-ARCHIVE-HDD [OK]', tick: true },
+    { delay: 480, text: 'Detecting IDE Primary Slave    ... JUKEBOX-CDROM 4X [OK]', tick: true },
+    { delay: 760, text: 'Initializing Sound Blaster 16  ... Port 220H IRQ 5 DMA 1 [OK]', tick: true },
+    { delay: 1040, text: 'Connecting Archive Host        ... Network Drive Mounted [OK]', tick: true },
+    { delay: 1320, text: 'Verifying DMI Pool Data ........ Update Success', tick: false },
+    { delay: 1600, text: 'Starting MY-ARCHIVE 95...', tick: false, accent: true }
+  ];
+
+  postSteps.forEach(step => {
+    const tid = setTimeout(() => {
+      if (seqId !== bootState.bootSeqId || bootState.stage !== 'bios' || !logEl) return;
+      if (step.tick) playDriveSeekTick();
+
+      const line = document.createElement('div');
+      line.textContent = step.text;
+      if (step.accent) {
+        line.style.color = '#ffff55';
+        line.style.fontWeight = '900';
+        line.style.marginTop = '8px';
+      }
+      logEl.appendChild(line);
+
+      if (syncBadge && step.text.includes('Archive Host')) {
+        syncBadge.textContent = 'ARCHIVE HOST: CONNECTED';
+        syncBadge.style.color = '#55ff55';
+      }
+    }, step.delay);
+    bootState.timers.push(tid);
+  });
+
+  bootState.timers.push(setTimeout(() => {
+    if (seqId === bootState.bootSeqId && bootState.stage === 'bios') onSetStage('splash');
+  }, 2050));
+
+  bootState.timers.push(setTimeout(() => {
+    if (seqId === bootState.bootSeqId && bootState.stage === 'splash') onSetStage('login');
+  }, 3250));
+
+  bootState.timers.push(setTimeout(() => {
+    if (seqId === bootState.bootSeqId && (bootState.stage === 'bios' || bootState.stage === 'splash')) {
+      onSetStage('login');
+    }
+  }, 4700));
+}
+
+window.loadInitialSetup = loadInitialSetup;
+window.applyInitialSetupToSystem = applyInitialSetupToSystem;
+window.openInitialSetupScreen = openInitialSetupScreen;
+window.triggerCrtPowerOnFlash = triggerCrtPowerOnFlash;
+window.play3dCrtMonitorAnimation = play3dCrtMonitorAnimation;
+window.playBiosPostBeep = playBiosPostBeep;
+window.playDriveSeekTick = playDriveSeekTick;
+window.playWin95StartupSound = playWin95StartupSound;
+window.runBiosPostSequenceOnly = runBiosPostSequenceOnly;
