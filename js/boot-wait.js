@@ -3,7 +3,7 @@
 // ============================================================
 
 window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-window.__MOD_VERSIONS.bootWait = 'v2026.11.25-auto-forward-on-wait-then-click';
+window.__MOD_VERSIONS.bootWait = 'v2026.11.25-stop-audio-on-bios';
 
 const WAIT_SETUP_KEY = 'myarchive95_setup_v1';
 
@@ -20,6 +20,7 @@ function isWaitSoundEnabled() {
 }
 
 let __waitAudioCtx = null;
+let __activeForwardLoop = null;
 
 function getWaitAudioContext() {
   const AudioCtx = window.AudioContext || window.webkitAudioContext;
@@ -27,6 +28,11 @@ function getWaitAudioContext() {
   if (!__waitAudioCtx || __waitAudioCtx.state === 'closed') __waitAudioCtx = new AudioCtx();
   if (__waitAudioCtx.state === 'suspended') __waitAudioCtx.resume().catch(() => {});
   return __waitAudioCtx;
+}
+
+function stopPreClickWaitAudio() {
+  try { __activeForwardLoop?.stop?.(); } catch {}
+  __activeForwardLoop = null;
 }
 
 function createSwitchTransientBurst(ctx, startTime, durationSec, centerFreq, peakGain, highpassHz = 600, qFactor = 2.6, decayPow = 2.8) {
@@ -120,6 +126,7 @@ function createForwardParodyBuffer(ctx) {
 }
 
 function startForwardNostalgicLoop() {
+  stopPreClickWaitAudio();
   if (!isWaitSoundEnabled()) return null;
   try {
     const ctx = getWaitAudioContext();
@@ -164,7 +171,7 @@ function startForwardNostalgicLoop() {
       window.addEventListener('keydown', unlockFn, { passive: true });
     }
 
-    return {
+    const ctl = {
       resume: () => {
         if (stopped) return;
         try {
@@ -181,6 +188,7 @@ function startForwardNostalgicLoop() {
       stop: () => {
         if (stopped) return;
         stopped = true;
+        if (__activeForwardLoop === ctl) __activeForwardLoop = null;
         if (unlockFn) {
           window.removeEventListener('pointerdown', unlockFn);
           window.removeEventListener('keydown', unlockFn);
@@ -189,13 +197,16 @@ function startForwardNostalgicLoop() {
           if (ctx && gain) {
             const t = ctx.currentTime;
             gain.gain.cancelScheduledValues(t);
-            gain.gain.setValueAtTime(Math.max(0.0001, gain.gain.value), t);
-            gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
+            gain.gain.setValueAtTime(0.0001, t);
           }
-          setTimeout(() => { try { src?.stop(); src?.disconnect(); filter?.disconnect(); gain?.disconnect(); } catch {} }, 180);
+          try { src?.stop(); } catch {}
+          try { src?.disconnect(); filter?.disconnect(); gain?.disconnect(); } catch {}
         } catch {}
       }
     };
+
+    __activeForwardLoop = ctl;
+    return ctl;
   } catch { return null; }
 }
 
@@ -476,12 +487,14 @@ function mountPreClickStartScreen(onStartBoot) {
 
     hitLayer.style.pointerEvents = 'none';
     playButtonClickSound({ gapSec: 0.065, volume: 1.05 });
-    forwardLoop?.resume?.();
+    // 클릭 즉시 순재생 루프 정지 예약(바이오스 화면 진입 시 잔여음 방지)
+    forwardLoop?.stop?.();
     stopRays(); stopTitle(); stopStatic();
     blur3d.focusAndClear();
 
     setTimeout(() => {
-      blur3d.stop(); forwardLoop?.stop?.(); hitLayer.remove();
+      stopPreClickWaitAudio();
+      blur3d.stop(); hitLayer.remove();
       if (typeof onStartBoot === 'function') onStartBoot();
     }, 360);
   };
@@ -492,12 +505,13 @@ function mountPreClickStartScreen(onStartBoot) {
   return () => {
     triggered = true;
     hitLayer.removeEventListener('click', triggerStart); hitLayer.removeEventListener('keydown', triggerStart);
-    stopRays(); stopTitle(); stopStatic(); blur3d.stop(); forwardLoop?.stop?.();
+    stopPreClickWaitAudio();
+    stopRays(); stopTitle(); stopStatic(); blur3d.stop();
   };
 }
 
 Object.assign(window, {
   getWaitAudioContext, playButtonClickSound, startForwardNostalgicLoop,
-  startBlurredBackground3dCrt, startBrutalLightRays, startPreClickNoiseTitleLayer,
-  startFullScreenStaticEffect, mountPreClickStartScreen
+  stopPreClickWaitAudio, startBlurredBackground3dCrt, startBrutalLightRays,
+  startPreClickNoiseTitleLayer, startFullScreenStaticEffect, mountPreClickStartScreen
 });
