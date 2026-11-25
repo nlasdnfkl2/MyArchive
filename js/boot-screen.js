@@ -1,10 +1,10 @@
 // ============================================================
 // MY-ARCHIVE 95 OS — BIOS POST & Authentic Windows 95 Logon
-// (Black Screen -> Wait -> Click Sound -> Low-Poly 3D CRT Front/Back/Side Turn & Full-Screen Zoom -> BIOS Screen)
+// (Black Screen -> Wait -> Click Sound -> Real Three.js 3D Low-Poly CRT Turn & Slow Zoom -> BIOS Screen)
 // ============================================================
 
 window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-window.__MOD_VERSIONS.bootScreen = 'v2026.11.25-lowpoly-3d-full-zoom-bios-click';
+window.__MOD_VERSIONS.bootScreen = 'v2026.11.25-threejs-3d-slow-turn-zoom';
 
 const SESSION_USER_KEY = 'myarchive95_current_user_v2';
 const USERS_CACHE_KEY = 'myarchive95_users_cache_v2';
@@ -111,366 +111,227 @@ function playButtonClickSound() {
 }
 
 // ============================================================
-// 3D 로우-폴리 CRT 모니터 (앞·뒤·옆면) + 느린 좌회전 + 브라우저 확대 -> BIOS
+// 실제 3D 로우-폴리 CRT 모델 로더 (Three.js)
 // ============================================================
-function ensure3dCrtMonitorStyles() {
-  if (document.getElementById('retro-3d-crt-monitor-style')) return;
-  const style = document.createElement('style');
-  style.id = 'retro-3d-crt-monitor-style';
-  style.textContent = `
-    #retro-3d-crt-stage {
-      position: fixed;
-      inset: 0;
-      z-index: 1000000;
-      background: #000000;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      perspective: 1150px;
-      overflow: hidden;
-      opacity: 1;
-      transition: opacity 0.2s ease;
-    }
-    #retro-3d-crt-stage.fade-out {
-      opacity: 0;
-      pointer-events: none;
-    }
+let __threeScriptPromise = null;
 
-    /* 검은 화면에서 잠깐 대기 후 천천히 왼쪽으로 회전 정렬 -> 브라우저 가득 확대 */
-    .poly-crt-rig {
-      position: relative;
-      transform-style: preserve-3d;
-      opacity: 0;
-      transform: translate3d(28px, 4px, -110px) rotateX(5deg) rotateY(38deg) rotateZ(0deg) scale(0.9);
-      animation: polyCrtBlackWaitTurnZoom 3.45s cubic-bezier(0.22, 0.86, 0.26, 1) 0.55s forwards;
-    }
+function loadThreeJsLibrary() {
+  if (window.THREE) return Promise.resolve(window.THREE);
+  if (__threeScriptPromise) return __threeScriptPromise;
 
-    .poly-crt-unit {
-      --w: 310px;
-      --h: 256px;
-      --d: 224px;
-      position: relative;
-      width: var(--w);
-      height: var(--h);
-      transform-style: preserve-3d;
-    }
+  __threeScriptPromise = new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js';
+    script.async = true;
+    script.onload = () => (window.THREE ? resolve(window.THREE) : reject(new Error('THREE unavailable')));
+    script.onerror = () => reject(new Error('Failed to load THREE'));
+    document.head.appendChild(script);
+  });
 
-    /* 로우-폴리 플랫 셰이딩 면 공통 */
-    .poly-face {
-      position: absolute;
-      box-sizing: border-box;
-      border: 1px solid rgba(35, 36, 34, 0.55);
-      backface-visibility: visible;
-    }
+  return __threeScriptPromise;
+}
 
-    /* 1. 앞면: 로우-폴리 베이지 베젤 + 볼록 CRT 화면 */
-    .poly-front {
-      width: var(--w);
-      height: var(--h);
-      background: linear-gradient(155deg, #dcd9cc 0%, #c8c4b5 58%, #b3afa0 100%);
-      transform: translateZ(calc(var(--d) * 0.5));
-      padding: 15px 17px 11px;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      box-shadow: inset 2px 2px 0 rgba(255, 255, 255, 0.45), inset -2px -2px 0 rgba(70, 68, 60, 0.4);
-    }
+function createCrtScreenCanvasTexture(THREE) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 384;
+  const ctx = canvas.getContext('2d');
 
-    .poly-screen-well {
-      position: relative;
-      flex: 1;
-      background: #757268;
-      border-top: 3px solid #525048;
-      border-left: 3px solid #525048;
-      border-right: 3px solid #e6e4d8;
-      border-bottom: 3px solid #e6e4d8;
-      padding: 3px;
-      overflow: hidden;
-    }
+  ctx.fillStyle = '#05080b';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    /* 튀어나온(볼록) CRT 유리 화면 질감 */
-    .poly-screen-display {
-      position: relative;
-      width: 100%;
-      height: 100%;
-      background: #050709;
-      border-radius: 10px / 8px;
-      transform: translateZ(5px) scale(1.015);
-      box-shadow:
-        inset 0 0 12px rgba(0, 0, 0, 0.9),
-        inset 3px 3px 8px rgba(255, 255, 255, 0.14);
-      overflow: hidden;
-      font-family: 'Consolas', 'Courier New', monospace;
-    }
+  ctx.fillStyle = '#d8e2ec';
+  ctx.font = 'bold 18px Consolas, monospace';
+  ctx.fillText('AWARD MODULAR BIOS v4.51PG', 24, 38);
+  ctx.fillStyle = '#7cd4ff';
+  ctx.font = '15px Consolas, monospace';
+  ctx.fillText('MY-ARCHIVE 95 WORKSTATION SYSTEM', 24, 66);
+  ctx.fillStyle = '#66ff66';
+  ctx.fillText('CPU: PENTIUM-CLASS 133MHz [OK]', 24, 104);
+  ctx.fillText('MEMORY TEST: 65536K OK', 24, 128);
+  ctx.fillStyle = '#ffff66';
+  ctx.fillText('LOADING BIOS POST...', 24, 172);
 
-    .poly-crt-glass-bulge {
-      position: absolute;
-      inset: 0;
-      z-index: 4;
-      pointer-events: none;
-      border-radius: 10px / 8px;
-      background:
-        radial-gradient(ellipse at 30% 22%, rgba(255, 255, 255, 0.17) 0%, rgba(255, 255, 255, 0.03) 40%, transparent 68%),
-        radial-gradient(ellipse at 50% 50%, transparent 56%, rgba(0, 0, 0, 0.55) 100%);
-    }
+  // 스캔라인
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.28)';
+  for (let y = 0; y < canvas.height; y += 4) {
+    ctx.fillRect(0, y, canvas.width, 1.5);
+  }
 
-    .poly-crt-scanlines {
-      position: absolute;
-      inset: 0;
-      z-index: 3;
-      pointer-events: none;
-      background: repeating-linear-gradient(
-        0deg,
-        rgba(0, 0, 0, 0.22) 0px,
-        rgba(0, 0, 0, 0.22) 1px,
-        transparent 1px,
-        transparent 2.5px
-      );
-    }
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.needsUpdate = true;
+  return tex;
+}
 
-    .poly-screen-preview-text {
-      position: relative;
-      z-index: 2;
-      padding: 6px 8px;
-      color: #c8d2dc;
-      font-size: 0.44rem;
-      line-height: 1.35;
-    }
+function buildLowPolyCrt3dGroup(THREE) {
+  const root = new THREE.Group();
 
-    .poly-chin {
-      height: 22px;
-      margin-top: 7px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 3px;
-    }
-    .poly-chin-left {
-      display: flex;
-      align-items: center;
-      gap: 7px;
-    }
-    .poly-small-btns {
-      display: flex;
-      gap: 4px;
-    }
-    .poly-small-btn {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: #b2ae9f;
-      border: 1px solid #55534b;
-      box-shadow: inset 1px 1px 0 #ebe9df;
-    }
-    .poly-led {
-      width: 5px;
-      height: 5px;
-      border-radius: 50%;
-      background: #4ce066;
-      box-shadow: 0 0 4px #4ce066;
-    }
-    .poly-power-btn {
-      width: 14px;
-      height: 14px;
-      border-radius: 50%;
-      background: radial-gradient(circle at 35% 30%, #7aa8ff 0%, #3d6ed6 65%, #274999 100%);
-      border: 1px solid #2d3442;
-    }
+  const bezelMat = new THREE.MeshStandardMaterial({
+    color: 0xcbc7b7,
+    roughness: 0.78,
+    metalness: 0.04,
+    flatShading: true
+  });
+  const darkTrimMat = new THREE.MeshStandardMaterial({
+    color: 0x6f6c61,
+    roughness: 0.85,
+    metalness: 0.08,
+    flatShading: true
+  });
+  const backShellMat = new THREE.MeshStandardMaterial({
+    color: 0x9b9789,
+    roughness: 0.82,
+    metalness: 0.06,
+    flatShading: true
+  });
+  const ledMat = new THREE.MeshStandardMaterial({
+    color: 0x3be85e,
+    emissive: 0x22b542,
+    emissiveIntensity: 0.85,
+    flatShading: true
+  });
+  const powerBtnMat = new THREE.MeshStandardMaterial({
+    color: 0x3b6fd8,
+    roughness: 0.45,
+    metalness: 0.15,
+    flatShading: true
+  });
 
-    /* 2. 뒷면: 돌출된 CRT 브라운관 하우징 + 후면 패널 디테일 */
-    .poly-back {
-      width: calc(var(--w) * 0.74);
-      height: calc(var(--h) * 0.72);
-      left: calc(var(--w) * 0.13);
-      top: calc(var(--h) * 0.14);
-      background: linear-gradient(180deg, #9d998c 0%, #858174 100%);
-      transform: translateZ(calc(var(--d) * -0.56)) rotateY(180deg);
-      padding: 12px;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-    }
-    .poly-back-vents {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 5px;
-    }
-    .poly-back-vent {
-      height: 6px;
-      background: #4d4b43;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.25);
-    }
-    .poly-back-ports {
-      display: flex;
-      gap: 6px;
-      align-items: center;
-    }
-    .poly-back-port {
-      width: 22px;
-      height: 10px;
-      background: #3d3b35;
-      border: 1px solid #66635a;
-    }
+  // 1. 앞면 베젤 프레임 (상/하/좌/우 로우-폴리 블록)
+  const topBar = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.34, 0.36), bezelMat);
+  topBar.position.set(0, 1.13, 1.02);
+  root.add(topBar);
 
-    /* 3. 좌/우 측면: 로우-폴리 측면 + 환기구 도트 패턴 */
-    .poly-left,
-    .poly-right {
-      width: var(--d);
-      height: var(--h);
-      left: calc((var(--w) - var(--d)) * 0.5);
-      background-image: radial-gradient(rgba(52, 50, 46, 0.45) 1px, transparent 1.1px);
-      background-size: 7px 7px;
-    }
-    .poly-left {
-      background-color: #c2bfb2;
-      transform: rotateY(-90deg) translateZ(calc(var(--w) * 0.5));
-    }
-    .poly-right {
-      background-color: #a4a092;
-      transform: rotateY(90deg) translateZ(calc(var(--w) * 0.5));
-    }
+  const bottomChin = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.52, 0.42), bezelMat);
+  bottomChin.position.set(0, -1.04, 1.04);
+  root.add(bottomChin);
 
-    /* 4. 상/하면 */
-    .poly-top {
-      width: var(--w);
-      height: var(--d);
-      top: calc((var(--h) - var(--d)) * 0.5);
-      background: #d4d1c4;
-      transform: rotateX(90deg) translateZ(calc(var(--h) * 0.5));
-    }
-    .poly-bottom {
-      width: var(--w);
-      height: var(--d);
-      top: calc((var(--h) - var(--d)) * 0.5);
-      background: #8f8b7e;
-      transform: rotateX(-90deg) translateZ(calc(var(--h) * 0.5));
-    }
+  const leftPillar = new THREE.Mesh(new THREE.BoxGeometry(0.36, 1.9, 0.36), bezelMat);
+  leftPillar.position.set(-1.42, 0.01, 1.02);
+  root.add(leftPillar);
 
-    /* 넥 & 사각 베이스 스탠드 */
-    .poly-neck {
-      position: absolute;
-      width: 116px;
-      height: 24px;
-      left: calc((var(--w) - 116px) * 0.5);
-      bottom: -22px;
-      background: #9c988b;
-      border: 1px solid rgba(35, 36, 34, 0.55);
-      transform: translateZ(-6px);
-    }
-    .poly-base {
-      position: absolute;
-      width: 196px;
-      height: 112px;
-      left: calc((var(--w) - 196px) * 0.5);
-      bottom: -76px;
-      background: linear-gradient(180deg, #ccc8b9 0%, #aba799 100%);
-      border: 1px solid rgba(35, 36, 34, 0.55);
-      transform: rotateX(76deg) translateZ(-28px);
-      box-shadow: 0 8px 0 #898578;
-    }
+  const rightPillar = new THREE.Mesh(new THREE.BoxGeometry(0.36, 1.9, 0.36), bezelMat);
+  rightPillar.position.set(1.42, 0.01, 1.02);
+  root.add(rightPillar);
 
-    @keyframes polyCrtBlackWaitTurnZoom {
-      0% {
-        opacity: 0;
-        transform: translate3d(28px, 4px, -110px) rotateX(5deg) rotateY(38deg) rotateZ(0deg) scale(0.9);
-      }
-      18% {
-        opacity: 1;
-        transform: translate3d(28px, 4px, -110px) rotateX(5deg) rotateY(38deg) rotateZ(0deg) scale(0.92);
-      }
-      66% {
-        opacity: 1;
-        transform: translate3d(0px, 0px, 0px) rotateX(2deg) rotateY(0deg) rotateZ(0deg) scale(1.02);
-      }
-      100% {
-        opacity: 1;
-        transform: translate3d(0px, -6px, 520px) rotateX(0deg) rotateY(0deg) rotateZ(0deg) scale(5.4);
-      }
-    }
-  `;
-  document.head.appendChild(style);
+  // 스크린 리세스 테두리
+  const innerRim = new THREE.Mesh(new THREE.BoxGeometry(2.56, 1.96, 0.18), darkTrimMat);
+  innerRim.position.set(0, 0.01, 0.92);
+  root.add(innerRim);
+
+  // 볼록 CRT 스크린(로우-폴리 세그먼트 구면 변형)
+  const screenGeo = new THREE.SphereGeometry(1.75, 18, 14, -Math.PI * 0.24, Math.PI * 0.48, Math.PI * 0.31, Math.PI * 0.38);
+  const posAttr = screenGeo.attributes.position;
+  for (let i = 0; i < posAttr.count; i++) {
+    const x = posAttr.getX(i);
+    const y = posAttr.getY(i);
+    const z = posAttr.getZ(i);
+    posAttr.setXYZ(i, x * 1.38, y * 1.24, z * 0.42);
+  }
+  screenGeo.computeVertexNormals();
+
+  const screenMat = new THREE.MeshStandardMaterial({
+    map: createCrtScreenCanvasTexture(THREE),
+    roughness: 0.25,
+    metalness: 0.1,
+    emissive: 0x101c24,
+    emissiveIntensity: 0.45,
+    flatShading: true
+  });
+  const screenMesh = new THREE.Mesh(screenGeo, screenMat);
+  screenMesh.position.set(0, 0.01, 0.42);
+  root.add(screenMesh);
+
+  // 전원 버튼 & LED
+  const pwrBtn = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.12, 8), powerBtnMat);
+  pwrBtn.rotation.x = Math.PI / 2;
+  pwrBtn.position.set(1.26, -1.04, 1.24);
+  root.add(pwrBtn);
+
+  const ledDot = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.05, 0.06), ledMat);
+  ledDot.position.set(-1.16, -1.04, 1.25);
+  root.add(ledDot);
+
+  // 2. 메인 바디 & 돌출된 뒷면 브라운관 하우징 (앞/뒤/옆 입체)
+  const mainBody = new THREE.Mesh(new THREE.BoxGeometry(3.16, 2.54, 1.28), bezelMat);
+  mainBody.position.set(0, 0, 0.24);
+  root.add(mainBody);
+
+  const rearTube = new THREE.Mesh(new THREE.CylinderGeometry(1.08, 0.72, 1.18, 8), backShellMat);
+  rearTube.rotation.x = Math.PI / 2;
+  rearTube.position.set(0, 0.04, -0.92);
+  root.add(rearTube);
+
+  const rearCap = new THREE.Mesh(new THREE.BoxGeometry(1.36, 1.26, 0.24), darkTrimMat);
+  rearCap.position.set(0, 0.04, -1.52);
+  root.add(rearCap);
+
+  // 3. 스탠드 넥 & 로우-폴리 베이스
+  const neck = new THREE.Mesh(new THREE.BoxGeometry(1.18, 0.34, 0.85), darkTrimMat);
+  neck.position.set(0, -1.36, 0.12);
+  root.add(neck);
+
+  const base = new THREE.Mesh(new THREE.BoxGeometry(2.38, 0.22, 1.86), bezelMat);
+  base.position.set(0, -1.62, 0.18);
+  root.add(base);
+
+  return root;
+}
+
+function easeInOutCubic(t) {
+  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+}
+
+function easeInOutQuart(t) {
+  return t < 0.5 ? 8 * t * t * t * t : 1 - Math.pow(-2 * t + 2, 4) / 2;
 }
 
 function play3dCrtMonitorAnimation() {
   return new Promise(resolve => {
-    ensure3dCrtMonitorStyles();
     const prev = document.getElementById('retro-3d-crt-stage');
     if (prev) prev.remove();
 
     const stage = document.createElement('div');
     stage.id = 'retro-3d-crt-stage';
     stage.title = '클릭하면 즉시 BIOS 화면으로 이동합니다';
-    stage.innerHTML = `
-      <div class="poly-crt-rig">
-        <div class="poly-crt-unit">
-          <div class="poly-face poly-front">
-            <div class="poly-screen-well">
-              <div class="poly-screen-display">
-                <div class="poly-screen-preview-text">
-                  <div>AWARD BIOS ROM</div>
-                  <div style="color:#55ff55;">INITIALIZING...</div>
-                </div>
-                <div class="poly-crt-scanlines"></div>
-                <div class="poly-crt-glass-bulge"></div>
-              </div>
-            </div>
-            <div class="poly-chin">
-              <div class="poly-chin-left">
-                <div class="poly-small-btns">
-                  <span class="poly-small-btn"></span>
-                  <span class="poly-small-btn"></span>
-                  <span class="poly-small-btn"></span>
-                </div>
-                <span class="poly-led"></span>
-              </div>
-              <span class="poly-power-btn"></span>
-            </div>
-          </div>
-
-          <div class="poly-face poly-back">
-            <div class="poly-back-vents">
-              <span class="poly-back-vent"></span>
-              <span class="poly-back-vent"></span>
-              <span class="poly-back-vent"></span>
-              <span class="poly-back-vent"></span>
-              <span class="poly-back-vent"></span>
-              <span class="poly-back-vent"></span>
-              <span class="poly-back-vent"></span>
-              <span class="poly-back-vent"></span>
-            </div>
-            <div class="poly-back-ports">
-              <span class="poly-back-port"></span>
-              <span class="poly-back-port"></span>
-              <span class="poly-back-port"></span>
-            </div>
-          </div>
-
-          <div class="poly-face poly-left"></div>
-          <div class="poly-face poly-right"></div>
-          <div class="poly-face poly-top"></div>
-          <div class="poly-face poly-bottom"></div>
-          <div class="poly-neck"></div>
-          <div class="poly-base"></div>
-        </div>
-      </div>
+    stage.style.cssText = `
+      position: fixed;
+      inset: 0;
+      z-index: 1000000;
+      background: #000000;
+      opacity: 1;
+      transition: opacity 0.25s ease;
+      cursor: pointer;
     `;
-
     document.body.appendChild(stage);
 
-    const clickStartTimer = setTimeout(() => {
-      playButtonClickSound();
-    }, 620);
-
     let finished = false;
+    let rafId = 0;
+    let renderer = null;
+
+    const cleanup = () => {
+      if (rafId) cancelAnimationFrame(rafId);
+      if (renderer) {
+        try {
+          renderer.dispose();
+          renderer.domElement?.remove();
+        } catch {}
+      }
+    };
+
     const finishIntro = () => {
       if (finished) return;
       finished = true;
-      clearTimeout(clickStartTimer);
-      stage.classList.add('fade-out');
+      clearTimeout(clickTimer);
+      clearTimeout(fallbackTimer);
+      stage.style.opacity = '0';
+      stage.style.pointerEvents = 'none';
       setTimeout(() => {
+        cleanup();
         stage.remove();
         resolve();
-      }, 180);
+      }, 240);
     };
 
     stage.addEventListener('click', () => {
@@ -478,8 +339,116 @@ function play3dCrtMonitorAnimation() {
       finishIntro();
     });
 
-    const autoTimer = setTimeout(finishIntro, 3920);
-    stage.dataset.autoTimer = String(autoTimer);
+    // 잠깐 검은 화면 대기 후 '딸깍' 소리와 함께 실제 3D 모델 애니메이션 시작
+    const waitDurationMs = 650;
+    const turnDurationMs = 2450;
+    const zoomDurationMs = 2550;
+    const totalDurationMs = waitDurationMs + turnDurationMs + zoomDurationMs;
+
+    const clickTimer = setTimeout(() => {
+      playButtonClickSound();
+    }, waitDurationMs);
+
+    const fallbackTimer = setTimeout(finishIntro, totalDurationMs + 250);
+
+    loadThreeJsLibrary()
+      .then(THREE => {
+        if (finished) return;
+
+        const width = window.innerWidth || 1280;
+        const height = window.innerHeight || 720;
+
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x000000);
+
+        const camera = new THREE.PerspectiveCamera(42, width / height, 0.05, 100);
+        camera.position.set(0.35, 0.25, 7.6);
+        camera.lookAt(0, -0.15, 0);
+
+        renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+        renderer.setSize(width, height);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+        renderer.outputColorSpace = THREE.SRGBColorSpace;
+        stage.appendChild(renderer.domElement);
+
+        const ambientLight = new THREE.AmbientLight(0xffffff, 1.15);
+        scene.add(ambientLight);
+
+        const keyLight = new THREE.DirectionalLight(0xfff7e6, 1.9);
+        keyLight.position.set(4.5, 5.5, 6.0);
+        scene.add(keyLight);
+
+        const rimLight = new THREE.DirectionalLight(0x9ec5ff, 0.9);
+        rimLight.position.set(-5.0, 2.0, -4.0);
+        scene.add(rimLight);
+
+        const crtModel = buildLowPolyCrt3dGroup(THREE);
+        // 초기 각도: 오른쪽/측면이 보이는 3D 로우-폴리 시점
+        crtModel.position.set(0.65, -0.05, -0.8);
+        crtModel.rotation.set(0.08, 0.78, 0);
+        crtModel.visible = false;
+        scene.add(crtModel);
+
+        const onResize = () => {
+          if (finished || !renderer) return;
+          const w = window.innerWidth || 1280;
+          const h = window.innerHeight || 720;
+          camera.aspect = w / h;
+          camera.updateProjectionMatrix();
+          renderer.setSize(w, h);
+        };
+        window.addEventListener('resize', onResize);
+
+        const startTime = performance.now();
+        const animateFrame = now => {
+          if (finished) {
+            window.removeEventListener('resize', onResize);
+            return;
+          }
+          const elapsed = now - startTime;
+
+          if (elapsed < waitDurationMs) {
+            crtModel.visible = false;
+          } else {
+            crtModel.visible = true;
+            const turnRaw = Math.min(1, Math.max(0, (elapsed - waitDurationMs) / turnDurationMs));
+            const tEase = easeInOutCubic(turnRaw);
+
+            // 천천히 왼쪽으로 회전하며 정면 정렬
+            crtModel.rotation.y = 0.78 * (1 - tEase);
+            crtModel.rotation.x = 0.08 * (1 - tEase);
+            crtModel.position.x = 0.65 * (1 - tEase);
+            crtModel.position.y = -0.05 * (1 - tEase);
+            crtModel.position.z = -0.8 * (1 - tEase);
+
+            // 회전이 자리잡힌 뒤 천천히 화면 가득 확대(카메라를 스크린 앞으로 접근)
+            if (elapsed > waitDurationMs + turnDurationMs * 0.72) {
+              const zoomStart = waitDurationMs + turnDurationMs * 0.72;
+              const zoomRaw = Math.min(1, Math.max(0, (elapsed - zoomStart) / zoomDurationMs));
+              const zEase = easeInOutQuart(zoomRaw);
+
+              camera.position.x = 0.35 * (1 - tEase);
+              camera.position.y = 0.25 * (1 - tEase) + 0.01 * zEase;
+              camera.position.z = 7.6 - 5.95 * zEase;
+              camera.lookAt(0, 0.01 * zEase, 0.65 * zEase);
+
+              if (zoomRaw >= 1) {
+                window.removeEventListener('resize', onResize);
+                finishIntro();
+                return;
+              }
+            }
+          }
+
+          renderer.render(scene, camera);
+          rafId = requestAnimationFrame(animateFrame);
+        };
+
+        rafId = requestAnimationFrame(animateFrame);
+      })
+      .catch(() => {
+        if (!finished) finishIntro();
+      });
   });
 }
 
