@@ -1,14 +1,13 @@
 // ============================================================
 // MY-ARCHIVE 95 OS — Boot Lifecycle Controller (Stage Flow)
-// Flow: Preloader(500ms/file + Complete Hold) -> TV Off
-//       -> Wait(Text+Noise) -> [Click/Key] -> 3D Anim
+// Flow: Preloader -> TV Off -> Wait(Text+Noise) -> [Click/Key]
 //       -> [First Run & No Setup] Text-BIOS Setup -> BIOS
-//       -> [Click/Key] -> Loading Splash -> Logon
+//       -> Splash -> Logon
 // ============================================================
 
 (function () {
   window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-  window.__MOD_VERSIONS.bootController = 'v2026.11.25-stage-flow-pre-bios-setup';
+  window.__MOD_VERSIONS.bootController = 'v2026.11.25-boot-controller-pre-bios-setup';
 
   const SETUP_STORAGE_KEY = 'myarchive95_setup_v1';
 
@@ -109,16 +108,13 @@
       overlay.style.display = 'flex';
     }
     if (typeof window.__runActualBiosSequence === 'function') {
-      return window.__runActualBiosSequence();
+      return window.__runActualBiosSequence({ alreadyClicked: true });
     }
     if (typeof window.__origStartBiosBootSequence === 'function') {
-      return window.__origStartBiosBootSequence();
+      return window.__origStartBiosBootSequence({ alreadyClicked: true });
     }
     if (typeof window.startBiosBootSequence === 'function') {
-      return window.startBiosBootSequence();
-    }
-    if (typeof window.openInitialSetupScreen === 'function') {
-      return window.openInitialSetupScreen(false);
+      return window.startBiosBootSequence({ alreadyClicked: true });
     }
   }
 
@@ -131,29 +127,7 @@
   window.__onInitialSetupComplete = proceedAfterPreBiosSetup;
 
   function watchSetupModalAndProceedToBios() {
-    const setupSelectors = [
-      '#initial-setup-screen',
-      '#initial-setup-overlay',
-      '#os-initial-setup',
-      '[data-initial-setup="true"]'
-    ];
-
-    const findSetupEl = () => {
-      for (const sel of setupSelectors) {
-        const el = document.querySelector(sel);
-        if (el) return el;
-      }
-      return null;
-    };
-
-    const existing = findSetupEl();
-    if (!existing) {
-      setTimeout(() => {
-        if (!findSetupEl() && !__preBiosSetupResumed) {
-          proceedAfterPreBiosSetup();
-        }
-      }, 150);
-    }
+    const findSetupEl = () => document.getElementById('bios-text-setup-overlay');
 
     if (typeof MutationObserver === 'function') {
       const observer = new MutationObserver(() => {
@@ -161,16 +135,8 @@
           observer.disconnect();
           return;
         }
-        if (hasSavedSetupData()) {
-          const curEl = findSetupEl();
-          if (!curEl || !isElementVisible(curEl)) {
-            observer.disconnect();
-            proceedAfterPreBiosSetup();
-          }
-          return;
-        }
         const curEl = findSetupEl();
-        if (existing && (!curEl || !isElementVisible(curEl))) {
+        if (!curEl || !isElementVisible(curEl)) {
           observer.disconnect();
           proceedAfterPreBiosSetup();
         }
@@ -193,12 +159,8 @@
 
   function openPreBiosSetupScreen() {
     __preBiosSetupShown = true;
-    const overlay = document.getElementById('os-boot-overlay');
-    if (overlay) {
-      overlay.style.display = 'flex';
-    }
     try {
-      window.openInitialSetupScreen(true);
+      window.openInitialSetupScreen(true, proceedAfterPreBiosSetup);
     } catch {
       try {
         window.openInitialSetupScreen();
@@ -209,7 +171,7 @@
     watchSetupModalAndProceedToBios();
   }
 
-  // 1단계(글자+노이즈 화면)에서 클릭 또는 아무 키 입력 시 -> 2단계(애니메이션 -> 첫 실행 설정/BIOS) 진입
+  // 대기 화면에서 클릭 또는 키 입력 시 -> 첫 실행(설정 없음)이면 바이오스 전 SETUP, 아니면 BIOS 진입
   function enterBootAfterStartClick() {
     if (__waitBootStarted || window.__ARCHIVE_LOGGED_IN) return;
     __waitBootStarted = true;
