@@ -4,7 +4,7 @@
 // ============================================================
 
 window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-window.__MOD_VERSIONS.windowMgr = typeof APP_BUILD_VERSION !== 'undefined' ? APP_BUILD_VERSION : 'v2026.11.25-11';
+window.__MOD_VERSIONS.windowMgr = typeof APP_BUILD_VERSION !== 'undefined' ? APP_BUILD_VERSION : 'v2026.11.26-wm-responsive-mobile';
 
 const ALL_DESKTOP_THEMES = [
   'theme-teal',
@@ -17,6 +17,167 @@ const ALL_DESKTOP_THEMES = [
 ];
 
 const PORTFOLIO_VIRTUAL_URL = 'https://nlasdnfkl2.github.io/my-webpage/';
+const WM_RESPONSIVE_STYLE_ID = 'myarchive95-wm-responsive-style';
+
+function applyWindowManagerResponsiveStyle() {
+  if (document.getElementById(WM_RESPONSIVE_STYLE_ID)) return;
+  const parent = document.head || document.documentElement;
+  if (!parent) return;
+
+  const style = document.createElement('style');
+  style.id = WM_RESPONSIVE_STYLE_ID;
+  style.textContent = `
+    .floating-win {
+      box-sizing: border-box;
+      max-width: calc(100vw - 12px);
+      max-height: calc(var(--app-vh, 100vh) - 76px);
+      min-width: 0;
+    }
+    .floating-win.open:not(.minimized) {
+      display: flex;
+      flex-direction: column;
+    }
+    .floating-win .win-titlebar {
+      flex-shrink: 0;
+      min-width: 0;
+    }
+    .floating-win .win-title-left {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .floating-win .win-title-left span {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .floating-win .win-ctrl-btns {
+      flex-shrink: 0;
+    }
+    .floating-win .win-body {
+      flex: 1 1 auto;
+      min-height: 0;
+      min-width: 0;
+      overflow-y: auto;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .floating-win .win-body table,
+    .floating-win .win-body ul,
+    .floating-win .win-body ol,
+    .floating-win .sunken-box {
+      max-width: 100%;
+      min-width: 0;
+      box-sizing: border-box;
+    }
+    .taskmgr-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+      min-width: 0;
+    }
+    .taskmgr-row > span:first-child {
+      flex: 1 1 140px;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .os-menubar,
+    .top-menubar {
+      max-width: 100vw;
+      flex-wrap: wrap;
+    }
+    .menu-dropdown,
+    .menu-list,
+    [role="menu"] {
+      max-width: calc(100vw - 16px);
+      max-height: calc(var(--app-vh, 100vh) - 96px);
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    #start-menu {
+      max-width: calc(100vw - 12px);
+      max-height: calc(var(--app-vh, 100vh) - 64px);
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .os-taskbar {
+      max-width: 100vw;
+      box-sizing: border-box;
+    }
+    #taskbar-windows {
+      min-width: 0;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .taskbar-tab {
+      max-width: 180px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    @media (max-width: 768px) {
+      .desktop-icons,
+      .icon-grid {
+        max-width: 100vw;
+        padding-bottom: 64px;
+      }
+      .floating-win.open:not(.minimized) {
+        position: fixed !important;
+        left: 6px !important;
+        right: 6px !important;
+        top: 40px !important;
+        width: calc(100vw - 12px) !important;
+        max-width: calc(100vw - 12px) !important;
+        height: auto !important;
+        max-height: calc(var(--app-vh, 100vh) - 92px) !important;
+        transform: none !important;
+      }
+      .floating-win .win-body {
+        padding: 8px !important;
+      }
+      #win-portfolio iframe {
+        min-height: 52vh !important;
+      }
+      .taskbar-tab {
+        max-width: 120px;
+        font-size: 0.74rem;
+      }
+    }
+    @media (max-width: 480px) {
+      #win-about-license .about-links-grid {
+        grid-template-columns: 1fr !important;
+      }
+      .taskmgr-row > div {
+        width: 100%;
+        justify-content: flex-end;
+      }
+      .os-taskbar {
+        flex-wrap: wrap;
+        height: auto !important;
+        min-height: 36px;
+        padding: 3px 4px;
+        gap: 4px;
+      }
+    }
+  `;
+  parent.appendChild(style);
+}
+
+function syncWindowManagerViewportHeight() {
+  applyWindowManagerResponsiveStyle();
+  const vh = window.visualViewport && typeof window.visualViewport.height === 'number' && window.visualViewport.height > 0
+    ? Math.round(window.visualViewport.height)
+    : window.innerHeight;
+  if (vh > 0) {
+    document.documentElement.style.setProperty('--app-vh', `${vh}px`);
+  }
+}
 
 // 구버전 HTML data-win-title에 이모지가 남아 있어도 작업표시줄에는 95년 규격 텍스트만 표시
 function sanitizeRetroWindowTitle(rawTitle) {
@@ -71,22 +232,48 @@ function restoreMediaInOpenedWindow(winEl) {
   });
 }
 
-// 상단 메뉴바 및 하단 작업표시줄 영역을 고려한 뷰포트 내 창 위치 보정
+// 상단 메뉴바 및 하단 작업표시줄 영역을 고려한 뷰포트 내 창 위치/크기 보정
 function clampWindowToViewport(winEl) {
-  if (!winEl || window.innerWidth <= 768) return;
+  if (!winEl) return;
+  syncWindowManagerViewportHeight();
+
+  const topbarHeight = document.querySelector('.os-menubar, .top-menubar')?.offsetHeight || 34;
+  const taskbarHeight = document.querySelector('.os-taskbar')?.offsetHeight || 38;
+  const viewportHeight = window.visualViewport?.height || window.innerHeight;
+
+  if (window.innerWidth <= 768) {
+    if (winEl.classList.contains('open') && !winEl.classList.contains('minimized')) {
+      winEl.style.left = '6px';
+      winEl.style.top = `${topbarHeight + 4}px`;
+      winEl.style.maxHeight = `${Math.max(220, Math.round(viewportHeight - topbarHeight - taskbarHeight - 10))}px`;
+    }
+    return;
+  }
+
   if (winEl.classList.contains('win-maximized')) return;
 
-  const topbarHeight = document.querySelector('.os-menubar')?.offsetHeight || 32;
-  const taskbarHeight = document.querySelector('.os-taskbar')?.offsetHeight || 36;
+  const maxAvailWidth = Math.max(280, window.innerWidth - 16);
+  const maxAvailHeight = Math.max(200, Math.round(viewportHeight - topbarHeight - taskbarHeight - 12));
+  winEl.style.maxWidth = `${maxAvailWidth}px`;
+  winEl.style.maxHeight = `${maxAvailHeight}px`;
+
+  if (winEl.style.transform && winEl.style.transform.includes('translate')) {
+    const rect = winEl.getBoundingClientRect();
+    winEl.style.transform = 'none';
+    winEl.style.left = `${Math.max(4, rect.left)}px`;
+    winEl.style.top = `${Math.max(topbarHeight + 4, rect.top)}px`;
+  }
+
+  const winWidth = winEl.offsetWidth || 320;
   const minTop = topbarHeight + 4;
-  const maxTop = Math.max(minTop, window.innerHeight - taskbarHeight - 44);
-  const maxLeft = Math.max(0, window.innerWidth - 140);
+  const maxTop = Math.max(minTop, Math.round(viewportHeight - taskbarHeight - 44));
+  const maxLeft = Math.max(4, window.innerWidth - Math.min(winWidth, 180));
 
   const currentLeft = winEl.offsetLeft;
   const currentTop = winEl.offsetTop;
 
   if (Number.isFinite(currentLeft)) {
-    const clampedLeft = Math.max(0, Math.min(maxLeft, currentLeft));
+    const clampedLeft = Math.max(4, Math.min(maxLeft, currentLeft));
     if (clampedLeft !== currentLeft) {
       winEl.style.left = `${clampedLeft}px`;
     }
@@ -165,6 +352,7 @@ function syncTaskbar() {
     tab.className = 'taskbar-tab' + (winEl.classList.contains('focused') && !winEl.classList.contains('minimized') ? ' active' : '');
     const cleanTitle = sanitizeRetroWindowTitle(winEl.dataset.winTitle || winEl.id);
     tab.textContent = cleanTitle || winEl.id;
+    tab.title = cleanTitle || winEl.id;
     tab.addEventListener('click', () => {
       if (winEl.classList.contains('minimized') || !winEl.classList.contains('focused')) {
         focusWindow(winEl);
@@ -217,10 +405,11 @@ function enableWindowDrag(winEl) {
 
   const onMove = (clientX, clientY) => {
     if (!isDragging) return;
-    const topbarHeight = document.querySelector('.os-menubar')?.offsetHeight || 32;
+    const topbarHeight = document.querySelector('.os-menubar, .top-menubar')?.offsetHeight || 32;
     const taskbarHeight = document.querySelector('.os-taskbar')?.offsetHeight || 36;
-    const nextLeft = Math.max(0, Math.min(window.innerWidth - 120, origLeft + (clientX - startX)));
-    const nextTop = Math.max(topbarHeight + 2, Math.min(window.innerHeight - taskbarHeight - 36, origTop + (clientY - startY)));
+    const viewportHeight = window.visualViewport?.height || window.innerHeight;
+    const nextLeft = Math.max(4, Math.min(window.innerWidth - 120, origLeft + (clientX - startX)));
+    const nextTop = Math.max(topbarHeight + 2, Math.min(viewportHeight - taskbarHeight - 36, origTop + (clientY - startY)));
     winEl.style.left = `${nextLeft}px`;
     winEl.style.top = `${nextTop}px`;
   };
@@ -290,7 +479,8 @@ function bindPortfolioWindow() {
   const reloadBtn = document.getElementById('btn-portfolio-reload');
   const statusLeft = document.getElementById('portfolio-status-left');
 
-  if (iconPortfolio) {
+  if (iconPortfolio && !iconPortfolio.dataset.portfolioBound) {
+    iconPortfolio.dataset.portfolioBound = 'true';
     iconPortfolio.addEventListener('click', e => {
       e.preventDefault();
       e.stopPropagation();
@@ -298,17 +488,23 @@ function bindPortfolioWindow() {
     });
   }
 
-  reloadBtn?.addEventListener('click', () => {
-    if (typeof playRetroTone === 'function') playRetroTone('click');
-    openPortfolioWindow(true);
-  });
+  if (reloadBtn && !reloadBtn.dataset.portfolioBound) {
+    reloadBtn.dataset.portfolioBound = 'true';
+    reloadBtn.addEventListener('click', () => {
+      if (typeof playRetroTone === 'function') playRetroTone('click');
+      openPortfolioWindow(true);
+    });
+  }
 
-  frameEl?.addEventListener('load', () => {
-    const src = frameEl.getAttribute('src');
-    if (src && src !== 'about:blank' && statusLeft) {
-      statusLeft.textContent = `로드 완료: ${PORTFOLIO_VIRTUAL_URL}`;
-    }
-  });
+  if (frameEl && !frameEl.dataset.portfolioBound) {
+    frameEl.dataset.portfolioBound = 'true';
+    frameEl.addEventListener('load', () => {
+      const src = frameEl.getAttribute('src');
+      if (src && src !== 'about:blank' && statusLeft) {
+        statusLeft.textContent = `로드 완료: ${PORTFOLIO_VIRTUAL_URL}`;
+      }
+    });
+  }
 }
 
 // ============================================================
@@ -325,16 +521,16 @@ function openAboutAndLicenseWindow(initialTab = 'creator') {
     winEl.dataset.winTitle = '제작자 및 라이선스 정보 — MY-ARCHIVE 95';
     winEl.dataset.dynamic = 'true';
 
-    const initLeft = Math.max(24, Math.round((window.innerWidth - 460) / 2));
-    const initTop = Math.max(46, Math.round((window.innerHeight - 430) / 2));
-    winEl.style.cssText = `width:min(460px, calc(100vw - 24px)); left:${initLeft}px; top:${initTop}px;`;
+    const initLeft = Math.max(12, Math.round((window.innerWidth - Math.min(460, window.innerWidth - 24)) / 2));
+    const initTop = Math.max(44, Math.round((window.innerHeight - 430) / 2));
+    winEl.style.cssText = `width:min(460px, calc(100vw - 16px)); left:${initLeft}px; top:${initTop}px;`;
 
-    const buildVer = window.__MOD_VERSIONS?.windowMgr || 'v2026.11.25';
+    const buildVer = window.__MOD_VERSIONS?.windowMgr || 'v2026.11.26';
 
     winEl.innerHTML = `
       <div class="win-titlebar draggable">
         <div class="win-title-left" style="display:flex;align-items:center;gap:6px;">
-          <svg width="14" height="14" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true">
+          <svg width="14" height="14" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true" style="flex-shrink:0;">
             <rect x="2" y="1" width="12" height="14" fill="#ffffff" stroke="#111111" stroke-width="1.5"/>
             <rect x="4" y="3" width="8" height="3" fill="#000080"/>
             <rect x="4" y="8" width="8" height="1.5" fill="#111111"/>
@@ -349,29 +545,29 @@ function openAboutAndLicenseWindow(initialTab = 'creator') {
       </div>
       <div class="win-body" style="padding:12px;">
         <div style="display:flex;align-items:center;gap:12px;background:#19191f;color:#ffffff;border:2px solid #111111;padding:10px 12px;margin-bottom:10px;">
-          <div style="width:46px;height:46px;background:#ffd83b;border:2px solid #ffffff;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-            <svg width="30" height="30" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true">
+          <div style="width:42px;height:42px;background:#ffd83b;border:2px solid #ffffff;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <svg width="28" height="28" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true">
               <rect x="2" y="2" width="12" height="12" fill="#008080" stroke="#111111" stroke-width="1.5"/>
               <rect x="4" y="4" width="8" height="5" fill="#ffffff"/>
               <rect x="5" y="10" width="6" height="2" fill="#ffd83b"/>
             </svg>
           </div>
-          <div style="min-width:0;">
-            <div style="font-family:var(--font-mono, Consolas, monospace);font-size:0.92rem;font-weight:900;color:#ffd83b;">
+          <div style="min-width:0;flex:1;">
+            <div style="font-family:var(--font-mono, Consolas, monospace);font-size:0.92rem;font-weight:900;color:#ffd83b;word-break:break-word;">
               MY-ARCHIVE 95 OS
             </div>
-            <div style="font-size:0.76rem;color:#48dbfb;font-weight:700;margin-top:2px;">
+            <div style="font-size:0.75rem;color:#48dbfb;font-weight:700;margin-top:2px;word-break:break-word;">
               Retro Desktop Personal Archive &amp; Web Utility Shell (${buildVer})
             </div>
           </div>
         </div>
 
         <div style="display:flex;gap:4px;margin-bottom:8px;">
-          <button type="button" class="btn95 sm yellow" data-about-tab="creator" style="flex:1;">제작자 설명</button>
-          <button type="button" class="btn95 sm" data-about-tab="license" style="flex:1;">라이선스 · 고지</button>
+          <button type="button" class="btn95 sm yellow" data-about-tab="creator" style="flex:1;min-width:0;">제작자 설명</button>
+          <button type="button" class="btn95 sm" data-about-tab="license" style="flex:1;min-width:0;">라이선스 · 고지</button>
         </div>
 
-        <div id="about-pane-creator" class="sunken-box" style="padding:10px;background:#ffffff;color:#111111;font-size:0.8rem;line-height:1.55;">
+        <div id="about-pane-creator" class="sunken-box" style="padding:10px;background:#ffffff;color:#111111;font-size:0.8rem;line-height:1.55;word-break:keep-all;">
           <div style="font-weight:900;font-size:0.86rem;color:#000080;margin-bottom:6px;border-bottom:1px solid #c0c0c0;padding-bottom:4px;">
             CREATOR PROFILE — 제작자 안내
           </div>
@@ -383,17 +579,17 @@ function openAboutAndLicenseWindow(initialTab = 'creator') {
             <li><b>주요 구성:</b> 주크박스 95, 무드 뮤직 로컬 AI, 탐색기 95, 플로팅 위젯 &amp; 타임라인 보관함</li>
             <li><b>문의 및 업데이트 기록:</b> 아래 공식 블로그 및 GitHub 저장소에서 확인할 수 있습니다.</li>
           </ul>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
-            <a href="https://blog.naver.com/nn80300" target="_blank" rel="noopener noreferrer" class="btn95 yellow sm" style="text-decoration:none;text-align:center;display:inline-flex;align-items:center;justify-content:center;gap:4px;">
+          <div class="about-links-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+            <a href="https://blog.naver.com/nn80300" target="_blank" rel="noopener noreferrer" class="btn95 yellow sm" style="text-decoration:none;text-align:center;display:inline-flex;align-items:center;justify-content:center;gap:4px;min-width:0;">
               <span>Naver Blog (nn80300)</span>
             </a>
-            <a href="https://github.com/nlasdnfkl2" target="_blank" rel="noopener noreferrer" class="btn95 sky sm" style="text-decoration:none;text-align:center;display:inline-flex;align-items:center;justify-content:center;gap:4px;">
+            <a href="https://github.com/nlasdnfkl2" target="_blank" rel="noopener noreferrer" class="btn95 sky sm" style="text-decoration:none;text-align:center;display:inline-flex;align-items:center;justify-content:center;gap:4px;min-width:0;">
               <span>GitHub (nlasdnfkl2)</span>
             </a>
           </div>
         </div>
 
-        <div id="about-pane-license" class="sunken-box" style="display:none;padding:10px;background:#ffffff;color:#111111;font-size:0.76rem;line-height:1.5;max-height:215px;overflow-y:auto;font-family:var(--font-mono, Consolas, monospace);">
+        <div id="about-pane-license" class="sunken-box" style="display:none;padding:10px;background:#ffffff;color:#111111;font-size:0.76rem;line-height:1.5;max-height:215px;overflow-y:auto;font-family:var(--font-mono, Consolas, monospace);word-break:break-word;">
           <div style="font-weight:900;color:#000080;margin-bottom:6px;">
             MIT License — Copyright (c) 2026 nlasdnfkl2 (nn80300)
           </div>
@@ -413,7 +609,7 @@ function openAboutAndLicenseWindow(initialTab = 'creator') {
           </div>
         </div>
 
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;gap:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;gap:8px;flex-wrap:wrap;">
           <span style="font-family:var(--font-mono, Consolas, monospace);font-size:0.7rem;color:#333333;">
             All Rights Reserved · 1995–2026
           </span>
@@ -647,9 +843,9 @@ function triggerBsodEasterEgg() {
 
   const bsod = document.createElement('div');
   bsod.id = 'win95-bsod';
-  bsod.style.cssText = 'position:fixed;inset:0;background:#0000aa;color:#ffffff;font-family:monospace;z-index:20000;display:flex;align-items:center;justify-content:center;padding:24px;cursor:pointer;';
+  bsod.style.cssText = 'position:fixed;inset:0;background:#0000aa;color:#ffffff;font-family:monospace;z-index:20000;display:flex;align-items:center;justify-content:center;padding:16px;cursor:pointer;overflow-y:auto;';
   bsod.innerHTML = `
-    <div style="max-width:620px;line-height:1.7;">
+    <div style="max-width:620px;width:100%;line-height:1.7;word-break:keep-all;">
       <div style="background:#c0c0c0;color:#0000aa;display:inline-block;padding:2px 10px;font-weight:900;margin-bottom:18px;">MY-ARCHIVE 95 OS</div>
       <p style="margin-bottom:14px;">치명적인 취향 과부하 예외 0E가 0028:C0011E36에서 발생했습니다. 현재 실행 중인 감상 기록은 중앙 Google Sheets 및 LocalStorage에 안전하게 보호되고 있습니다.</p>
       <p style="margin-bottom:14px;">* 화면의 아무 곳이나 클릭하거나 키보드의 아무 키나 누르면 데스크톱으로 복귀합니다.</p>
@@ -665,7 +861,25 @@ function triggerBsodEasterEgg() {
   document.body.appendChild(bsod);
 }
 
+const handleViewportResize = () => {
+  syncWindowManagerViewportHeight();
+  document.querySelectorAll('.floating-win.open').forEach(clampWindowToViewport);
+  const scr = document.getElementById('win95-screensaver');
+  const canvas = document.getElementById('screensaver-canvas');
+  if (scr && canvas && scr.style.display === 'block') {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+};
+
+window.addEventListener('resize', handleViewportResize, { passive: true });
+window.addEventListener('orientationchange', handleViewportResize, { passive: true });
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', handleViewportResize, { passive: true });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
+  syncWindowManagerViewportHeight();
   applyDesktopPreferences();
   injectDesktopWidgetIcons();
   injectAboutMenuItems();
@@ -677,10 +891,6 @@ document.addEventListener('DOMContentLoaded', () => {
   syncTaskbar();
   updateTaskbarClock();
   setInterval(updateTaskbarClock, 15000);
-
-  window.addEventListener('resize', () => {
-    document.querySelectorAll('.floating-win.open').forEach(clampWindowToViewport);
-  });
 
   // 바탕화면 테마 전환
   document.querySelectorAll('[data-theme-opt]').forEach(btn => {
@@ -830,8 +1040,8 @@ function startWin95Screensaver() {
 
   const colors = ['#ff4b4b', '#4be36a', '#4ba3ff', '#ffd83b', '#ff9f43', '#a29bfe'];
   const sprites = Array.from({ length: 14 }, (_, i) => ({
-    x: Math.random() * (canvas.width - 96),
-    y: Math.random() * (canvas.height - 50),
+    x: Math.random() * Math.max(10, canvas.width - 96),
+    y: Math.random() * Math.max(10, canvas.height - 50),
     vx: (Math.random() < 0.5 ? -1 : 1) * (1.8 + Math.random() * 2.2),
     vy: (Math.random() < 0.5 ? -1 : 1) * (1.5 + Math.random() * 2.0),
     color: colors[i % colors.length],
