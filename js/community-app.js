@@ -4,7 +4,7 @@
 // ============================================================
 
 window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-window.__MOD_VERSIONS.communityApp = 'v2026.11.22-v5';
+window.__MOD_VERSIONS.communityApp = 'v2026.11.22-v6';
 
 const communityState = {
   catFilter: 'ALL',
@@ -13,6 +13,7 @@ const communityState = {
   sortBy: 'latest', // 'latest' | 'likes' | 'rating'
   keyword: '',
   showStats: true,
+  isBusy: false,
   likes: {},    // { archiveId: [username, ...] }
   comments: {}, // { archiveId: [{ id, createdAt, author, content }] }
   openComments: {}
@@ -20,6 +21,103 @@ const communityState = {
 
 let commCatChart = null;
 let commMonthChart = null;
+
+function showCommunityLoadingOverlay(message = '중앙 전산실과 통신 중입니다...') {
+  communityState.isBusy = true;
+  if (typeof setLoadingCursor === 'function') setLoadingCursor(true);
+  if (typeof window.setArchiveSyncStatus === 'function') {
+    window.setArchiveSyncStatus('syncing', '동기화 중');
+  }
+
+  const host = document.getElementById('win-community') || document.body;
+  if (host && getComputedStyle(host).position === 'static') {
+    host.style.position = 'relative';
+  }
+
+  let overlay = document.getElementById('comm-loading-overlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'comm-loading-overlay';
+    overlay.setAttribute('role', 'status');
+    overlay.setAttribute('aria-live', 'polite');
+    overlay.style.cssText = `
+      position: absolute;
+      inset: 0;
+      z-index: 9999;
+      background: rgba(0, 0, 0, 0.38);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      cursor: wait;
+    `;
+    overlay.innerHTML = `
+      <div style="
+        background: #c0c0c0;
+        border: 2px solid #ffffff;
+        outline: 2px solid #111111;
+        box-shadow: 4px 4px 0 #111111;
+        min-width: 240px;
+        max-width: 360px;
+      ">
+        <div style="
+          background: #000080;
+          color: #ffffff;
+          padding: 4px 8px;
+          font-size: 0.78rem;
+          font-weight: 900;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+        ">
+          <span class="archive-sync-spin" style="color:#00ff00;">↻</span>
+          <span>COMMUNITY95.EXE — 통신 처리 중</span>
+        </div>
+        <div style="padding: 14px 16px; text-align: center;">
+          <div id="comm-loading-text" style="font-size: 0.82rem; font-weight: 800; color: #111111; margin-bottom: 10px;">
+            ${esc(message)}
+          </div>
+          <div style="height: 14px; background: #ffffff; border: 2px inset #808080; overflow: hidden;">
+            <div class="archive-sync-spin" style="width: 100%; height: 100%; background: repeating-linear-gradient(90deg, #000080 0 10px, #48dbfb 10px 20px);"></div>
+          </div>
+        </div>
+      </div>
+    `;
+    host.appendChild(overlay);
+  } else {
+    const txt = overlay.querySelector('#comm-loading-text');
+    if (txt) txt.textContent = message;
+    overlay.style.display = 'flex';
+  }
+}
+
+function hideCommunityLoadingOverlay() {
+  communityState.isBusy = false;
+  if (typeof setLoadingCursor === 'function') setLoadingCursor(false);
+  const overlay = document.getElementById('comm-loading-overlay');
+  if (overlay) {
+    overlay.style.display = 'none';
+  }
+}
+
+async function runCommunityServerAction(loadingText, requestFn) {
+  if (communityState.isBusy) return null;
+  showCommunityLoadingOverlay(loadingText);
+  try {
+    const result = await requestFn();
+    if (typeof window.setArchiveSyncStatus === 'function') {
+      window.setArchiveSyncStatus('done', '동기화 완료');
+    }
+    return result;
+  } catch (err) {
+    if (typeof window.setArchiveSyncStatus === 'function') {
+      window.setArchiveSyncStatus('error', '동기화 실패');
+    }
+    throw err;
+  } finally {
+    hideCommunityLoadingOverlay();
+  }
+}
 
 function openCommunityBoard() {
   openWindow('win-community');
@@ -353,6 +451,7 @@ function bindCommunityBoardEvents(body) {
   // 권한 검증 기반 게시물 삭제 (작성자 본인 또는 관리자만 허용, 공용 게시물은 관리자 전용)
   body.querySelectorAll('.btn-sns-delete-post').forEach(btn => {
     btn.addEventListener('click', async () => {
+      if (communityState.isBusy) return;
       const target = archiveItems.find(x => x.id === btn.dataset.id);
       if (!target) return;
 
@@ -368,62 +467,56 @@ function bindCommunityBoardEvents(body) {
       }
 
       const me = typeof getCurrentUser === 'function' ? getCurrentUser() : { username: '', role: '' };
-      btn.disabled = true;
-      btn.textContent = '삭제 중...';
-      setLoadingCursor(true);
-      try {
-        const res = await fetch(GAS_WEB_APP_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify({
-            action: 'delete',
-            id: target.id,
-            requester: me.username,
-            requesterRole: me.role
-          })
-        });
-        const json = await res.json();
-        if (json.status === 'success') {
-          playRetroTone('boom');
-          archiveItems = archiveItems.filter(x => x.id !== target.id);
-          saveLocalCache(STORAGE_KEYS.ARCHIVE, archiveItems);
-          refreshAllViews();
-        } else {
-          showWin95MessageBox('삭제 거부 — MY-ARCHIVE 95', json.message || '삭제 처리 중 오류가 발생했습니다.', 'boom');
+      await runCommunityServerAction('게시물을 삭제하는 중입니다...', async () => {
+        try {
+          const res = await fetch(GAS_WEB_APP_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({
+              action: 'delete',
+              id: target.id,
+              requester: me.username,
+              requesterRole: me.role
+            })
+          });
+          const json = await res.json();
+          if (json.status === 'success') {
+            playRetroTone('boom');
+            archiveItems = archiveItems.filter(x => x.id !== target.id);
+            saveLocalCache(STORAGE_KEYS.ARCHIVE, archiveItems);
+            refreshAllViews();
+          } else {
+            showWin95MessageBox('삭제 거부 — MY-ARCHIVE 95', json.message || '삭제 처리 중 오류가 발생했습니다.', 'boom');
+          }
+        } catch {
+          showWin95MessageBox('통신 오류 — MY-ARCHIVE 95', '서버 통신 중 회선 오류가 발생했습니다.', 'boom');
         }
-      } catch {
-        showWin95MessageBox('통신 오류 — MY-ARCHIVE 95', '서버 통신 중 회선 오류가 발생했습니다.', 'boom');
-      } finally {
-        btn.disabled = false;
-        btn.textContent = '[DEL] 삭제';
-        setLoadingCursor(false);
-      }
+      });
     });
   });
 
   // 추천 토글
   body.querySelectorAll('.btn-sns-like').forEach(btn => {
     btn.addEventListener('click', async () => {
-      if (btn.disabled) return;
+      if (communityState.isBusy) return;
       const arcId = btn.dataset.id;
       const me = getCurrentUser();
-      btn.disabled = true;
       playRetroTone('click');
-      try {
-        const res = await fetch(GAS_WEB_APP_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify({ action: 'toggle_like', archiveId: arcId, author: me.username })
-        });
-        const json = await res.json();
-        if (json.status === 'success') {
-          communityState.likes = json.likes || {};
-          communityState.comments = json.comments || {};
-          renderCommunityBoard();
-        }
-      } catch {} finally {
-        btn.disabled = false;
-      }
+      await runCommunityServerAction('추천 상태를 반영하는 중입니다...', async () => {
+        try {
+          const res = await fetch(GAS_WEB_APP_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({ action: 'toggle_like', archiveId: arcId, author: me.username })
+          });
+          const json = await res.json();
+          if (json.status === 'success') {
+            communityState.likes = json.likes || {};
+            communityState.comments = json.comments || {};
+            renderCommunityBoard();
+          }
+        } catch {}
+      });
     });
   });
 
@@ -440,38 +533,40 @@ function bindCommunityBoardEvents(body) {
   body.querySelectorAll('.sns-cmt-form').forEach(form => {
     form.addEventListener('submit', async e => {
       e.preventDefault();
+      if (communityState.isBusy) return;
       const arcId = form.dataset.id;
       const inp = form.querySelector('.sns-cmt-input');
       const text = (inp?.value || '').trim();
       if (!text) return;
       const me = getCurrentUser();
-      try {
-        const res = await fetch(GAS_WEB_APP_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify({ action: 'add_comment', archiveId: arcId, author: me.username, content: text })
-        });
-        const json = await res.json();
-        if (json.status === 'success') {
-          playRetroTone('open');
-          communityState.openComments[arcId] = true;
-          communityState.likes = json.likes || {};
-          communityState.comments = json.comments || {};
-          renderCommunityBoard();
-        }
-      } catch {}
+      await runCommunityServerAction('한줄 의견을 등록하는 중입니다...', async () => {
+        try {
+          const res = await fetch(GAS_WEB_APP_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({ action: 'add_comment', archiveId: arcId, author: me.username, content: text })
+          });
+          const json = await res.json();
+          if (json.status === 'success') {
+            playRetroTone('open');
+            communityState.openComments[arcId] = true;
+            communityState.likes = json.likes || {};
+            communityState.comments = json.comments || {};
+            renderCommunityBoard();
+          }
+        } catch {}
+      });
     });
   });
 
   // 내 보관함으로 스크랩
   body.querySelectorAll('.btn-sns-scrap').forEach(btn => {
     btn.addEventListener('click', async () => {
+      if (communityState.isBusy) return;
       const src = archiveItems.find(x => x.id === btn.dataset.id);
       const me = getCurrentUser();
       if (!src) return;
-      btn.disabled = true;
-      btn.textContent = '스크랩 중...';
-      try {
+      await runCommunityServerAction('개인 보관함으로 스크랩하는 중입니다...', async () => {
         const res = await fetch(GAS_WEB_APP_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -499,10 +594,7 @@ function bindCommunityBoardEvents(body) {
         } else {
           showWin95MessageBox('스크랩 안내 — MY-ARCHIVE 95', json.message || '이미 개인 보관함에 존재하는 자료입니다.', 'boom');
         }
-      } finally {
-        btn.disabled = false;
-        btn.textContent = '내 보관함으로 스크랩';
-      }
+      });
     });
   });
 }
