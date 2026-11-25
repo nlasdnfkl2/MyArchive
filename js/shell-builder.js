@@ -6,14 +6,6 @@
   window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
   window.__MOD_VERSIONS.shellBuilder = 'v2026.11.25-ascii-shell';
 
-  const ASCII_BANNER = String.raw`
-   __  ____   __    ___   ____   ____  __  ___   ____   ___   ____
-  /  \/  \  \ \  / /   / ___| / ___||  \/  /  / ___| / _ \ / ___|
- | |\/| |\  \ / /    | |     | |    | |\/| |  | |    | | | |\___ \
- | |  | | \  V /     | |___  | |___ | |  | |  | |___ | |_| | ___) |
- |_|  |_|  \__/       \____|  \____||_|  |_|   \____| \___/ |____/
-             [ MY-ARCHIVE 95 WORKSTATION — ASCII SHELL ]
-`;
 
   function buildArchiveShellHtml() {
     return `
