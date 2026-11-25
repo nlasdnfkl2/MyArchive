@@ -10,9 +10,9 @@
 
 ## 주요 기능
 
-- **부팅 & 데스크톱 셸 (`brutal-preloader.js`, `boot-*.js`, `shell-builder.js`, `window-mgr.js`, `win95-widgets.js`, `style.css`):**
-  - 팝아트/네오 브루탈리즘 모듈 프리로더(파일당 최소 0.5초 순차 진행, 완료 배너 연출 후 TV 전원 꺼짐 전환)
-  - 대기 화면(노이즈·마키·3D 타이틀·"딸-깍" 스위치 사운드) → 3D CRT/SETUP/BIOS POST/스플래시 → PIN 로그인·신규 가입·공용 단말기·계정 설정
+- **부팅 & 데스크톱 셸 (`brutal-preloader.js`, `boot-*.js`, `shell-builder.js`, `window-mgr.js`, `win95-widgets.js`, `style.css`, `test.txt`):**
+  - 팝아트/네오 브루탈리즘 모듈 프리로더(가중치 기반 순차 진행, 완료 배너 연출 후 TV 전원 꺼짐 전환) 및 `test.txt` 인코딩(2진수·Base64) 디코딩 기반 테이프 삽입·역재생 가속 사운드
+  - 대기 화면(노이즈·마키·3D 타이틀·"딸-깍" 스위치 사운드·`test.txt` 순방향 크로스페이드 루프 및 부팅 애니메이션 시작 시점까지 재생 유지) → 3D CRT/SETUP/BIOS POST/스플래시 → PIN 로그인·신규 가입·공용 단말기·계정 설정
   - 멀티 윈도우 드래그·포커스·최소화·태스크바·계단식 배열, 작업 관리자(`Ctrl+Alt+Delete`), 화면 보호기, BSOD, 8비트 효과음, 바탕화면 위젯 및 `DISPLAY95.EXE` 테마·CRT 스캔라인 토글
 - **아카이브 CRUD & 자동 메타데이터 (`config.js`, `archive-app.js`):**
   - GAS 시트(`Archive`, `Users`, `Notes`, `Mailbox`, `Bookmarks`, `Likes`, `Comments`) 연동 및 상단 동기화 상태 표시
@@ -31,7 +31,8 @@
 
 ```text
 MyArchive/
-├── css/style.css
+├── css/
+│   └── style.css
 ├── js/
 │   ├── archive-app.js
 │   ├── boot-animation.js
@@ -50,4 +51,5 @@ MyArchive/
 │   └── window-mgr.js
 ├── LICENSE
 ├── README.md
-└── index.html
+├── index.html
+└── test.txt
