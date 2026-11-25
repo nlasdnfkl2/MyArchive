@@ -66,7 +66,6 @@ MyArchive-main/
 │   ├── config.js              # GAS Web App URL 설정, 로컬 스토리지 키, 공통 유틸리티
 │   ├── boot-screen.js         # BIOS POST 부팅·설정, 계정 로그인/회원가입/공용 모드 전환
 │   ├── window-mgr.js          # 창 드래그·포커스·최소화·토글, 6종 테마 엔진, 작업 관리자, 화면 보호기, BSOD
-│   ├── win95-retro-ui.js      # 정통 Windows 95 커스텀 콤보박스 및 팝업/확인/입력 다이얼로그 엔진
 │   ├── archive-app.js         # 감상 기록 CRUD, 다중 소스 검색, 동기화 배지, 계정 설정, 메모장, 비밀 우체통
 │   ├── visualizer.js          # Canvas 물리 데이터 노드 맵, 워드클라우드, 편중도 통계 진단
 │   ├── community-app.js       # COMMUNITY95.EXE 커뮤니티 SNS 피드, 전체 통계, 좋아요·댓글·스크랩
