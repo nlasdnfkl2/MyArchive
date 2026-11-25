@@ -3,7 +3,7 @@
 // ============================================================
 
 window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-window.__MOD_VERSIONS.bootWait = 'v2026.11.25-test-txt-binary-audio';
+window.__MOD_VERSIONS.bootWait = 'v2026.11.25-test-txt-binary-audio-bios-stop';
 
 const WAIT_SETUP_KEY = 'myarchive95_setup_v1';
 
@@ -173,7 +173,6 @@ function startForwardNostalgicLoop() {
         if (!buf || !buf.duration || buf.duration <= 0.1) return;
 
         const dur = buf.duration;
-        // 끝부분에 최대한 가까이 가서 다음 루프를 시작하도록 크로스페이드 구간을 짧게 유지
         const xfadeSec = Math.min(0.12, Math.max(0.04, dur * 0.04));
         const stepSec = Math.max(0.15, dur - xfadeSec);
 
@@ -196,7 +195,6 @@ function startForwardNostalgicLoop() {
           const actualFadeIn = isFirst ? Math.min(0.12, fadeInSec) : fadeInSec;
           gain.gain.linearRampToValueAtTime(targetGain, t0 + actualFadeIn);
 
-          // 루프 끝 구간에서 서서히 볼륨 낮추기
           const fadeOutStart = t0 + stepSec;
           const fadeOutEnd = t0 + dur;
           gain.gain.setValueAtTime(targetGain, fadeOutStart);
@@ -222,7 +220,6 @@ function startForwardNostalgicLoop() {
             } catch {}
           };
 
-          // 끝나기 xfadeSec 전에 미리 다음 루프(첫 부분) 시작
           const nextStartAt = fadeOutStart;
           const delayMs = Math.max(10, (nextStartAt - ctx.currentTime) * 1000);
           loopTimerId = setTimeout(() => {
@@ -573,6 +570,11 @@ function mountPreClickStartScreen(onStartBoot) {
   const stopStatic = startFullScreenStaticEffect();
   const forwardLoop = startForwardNostalgicLoop();
 
+  window.__stopWaitMusicForBios = () => {
+    try { forwardLoop?.stop?.(); } catch {}
+    stopPreClickWaitAudio();
+  };
+
   let triggered = false;
   const triggerStart = e => {
     if (triggered) return;
@@ -583,15 +585,13 @@ function mountPreClickStartScreen(onStartBoot) {
 
     hitLayer.style.pointerEvents = 'none';
     playButtonClickSound({ gapSec: 0.065, volume: 1.05 });
-    // 클릭 직후가 아니라 부팅 애니메이션 시작 시점까지 순재생 루프 유지
+    // 바이오스 화면 재생 시점까지 순재생 루프 유지
     stopRays(); stopTitle(); stopStatic();
     blur3d.focusAndClear();
 
     setTimeout(() => {
       blur3d.stop(); hitLayer.remove();
       if (typeof onStartBoot === 'function') onStartBoot();
-      forwardLoop?.stop?.();
-      stopPreClickWaitAudio();
     }, 360);
   };
 
