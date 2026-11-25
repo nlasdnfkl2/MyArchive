@@ -4,7 +4,7 @@
 // ============================================================
 
 window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-window.__MOD_VERSIONS.jukebox = 'v2026.11.22-03';
+window.__MOD_VERSIONS.jukebox = 'v2026.11.22-04';
 
 const JB_CACHE_KEY = 'myarchive95_yt_track_cache_v2';
 
@@ -134,7 +134,7 @@ function buildJukeboxUI() {
       <button type="button" class="btn95 sm" id="jb-btn-next" title="다음 곡">&gt;| 다음</button>
       <button type="button" class="btn95 sm" id="jb-btn-shuffle">[SHF] 셔플: OFF</button>
       <button type="button" class="btn95 sm" id="jb-btn-repeat">[RPT] 한곡반복: OFF</button>
-      <button type="button" class="btn95 sky sm" id="jb-btn-toggle-vid">[VID] 화면접기</button>
+      <button type="button" class="btn95 sky sm" id="jb-btn-toggle-vid">화면 접기</button>
     </div>
 
     <!-- 직접 YouTube 링크 지정 & 가상 브라우저 연동 바 -->
@@ -216,7 +216,7 @@ function bindJukeboxControls() {
     if (wrap) {
       wrap.style.maxHeight = jbState.hideVideo ? '42px' : '205px';
     }
-    e.currentTarget.textContent = jbState.hideVideo ? '[VID] 화면펼치기' : '[VID] 화면접기';
+    e.currentTarget.textContent = jbState.hideVideo ? '화면 펼치기' : '화면 접기';
     if (typeof playRetroTone === 'function') playRetroTone('click');
   });
 
