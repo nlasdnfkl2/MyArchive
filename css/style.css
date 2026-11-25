@@ -151,21 +151,43 @@ body {
 }
 
 /* Desktop Wallpapers */
+/* Desktop Wallpapers (6가지 Windows 95 정통 테마) */
 body.theme-teal {
-  background-color: #008080;
+  background-color: #008080; /* 1. 클래식 청록 (기본 단색) */
   background-image: none;
 }
 
-body.theme-grid {
-  background-color: #c0c0c0;
+body.theme-navy,
+body.theme-blue {
+  background-color: #000080; /* 2. 심야 네이비 단색 */
+  background-image: none;
+}
+
+body.theme-forest,
+body.theme-green {
+  background-color: #004040; /* 3. 짙은 청녹 단색 */
+  background-image: none;
+}
+
+body.theme-plum,
+body.theme-purple {
+  background-color: #400040; /* 4. 클래식 자두 단색 */
+  background-image: none;
+}
+
+body.theme-grid,
+body.theme-gray,
+body.theme-silver {
+  background-color: #c0c0c0; /* 5. 실버 격자 벽지 */
   background-image:
     linear-gradient(to right, rgba(0, 0, 0, 0.14) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(0, 0, 0, 0.14) 1px, transparent 1px);
   background-size: 16px 16px;
 }
 
-body.theme-brick {
-  background-color: #800000;
+body.theme-brick,
+body.theme-red {
+  background-color: #800000; /* 6. 적갈색 벽돌 패턴 */
   background-image:
     linear-gradient(335deg, rgba(0, 0, 0, 0.35) 23px, transparent 23px),
     linear-gradient(155deg, rgba(0, 0, 0, 0.35) 23px, transparent 23px),
