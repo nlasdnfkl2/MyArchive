@@ -7,7 +7,7 @@
 
 (function () {
   window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-  window.__MOD_VERSIONS.bootController = 'v2026.11.25-boot-controller-pre-bios-setup';
+  window.__MOD_VERSIONS.bootController = 'v2026.11.25-boot-controller-pre-bios-setup-v2';
 
   const SETUP_STORAGE_KEY = 'myarchive95_setup_v1';
 
@@ -199,27 +199,31 @@
 
   window.__onBrutalPreloadReady = mountWaitScreenAfterPreload;
 
+  function createControllerBiosWrapper(rawFn) {
+    const wrapped = function () {
+      if (!window.__ARCHIVE_LOGGED_IN) {
+        setPreLoginLock(true);
+      }
+      if (!window.__ARCHIVE_GATE_DISMISSED && typeof window.mountPreClickStartScreen === 'function') {
+        __firstScreenMounted = true;
+        window.mountPreClickStartScreen(enterBootAfterStartClick);
+        return;
+      }
+      if (shouldShowPreBiosSetup()) {
+        return openPreBiosSetupScreen();
+      }
+      const overlay = document.getElementById('os-boot-overlay');
+      if (overlay) overlay.style.display = 'flex';
+      return rawFn.apply(this, arguments);
+    };
+    wrapped.__bootControllerWrapped = true;
+    return wrapped;
+  }
+
   function hookBootLifecycle() {
-    if (typeof window.startBiosBootSequence === 'function' && !window.__origStartBiosBootSequence) {
+    if (typeof window.startBiosBootSequence === 'function' && !window.startBiosBootSequence.__bootControllerWrapped) {
       window.__origStartBiosBootSequence = window.startBiosBootSequence;
-
-      window.startBiosBootSequence = function () {
-        if (!window.__ARCHIVE_LOGGED_IN) {
-          setPreLoginLock(true);
-        }
-        if (!window.__ARCHIVE_GATE_DISMISSED && typeof window.mountPreClickStartScreen === 'function') {
-          __firstScreenMounted = true;
-          window.mountPreClickStartScreen(enterBootAfterStartClick);
-          return;
-        }
-        if (shouldShowPreBiosSetup()) {
-          return openPreBiosSetupScreen();
-        }
-        const overlay = document.getElementById('os-boot-overlay');
-        if (overlay) overlay.style.display = 'flex';
-        return window.__origStartBiosBootSequence.apply(this, arguments);
-      };
-
+      window.startBiosBootSequence = createControllerBiosWrapper(window.__origStartBiosBootSequence);
       window.__runActualBiosSequence = function () {
         return window.__origStartBiosBootSequence.apply(window, arguments);
       };
