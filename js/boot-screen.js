@@ -1,23 +1,22 @@
 // ============================================================
 // MY-ARCHIVE 95 OS — BIOS POST & Authentic Windows 95 Logon
-// (Self-Contained Safe Helpers, Full-Viewport Logon & Signup)
+// (Nostalgic CRT Power-On, POST Sequence, Win95 Splash & Logon)
 // ============================================================
 
 window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-window.__MOD_VERSIONS.bootScreen = 'v2026.11.22-v10';
+window.__MOD_VERSIONS.bootScreen = 'v2026.11.25-retro';
 
 const SESSION_USER_KEY = 'myarchive95_current_user_v2';
 const USERS_CACHE_KEY = 'myarchive95_users_cache_v2';
 const INITIAL_SETUP_KEY = 'myarchive95_setup_v1';
 
 const DEFAULT_INITIAL_SETUP = {
-  resolution: '100',     // '90' (컴팩트 90%) | '100' (표준 100%) | '110' (와이드 110%)
-  theme: 'theme-teal',   // 'theme-teal' | 'theme-navy' | 'theme-olive' | 'theme-plum' | 'theme-brick' | 'theme-matrix' | 'theme-grid'
-  crt: true,             // CRT 스캔라인 표시 여부
-  sound: true            // 레트로 사운드 활성화 여부
+  resolution: '100',
+  theme: 'theme-teal',
+  crt: true,
+  sound: true
 };
 
-// 외부 config.js 의존성 오류 방지용 안전 유틸리티
 function safeEsc(str) {
   if (typeof window.esc === 'function') return window.esc(str);
   return String(str ?? '')
@@ -57,14 +56,21 @@ function getGasApiUrl() {
   return '';
 }
 
+function isRetroSoundEnabled() {
+  if (typeof window.__WIN95_SOUND_ENABLED === 'boolean') return window.__WIN95_SOUND_ENABLED;
+  const setup = loadInitialSetup();
+  return setup ? Boolean(setup.sound) : true;
+}
+
 function safeBootTone(type) {
+  if (!isRetroSoundEnabled()) return;
   if (typeof window.playRetroTone === 'function') {
     try { window.playRetroTone(type); } catch {}
   }
 }
 
 // ============================================================
-// 동기화 상태 배지 실시간 업데이트 (동기화 중 / 동기화 실패 / 동기화 완료)
+// 동기화 상태 배지 실시간 업데이트
 // ============================================================
 let __syncPollTimer = null;
 
@@ -122,7 +128,7 @@ function hookArchiveSyncLifecycle() {
 window.setArchiveSyncStatus = setArchiveSyncStatus;
 
 // ============================================================
-// 초기 실행 텍스트 기반 SETUP 화면 (저장된 설정 없을 때 1회 표시)
+// 초기 실행 텍스트 기반 SETUP 화면
 // ============================================================
 function loadInitialSetup() {
   try {
@@ -163,6 +169,7 @@ function applyInitialSetupToSystem(cfg) {
     document.body.appendChild(crtEl);
   }
   if (crtEl) {
+    crtEl.classList.toggle('hidden', !settings.crt);
     crtEl.style.display = settings.crt ? 'block' : 'none';
   }
 
@@ -337,6 +344,21 @@ function openInitialSetupScreen(forceOpen = false) {
 window.openInitialSetupScreen = openInitialSetupScreen;
 window.loadInitialSetup = loadInitialSetup;
 window.applyInitialSetupToSystem = applyInitialSetupToSystem;
+
+// ============================================================
+// 노스탤직 CRT 전원 켜짐 연출 헬퍼
+// ============================================================
+function triggerCrtPowerOnFlash(targetEl) {
+  if (!targetEl) return;
+  targetEl.animate(
+    [
+      { transform: 'scaleY(0.015) scaleX(0.35)', filter: 'brightness(3.2)', opacity: 0.9 },
+      { transform: 'scaleY(0.03) scaleX(1)', filter: 'brightness(2.2)', opacity: 1, offset: 0.25 },
+      { transform: 'scaleY(1) scaleX(1)', filter: 'brightness(1)', opacity: 1 }
+    ],
+    { duration: 340, easing: 'cubic-bezier(0.16, 1, 0.3, 1)' }
+  );
+}
 
 // 1995년 16색 도트 픽셀 SVG 아바타 라이브러리 (이모지 미사용)
 const PIXEL_AVATARS = {
@@ -725,11 +747,10 @@ function openAccountSettingsModal() {
 window.openAccountSettingsModal = openAccountSettingsModal;
 
 // ============================================================
-// Web Audio API: BIOS 비프음 & Windows 95 시작 화음
+// Web Audio API: BIOS 비프음, 드라이브 틱음 & Windows 95 시작 화음
 // ============================================================
-function playBiosPostBeep() {
-  if (bootState.biosBeepPlayed) return;
-  bootState.biosBeepPlayed = true;
+function playBiosPostBeep(freq = 880, dur = 0.14) {
+  if (!isRetroSoundEnabled()) return;
   try {
     const AudioCtx = window.AudioContext || window.webkitAudioContext;
     if (!AudioCtx) return;
@@ -737,17 +758,38 @@ function playBiosPostBeep() {
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.type = 'square';
-    osc.frequency.setValueAtTime(880, ctx.currentTime);
-    gain.gain.setValueAtTime(0.06, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.14);
+    osc.frequency.setValueAtTime(freq, ctx.currentTime);
+    gain.gain.setValueAtTime(0.055, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + dur);
     osc.connect(gain);
     gain.connect(ctx.destination);
     osc.start();
-    osc.stop(ctx.currentTime + 0.15);
+    osc.stop(ctx.currentTime + dur + 0.02);
+  } catch {}
+}
+
+function playDriveSeekTick() {
+  if (!isRetroSoundEnabled()) return;
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(145, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(65, ctx.currentTime + 0.035);
+    gain.gain.setValueAtTime(0.035, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.04);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.045);
   } catch {}
 }
 
 function playWin95StartupSound() {
+  if (!isRetroSoundEnabled()) return;
   try {
     const AudioCtx = window.AudioContext || window.webkitAudioContext;
     if (!AudioCtx) return;
@@ -990,7 +1032,12 @@ function setBootStage(stageName) {
       loginEl.style.background = '#008080';
       loginEl.style.alignItems = 'center';
       loginEl.style.justifyContent = 'center';
+      triggerCrtPowerOnFlash(loginEl.firstElementChild);
     }
+  }
+
+  if (stageName === 'splash' && splashEl) {
+    triggerCrtPowerOnFlash(splashEl.querySelector('.win95-splash-card'));
   }
 
   if (stageName === 'login') {
@@ -1080,6 +1127,9 @@ function startBiosBootSequence() {
 
   setBootStage('bios');
 
+  const biosEl = document.getElementById('boot-stage-bios');
+  triggerCrtPowerOnFlash(biosEl);
+
   const ramEl = document.getElementById('bios-ram-count');
   const logEl = document.getElementById('bios-log-lines');
   const syncBadge = document.getElementById('bios-sync-badge');
@@ -1094,25 +1144,31 @@ function startBiosBootSequence() {
       ramVal = 65536;
       clearInterval(bootState.ramInterval);
       bootState.ramInterval = null;
+      if (!bootState.biosBeepPlayed && bootState.stage === 'bios') {
+        bootState.biosBeepPlayed = true;
+        playBiosPostBeep(920, 0.12);
+      }
     }
     if (ramEl) ramEl.textContent = String(ramVal);
-  }, 50);
+  }, 45);
 
   const postSteps = [
-    { delay: 200, text: 'Detecting IDE Primary Master   ... MY-ARCHIVE-HDD [OK]' },
-    { delay: 440, text: 'Detecting IDE Primary Slave    ... JUKEBOX-CDROM 4X [OK]' },
-    { delay: 700, text: 'Initializing User Registry     ... Local & Network Accounts [OK]' },
-    { delay: 980, text: 'Connecting Archive Host        ... Network Drive Mounted [OK]' },
-    { delay: 1280, text: 'Verifying DMI Pool Data ........ Update Success' },
-    { delay: 1560, text: 'Starting MY-ARCHIVE 95...' }
+    { delay: 220, text: 'Detecting IDE Primary Master   ... MY-ARCHIVE-HDD [OK]', tick: true },
+    { delay: 480, text: 'Detecting IDE Primary Slave    ... JUKEBOX-CDROM 4X [OK]', tick: true },
+    { delay: 760, text: 'Initializing Sound Blaster 16  ... Port 220H IRQ 5 DMA 1 [OK]', tick: true },
+    { delay: 1040, text: 'Connecting Archive Host        ... Network Drive Mounted [OK]', tick: true },
+    { delay: 1320, text: 'Verifying DMI Pool Data ........ Update Success', tick: false },
+    { delay: 1600, text: 'Starting MY-ARCHIVE 95...', tick: false, accent: true }
   ];
 
   postSteps.forEach(step => {
     const tid = setTimeout(() => {
       if (bootState.stage !== 'bios' || !logEl) return;
+      if (step.tick) playDriveSeekTick();
+
       const line = document.createElement('div');
       line.textContent = step.text;
-      if (step.text.includes('Starting MY-ARCHIVE 95')) {
+      if (step.accent) {
         line.style.color = '#ffff55';
         line.style.fontWeight = '900';
         line.style.marginTop = '8px';
@@ -1129,17 +1185,17 @@ function startBiosBootSequence() {
 
   bootState.timers.push(setTimeout(() => {
     if (bootState.stage === 'bios') setBootStage('splash');
-  }, 1950));
+  }, 2050));
 
   bootState.timers.push(setTimeout(() => {
     if (bootState.stage === 'splash') setBootStage('login');
-  }, 3050));
+  }, 3250));
 
   bootState.timers.push(setTimeout(() => {
     if (bootState.stage === 'bios' || bootState.stage === 'splash') {
       setBootStage('login');
     }
-  }, 4500));
+  }, 4700));
 }
 
 function finishDesktopLogin(userObj) {
@@ -1337,12 +1393,13 @@ async function submitNewUserSignup() {
 // ============================================================
 function bindBootScreenEvents() {
   document.getElementById('boot-stage-bios')?.addEventListener('click', () => {
-    playBiosPostBeep();
+    playBiosPostBeep(760, 0.08);
     clearBootTimers();
     setBootStage('login');
   });
 
   document.getElementById('boot-stage-splash')?.addEventListener('click', () => {
+    safeBootTone('click');
     clearBootTimers();
     setBootStage('login');
   });
@@ -1350,18 +1407,20 @@ function bindBootScreenEvents() {
   document.addEventListener('keydown', e => {
     if (document.getElementById('bios-text-setup-overlay')) return;
     if (bootState.stage === 'bios') {
-      playBiosPostBeep();
       if (e.key === 'Delete') {
         e.preventDefault();
+        playBiosPostBeep(1046, 0.1);
         const cmos = document.getElementById('bios-cmos-easter');
         if (cmos) cmos.style.display = cmos.style.display === 'none' ? 'block' : 'none';
       } else if (e.key === ' ' || e.key === 'Enter' || e.key === 'Escape') {
         e.preventDefault();
+        playBiosPostBeep(760, 0.08);
         clearBootTimers();
         setBootStage('login');
       }
     } else if (bootState.stage === 'splash' && (e.key === ' ' || e.key === 'Enter' || e.key === 'Escape')) {
       e.preventDefault();
+      safeBootTone('click');
       clearBootTimers();
       setBootStage('login');
     }
@@ -1465,7 +1524,7 @@ function bindBootScreenEvents() {
   });
 
   document.getElementById('btn-reboot-bios')?.addEventListener('click', () => {
-    playBiosPostBeep();
+    playBiosPostBeep(880, 0.12);
     startBiosBootSequence();
   });
 
