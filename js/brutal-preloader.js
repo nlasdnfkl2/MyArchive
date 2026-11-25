@@ -4,7 +4,7 @@
 
 (function () {
   window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-  window.__MOD_VERSIONS.brutalPreloader = 'v2026.11.25-test-txt-binary-audio';
+  window.__MOD_VERSIONS.brutalPreloader = 'v2026.11.25-test-txt-binary-audio-bios-stop';
 
   const TARGET_AVG_MS = 4500, HOLD_MS = 1000, WAIT_SETUP_KEY = 'myarchive95_setup_v1';
   const LOADER_ID = 'brutal-js-preloader', STYLE_ID = 'brutal-js-preloader-style';
@@ -58,6 +58,20 @@
     }
   }
 
+  // 바이오스 화면 재생 시점에 호출하여 프리로더/대기 음악을 즉시 중단
+  function stopPreloaderAndWaitAudioForBios() {
+    window.__PRELOAD_REWIND_ACTIVE = false;
+    try { rewindCtl?.stop?.(); } catch {}
+    rewindCtl = null;
+    try {
+      if (typeof window.stopPreClickWaitAudio === 'function') {
+        window.stopPreClickWaitAudio();
+      }
+    } catch {}
+  }
+
+  window.__stopWaitMusicForBios = stopPreloaderAndWaitAudioForBios;
+
   // Base64 문자열 또는 2진수(0/1) 문자열을 모두 Uint8Array로 변환
   function parseTextToBytes(rawText) {
     if (typeof rawText !== 'string' || !rawText.trim()) {
@@ -107,7 +121,7 @@
     return bytes;
   }
 
-function ensureBinaryAudioBytes() {
+  function ensureBinaryAudioBytes() {
     if (cachedRawBytes) return Promise.resolve(cachedRawBytes);
     if (audioLoadPromise) return audioLoadPromise;
 
