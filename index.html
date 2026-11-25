@@ -24,95 +24,6 @@
       animation: archiveSyncSpin 0.9s linear infinite;
     }
 
-    /* 레트로 신호 대기(노이즈) 화면 */
-    #retro-noise-gate {
-      position: fixed;
-      inset: 0;
-      z-index: 210000;
-      background: #142838;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      user-select: none;
-      overflow: hidden;
-      transition: opacity 0.22s ease;
-    }
-    #retro-noise-gate.hidden {
-      opacity: 0;
-      pointer-events: none;
-    }
-    #retro-noise-canvas {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      opacity: 0.24;
-      pointer-events: none;
-    }
-    .retro-noise-card {
-      position: relative;
-      z-index: 2;
-      max-width: 440px;
-      width: calc(100% - 32px);
-      background: #c0c0c0;
-      color: #111111;
-      border: 2px solid #111111;
-      box-shadow: inset 2px 2px 0 #ffffff, inset -2px -2px 0 #808080, 6px 6px 0 #000000;
-    }
-    .retro-noise-bar {
-      background: linear-gradient(90deg, #000080, #008080);
-      color: #ffffff;
-      padding: 6px 10px;
-      font-size: 0.78rem;
-      font-weight: 800;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      border-bottom: 2px solid #111111;
-    }
-    .retro-noise-body {
-      padding: 18px 16px;
-      text-align: center;
-    }
-    .retro-noise-bars {
-      display: grid;
-      grid-template-columns: repeat(7, 1fr);
-      height: 14px;
-      border: 2px solid #111111;
-      margin-bottom: 14px;
-    }
-    .retro-noise-title {
-      font-size: 1.05rem;
-      font-weight: 900;
-      margin-bottom: 6px;
-      color: #000080;
-    }
-    .retro-noise-sub {
-      font-size: 0.82rem;
-      font-weight: 600;
-      color: #222222;
-      margin-bottom: 14px;
-      line-height: 1.45;
-    }
-    .retro-noise-cta {
-      display: inline-block;
-      background: #ffd83b;
-      color: #111111;
-      border: 2px solid #111111;
-      box-shadow: inset 1.5px 1.5px 0 #ffffff, inset -1.5px -1.5px 0 #808080, 3px 3px 0 #111111;
-      padding: 7px 16px;
-      font-size: 0.82rem;
-      font-weight: 900;
-    }
-    @keyframes retroPromptBlink {
-      0%, 49% { opacity: 1; }
-      50%, 100% { opacity: 0.45; }
-    }
-    .retro-noise-blink {
-      animation: retroPromptBlink 1.1s infinite;
-    }
-
     /* 로그온 완료 전 메인 화면 노출 방지 */
     body.pre-login-lock #desktop-area,
     body.pre-login-lock .os-menubar,
@@ -137,29 +48,12 @@
         }
       }
 
-      function hideNoiseGate() {
+      function dismissPreClickStartScreen() {
         window.__ARCHIVE_GATE_DISMISSED = true;
-        var gate = document.getElementById('retro-noise-gate');
-        if (!gate) return;
-        gate.classList.add('hidden');
-        gate.style.pointerEvents = 'none';
-        window.setTimeout(function () {
-          if (gate.classList.contains('hidden')) {
-            gate.style.display = 'none';
-          }
-        }, 230);
-      }
-
-      function showNoiseGate() {
-        if (window.__ARCHIVE_LOGGED_IN) return;
-        window.__ARCHIVE_GATE_DISMISSED = false;
-        setPreLoginLock(true);
-        var gate = document.getElementById('retro-noise-gate');
-        if (gate) {
-          gate.style.display = 'flex';
-          gate.classList.remove('hidden');
-          gate.style.opacity = '1';
-          gate.style.pointerEvents = 'auto';
+        var hitLayer = document.getElementById('pre-click-start-hit-layer');
+        if (hitLayer) {
+          hitLayer.style.pointerEvents = 'none';
+          hitLayer.remove();
         }
       }
 
@@ -183,13 +77,12 @@
         }
       }
 
-      function enterBootAfterNoiseClick() {
-        hideNoiseGate();
+      function enterBootAfterStartClick() {
+        dismissPreClickStartScreen();
         runBootTarget();
       }
 
-      window.__showRetroNoiseGate = showNoiseGate;
-      window.__enterBootAfterNoiseClick = enterBootAfterNoiseClick;
+      window.__enterBootAfterStartClick = enterBootAfterStartClick;
 
       function hookBootLifecycle() {
         if (typeof window.startBiosBootSequence === 'function' && !window.__origStartBiosBootSequence) {
@@ -220,7 +113,7 @@
           var origFinish = window.finishDesktopLogin;
           var wrappedFinish = function () {
             window.__ARCHIVE_LOGGED_IN = true;
-            hideNoiseGate();
+            dismissPreClickStartScreen();
             var res = origFinish.apply(this, arguments);
             setPreLoginLock(false);
             return res;
@@ -257,19 +150,11 @@
         setPreLoginLock(true);
         hookBootLifecycle();
 
-        var gate = document.getElementById('retro-noise-gate');
-        if (gate) {
-          var triggerGate = function (e) {
-            if (e && e.type === 'keydown' && e.key !== 'Enter' && e.key !== ' ') {
-              return;
-            }
-            if (e && e.type === 'keydown') {
-              e.preventDefault();
-            }
-            enterBootAfterNoiseClick();
-          };
-          gate.addEventListener('click', triggerGate);
-          gate.addEventListener('keydown', triggerGate);
+        if (typeof window.mountPreClickStartScreen === 'function') {
+          window.mountPreClickStartScreen(function () {
+            window.__ARCHIVE_GATE_DISMISSED = true;
+            runBootTarget();
+          });
         }
 
         // 포트폴리오 가상 창 연동
@@ -314,36 +199,6 @@
             ensurePortfolioLoaded(true);
           });
         }
-
-        // 가벼운 레트로 픽셀 노이즈 렌더러
-        var canvas = document.getElementById('retro-noise-canvas');
-        if (canvas) {
-          var ctx = canvas.getContext('2d');
-          var w = 160, h = 90;
-          canvas.width = w;
-          canvas.height = h;
-          var img = ctx.createImageData(w, h);
-          var rafId = 0;
-
-          function drawNoise() {
-            var gEl = document.getElementById('retro-noise-gate');
-            if (!gEl || gEl.style.display === 'none' || gEl.classList.contains('hidden')) {
-              cancelAnimationFrame(rafId);
-              return;
-            }
-            var data = img.data;
-            for (var i = 0; i < data.length; i += 4) {
-              var v = (Math.random() * 255) | 0;
-              data[i] = v;
-              data[i + 1] = Math.min(255, (v * 0.92 + 18) | 0);
-              data[i + 2] = Math.min(255, (v * 0.85 + 36) | 0);
-              data[i + 3] = 255;
-            }
-            ctx.putImageData(img, 0, 0);
-            rafId = requestAnimationFrame(drawNoise);
-          }
-          drawNoise();
-        }
       });
 
       window.addEventListener('load', function () {
@@ -356,34 +211,6 @@
   </script>
 </head>
 <body class="theme-teal boot-locked pre-login-lock">
-
-  <!-- 0단계: 레트로 신호 대기(노이즈) 화면 -> 클릭 시 부팅/초기 애니메이션 시작 -->
-  <div id="retro-noise-gate" role="button" tabindex="0" aria-label="화면을 클릭하여 MY-ARCHIVE 95 부팅 시작">
-    <canvas id="retro-noise-canvas" aria-hidden="true"></canvas>
-    <div class="retro-noise-card">
-      <div class="retro-noise-bar">
-        <span>CH-95 // SIGNAL STANDBY</span>
-        <span>1995-RETRO</span>
-      </div>
-      <div class="retro-noise-body">
-        <div class="retro-noise-bars" aria-hidden="true">
-          <span style="background:#f5f5f5;"></span>
-          <span style="background:#ffd83b;"></span>
-          <span style="background:#4be36a;"></span>
-          <span style="background:#67e8f9;"></span>
-          <span style="background:#4ba3ff;"></span>
-          <span style="background:#f472b6;"></span>
-          <span style="background:#ff5252;"></span>
-        </div>
-        <div class="retro-noise-title">MY-ARCHIVE 95 WORKSTATION</div>
-        <div class="retro-noise-sub">
-          모니터 신호 대기 중입니다.<br />
-          화면을 클릭하면 시스템 초기화 및 부팅을 시작합니다.
-        </div>
-        <div class="retro-noise-cta retro-noise-blink">[ CLICK TO POWER ON ]</div>
-      </div>
-    </div>
-  </div>
 
   <!-- BIOS POST & 정통 Windows 95 로그온 오버레이 -->
   <div id="os-boot-overlay" role="dialog" aria-modal="true" aria-label="MY-ARCHIVE 95 부팅 및 로그온" style="position:fixed;inset:0;z-index:200000;background:#000000;display:none;align-items:center;justify-content:center;">
@@ -1111,7 +938,9 @@
   <script src="js/archive-app.js?v=20261125-v2"></script>
   <script src="js/browser-app.js?v=20261125-v2"></script>
   <script src="js/community-app.js?v=20261125-v2"></script>
-  <script src="js/boot-screen.js?v=20261125-v2"></script>
+  <script src="js/boot-wait.js?v=20261125-v2"></script>
+  <script src="js/boot-animation.js?v=20261125-v2"></script>
+  <script src="js/boot-login.js?v=20261125-v2"></script>
   <script src="js/win95-widgets.js?v=20261125-v2"></script>
 </body>
 </html>
