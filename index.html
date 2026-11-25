@@ -23,9 +23,71 @@
       display: inline-block;
       animation: archiveSyncSpin 0.9s linear infinite;
     }
+
+    /* 부팅 완료 전까지 메인 바탕화면 노출 원천 차단 커튼 */
+    #boot-screen-guard-curtain {
+      position: fixed;
+      inset: 0;
+      z-index: 999990;
+      background: #000000;
+      opacity: 1;
+      pointer-events: auto;
+      transition: opacity 0.25s ease;
+    }
+    #boot-screen-guard-curtain.released {
+      opacity: 0;
+      pointer-events: none;
+    }
+    body.boot-session-active #desktop-area,
+    body.boot-session-active .os-menubar,
+    body.boot-session-active .os-taskbar,
+    body.boot-session-active #start-menu {
+      visibility: hidden !important;
+    }
   </style>
+  <script>
+    (function () {
+      window.__BOOT_SESSION_UNLOCKED = false;
+      function lockDesktopUntilLoggedIn() {
+        if (window.__BOOT_SESSION_UNLOCKED) return;
+        if (document.body) {
+          document.body.classList.add('boot-locked');
+          document.body.classList.add('boot-session-active');
+        }
+        var curtain = document.getElementById('boot-screen-guard-curtain');
+        if (curtain) {
+          curtain.classList.remove('released');
+          curtain.style.display = 'block';
+          curtain.style.opacity = '1';
+          curtain.style.pointerEvents = 'auto';
+        }
+      }
+      window.__lockDesktopUntilLoggedIn = lockDesktopUntilLoggedIn;
+      window.__unlockDesktopAfterLogin = function () {
+        window.__BOOT_SESSION_UNLOCKED = true;
+        if (document.body) {
+          document.body.classList.remove('boot-session-active');
+        }
+        var curtain = document.getElementById('boot-screen-guard-curtain');
+        if (curtain) {
+          curtain.classList.add('released');
+          setTimeout(function () {
+            if (window.__BOOT_SESSION_UNLOCKED) {
+              curtain.style.display = 'none';
+            }
+          }, 260);
+        }
+      };
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', lockDesktopUntilLoggedIn, { once: true });
+      } else {
+        lockDesktopUntilLoggedIn();
+      }
+    })();
+  </script>
 </head>
-<body class="theme-teal">
+<body class="theme-teal boot-locked boot-session-active">
+  <div id="boot-screen-guard-curtain" aria-hidden="true"></div>
 
   <!-- BIOS POST & 정통 Windows 95 로그온 오버레이 (시작 애니메이션 이후 순차 표시) -->
   <div id="os-boot-overlay" role="dialog" aria-modal="true" aria-label="MY-ARCHIVE 95 부팅 및 로그온" style="position:fixed;inset:0;z-index:200000;background:#000000;display:none;align-items:center;justify-content:center;">
@@ -755,5 +817,43 @@
   <script src="js/community-app.js?v=20261125-v2"></script>
   <script src="js/boot-screen.js?v=20261125-v2"></script>
   <script src="js/win95-widgets.js?v=20261125-v2"></script>
+  <script>
+    (function () {
+      function wrapFn(name, beforeFn, afterFn) {
+        if (typeof window[name] !== 'function' || window[name].__bootGuardWrapped) return;
+        const orig = window[name];
+        const wrapped = function () {
+          if (typeof beforeFn === 'function') beforeFn.apply(this, arguments);
+          const res = orig.apply(this, arguments);
+          if (typeof afterFn === 'function') afterFn.apply(this, arguments);
+          return res;
+        };
+        wrapped.__bootGuardWrapped = true;
+        window[name] = wrapped;
+      }
+
+      function enforceBootGuard() {
+        wrapFn('startBiosBootSequence', function () {
+          window.__BOOT_SESSION_UNLOCKED = false;
+          window.__lockDesktopUntilLoggedIn?.();
+        });
+        wrapFn('openInitialSetupScreen', function () {
+          if (!window.__BOOT_SESSION_UNLOCKED) {
+            window.__lockDesktopUntilLoggedIn?.();
+          }
+        });
+        wrapFn('finishDesktopLogin', null, function () {
+          window.__unlockDesktopAfterLogin?.();
+        });
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', enforceBootGuard, { once: true });
+      } else {
+        enforceBootGuard();
+      }
+      window.addEventListener('load', enforceBootGuard, { once: true });
+    })();
+  </script>
 </body>
 </html>
