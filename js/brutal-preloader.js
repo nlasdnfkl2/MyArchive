@@ -4,7 +4,7 @@
 
 (function () {
   window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-  window.__MOD_VERSIONS.brutalPreloader = 'v2026.11.25-test-txt-binary-audio-bios-stop';
+  window.__MOD_VERSIONS.brutalPreloader = 'v2026.11.25-rewind-rate-0.5-to-1.5x';
 
   const TARGET_AVG_MS = 4500, HOLD_MS = 1000, WAIT_SETUP_KEY = 'myarchive95_setup_v1';
   const LOADER_ID = 'brutal-js-preloader', STYLE_ID = 'brutal-js-preloader-style';
@@ -28,7 +28,8 @@
     ['js/boot-controller.js', 1.4]
   ];
 
-  let lastKey = '', bannerShown = false, powerOffQueued = false, done = false, started = false, plannedMs = null;
+  let lastKey = '', bannerShown = false, powerOffQueued = false, done = false, started = false;
+  let plannedMs = null, estimatedBootMs = TARGET_AVG_MS + HOLD_MS;
   let rewindCtl = null, currentRatio = 0;
 
   let cachedRawBytes = null;
@@ -238,7 +239,7 @@
     return revBuf;
   }
 
-  // 동기 호출 호환용 순방향 버퍼(이미 캐시된 버퍼가 있으면 반환, 없으면 폴백 반환 후 백그라운드 디코딩)
+  // 동기 호출 호환용 순방향 버퍼
   function createNostalgicParodyForwardBuffer(ctx) {
     const cached = decodedBufferCache.get(ctx);
     if (cached && typeof cached.getChannelData === 'function') return cached;
@@ -309,22 +310,23 @@
       osc.stop(t0 + dur + 0.01);
     };
 
-    // 1. 테이프를 슬롯에 밀어 넣을 때의 플라스틱 가이드 마찰음 (0.00s ~ 0.085s)
     mkNoiseBurst(0.0, 0.085, 'bandpass', 950, 1450, 1.4, 0.14, 1.4);
-
-    // 2. 끝단 스토퍼에 닿는 둔탁한 하우징 쿵 + 짧은 섀시 공명 (0.075s)
     mkThud(0.075, 165, 52, 0.065, 0.34, 'sine');
     mkThud(0.078, 290, 95, 0.032, 0.12, 'triangle');
-
-    // 3. 걸쇠가 물리는 '달-칵' 2단 래치 (0.115s, 0.152s)
     mkNoiseBurst(0.115, 0.022, 'bandpass', 2200, 1100, 2.5, 0.24, 3.0);
     mkThud(0.115, 420, 140, 0.024, 0.18, 'triangle');
-
     mkNoiseBurst(0.152, 0.018, 'highpass', 1900, 1900, 1.0, 0.28, 3.4);
     mkThud(0.152, 1850, 620, 0.018, 0.20, 'triangle');
   }
 
-  // '달칵' 후 test.txt 음원을 뒤로 점점 빠르게 감는 컨트롤러
+  // 진행률(0~1)을 0.5배 ~ 1.5배 역재생 속도로 변환
+  function computeRewindPlaybackRate(ratio) {
+    const p = Math.max(0, Math.min(1, ratio));
+    const rate = 0.5 + Math.pow(p, 1.15) * 1.0;
+    return Math.max(0.5, Math.min(1.5, rate));
+  }
+
+  // '달칵' 후 test.txt 음원을 0.5~1.5배 속도로 뒤로 감는 컨트롤러
   function startRewindAudio() {
     window.__PRELOAD_REWIND_ACTIVE = true;
     ensureBinaryAudioBytes().catch(() => {});
@@ -352,15 +354,16 @@
         if (stopped || seq !== triggerSeq || !ctx || src) return;
         const revBuf = buildReversedBufferFromForward(ctx, fwdBuf);
         const rewindStart = Math.max(ctx.currentTime + 0.02, clickAt + 0.11);
+        const initRate = computeRewindPlaybackRate(currentRatio);
 
         src = ctx.createBufferSource();
         src.buffer = revBuf;
         src.loop = true;
-        src.playbackRate.setValueAtTime(1.0, rewindStart);
+        src.playbackRate.setValueAtTime(initRate, rewindStart);
 
         filter = ctx.createBiquadFilter();
         filter.type = 'lowpass';
-        filter.frequency.setValueAtTime(2400, rewindStart);
+        filter.frequency.setValueAtTime(1600 + currentRatio * 1800, rewindStart);
         filter.Q.setValueAtTime(1.1, rewindStart);
 
         gain = ctx.createGain();
@@ -375,8 +378,8 @@
         const tickSpeed = () => {
           if (stopped || !src || !ctx) return;
           const p = Math.max(0, Math.min(1, currentRatio));
-          const speed = 1.0 + Math.pow(p, 1.35) * 2.4;
-          const cutoff = 2400 + p * 2600;
+          const speed = computeRewindPlaybackRate(p);
+          const cutoff = 1600 + p * 1800;
           try {
             src.playbackRate.setTargetAtTime(speed, ctx.currentTime, 0.04);
             if (filter) filter.frequency.setTargetAtTime(cutoff, ctx.currentTime, 0.05);
@@ -451,6 +454,13 @@
     return raw.map((v) => Math.max(110, Math.round((v / sum) * totalTarget)));
   }
 
+  function estimateTotalBootMs(durations) {
+    const seqMs = Array.isArray(durations) && durations.length > 0
+      ? durations.reduce((acc, ms) => acc + ms, 0)
+      : TARGET_AVG_MS;
+    return seqMs + HOLD_MS;
+  }
+
   function injectStyle() {
     if (document.getElementById(STYLE_ID) || !(document.head || document.documentElement)) return;
     const style = document.createElement('style');
@@ -498,7 +508,7 @@
   }
 
   const buildTicker = (files) => {
-    const line = `MY-ARCHIVE 95 WIN95 PRELOADER ★ TEST.TXT BINARY REWIND ★ ${files.join(' /// ')} ★ `;
+    const line = `MY-ARCHIVE 95 WIN95 PRELOADER ★ TEST.TXT BINARY REWIND (0.5x-1.5x) ★ ${files.join(' /// ')} ★ `;
     return `<span class="brutal-ticker-msg">${line}</span><span class="brutal-ticker-msg">${line}</span>`;
   };
 
@@ -565,7 +575,8 @@
     if (file && key !== lastKey) {
       lastKey = key;
       if (bubbleEl) {
-        bubbleEl.textContent = `⏪ [${idx + 1}/${total}] ${file}`;
+        const rateLabel = computeRewindPlaybackRate(clamped).toFixed(2);
+        bubbleEl.textContent = `⏪ [${idx + 1}/${total}] ${file} (${rateLabel}x)`;
         reanimate(bubbleEl, 'is-popping');
       }
       if (cardEl && pct < 100) reanimate(cardEl, 'is-punching');
@@ -643,10 +654,9 @@
     setTimeout(powerOffNow, HOLD_MS);
   }
 
-  function runWeightedSequence(entries, onComplete) {
+  function runWeightedSequence(entries, durations, onComplete) {
     const files = entries.map(([name]) => name);
     const total = Math.max(1, files.length);
-    const durations = computeWeightedDurations(entries);
     plannedMs = durations.reduce((a, b) => a + b, 0);
     let idx = 0, doneMs = 0;
 
@@ -677,6 +687,11 @@
 
   const entries = getShuffledEntries();
   const files = entries.map(([name]) => name);
+  const durations = computeWeightedDurations(entries);
+  plannedMs = durations.reduce((a, b) => a + b, 0);
+  estimatedBootMs = estimateTotalBootMs(durations);
+  window.__PRELOAD_ESTIMATED_BOOT_MS = estimatedBootMs;
+
   mount(files);
   startRewindAudio();
 
@@ -687,7 +702,7 @@
     if (!ready) {
       document.addEventListener('DOMContentLoaded', () => { ready = true; mount(files); tryFinish(); }, { once: true });
     }
-    runWeightedSequence(entries, () => { stepsDone = true; tryFinish(); });
+    runWeightedSequence(entries, durations, () => { stepsDone = true; tryFinish(); });
   }
 
   window.addEventListener('load', () => {
