@@ -3,7 +3,7 @@
 // ============================================================
 
 window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-window.__MOD_VERSIONS.bootAnimation = 'v2026.11.25-split';
+window.__MOD_VERSIONS.bootAnimation = 'v2026.11.25-split-3d-sync';
 
 const ANIM_SETUP_KEY = 'myarchive95_setup_v1';
 
@@ -499,14 +499,16 @@ function easeInOutQuart(t) {
   return t < 0.5 ? 8 * t * t * t * t : 1 - Math.pow(-2 * t + 2, 4) / 2;
 }
 
-function play3dCrtMonitorAnimation() {
+function play3dCrtMonitorAnimation(options = {}) {
   return new Promise(resolve => {
     const prev = document.getElementById('retro-3d-crt-stage');
     if (prev) prev.remove();
 
+    const alreadyClicked = Boolean(options.alreadyClicked);
+
     const stage = document.createElement('div');
     stage.id = 'retro-3d-crt-stage';
-    stage.title = 'CLICK TO RETRACE';
+    stage.title = alreadyClicked ? 'CLICK TO SKIP 3D BOOT' : 'CLICK TO RETRACE';
     stage.style.cssText = `
       position: fixed;
       inset: 0;
@@ -521,16 +523,16 @@ function play3dCrtMonitorAnimation() {
     let finished = false;
     let rafId = 0;
     let renderer = null;
-    let rotationStarted = false;
-    let turnStartTime = 0;
+    let rotationStarted = alreadyClicked;
+    let turnStartTime = alreadyClicked ? performance.now() : 0;
 
-    let stopNoiseTitleLayer = typeof window.startPreClickNoiseTitleLayer === 'function'
+    let stopNoiseTitleLayer = (!alreadyClicked && typeof window.startPreClickNoiseTitleLayer === 'function')
       ? window.startPreClickNoiseTitleLayer()
       : null;
-    let stopStaticVisual = typeof window.startFullScreenStaticEffect === 'function'
+    let stopStaticVisual = (!alreadyClicked && typeof window.startFullScreenStaticEffect === 'function')
       ? window.startFullScreenStaticEffect()
       : null;
-    let stopNoiseAudio = typeof window.startSubtleStaticNoise === 'function'
+    let stopNoiseAudio = (!alreadyClicked && typeof window.startSubtleStaticNoise === 'function')
       ? window.startSubtleStaticNoise()
       : null;
 
@@ -595,6 +597,9 @@ function play3dCrtMonitorAnimation() {
     loadThreeJsLibrary()
       .then(THREE => {
         if (finished) return;
+        if (rotationStarted && !turnStartTime) {
+          turnStartTime = performance.now();
+        }
 
         const width = window.innerWidth || 1280;
         const height = window.innerHeight || 720;
@@ -626,7 +631,7 @@ function play3dCrtMonitorAnimation() {
         const crtModel = buildLowPolyCrt3dGroup(THREE);
         crtModel.position.set(0.65, -0.05, -0.8);
         crtModel.rotation.set(0.08, 0.78, 0);
-        crtModel.visible = false;
+        crtModel.visible = rotationStarted;
         scene.add(crtModel);
 
         const onResize = () => {
