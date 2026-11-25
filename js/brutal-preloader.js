@@ -4,7 +4,7 @@
 
 (function () {
   window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-  window.__MOD_VERSIONS.brutalPreloader = 'v2026.11.25-rewind-rate-0.5-to-1.5x';
+  window.__MOD_VERSIONS.brutalPreloader = 'v2026.11.25-check-filename-only';
 
   const TARGET_AVG_MS = 4500, HOLD_MS = 1000, WAIT_SETUP_KEY = 'myarchive95_setup_v1';
   const LOADER_ID = 'brutal-js-preloader', STYLE_ID = 'brutal-js-preloader-style';
@@ -508,7 +508,7 @@
   }
 
   const buildTicker = (files) => {
-    const line = `MY-ARCHIVE 95 WIN95 PRELOADER ★ TEST.TXT BINARY REWIND (0.5x-1.5x) ★ ${files.join(' /// ')} ★ `;
+    const line = `MY-ARCHIVE 95 WIN95 PRELOADER ★ TEST.TXT BINARY REWIND ★ ${files.join(' /// ')} ★ `;
     return `<span class="brutal-ticker-msg">${line}</span><span class="brutal-ticker-msg">${line}</span>`;
   };
 
@@ -535,7 +535,7 @@
           </div>
           <h1 class="brutal-loader-title" id="brutal-loader-title">WIN95 SYSTEM MODULES LOADING</h1>
           <div class="brutal-bar-stage">
-            <div class="brutal-speech-bubble" id="brutal-speech-bubble">REWINDING MODULE...</div>
+            <div class="brutal-speech-bubble" id="brutal-speech-bubble">✓ LOADING MODULE...</div>
             <div class="popart-progress-track"><div class="popart-progress-fill" id="brutal-loader-fill"></div></div>
             <div class="brutal-complete-stamp" id="brutal-complete-stamp">★ WIN95 SYSTEM MODULES READY — LAUNCHING MY-ARCHIVE 95 ★</div>
           </div>
@@ -575,8 +575,7 @@
     if (file && key !== lastKey) {
       lastKey = key;
       if (bubbleEl) {
-        const rateLabel = computeRewindPlaybackRate(clamped).toFixed(2);
-        bubbleEl.textContent = `⏪ [${idx + 1}/${total}] ${file} (${rateLabel}x)`;
+        bubbleEl.textContent = `✓ [${idx + 1}/${total}] ${file}`;
         reanimate(bubbleEl, 'is-popping');
       }
       if (cardEl && pct < 100) reanimate(cardEl, 'is-punching');
@@ -610,7 +609,7 @@
     if (badge) { badge.textContent = 'WIN95 READY'; badge.classList.add('is-complete'); }
     if (pct) { pct.textContent = '100%'; pct.classList.add('is-complete'); }
     if (title) title.textContent = 'WIN95 MODULES LOADED — READY!';
-    if (bubble) { bubble.textContent = `✔ ${count} WIN95 MODULES LOADED!`; bubble.classList.add('is-complete'); reanimate(bubble, 'is-popping'); }
+    if (bubble) { bubble.textContent = `✓ ${count} WIN95 MODULES LOADED!`; bubble.classList.add('is-complete'); reanimate(bubble, 'is-popping'); }
     document.getElementById('brutal-complete-stamp')?.classList.add('is-visible');
     const listEl = document.getElementById('brutal-loader-list');
     if (listEl) {
