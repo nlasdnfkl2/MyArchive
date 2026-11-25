@@ -1,0 +1,775 @@
+// ============================================================
+// MY-ARCHIVE 95 OS — DOM Skeleton & ASCII Art Renderer
+// ============================================================
+
+(function () {
+  window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
+  window.__MOD_VERSIONS.shellBuilder = 'v2026.11.25-ascii-shell';
+
+  const ASCII_BANNER = String.raw`
+   __  ____   __    ___   ____   ____  __  ___   ____   ___   ____
+  /  \/  \  \ \  / /   / ___| / ___||  \/  /  / ___| / _ \ / ___|
+ | |\/| |\  \ / /    | |     | |    | |\/| |  | |    | | | |\___ \
+ | |  | | \  V /     | |___  | |___ | |  | |  | |___ | |_| | ___) |
+ |_|  |_|  \__/       \____|  \____||_|  |_|   \____| \___/ |____/
+             [ MY-ARCHIVE 95 WORKSTATION — ASCII SHELL ]
+`;
+
+  function buildArchiveShellHtml() {
+    return `
+  <!-- BIOS POST & 정통 Windows 95 로그온 오버레이 -->
+  <div id="os-boot-overlay" role="dialog" aria-modal="true" aria-label="MY-ARCHIVE 95 부팅 및 로그온" style="position:fixed;inset:0;z-index:200000;background:#000000;display:none;align-items:center;justify-content:center;">
+    <!-- 1. BIOS POST -->
+    <div id="boot-stage-bios" class="boot-stage" style="display:none;width:100%;height:100%;">
+      <div class="bios-top-row">
+        <div>
+          <div class="bios-brand">AWARD MODULAR BIOS v4.51PG, An Energy Star Ally</div>
+          <div>Copyright (C) 1984-1995, Award Software, Inc.</div>
+          <div style="color:#55ffff; margin-top:4px;">MY-ARCHIVE 95 MULTI-USER WORKSTATION BIOS REV 3.5</div>
+        </div>
+        <div class="bios-energy-box">
+          <div style="color:#ffff55; font-weight:900;">ENERGY</div>
+          <div style="color:#55ff55; font-size:0.68rem;">EPA POLLUTION PREVENTER</div>
+        </div>
+      </div>
+      <div class="bios-spec-block">
+        <div>MAIN PROCESSOR : 80486DX4-100MHz / Pentium Compatible</div>
+        <div>MEMORY TESTING : <span id="bios-ram-count">640</span>K OK + 65536K EXTENDED</div>
+      </div>
+      <div id="bios-log-lines" class="bios-log-area"></div>
+      <div id="bios-cmos-easter" class="bios-cmos-box" style="display:none;">
+        <div style="color:#ffff55; font-weight:900; margin-bottom:4px;">[CMOS SETUP UTILITY]</div>
+        <div>- Primary Master : Central Archive Multi-User DB (Archive / Users / Feed)</div>
+        <div>- Public Terminal : '공용' (No PIN) / SYSOP Admin: '문태양' (PIN: 1234)</div>
+      </div>
+      <div class="bios-footer-bar">
+        <span>Press <b>DEL</b> for CMOS, <b>SPACE / CLICK</b> to skip POST</span>
+        <span id="bios-sync-badge" style="color:#ffff55;">HOST SYNC: STANDBY</span>
+      </div>
+    </div>
+
+    <!-- 2. Windows 95 부팅 스플래시 (로딩 창) -->
+    <div id="boot-stage-splash" class="boot-stage" style="display:none;width:100%;height:100%;">
+      <div class="win95-splash-card">
+        <div class="win95-flag-grid" aria-hidden="true">
+          <span style="background:#ff4b4b;"></span>
+          <span style="background:#4be36a;"></span>
+          <span style="background:#4ba3ff;"></span>
+          <span style="background:#ffd83b;"></span>
+        </div>
+        <div class="win95-splash-sub">MULTI-USER CULTURE ARCHIVE &amp; BBS WORKSTATION</div>
+        <div class="win95-splash-title">MY-ARCHIVE <span class="win95-splash-95">95</span></div>
+        <div class="win95-splash-desc">이용자 명부 및 중앙 공개 자료실 전산망을 초기화하는 중...</div>
+      </div>
+      <div class="win95-boot-track"><div class="win95-boot-runner"></div></div>
+    </div>
+
+    <!-- 3. 정통 Windows 95 로그온 대화상자 -->
+    <div id="boot-stage-login" class="boot-stage-login" style="display:none;">
+      <div class="win95-login-dialog" role="dialog" aria-labelledby="win95-logon-title">
+        <div class="win95-logon-titlebar">
+          <div class="win95-logon-title-left">
+            <svg width="14" height="14" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true">
+              <path fill="#000" d="M3 2h6v6H7v6H5V8H3V2z"/>
+              <path fill="#ffff00" d="M4 3h4v4H6v6H5V7H4V3z"/>
+            </svg>
+            <span id="win95-logon-title">Windows 95 시작 — MY-ARCHIVE 95 통신망 로그온</span>
+          </div>
+          <button type="button" id="btn-reboot-bios" class="win95-title-help-btn" title="BIOS 부팅 화면 다시 보기">?</button>
+        </div>
+
+        <div class="win95-logon-tabs" role="tablist">
+          <button type="button" id="tab-win95-signin" class="win95-logon-tab active" role="tab" aria-selected="true">
+            <span>등록 이용자 접속</span>
+          </button>
+          <button type="button" id="tab-win95-signup" class="win95-logon-tab" role="tab" aria-selected="false">
+            <span>신규 이용자 가입 (4자리 암호)</span>
+          </button>
+        </div>
+
+        <div class="win95-logon-body">
+          <div id="win95-login-error" class="win95-login-error" style="display:none;"></div>
+
+          <div id="win95-pane-signin">
+            <form id="win95-login-form">
+              <div class="win95-logon-intro">
+                <svg width="34" height="34" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true">
+                  <rect x="1" y="2" width="11" height="8" fill="#dcdcdc" stroke="#111"/>
+                  <rect x="3" y="4" width="7" height="4" fill="#008080"/>
+                  <rect x="3" y="11" width="7" height="2" fill="#808080" stroke="#111"/>
+                  <rect x="10" y="7" width="4" height="4" fill="#ffff00" stroke="#111"/>
+                  <rect x="11" y="11" width="2" height="4" fill="#ffff00" stroke="#111"/>
+                </svg>
+                <p>이용자 계정을 선택하고 <strong>4자리 숫자 암호(PIN)</strong>를 입력한 뒤 <strong>[확인 (접속)]</strong>을 누르십시오.</p>
+              </div>
+
+              <div class="win95-logon-grid">
+                <label class="win95-logon-label" for="login-account-select">이용자명(<u>U</u>):</label>
+                <div class="win95-account-row">
+                  <div class="win95-select-wrap">
+                    <select id="login-account-select" class="win95-logon-select"></select>
+                    <span class="win95-select-arrow" aria-hidden="true">
+                      <svg width="9" height="6" viewBox="0 0 9 6" shape-rendering="crispEdges">
+                        <rect x="1" y="1" width="7" height="1" fill="#111"/>
+                        <rect x="2" y="2" width="5" height="1" fill="#111"/>
+                        <rect x="3" y="3" width="3" height="1" fill="#111"/>
+                        <rect x="4" y="4" width="1" height="1" fill="#111"/>
+                      </svg>
+                    </span>
+                  </div>
+                  <button type="button" id="btn-toggle-user-search" class="win95-user-search-btn" title="이용자 찾기" aria-label="이용자 찾기">
+                    <svg width="14" height="14" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true">
+                      <rect x="3" y="2" width="6" height="1" fill="#111"/>
+                      <rect x="2" y="3" width="1" height="6" fill="#111"/>
+                      <rect x="9" y="3" width="1" height="6" fill="#111"/>
+                      <rect x="3" y="9" width="6" height="1" fill="#111"/>
+                      <rect x="3" y="3" width="6" height="6" fill="#a8e6ff"/>
+                      <rect x="4" y="4" width="2" height="2" fill="#fff"/>
+                      <rect x="9" y="9" width="2" height="2" fill="#111"/>
+                      <rect x="11" y="11" width="2" height="2" fill="#111"/>
+                      <rect x="13" y="13" width="2" height="2" fill="#111"/>
+                    </svg>
+                  </button>
+                </div>
+
+                <div id="login-user-search-row" class="win95-user-search-row" style="display:none;">
+                  <input type="text" id="login-user-search-input" class="win95-logon-input" placeholder="이용자 이름 또는 자기소개 찾기..." />
+                  <span id="login-user-search-count" class="win95-search-count">0명</span>
+                  <button type="button" id="btn-clear-user-search" class="win95-mini-btn" style="display:none;">초기화</button>
+                </div>
+
+                <input type="text" id="login-username" class="win95-logon-input win95-grid-right" placeholder="이용자 이름 직접 입력" style="display:none;" />
+
+                <label class="win95-logon-label" for="login-password">비밀번호(<u>P</u>):</label>
+                <input type="password" id="login-password" class="win95-logon-input" maxlength="4" inputmode="numeric" pattern="[0-9]{4}" placeholder="4자리 숫자 암호 (예: 1234)" />
+              </div>
+
+              <fieldset class="win95-profile-fieldset">
+                <legend>이용자 신상 명세 (USER PROFILE)</legend>
+                <div class="win95-profile-inner">
+                  <div id="login-profile-avatar" class="win95-profile-avatar-box"></div>
+                  <div class="win95-profile-meta">
+                    <div id="login-profile-name" class="win95-profile-name"></div>
+                    <div id="login-account-hint" class="win95-profile-bio"></div>
+                  </div>
+                </div>
+              </fieldset>
+
+              <div class="win95-logon-actions" style="margin-top: 14px;">
+                <button type="button" id="btn-win95-public-enter" class="win95-dlg-btn">
+                  <svg width="14" height="14" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true">
+                    <rect x="3" y="2" width="10" height="12" fill="#0000ff" stroke="#111"/>
+                    <rect x="5" y="4" width="3" height="4" fill="#00ff00"/>
+                    <rect x="9" y="7" width="3" height="4" fill="#00ff00"/>
+                  </svg>
+                  <span>공용 단말기 접속 (무암호)</span>
+                </button>
+                <button type="submit" id="btn-win95-login" class="win95-dlg-btn primary">확인 (접속)</button>
+              </div>
+            </form>
+          </div>
+
+          <div id="win95-pane-signup" style="display:none;">
+            <form id="win95-signup-form">
+              <div class="win95-logon-intro">
+                <svg width="34" height="34" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true">
+                  <rect x="1" y="1" width="9" height="11" fill="#fff" stroke="#111"/>
+                  <rect x="3" y="3" width="5" height="2" fill="#000080"/>
+                  <rect x="3" y="6" width="5" height="1" fill="#808080"/>
+                  <rect x="7" y="7" width="8" height="8" fill="#000080" stroke="#111"/>
+                  <rect x="9" y="8" width="4" height="3" fill="#fff"/>
+                  <rect x="9" y="12" width="4" height="2" fill="#c0c0c0"/>
+                </svg>
+                <p>신규 개인 계정을 개설하면 나만의 서재 보관함과 전체 공개 자료실을 모두 이용할 수 있습니다.</p>
+              </div>
+
+              <div class="win95-logon-grid">
+                <label class="win95-logon-label" for="signup-username">이용자명 *:</label>
+                <input type="text" id="signup-username" class="win95-logon-input" minlength="2" maxlength="15" placeholder="2~15자 필명 (예: 홍길동)" required />
+
+                <label class="win95-logon-label" for="signup-pin">4자리 암호 *:</label>
+                <input type="password" id="signup-pin" class="win95-logon-input" maxlength="4" inputmode="numeric" pattern="[0-9]{4}" placeholder="숫자 4자리 (예: 2580)" required />
+
+                <label class="win95-logon-label" for="signup-pin-confirm">암호 확인 *:</label>
+                <input type="password" id="signup-pin-confirm" class="win95-logon-input" maxlength="4" inputmode="numeric" pattern="[0-9]{4}" placeholder="숫자 4자리 재입력" required />
+
+                <span class="win95-logon-label" style="align-self:start; padding-top:8px;">도트 초상화:</span>
+                <div>
+                  <input type="hidden" id="signup-avatar" value="frog" />
+                  <div id="signup-avatar-grid" class="win95-avatar-grid" role="radiogroup"></div>
+                </div>
+
+                <label class="win95-logon-label" for="signup-bio">한줄 자기소개:</label>
+                <input type="text" id="signup-bio" class="win95-logon-input" maxlength="60" placeholder="예) 심야 영화와 고전 소설을 갈무리합니다." />
+              </div>
+
+              <div class="win95-logon-actions" style="justify-content:flex-end; margin-top:14px;">
+                <button type="submit" id="btn-win95-signup-submit" class="win95-dlg-btn primary">계정 개설 및 즉시 접속</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="crt-overlay" class="crt-overlay" style="display:none;" aria-hidden="true"></div>
+
+  <!-- 상단 OS 시스템 메뉴바 -->
+  <header class="os-menubar">
+    <nav class="menu-bar-left" aria-label="시스템 주 메뉴">
+      <div class="os-brand-badge">ARCHIVE95.OS</div>
+
+      <div class="menu-item-wrap">
+        <button type="button" class="menu-root"><u>F</u>ile (파일)</button>
+        <div class="menu-dropdown">
+          <button type="button" class="menu-opt" id="mnu-new-archive">[+] 새 감상록 등록...</button>
+          <button type="button" class="menu-opt" id="mnu-open-memo">[NOTE] 간이 메모장 열기</button>
+          <div class="menu-sep"></div>
+          <button type="button" class="menu-opt" id="mnu-sync-sheet">[SYNC] 중앙 전산실 자료 갱신</button>
+          <button type="button" class="menu-opt" id="mnu-export-csv">[CSV] 전체 자료 백업 내려받기</button>
+        </div>
+      </div>
+
+      <div class="menu-item-wrap">
+        <button type="button" class="menu-root"><u>V</u>iew (보기)</button>
+        <div class="menu-dropdown">
+          <button type="button" class="menu-opt" data-cat-menu="ALL">전체 자료실 보기</button>
+          <button type="button" class="menu-opt" data-cat-menu="도서">도서 서가만 보기</button>
+          <button type="button" class="menu-opt" data-cat-menu="음악">음반 서가만 보기</button>
+          <button type="button" class="menu-opt" data-cat-menu="영상">영상 서가만 보기</button>
+          <button type="button" class="menu-opt" data-cat-menu="기타">기타 서가만 보기</button>
+          <div class="menu-sep"></div>
+          <button type="button" class="menu-opt" id="mnu-toggle-charts">기본 통계 도표 표시/숨김</button>
+          <button type="button" class="menu-opt" id="mnu-open-calendar">월력 및 기념일 관리 열기</button>
+        </div>
+      </div>
+
+      <div class="menu-item-wrap">
+        <button type="button" class="menu-root"><u>T</u>ools (도구·통신)</button>
+        <div class="menu-dropdown">
+          <button type="button" class="menu-opt" id="mnu-open-community">[BBS] 전체 공개 자료실 (COMMUNITY95)</button>
+          <button type="button" class="menu-opt" id="mnu-open-browser">[WEB] 정보바다 탐색기 95 (YouTube·웹)</button>
+          <button type="button" class="menu-opt" id="mnu-open-timeline">[CHART] 감상 연대기 &amp; 성향 분석</button>
+          <button type="button" class="menu-opt" id="mnu-open-visualizer">[NODE] 연관어 망(網) 분석기</button>
+          <button type="button" class="menu-opt" id="mnu-open-mood">[MOOD] 기분별 명작 추천기</button>
+          <button type="button" class="menu-opt" id="mnu-open-quiz">[QUIZ] 기억력 퀴즈 95</button>
+          <div class="menu-sep"></div>
+          <button type="button" class="menu-opt" id="mnu-open-stamp">[STAMP] 열람 인장 &amp; 가계부 영수증</button>
+          <button type="button" class="menu-opt" id="mnu-open-mailbox">[MAIL] 전자 우체통 &amp; 단말기 전송</button>
+          <button type="button" class="menu-opt" id="mnu-open-jukebox">[PLAY] 스테레오 주크박스 95</button>
+          <button type="button" class="menu-opt" id="mnu-open-gamepack">[GAME] 오락실 모음집 95</button>
+        </div>
+      </div>
+
+      <div class="menu-item-wrap">
+        <button type="button" class="menu-root"><u>W</u>indow (창·화면)</button>
+        <div class="menu-dropdown">
+          <button type="button" class="menu-opt" id="mnu-cascade">열린 창 계단식 배열 (Cascade)</button>
+          <button type="button" class="menu-opt" id="mnu-close-all-popups">모든 보조 창 닫기</button>
+          <div class="menu-sep"></div>
+          <button type="button" class="menu-opt" id="mnu-open-display">[DISP] 디스플레이 등록 정보 (배경·CRT)...</button>
+          <button type="button" class="menu-opt" data-theme-opt="teal">배경: 클래식 틸 (Teal)</button>
+          <button type="button" class="menu-opt" data-theme-opt="grid">배경: 모눈종이 (Paper Grid)</button>
+          <button type="button" class="menu-opt" data-theme-opt="brick">배경: 레트로 벽돌 (Brick)</button>
+          <div class="menu-sep"></div>
+          <button type="button" class="menu-opt" id="mnu-toggle-crt">CRT 주사선(스캔라인) 전환</button>
+          <button type="button" class="menu-opt" id="mnu-toggle-sound">8비트 PC 스피커 효과음 전환</button>
+          <button type="button" class="menu-opt" id="mnu-open-taskmgr">[TASK] 작업 관리자 (Ctrl+Alt+Del)</button>
+          <button type="button" class="menu-opt" id="mnu-start-screensaver">[SCR] 화면 보호기 실행</button>
+          <button type="button" class="menu-opt" id="mnu-trigger-bsod">치명적 오류(BSOD) 시연</button>
+        </div>
+      </div>
+    </nav>
+
+    <div class="menu-bar-right" style="display:flex;align-items:center;gap:6px;">
+      <button type="button" id="active-user-badge" class="status-pill" style="background:var(--brutal-yellow);color:#111;cursor:pointer;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;" title="클릭하여 계정 설정 열기"><svg class="pixel-svg-14" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true"><path fill="#000000" d="M3 1h3v1h1v2h2V2h1V1h3v1h1v3h-1v1h1v5h-1v2h1v2h-3v-1H5v1H2v-2h1v-2H2V6h1V5H2V2h1V1z"/><path fill="#008000" d="M3 2h3v3h4V2h3v3h-1v1h1v5h-1v2H4v-2H3V6h1V5H3V2z"/><path fill="#00ff00" d="M4 5h2v2H4V5zm6 0h2v2h-2V5zM5 10h6v2H5v-2z"/><path fill="#ffffff" d="M4 2h2v2H4V2zm6 0h2v2h-2V2z"/><path fill="#000000" d="M5 3h1v1H5V3zm6 0h1v1h-1V3zM4 8h8v1H4V8zM3 7h1v1H3V7zm9 0h1v1h-1V7z"/></svg><span>문태양 (시삽)</span></button>
+      <span id="cache-status-badge" class="status-pill" style="background:#ecfdf5;color:#14532d;border-color:#16a34a;white-space:nowrap;display:inline-flex;align-items:center;gap:4px;" title="실시간 동기화 상태"><span id="sync-status-icon" class="archive-sync-spin" style="color:#16a34a;font-weight:900;">↻</span><span id="sync-status-text">동기화 중</span></span>
+    </div>
+  </header>
+
+  <!-- 메인 데스크톱 작업 공간 -->
+  <main id="desktop-area" class="desktop-workspace">
+
+    <nav class="desktop-icons" aria-label="바탕화면 프로그램 아이콘">
+      <button type="button" class="desk-icon" id="icon-main">
+        <div class="desk-icon-box" style="background: var(--brutal-yellow);">
+          <svg width="24" height="24" viewBox="0 0 16 16" shape-rendering="crispEdges"><path fill="#111" d="M1 3h6l1 2h7v8H1V3z"/><path fill="#fff" d="M2 6h12v6H2V6z"/><path fill="#000080" d="M2 4h4l1 2H2V4z"/></svg>
+        </div>
+        <span>내 서재 자료실</span>
+      </button>
+
+      <button type="button" class="desk-icon" id="icon-new">
+        <div class="desk-icon-box" style="background: var(--brutal-green);">
+          <svg width="24" height="24" viewBox="0 0 16 16" shape-rendering="crispEdges"><path fill="#111" d="M6 2h4v4h4v4h-4v4H6v-4H2V6h4V2z"/><path fill="#fff" d="M7 3h2v4h4v2H9v4H7V9H3V7h4V3z"/></svg>
+        </div>
+        <span>새 감상록 등록</span>
+      </button>
+
+      <button type="button" class="desk-icon" id="icon-community">
+        <div class="desk-icon-box" style="background: var(--brutal-green);">
+          <svg width="24" height="24" viewBox="0 0 16 16" shape-rendering="crispEdges"><path fill="#111" d="M3 2h4v4H3V2zm6 1h4v4H9V3zM1 8h8v5H1V8zm8 1h6v4H9V9z"/><path fill="#ffd83b" d="M4 3h2v2H4V3zm6 1h2v2h-2V4z"/><path fill="#fff" d="M2 9h6v3H2V9zm8 1h4v2h-4v-2z"/></svg>
+        </div>
+        <span>공개 자료실 광장</span>
+      </button>
+
+      <button type="button" class="desk-icon" id="icon-browser">
+        <div class="desk-icon-box" style="background: var(--brutal-sky);">
+          <svg width="24" height="24" viewBox="0 0 16 16" shape-rendering="crispEdges"><path fill="#111" d="M5 1h6v1h2v1h1v2h1v6h-1v2h-1v1h-2v1H5v-1H3v-1H2v-2H1V5h1V3h1V2h2V1z"/><path fill="#1e90ff" d="M5 2h6v1h2v2h1v6h-1v2h-2v1H5v-1H3v-2H2V5h1V3h2V2z"/><path fill="#2ed573" d="M6 2h3v2H7v1H5V3h1V2zm4 3h3v3h-2v2H9V7h1V5zM3 7h3v3H5v2H3V7z"/></svg>
+        </div>
+        <span>정보바다 탐색기</span>
+      </button>
+
+      <button type="button" class="desk-icon" id="icon-calendar">
+        <div class="desk-icon-box" style="background: var(--brutal-sky);">
+          <svg width="24" height="24" viewBox="0 0 16 16" shape-rendering="crispEdges"><path fill="#111" d="M2 2h12v12H2V2z"/><path fill="#ff4757" d="M3 3h10v3H3V3z"/><path fill="#fff" d="M3 6h10v7H3V6z"/><path fill="#111" d="M5 8h2v2H5V8zm4 0h2v2H9V8z"/></svg>
+        </div>
+        <span>월력·기념일</span>
+      </button>
+
+      <button type="button" class="desk-icon" id="icon-mood">
+        <div class="desk-icon-box" style="background: var(--brutal-pink);">
+          <svg width="24" height="24" viewBox="0 0 16 16" shape-rendering="crispEdges"><path fill="#111" d="M4 2h8v1h2v2h1v6h-1v2h-2v1H4v-1H2v-2H1V5h1V3h2V2z"/><path fill="#ffd83b" d="M4 3h8v1h1v1h1v6h-1v1h-1v1H4v-1H3v-1H2V5h1V4h1V3z"/><path fill="#111" d="M5 5h2v2H5V5zm4 0h2v2H9V5zM4 9h1v1h6V9h1v1h-1v1H5v-1H4V9z"/></svg>
+        </div>
+        <span>기분별 명작 추천</span>
+      </button>
+
+      <button type="button" class="desk-icon" id="icon-quiz">
+        <div class="desk-icon-box" style="background: #ff9f43;">
+          <svg width="24" height="24" viewBox="0 0 16 16" shape-rendering="crispEdges"><path fill="#111" d="M5 2h6v1h2v3h-2v2H9v2H7V7h2V6h2V4H5v2H3V3h2V2zm2 9h2v3H7v-3z"/><path fill="#fff" d="M5 3h6v1H5V3zm2 9h2v1H7v-1z"/></svg>
+        </div>
+        <span>기억력 퀴즈 95</span>
+      </button>
+
+      <button type="button" class="desk-icon" id="icon-timeline">
+        <div class="desk-icon-box" style="background: #a29bfe;">
+          <svg width="24" height="24" viewBox="0 0 16 16" shape-rendering="crispEdges"><path fill="#111" d="M2 2h12v12H2V2z"/><path fill="#fff" d="M3 3h10v10H3V3z"/><path fill="#ff4757" d="M4 9h2v3H4V9z"/><path fill="#000080" d="M7 5h2v7H7V5z"/><path fill="#2ed573" d="M10 7h2v5h-2V7z"/></svg>
+        </div>
+        <span>감상 연대기</span>
+      </button>
+
+      <button type="button" class="desk-icon" id="icon-stamp">
+        <div class="desk-icon-box" style="background: #ffffff;">
+          <svg width="24" height="24" viewBox="0 0 16 16" shape-rendering="crispEdges"><path fill="#d63031" d="M4 2h8v2h2v8h-2v2H4v-2H2V4h2V2z"/><path fill="#fff" d="M4 4h8v8H4V4z"/><path fill="#d63031" d="M5 5h6v2H5V5zm0 4h6v2H5V9z"/></svg>
+        </div>
+        <span>인장·가계부</span>
+      </button>
+
+      <button type="button" class="desk-icon" id="icon-mailbox">
+        <div class="desk-icon-box" style="background: var(--brutal-yellow);">
+          <svg width="24" height="24" viewBox="0 0 16 16" shape-rendering="crispEdges"><path fill="#111" d="M1 3h14v10H1V3z"/><path fill="#fff" d="M2 4h12v8H2V4z"/><path fill="#ff4757" d="M2 4h2v2h2v2h4V6h2V4h2v1h-2v2h-2v2H6V7H4V5H2V4z"/></svg>
+        </div>
+        <span>전자 우체통</span>
+      </button>
+
+      <button type="button" class="desk-icon" id="icon-jukebox">
+        <div class="desk-icon-box" style="background: #111111;">
+          <svg width="24" height="24" viewBox="0 0 16 16" shape-rendering="crispEdges"><path fill="#2ed573" d="M6 2h7v9h-1v2H9v-2h2V5H7v7H6v2H3v-2h2V2h1z"/></svg>
+        </div>
+        <span>주크박스 95</span>
+      </button>
+
+      <button type="button" class="desk-icon" id="icon-visualizer">
+        <div class="desk-icon-box" style="background: var(--brutal-sky);">
+          <svg width="24" height="24" viewBox="0 0 16 16" shape-rendering="crispEdges"><rect x="2" y="2" width="4" height="4" fill="#111"/><rect x="10" y="2" width="4" height="4" fill="#ff4757"/><rect x="6" y="10" width="4" height="4" fill="#ffd83b"/><path fill="#111" d="M6 4h4v1H6V4zM4 6h1v2h2v2H6V8H4V6zm7 0h1v2h-2v2H9V8h2V6z"/></svg>
+        </div>
+        <span>연관어 망 분석</span>
+      </button>
+
+      <button type="button" class="desk-icon" id="icon-memo">
+        <div class="desk-icon-box" style="background: var(--brutal-paper);">
+          <svg width="24" height="24" viewBox="0 0 16 16" shape-rendering="crispEdges"><path fill="#111" d="M2 1h9l3 3v11H2V1z"/><path fill="#fffef5" d="M3 2h7v3h3v9H3V2z"/><path fill="#808080" d="M4 6h7v1H4V6zm0 2h7v1H4V8zm0 2h5v1H4v-1z"/></svg>
+        </div>
+        <span>간이 메모장</span>
+      </button>
+
+      <button type="button" class="desk-icon" id="icon-gamepack">
+        <div class="desk-icon-box" style="background: var(--brutal-pink);">
+          <svg width="24" height="24" viewBox="0 0 16 16" shape-rendering="crispEdges"><path fill="#111" d="M1 4h14v8H1V4z"/><path fill="#c0c0c0" d="M2 5h12v6H2V5z"/><path fill="#111" d="M4 6h1v4H4V6zM3 7h3v2H3V7z"/><rect x="10" y="7" width="1" height="1" fill="#ff4757"/><rect x="12" y="8" width="1" height="1" fill="#000080"/></svg>
+        </div>
+        <span>오락실 95</span>
+      </button>
+
+      <button type="button" class="desk-icon" id="icon-portfolio" title="포트폴리오 가상 창 열기 (https://nlasdnfkl2.github.io/my-webpage/)">
+        <div class="desk-icon-box" style="background: #ff7675;">
+          <svg width="24" height="24" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true">
+            <path fill="#111" d="M1 3h14v10H1V3z"/>
+            <path fill="#fff" d="M2 5h12v7H2V5z"/>
+            <path fill="#000080" d="M2 3h12v2H2V3z"/>
+            <path fill="#ff7675" d="M10 6h3v3h-1V7h-2V6z"/>
+            <path fill="#111" d="M9 9h2v1H9V9zm2-2h1v2h-1V7z"/>
+          </svg>
+        </div>
+        <span>포트폴리오</span>
+      </button>
+    </nav>
+
+    <!-- 1. 메인 탐색기 창 -->
+    <section class="floating-win open focused main-explorer-win" id="win-main" data-win-title="C:\MY-ARCHIVE\EXPLORER.EXE" style="top: 38px; left: 215px; width: 960px;">
+      <div class="win-titlebar draggable">
+        <div class="win-title-left">
+          <span class="win-title-dot" style="background: var(--brutal-yellow);"></span>
+          <span id="win-main-title-text">C:\MY-ARCHIVE\EXPLORER.EXE — 문화·예술 감상 자료실 관리자</span>
+        </div>
+        <div class="win-controls">
+          <button type="button" class="win-ctrl-btn" data-action="minimize" data-target="win-main">_</button>
+          <button type="button" class="win-ctrl-btn close" data-action="close" data-target="win-main">X</button>
+        </div>
+      </div>
+
+      <div class="win-body">
+        <section class="kpi-grid" aria-label="자료실 핵심 요약 지표">
+          <div class="kpi-card yellow">
+            <div class="kpi-label">누적 감상록</div>
+            <div class="kpi-val" id="kpi-total">0건</div>
+            <div class="kpi-sub" id="kpi-recent-sub">중앙 자료실 연결 대기 중...</div>
+          </div>
+          <div class="kpi-card sky">
+            <div class="kpi-label">평균 만족도 평점</div>
+            <div class="kpi-val" id="kpi-avg-rating">0.0점</div>
+            <div class="kpi-sub">5.0점 만점 기준</div>
+          </div>
+          <div class="kpi-card green">
+            <div class="kpi-label">최다 감상 갈래</div>
+            <div class="kpi-val" id="kpi-top-cat">-</div>
+            <div class="kpi-sub" id="kpi-top-cat-sub">자료 없음</div>
+          </div>
+          <div class="kpi-card pink">
+            <div class="kpi-label">핵심 선호 분야</div>
+            <div class="kpi-val" id="kpi-top-genre">-</div>
+            <div class="kpi-sub" id="kpi-top-genre-sub">자료 없음</div>
+          </div>
+        </section>
+
+        <section id="charts-section" class="charts-grid" aria-label="매체별·월별 통계 차트">
+          <div class="sunken-box">
+            <div class="box-head"><span>매체별 소장 비중</span><span class="tag-mini">DOUGHNUT</span></div>
+            <div style="height: 155px; position: relative;"><canvas id="chart-category"></canvas></div>
+          </div>
+          <div class="sunken-box">
+            <div class="box-head"><span>월별 감상 추이</span><span class="tag-mini">MONTHLY</span></div>
+            <div style="height: 155px; position: relative;"><canvas id="chart-monthly"></canvas></div>
+          </div>
+        </section>
+
+        <section class="toolbar-box" aria-label="목록 분류 및 찾기">
+          <div id="cat-filter-group" class="pill-group">
+            <button type="button" class="pill-btn active" data-cat="ALL">전체</button>
+            <button type="button" class="pill-btn" data-cat="도서">도서</button>
+            <button type="button" class="pill-btn" data-cat="음악">음악</button>
+            <button type="button" class="pill-btn" data-cat="영상">영상</button>
+            <button type="button" class="pill-btn" data-cat="기타">기타</button>
+          </div>
+
+          <div class="filter-controls">
+            <select id="filter-rating" class="win95-select" aria-label="최소 평점 선택">
+              <option value="0">모든 평점</option>
+              <option value="5">★★★★★ (5점만)</option>
+              <option value="4">★★★★☆ (4점 이상)</option>
+              <option value="3">★★★☆☆ (3점 이상)</option>
+            </select>
+            <input type="text" id="filter-keyword" placeholder="제목·지은이·장르·감상평 찾기..." />
+            <button type="button" class="btn95 yellow sm" id="btn-open-register">[+ 새 감상록 등록]</button>
+          </div>
+        </section>
+
+        <section id="archive-grid" class="archive-grid" aria-label="감상 기록 카드 목록"></section>
+      </div>
+
+      <div class="win-statusbar">
+        <span id="status-left">명령 대기 중 (READY)</span>
+        <span id="status-right">총 0건의 자료가 검색됨</span>
+      </div>
+    </section>
+
+    <!-- 2. 월력 및 기념일 관리 창 -->
+    <section class="floating-win" id="win-calendar" data-win-title="[CAL] 월력 및 기념일" style="top: 64px; left: 165px; width: 780px;">
+      <div class="win-titlebar draggable" style="background: var(--brutal-sky); color: #111;">
+        <div class="win-title-left"><span class="win-title-dot" style="background: #111;"></span><span>CALENDAR95.EXE — 월별 감상 일력 및 목표 D-Day 관리</span></div>
+        <div class="win-controls">
+          <button type="button" class="win-ctrl-btn" data-action="minimize" data-target="win-calendar">_</button>
+          <button type="button" class="win-ctrl-btn close" data-action="close" data-target="win-calendar">X</button>
+        </div>
+      </div>
+      <div class="win-body" id="calendar-app-body"></div>
+    </section>
+
+    <!-- 3. 기분별 명작 추천기 -->
+    <section class="floating-win" id="win-mood" data-win-title="[MOOD] 기분별 명작 추천" style="top: 84px; left: 210px; width: 620px;">
+      <div class="win-titlebar draggable" style="background: var(--brutal-pink); color: #fff;">
+        <div class="win-title-left"><span class="win-title-dot" style="background: var(--brutal-yellow);"></span><span>MOODPICK.EXE — 오늘의 심경별 소장 명작 추천기</span></div>
+        <div class="win-controls">
+          <button type="button" class="win-ctrl-btn" data-action="minimize" data-target="win-mood">_</button>
+          <button type="button" class="win-ctrl-btn close" data-action="close" data-target="win-mood">X</button>
+        </div>
+      </div>
+      <div class="win-body" id="mood-app-body"></div>
+    </section>
+
+    <!-- 4. 기억력 퀴즈 95 -->
+    <section class="floating-win" id="win-quiz" data-win-title="[QUIZ] 기억력 퀴즈 95" style="top: 72px; left: 190px; width: 680px;">
+      <div class="win-titlebar draggable" style="background: #ff9f43; color: #111;">
+        <div class="win-title-left"><span class="win-title-dot" style="background: #111;"></span><span>QUIZ95.EXE — 내 감상록 기억력 퀴즈 및 초성 힌트</span></div>
+        <div class="win-controls">
+          <button type="button" class="win-ctrl-btn" data-action="minimize" data-target="win-quiz">_</button>
+          <button type="button" class="win-ctrl-btn close" data-action="close" data-target="win-quiz">X</button>
+        </div>
+      </div>
+      <div class="win-body" id="quiz-app-body"></div>
+    </section>
+
+    <!-- 5. 감상 연대기 & 성향 분석 -->
+    <section class="floating-win" id="win-timeline" data-win-title="[ANALYSIS] 감상 연대기" style="top: 56px; left: 145px; width: 840px;">
+      <div class="win-titlebar draggable" style="background: #a29bfe; color: #111;">
+        <div class="win-title-left"><span class="win-title-dot" style="background: var(--brutal-yellow);"></span><span>TIMELINE95.EXE — 시간순 감상 연대기 및 상·하반기 성향 비교</span></div>
+        <div class="win-controls">
+          <button type="button" class="win-ctrl-btn" data-action="minimize" data-target="win-timeline">_</button>
+          <button type="button" class="win-ctrl-btn close" data-action="close" data-target="win-timeline">X</button>
+        </div>
+      </div>
+      <div class="win-body" id="timeline-app-body"></div>
+    </section>
+
+    <!-- 6. 열람 인장 & 가계부 영수증 -->
+    <section class="floating-win" id="win-stamp" data-win-title="[STAMP] 인장 & 가계부 영수증" style="top: 68px; left: 175px; width: 760px;">
+      <div class="win-titlebar draggable yellow-bar">
+        <div class="win-title-left"><span class="win-title-dot"></span><span>STAMP95.EXE — 독파 열람 인장 및 문화생활 가계부 영수증</span></div>
+        <div class="win-controls">
+          <button type="button" class="win-ctrl-btn" data-action="minimize" data-target="win-stamp">_</button>
+          <button type="button" class="win-ctrl-btn close" data-action="close" data-target="win-stamp">X</button>
+        </div>
+      </div>
+      <div class="win-body" id="stamp-app-body"></div>
+    </section>
+
+    <!-- 7. 전자 우체통 & 단말기 전송 -->
+    <section class="floating-win" id="win-mailbox" data-win-title="[MAIL] 전자 우체통 & QR" style="top: 78px; left: 205px; width: 690px;">
+      <div class="win-titlebar draggable" style="background: var(--brutal-green); color: #111;">
+        <div class="win-title-left"><span class="win-title-dot" style="background: #111;"></span><span>MAILBOX95.EXE — 방문객 명작 추천 전자 우체통 및 휴대 단말기 전송</span></div>
+        <div class="win-controls">
+          <button type="button" class="win-ctrl-btn" data-action="minimize" data-target="win-mailbox">_</button>
+          <button type="button" class="win-ctrl-btn close" data-action="close" data-target="win-mailbox">X</button>
+        </div>
+      </div>
+      <div class="win-body" id="mailbox-app-body"></div>
+    </section>
+
+    <!-- 8. 간이 메모장, 주크박스, 연관어 망, 오락실 -->
+    <section class="floating-win" id="win-memo" data-win-title="[NOTE] NOTEPAD95.EXE" style="top: 90px; left: 230px; width: 540px;">
+      <div class="win-titlebar draggable">
+        <div class="win-title-left"><span class="win-title-dot" style="background: var(--brutal-yellow);"></span><span>NOTEPAD95.EXE — 감상 단상 및 비망록</span></div>
+        <div class="win-controls">
+          <button type="button" class="win-ctrl-btn" data-action="minimize" data-target="win-memo">_</button>
+          <button type="button" class="win-ctrl-btn close" data-action="close" data-target="win-memo">X</button>
+        </div>
+      </div>
+      <div class="win-body">
+        <form id="memo-form" class="sunken-box" style="margin-bottom: 12px; background: var(--win-gray);">
+          <div class="box-head"><span>새 비망록 작성</span><span id="memo-count-badge" class="tag-mini">0건</span></div>
+          <input type="text" id="memo-title" placeholder="제목 (예: 주말에 읽을 추천 도서 목록)" style="width: 100%; margin-bottom: 8px;" />
+          <textarea id="memo-content" rows="3" placeholder="기록할 단상이나 문장을 적으십시오..." required style="width: 100%; margin-bottom: 8px;"></textarea>
+          <div style="display: flex; justify-content: flex-end;">
+            <button type="submit" class="btn95 yellow sm" id="btn-save-memo">중앙 전산실에 저장</button>
+          </div>
+        </form>
+        <div id="memo-list-container" class="sunken-box" style="max-height: 260px; overflow-y: auto;"></div>
+      </div>
+    </section>
+
+    <section class="floating-win" id="win-jukebox" data-win-title="[PLAY] JUKEBOX95.EXE" style="top: 96px; left: 250px; width: 540px;">
+      <div class="win-titlebar draggable" style="background: #111; color: var(--brutal-green);">
+        <div class="win-title-left"><span class="win-title-dot" style="background: var(--brutal-green);"></span><span>JUKEBOX95.EXE — 스테레오 오디오 플레이어</span></div>
+        <div class="win-controls">
+          <button type="button" class="win-ctrl-btn" data-action="minimize" data-target="win-jukebox">_</button>
+          <button type="button" class="win-ctrl-btn close" data-action="close" data-target="win-jukebox">X</button>
+        </div>
+      </div>
+      <div class="win-body" id="jukebox-body"></div>
+    </section>
+
+    <section class="floating-win" id="win-visualizer" data-win-title="[NODE] DATANODE95.EXE" style="top: 62px; left: 155px; width: 820px;">
+      <div class="win-titlebar draggable" style="background: var(--brutal-sky); color: #111;">
+        <div class="win-title-left"><span class="win-title-dot" style="background: #111;"></span><span>DATANODE95.EXE — 핵심어 구름 및 연관어 망(網) 분석기</span></div>
+        <div class="win-controls">
+          <button type="button" class="win-ctrl-btn" data-action="minimize" data-target="win-visualizer">_</button>
+          <button type="button" class="win-ctrl-btn close" data-action="close" data-target="win-visualizer">X</button>
+        </div>
+      </div>
+      <div class="win-body" id="visualizer-body"></div>
+    </section>
+
+    <section class="floating-win" id="win-gamepack" data-win-title="[GAME] GAMEPACK95.EXE" style="top: 54px; left: 160px; width: 780px;">
+      <div class="win-titlebar draggable" style="background: var(--brutal-pink); color: #fff;">
+        <div class="win-title-left"><span class="win-title-dot" style="background: var(--brutal-yellow);"></span><span>GAMEPACK95.EXE — 고전 카드놀이 및 오락실 모음집</span></div>
+        <div class="win-controls">
+          <button type="button" class="win-ctrl-btn" data-action="minimize" data-target="win-gamepack">_</button>
+          <button type="button" class="win-ctrl-btn close" data-action="close" data-target="win-gamepack">X</button>
+        </div>
+      </div>
+      <div class="win-body" id="gamepack-body"></div>
+    </section>
+
+    <!-- 9. 전체 공개 자료실 광장 -->
+    <section class="floating-win" id="win-community" data-win-title="[BBS] 전체 공개 자료실" style="top: 46px; left: 140px; width: 880px;">
+      <div class="win-titlebar draggable" style="background: var(--brutal-green); color: #111;">
+        <div class="win-title-left"><span class="win-title-dot" style="background: #111;"></span><span>COMMUNITY95.EXE — 전체 공개 자료실 · 광장 (이용자 교류 게시판)</span></div>
+        <div class="win-controls">
+          <button type="button" class="win-ctrl-btn" data-action="minimize" data-target="win-community">_</button>
+          <button type="button" class="win-ctrl-btn close" data-action="close" data-target="win-community">X</button>
+        </div>
+      </div>
+      <div class="win-body" id="community-app-body"></div>
+    </section>
+
+    <!-- 10. Windows 95 작업 관리자 -->
+    <section class="floating-win" id="win-taskmgr" data-win-title="[TASK] 작업 관리자" style="top: 110px; left: 260px; width: 460px;">
+      <div class="win-titlebar draggable">
+        <div class="win-title-left"><span class="win-title-dot" style="background: var(--brutal-pink);"></span><span>TASKMGR95.EXE — 프로그램 강제 종료 (Ctrl+Alt+Del)</span></div>
+        <div class="win-controls">
+          <button type="button" class="win-ctrl-btn close" data-action="close" data-target="win-taskmgr">X</button>
+        </div>
+      </div>
+      <div class="win-body" style="background:var(--win-gray);">
+        <p style="font-size:0.78rem;font-weight:800;margin-bottom:8px;">현재 주기억장치(RAM)에서 실행 중인 응용 프로그램 목록입니다. 응답이 없는 창을 강제 종료하거나 시스템을 재시동할 수 있습니다.</p>
+        <div id="taskmgr-list" class="sunken-box" style="max-height:220px;overflow-y:auto;margin-bottom:10px;background:#fff;"></div>
+        <div style="display:flex;justify-content:space-between;gap:6px;">
+          <button type="button" class="btn95 sm" id="btn-tm-refresh">목록 새로고침</button>
+          <button type="button" class="btn95 yellow sm" id="btn-tm-reboot">시스템 재시동...</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 11. 포트폴리오 가상 브라우저 윈도우 -->
+    <section class="floating-win" id="win-portfolio" data-win-title="[WEB] 포트폴리오" style="top: 52px; left: 225px; width: 860px;">
+      <div class="win-titlebar draggable" style="background: var(--win-navy-grad); color: #ffffff;">
+        <div class="win-title-left">
+          <span class="win-title-dot" style="background: #ff7675;"></span>
+          <span>PORTFOLIO95.EXE — 문태양 포트폴리오 브라우저</span>
+        </div>
+        <div class="win-controls">
+          <button type="button" class="win-ctrl-btn" data-action="minimize" data-target="win-portfolio">_</button>
+          <button type="button" class="win-ctrl-btn close" data-action="close" data-target="win-portfolio">X</button>
+        </div>
+      </div>
+      <div class="win-body" id="portfolio-app-body" style="padding: 8px; background: var(--win-gray);">
+        <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 8px; flex-wrap: wrap;">
+          <button type="button" class="btn95 sm" id="btn-portfolio-reload">↻ 새로고침</button>
+          <input type="text" id="portfolio-url-bar" value="https://nlasdnfkl2.github.io/my-webpage/" readonly aria-label="포트폴리오 주소" style="flex: 1; min-width: 180px; background: #ffffff;" />
+          <a id="btn-portfolio-ext" href="https://nlasdnfkl2.github.io/my-webpage/" target="_blank" rel="noopener noreferrer" class="btn95 yellow sm">↗ 새 탭 열기</a>
+        </div>
+        <div class="sunken-box" style="padding: 0; height: 520px; background: #ffffff; overflow: hidden;">
+          <iframe id="portfolio-frame" src="" title="문태양 포트폴리오" style="width: 100%; height: 100%; border: 0; display: block; background: #ffffff;" loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe>
+        </div>
+      </div>
+      <div class="win-statusbar">
+        <span id="portfolio-status-left">가상 브라우저 대기 중</span>
+        <span id="portfolio-status-right">PORTFOLIO95.EXE</span>
+      </div>
+    </section>
+
+    <div id="dynamic-windows-container"></div>
+  </main>
+
+  <!-- 시작 메뉴 팝업 -->
+  <aside id="start-menu" class="start-menu-popup" aria-label="시작 메뉴">
+    <div class="start-banner"><span>MY-ARCHIVE <b>95</b></span></div>
+    <div class="start-list">
+      <button type="button" class="start-item" id="sm-new">[+] 새 감상록 등록하기</button>
+      <button type="button" class="start-item" id="sm-community">[BBS] 전체 공개 자료실 (광장)</button>
+      <button type="button" class="start-item" id="sm-browser">[WEB] 정보바다 탐색기 95</button>
+      <button type="button" class="start-item" id="sm-all">[DIR] 전체 서재 열기</button>
+      <button type="button" class="start-item" id="sm-book">[BOOK] 도서 서가</button>
+      <button type="button" class="start-item" id="sm-music">[BGM] 음반 서가</button>
+      <button type="button" class="start-item" id="sm-video">[VID] 영상 서가</button>
+      <div class="menu-sep"></div>
+      <button type="button" class="start-item" id="sm-calendar">[CAL] 월력 및 기념일 관리</button>
+      <button type="button" class="start-item" id="sm-mood">[MOOD] 기분별 명작 추천기</button>
+      <button type="button" class="start-item" id="sm-quiz">[QUIZ] 기억력 퀴즈 95</button>
+      <button type="button" class="start-item" id="sm-timeline">[CHART] 감상 연대기 분석</button>
+      <button type="button" class="start-item" id="sm-stamp">[STAMP] 열람 인장 &amp; 가계부</button>
+      <button type="button" class="start-item" id="sm-mailbox">[MAIL] 전자 우체통 &amp; 전송</button>
+      <div class="menu-sep"></div>
+      <button type="button" class="start-item" id="sm-display">[DISP] 디스플레이 등록 정보...</button>
+      <button type="button" class="start-item" id="sm-memo">[NOTE] 간이 메모장</button>
+      <button type="button" class="start-item" id="sm-reload">[SYNC] 중앙 전산실 자료 갱신</button>
+      <button type="button" class="start-item" id="sm-logoff">[KEY] 접속 종료 / 시스템 재시동...</button>
+    </div>
+  </aside>
+
+  <!-- 화면 보호기 -->
+  <div id="win95-screensaver" style="display:none;position:fixed;inset:0;z-index:250000;background:#000000;cursor:none;">
+    <canvas id="screensaver-canvas"></canvas>
+    <div style="position:fixed;bottom:14px;right:18px;color:#888;font-family:monospace;font-size:0.75rem;">Click or press any key to return to MY-ARCHIVE 95</div>
+  </div>
+
+  <!-- 하단 작업표시줄 -->
+  <footer class="os-taskbar">
+    <button type="button" id="btn-start" class="btn-start">
+      <span class="start-win-logo" aria-hidden="true">
+        <svg width="14" height="14" viewBox="0 0 16 16" shape-rendering="crispEdges">
+          <rect x="2" y="2" width="5" height="5" fill="#ff0000"/>
+          <rect x="9" y="2" width="5" height="5" fill="#00ff00"/>
+          <rect x="2" y="9" width="5" height="5" fill="#0000ff"/>
+          <rect x="9" y="9" width="5" height="5" fill="#ffff00"/>
+        </svg>
+      </span>
+      <span>시작 (Start)</span>
+    </button>
+    <div class="taskbar-divider"></div>
+    <div id="taskbar-windows" class="taskbar-windows"></div>
+    <div class="taskbar-tray">
+      <button type="button" id="tray-jukebox-mini" class="tray-btn" title="주크박스 95 열기" aria-label="주크박스 95 열기">
+        <svg width="12" height="12" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true">
+          <rect x="6" y="2" width="6" height="2" fill="#111"/>
+          <rect x="6" y="4" width="2" height="8" fill="#111"/>
+          <rect x="10" y="4" width="2" height="7" fill="#111"/>
+          <rect x="3" y="10" width="5" height="4" fill="#111"/>
+          <rect x="8" y="9" width="4" height="4" fill="#111"/>
+        </svg>
+      </button>
+      <span id="taskbar-clock" class="taskbar-clock">12:00</span>
+    </div>
+  </footer>`;
+  }
+
+  function mountArchiveShell() {
+    const root = document.getElementById('app-root');
+    if (!root) return;
+
+    const existingPre = document.getElementById('ascii-boot-banner');
+    if (existingPre) existingPre.remove();
+
+    const asciiPre = document.createElement('pre');
+    asciiPre.id = 'ascii-boot-banner';
+    asciiPre.textContent = ASCII_BANNER.trim();
+    asciiPre.style.cssText = [
+      'position:fixed',
+      'top:14px',
+      'left:50%',
+      'transform:translateX(-50%)',
+      'z-index:210000',
+      'margin:0',
+      'padding:8px 14px',
+      'background:rgba(0,0,0,0.82)',
+      'color:#55ffff',
+      'font-family:"DungGeunMo","Galmuri11","Fixedsys",monospace',
+      'font-size:10px',
+      'line-height:1.15',
+      'pointer-events:none',
+      'white-space:pre',
+      'border:1px solid #008080'
+    ].join(';');
+
+    root.innerHTML = buildArchiveShellHtml();
+    root.appendChild(asciiPre);
+  }
+
+  window.buildArchiveShellHtml = buildArchiveShellHtml;
+  window.mountArchiveShell = mountArchiveShell;
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', mountArchiveShell, { once: true });
+  } else {
+    mountArchiveShell();
+  }
+})();
