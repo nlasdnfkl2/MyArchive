@@ -4,7 +4,7 @@
 // ============================================================
 
 window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-window.__MOD_VERSIONS.windowMgr = typeof APP_BUILD_VERSION !== 'undefined' ? APP_BUILD_VERSION : 'v2026.11.25-10';
+window.__MOD_VERSIONS.windowMgr = typeof APP_BUILD_VERSION !== 'undefined' ? APP_BUILD_VERSION : 'v2026.11.25-11';
 
 const ALL_DESKTOP_THEMES = [
   'theme-teal',
@@ -25,6 +25,50 @@ function sanitizeRetroWindowTitle(rawTitle) {
     .replace(/^\[\s*\]\s*/, '')
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+// 닫힌 창(최소화 제외) 내부의 미디어(audio, video, iframe) 재생 중단
+function stopMediaInClosedWindow(winEl) {
+  if (!winEl) return;
+
+  winEl.querySelectorAll('audio, video').forEach(media => {
+    try {
+      media.pause();
+      if (Number.isFinite(media.duration)) {
+        media.currentTime = 0;
+      }
+    } catch {}
+  });
+
+  winEl.querySelectorAll('iframe').forEach(frame => {
+    try {
+      const currentSrc = frame.getAttribute('src');
+      if (currentSrc && currentSrc !== 'about:blank') {
+        if (!frame.dataset.suspendedSrc) {
+          frame.dataset.suspendedSrc = currentSrc;
+        }
+        frame.setAttribute('src', 'about:blank');
+      }
+    } catch {}
+  });
+
+  window.dispatchEvent(new CustomEvent('window:closed', { detail: { id: winEl.id, element: winEl } }));
+}
+
+// 닫혔다가 다시 열리는 창의 suspended iframe src 복원
+function restoreMediaInOpenedWindow(winEl) {
+  if (!winEl) return;
+
+  winEl.querySelectorAll('iframe[data-suspended-src]').forEach(frame => {
+    try {
+      const savedSrc = frame.dataset.suspendedSrc;
+      const currentSrc = frame.getAttribute('src');
+      if (savedSrc && (!currentSrc || currentSrc === 'about:blank')) {
+        frame.setAttribute('src', savedSrc);
+      }
+      delete frame.dataset.suspendedSrc;
+    } catch {}
+  });
 }
 
 // 상단 메뉴바 및 하단 작업표시줄 영역을 고려한 뷰포트 내 창 위치 보정
@@ -77,6 +121,7 @@ function openWindow(winId) {
   const winEl = document.getElementById(winId);
   if (!winEl) return;
   const wasClosed = !winEl.classList.contains('open');
+  restoreMediaInOpenedWindow(winEl);
   winEl.classList.add('open');
   winEl.classList.remove('minimized');
   clampWindowToViewport(winEl);
@@ -91,6 +136,7 @@ function closeWindow(winId) {
   const winEl = document.getElementById(winId);
   if (!winEl) return;
   if (typeof playRetroTone === 'function') playRetroTone('close');
+  stopMediaInClosedWindow(winEl);
   if (winEl.dataset.dynamic === 'true') {
     winEl.remove();
   } else {
@@ -151,7 +197,7 @@ function enableWindowDrag(winEl) {
 
   const onStart = (clientX, clientY, target) => {
     if (target.closest('button, a, input, select, textarea')) return;
-    if (window.innerWidth <= 768) return; // 모바일 1열 반응형 모드에서는 위치 고정
+    if (window.innerWidth <= 768) return;
     if (winEl.classList.contains('win-maximized')) return;
     isDragging = true;
     focusWindow(winEl);
@@ -223,8 +269,10 @@ function openPortfolioWindow(forceReload = false) {
 
   if (frameEl) {
     const currentSrc = frameEl.getAttribute('src');
-    if (!currentSrc || forceReload) {
-      frameEl.setAttribute('src', PORTFOLIO_VIRTUAL_URL);
+    const suspendedSrc = frameEl.dataset.suspendedSrc;
+    if (!currentSrc || currentSrc === 'about:blank' || forceReload) {
+      delete frameEl.dataset.suspendedSrc;
+      frameEl.setAttribute('src', suspendedSrc || PORTFOLIO_VIRTUAL_URL);
       if (statusLeft) statusLeft.textContent = `불러오는 중: ${PORTFOLIO_VIRTUAL_URL}`;
     } else if (statusLeft) {
       statusLeft.textContent = `연결됨: ${PORTFOLIO_VIRTUAL_URL}`;
@@ -256,7 +304,8 @@ function bindPortfolioWindow() {
   });
 
   frameEl?.addEventListener('load', () => {
-    if (frameEl.getAttribute('src') && statusLeft) {
+    const src = frameEl.getAttribute('src');
+    if (src && src !== 'about:blank' && statusLeft) {
       statusLeft.textContent = `로드 완료: ${PORTFOLIO_VIRTUAL_URL}`;
     }
   });
