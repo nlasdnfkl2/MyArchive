@@ -81,7 +81,7 @@ function ensure3dCrtMonitorStyles() {
       position: fixed;
       inset: 0;
       z-index: 1000000;
-      background: radial-gradient(circle at 50% 38%, #f3f4f6 0%, #dcdedf 68%, #c5c8cc 100%);
+      background: #000000;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -95,30 +95,31 @@ function ensure3dCrtMonitorStyles() {
       pointer-events: none;
     }
 
-    /* 느리게 왼쪽으로 회전하며 화면 중앙에 맞추는 3D 리그 */
+    /* 잠시 대기 후 느리게 왼쪽으로 회전하며 화면 중앙에 맞추는 3D 리그 */
     .poly-crt-rig {
       position: relative;
       transform-style: preserve-3d;
-      animation: polyCrtTurnLeftCenter 1.85s cubic-bezier(0.22, 0.88, 0.28, 1) forwards;
+      transform: translate3d(3vw, 4px, -90px) rotateX(6deg) rotateY(34deg) rotateZ(0deg) scale(0.92);
+      animation: polyCrtTurnLeftCenter 2.65s cubic-bezier(0.22, 0.88, 0.28, 1) 0.55s forwards;
     }
 
-    /* 바닥 그림자 (로우폴리 톤) */
+    /* 바닥 그림자 */
     .poly-crt-shadow {
       position: absolute;
-      width: 250px;
-      height: 150px;
+      width: 260px;
+      height: 155px;
       left: 50%;
-      bottom: -88px;
+      bottom: -90px;
       transform: translateX(-44%) rotateX(74deg) translateZ(-36px);
-      background: radial-gradient(ellipse at center, rgba(45, 48, 54, 0.34) 0%, rgba(45, 48, 54, 0.08) 65%, transparent 78%);
+      background: radial-gradient(ellipse at center, rgba(120, 125, 132, 0.22) 0%, rgba(120, 125, 132, 0.05) 65%, transparent 78%);
       filter: blur(5px);
       pointer-events: none;
     }
 
     .poly-crt-unit {
-      --w: 268px;
-      --h: 236px;
-      --d: 210px;
+      --w: 316px;
+      --h: 268px;
+      --d: 220px;
       position: relative;
       width: var(--w);
       height: var(--h);
@@ -128,16 +129,16 @@ function ensure3dCrtMonitorStyles() {
     .poly-face {
       position: absolute;
       box-sizing: border-box;
-      border: 1px solid rgba(72, 74, 72, 0.42);
+      border: 1px solid rgba(72, 74, 72, 0.45);
     }
 
-    /* 전면 베젤: 평면적이고 거친 섀딩의 베이지/아이보리 폴리곤 */
+    /* 전면 베젤 */
     .poly-front {
       width: var(--w);
       height: var(--h);
       background: linear-gradient(155deg, #dfddd2 0%, #cfccc0 56%, #bdb9ac 100%);
       transform: translateZ(calc(var(--d) * 0.5));
-      padding: 16px 18px 12px;
+      padding: 15px 17px 11px;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
@@ -148,64 +149,126 @@ function ensure3dCrtMonitorStyles() {
     .poly-screen-well {
       position: relative;
       flex: 1;
-      background: #8f8c81;
-      border-top: 3px solid #6b685e;
-      border-left: 3px solid #6b685e;
+      background: #7c796f;
+      border-top: 3px solid #58554d;
+      border-left: 3px solid #58554d;
       border-right: 3px solid #e7e5da;
       border-bottom: 3px solid #e7e5da;
       padding: 4px;
       overflow: hidden;
     }
 
+    /* 튀어나온(볼록한) CRT 유리 화면 질감 + BIOS 화면 */
     .poly-screen-display {
       position: relative;
       width: 100%;
       height: 100%;
-      background: #4e8d84;
+      background: #06080a;
+      border-radius: 10px / 8px;
+      transform: translateZ(5px) scale(1.015);
+      box-shadow:
+        inset 0 0 14px rgba(0, 0, 0, 0.88),
+        inset 4px 4px 10px rgba(255, 255, 255, 0.14),
+        0 2px 6px rgba(0, 0, 0, 0.65);
       overflow: hidden;
       font-family: 'Consolas', 'Courier New', monospace;
     }
 
-    /* 데스크톱 아이콘/작업표시줄 느낌의 로우폴리 스크린 */
-    .poly-mini-icons {
+    /* 볼록 CRT 유리 반사/곡률 하이라이트 */
+    .poly-crt-glass-bulge {
+      position: absolute;
+      inset: 0;
+      z-index: 4;
+      pointer-events: none;
+      border-radius: 10px / 8px;
+      background:
+        radial-gradient(ellipse at 32% 22%, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.04) 38%, transparent 66%),
+        radial-gradient(ellipse at 50% 50%, transparent 56%, rgba(0, 0, 0, 0.55) 100%);
+    }
+
+    /* 화면 위 미세 스캔라인 */
+    .poly-crt-scanlines {
+      position: absolute;
+      inset: 0;
+      z-index: 3;
+      pointer-events: none;
+      background: repeating-linear-gradient(
+        0deg,
+        rgba(0, 0, 0, 0.24) 0px,
+        rgba(0, 0, 0, 0.24) 1px,
+        transparent 1px,
+        transparent 2.5px
+      );
+    }
+
+    /* 모니터 화면 내부에 표시되는 시작 화면(검은 BIOS 화면) */
+    .poly-bios-screen {
       position: relative;
-      z-index: 1;
-      padding: 6px;
+      z-index: 2;
+      width: 100%;
+      height: 100%;
+      padding: 6px 7px;
+      color: #d8d8d8;
+      font-size: 0.44rem;
+      line-height: 1.32;
       display: flex;
       flex-direction: column;
-      gap: 5px;
+      justify-content: space-between;
+      text-shadow: 0 0 4px rgba(210, 235, 255, 0.25);
     }
-    .poly-mini-icon-row {
+
+    .poly-bios-head {
       display: flex;
-      align-items: center;
+      justify-content: space-between;
+      align-items: flex-start;
       gap: 4px;
-      font-size: 0.46rem;
-      color: #f4f7f5;
-      text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.55);
-      line-height: 1;
+      border-bottom: 1px dashed rgba(255, 255, 255, 0.28);
+      padding-bottom: 3px;
     }
-    .poly-mini-sq {
-      width: 7px;
-      height: 7px;
-      background: #e6d88a;
-      border: 1px solid #2b2d2c;
+
+    .poly-bios-title {
+      color: #ffffff;
+      font-weight: 700;
+    }
+
+    .poly-bios-epa {
+      border: 1px solid #ffff55;
+      color: #ffff55;
+      padding: 1px 3px;
+      font-size: 0.38rem;
+      font-weight: 700;
+      line-height: 1.1;
+      text-align: center;
       flex-shrink: 0;
     }
-    .poly-mini-taskbar {
-      position: absolute;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      height: 11px;
-      background: #c4c2b8;
-      border-top: 1px solid #f2f0e6;
+
+    .poly-bios-lines {
+      flex: 1;
+      margin-top: 3px;
       display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 4px;
-      font-size: 0.44rem;
+      flex-direction: column;
+      gap: 1.5px;
+      color: #c2c2c2;
+      overflow: hidden;
+    }
+
+    .poly-bios-ok {
+      color: #55ff55;
       font-weight: 700;
-      color: #1c1e1d;
+    }
+
+    .poly-bios-warn {
+      color: #ffff55;
+      font-weight: 700;
+    }
+
+    .poly-bios-foot {
+      border-top: 1px solid rgba(255, 255, 255, 0.24);
+      padding-top: 2px;
+      display: flex;
+      justify-content: space-between;
+      color: #ffffff;
+      font-size: 0.4rem;
     }
 
     /* 하단 턱: 미니 컨트롤 버튼 + 파란 전원 버튼 + LED */
@@ -298,9 +361,9 @@ function ensure3dCrtMonitorStyles() {
     /* 넥 & 사각 베이스 스탠드 */
     .poly-neck {
       position: absolute;
-      width: 112px;
+      width: 118px;
       height: 24px;
-      left: calc((var(--w) - 112px) * 0.5);
+      left: calc((var(--w) - 118px) * 0.5);
       bottom: -22px;
       background: #a4a093;
       border: 1px solid rgba(72, 74, 72, 0.45);
@@ -308,17 +371,17 @@ function ensure3dCrtMonitorStyles() {
     }
     .poly-base {
       position: absolute;
-      width: 188px;
-      height: 110px;
-      left: calc((var(--w) - 188px) * 0.5);
-      bottom: -76px;
+      width: 198px;
+      height: 114px;
+      left: calc((var(--w) - 198px) * 0.5);
+      bottom: -78px;
       background: linear-gradient(180deg, #d5d2c6 0%, #b8b4a7 100%);
       border: 1px solid rgba(72, 74, 72, 0.45);
       transform: rotateX(76deg) translateZ(-28px);
       box-shadow: 0 8px 0 #979386;
     }
 
-    /* 2번째 이미지 스타일: 방사형 가장자리 스트레치 라인 오버레이 */
+    /* 방사형 가장자리 스트레치 라인 오버레이 */
     .edge-stretch-rays {
       position: fixed;
       inset: -18vmax;
@@ -335,25 +398,25 @@ function ensure3dCrtMonitorStyles() {
           rgba(175, 179, 184, 0.78) 18deg 18.8deg,
           transparent 18.8deg 30deg
         ),
-        radial-gradient(circle at 50% 50%, #ffffff 0%, #ffffff 22%, rgba(255, 255, 255, 0.35) 54%, rgba(255, 255, 255, 0) 76%);
+        radial-gradient(circle at 50% 50%, #000000 0%, #000000 22%, rgba(0, 0, 0, 0.35) 54%, rgba(0, 0, 0, 0) 76%);
       -webkit-mask-image: radial-gradient(circle at 50% 50%, transparent 0%, transparent 16%, #000 32%, #000 100%);
       mask-image: radial-gradient(circle at 50% 50%, transparent 0%, transparent 16%, #000 32%, #000 100%);
       transform: scale(0.32);
-      animation: radialEdgeStretchExpand 0.72s cubic-bezier(0.16, 1, 0.3, 1) 1.52s forwards;
+      animation: radialEdgeStretchExpand 0.82s cubic-bezier(0.16, 1, 0.3, 1) 2.75s forwards;
     }
 
     @keyframes polyCrtTurnLeftCenter {
       0% {
-        opacity: 0.92;
-        transform: translate3d(4vw, 4px, -90px) rotateX(6deg) rotateY(34deg) rotateZ(0deg) scale(0.92);
+        opacity: 0.96;
+        transform: translate3d(3vw, 4px, -90px) rotateX(6deg) rotateY(34deg) rotateZ(0deg) scale(0.92);
       }
-      58% {
+      66% {
         opacity: 1;
-        transform: translate3d(0px, 0px, 0px) rotateX(4deg) rotateY(0deg) rotateZ(0deg) scale(1.02);
+        transform: translate3d(0px, 0px, 0px) rotateX(3deg) rotateY(0deg) rotateZ(0deg) scale(1.02);
       }
       100% {
         opacity: 1;
-        transform: translate3d(0px, 0px, 460px) rotateX(0deg) rotateY(0deg) rotateZ(0deg) scale(4.6);
+        transform: translate3d(0px, 0px, 470px) rotateX(0deg) rotateY(0deg) rotateZ(0deg) scale(4.7);
       }
     }
 
@@ -390,15 +453,29 @@ function play3dCrtMonitorAnimation() {
           <div class="poly-face poly-front">
             <div class="poly-screen-well">
               <div class="poly-screen-display">
-                <div class="poly-mini-icons">
-                  <div class="poly-mini-icon-row"><span class="poly-mini-sq"></span><span>My Archive</span></div>
-                  <div class="poly-mini-icon-row"><span class="poly-mini-sq"></span><span>Jukebox 95</span></div>
-                  <div class="poly-mini-icon-row"><span class="poly-mini-sq"></span><span>BIOS ROM</span></div>
+                <div class="poly-bios-screen">
+                  <div class="poly-bios-head">
+                    <div>
+                      <div class="poly-bios-title">AWARD MODULAR BIOS v4.51PG</div>
+                      <div>MY-ARCHIVE 95 WORKSTATION ROM</div>
+                    </div>
+                    <div class="poly-bios-epa">ENERGY<br>STAR</div>
+                  </div>
+                  <div class="poly-bios-lines">
+                    <div>PENTIUM-S CPU @ 133MHz</div>
+                    <div>Memory Test: <span id="poly-mini-ram" class="poly-bios-ok">65536K OK</span></div>
+                    <div>Pri Master: MY-HDD <span class="poly-bios-ok">[OK]</span></div>
+                    <div>Pri Slave : CD-ROM <span class="poly-bios-ok">[OK]</span></div>
+                    <div>SoundBlaster 16 @ 220H <span class="poly-bios-ok">[OK]</span></div>
+                    <div class="poly-bios-warn">Booting C:\MY-ARCHIVE\BIOS.SYS...</div>
+                  </div>
+                  <div class="poly-bios-foot">
+                    <span>[DEL] SETUP</span>
+                    <span>POST PASS</span>
+                  </div>
                 </div>
-                <div class="poly-mini-taskbar">
-                  <span>Start</span>
-                  <span>95</span>
-                </div>
+                <div class="poly-crt-scanlines"></div>
+                <div class="poly-crt-glass-bulge"></div>
               </div>
             </div>
             <div class="poly-chin">
@@ -445,7 +522,7 @@ function play3dCrtMonitorAnimation() {
       finishIntro();
     });
 
-    const autoTimer = setTimeout(finishIntro, 2180);
+    const autoTimer = setTimeout(finishIntro, 3550);
     stage.dataset.autoTimer = String(autoTimer);
   });
 }
