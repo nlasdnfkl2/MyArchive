@@ -107,7 +107,7 @@
     return bytes;
   }
 
-  function ensureBinaryAudioBytes() {
+function ensureBinaryAudioBytes() {
     if (cachedRawBytes) return Promise.resolve(cachedRawBytes);
     if (audioLoadPromise) return audioLoadPromise;
 
@@ -117,7 +117,7 @@
         return res.text();
       })
       .then((txt) => {
-        const bytes = parseBinaryTextToBytes(txt);
+        const bytes = parseTextToBytes(txt);
         cachedRawBytes = bytes;
         return bytes;
       })
