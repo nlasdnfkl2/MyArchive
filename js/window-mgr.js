@@ -4,7 +4,7 @@
 // ============================================================
 
 window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-window.__MOD_VERSIONS.windowMgr = typeof APP_BUILD_VERSION !== 'undefined' ? APP_BUILD_VERSION : 'v2026.11.25-01';
+window.__MOD_VERSIONS.windowMgr = typeof APP_BUILD_VERSION !== 'undefined' ? APP_BUILD_VERSION : 'v2026.11.25-02';
 
 const ALL_DESKTOP_THEMES = [
   'theme-teal',
@@ -18,12 +18,38 @@ const ALL_DESKTOP_THEMES = [
   'theme-amber-crt'
 ];
 
+const TASKBAR_WIN_ICONS = {
+  'win-main': `<svg width="13" height="13" viewBox="0 0 16 16" shape-rendering="crispEdges" style="flex-shrink:0;"><path fill="#ffff00" stroke="#000" d="M1 3h6l1 2h7v9H1V3z"/></svg>`,
+  'win-stats': `<svg width="13" height="13" viewBox="0 0 16 16" shape-rendering="crispEdges" style="flex-shrink:0;"><rect x="1" y="2" width="14" height="12" fill="#ffffff" stroke="#000"/><rect x="3" y="8" width="2" height="4" fill="#000080"/><rect x="7" y="5" width="2" height="7" fill="#008000"/><rect x="11" y="6" width="2" height="6" fill="#800000"/></svg>`,
+  'win-mailbox': `<svg width="13" height="13" viewBox="0 0 16 16" shape-rendering="crispEdges" style="flex-shrink:0;"><rect x="1" y="3" width="14" height="10" fill="#ffff00" stroke="#000"/><polyline points="1,3 8,9 15,3" fill="none" stroke="#000" stroke-width="1.5"/></svg>`,
+  'win-jukebox': `<svg width="13" height="13" viewBox="0 0 16 16" shape-rendering="crispEdges" style="flex-shrink:0;"><path fill="#008000" d="M6 2h7v9h-1v2H9v-2h2V5H7v7H6v2H3v-2h2V2h1z"/></svg>`,
+  'win-browser': `<svg width="13" height="13" viewBox="0 0 16 16" shape-rendering="crispEdges" style="flex-shrink:0;"><rect x="2" y="2" width="12" height="12" fill="#000080" stroke="#000"/><rect x="4" y="4" width="8" height="8" fill="#00ffff"/></svg>`,
+  'win-community': `<svg width="13" height="13" viewBox="0 0 16 16" shape-rendering="crispEdges" style="flex-shrink:0;"><rect x="2" y="2" width="12" height="12" fill="#008000" stroke="#000"/><rect x="4" y="5" width="8" height="6" fill="#ffffff"/></svg>`,
+  'win-visualizer': `<svg width="13" height="13" viewBox="0 0 16 16" shape-rendering="crispEdges" style="flex-shrink:0;"><circle cx="4" cy="4" r="2" fill="#000080"/><circle cx="12" cy="5" r="2" fill="#800080"/><circle cx="8" cy="12" r="2" fill="#008000"/><line x1="4" y1="4" x2="12" y2="5" stroke="#000"/><line x1="4" y1="4" x2="8" y2="12" stroke="#000"/></svg>`,
+  'win-calendar': `<svg width="13" height="13" viewBox="0 0 16 16" shape-rendering="crispEdges" style="flex-shrink:0;"><rect x="2" y="2" width="12" height="12" fill="#ffffff" stroke="#000"/><rect x="2" y="2" width="12" height="3" fill="#800000"/></svg>`,
+  'win-mood': `<svg width="13" height="13" viewBox="0 0 16 16" shape-rendering="crispEdges" style="flex-shrink:0;"><rect x="2" y="2" width="12" height="12" fill="#ffff00" stroke="#000"/><rect x="5" y="5" width="2" height="2" fill="#000"/><rect x="9" y="5" width="2" height="2" fill="#000"/><rect x="5" y="10" width="6" height="2" fill="#000"/></svg>`,
+  'win-quiz': `<svg width="13" height="13" viewBox="0 0 16 16" shape-rendering="crispEdges" style="flex-shrink:0;"><rect x="2" y="2" width="12" height="12" fill="#000080" stroke="#000"/><text x="8" y="12" fill="#ffff00" font-size="10" font-weight="bold" text-anchor="middle">?</text></svg>`,
+  'win-timeline': `<svg width="13" height="13" viewBox="0 0 16 16" shape-rendering="crispEdges" style="flex-shrink:0;"><line x1="2" y1="8" x2="14" y2="8" stroke="#000" stroke-width="2"/><rect x="3" y="5" width="3" height="6" fill="#008080"/><rect x="10" y="4" width="3" height="8" fill="#800080"/></svg>`,
+  'win-stamp': `<svg width="13" height="13" viewBox="0 0 16 16" shape-rendering="crispEdges" style="flex-shrink:0;"><rect x="3" y="3" width="10" height="10" fill="#ffffff" stroke="#800000" stroke-width="2"/><rect x="5" y="5" width="6" height="6" fill="#800000"/></svg>`,
+  'win-gamepack': `<svg width="13" height="13" viewBox="0 0 16 16" shape-rendering="crispEdges" style="flex-shrink:0;"><rect x="1" y="4" width="14" height="8" fill="#dfdfdf" stroke="#000"/><rect x="4" y="6" width="2" height="4" fill="#000"/><rect x="3" y="7" width="4" height="2" fill="#000"/><rect x="10" y="7" width="2" height="2" fill="#800000"/></svg>`,
+  'win-display-props': `<svg width="13" height="13" viewBox="0 0 16 16" shape-rendering="crispEdges" style="flex-shrink:0;"><rect x="2" y="2" width="12" height="9" fill="#008080" stroke="#000"/><rect x="5" y="12" width="6" height="2" fill="#808080"/></svg>`
+};
+
+const DEFAULT_TASKBAR_ICON = `<svg width="13" height="13" viewBox="0 0 16 16" shape-rendering="crispEdges" style="flex-shrink:0;"><rect x="1" y="2" width="14" height="12" fill="#c0c0c0" stroke="#000"/><rect x="2" y="3" width="12" height="3" fill="#000080"/></svg>`;
+
 function sanitizeRetroWindowTitle(rawTitle) {
   return String(rawTitle || '')
     .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\uFE0F]/gu, '')
     .replace(/^\[\s*\]\s*/, '')
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+function getShortTaskbarLabel(winEl) {
+  const raw = sanitizeRetroWindowTitle(winEl.dataset.winTitle || winEl.id);
+  const withoutCode = raw.replace(/^\[[A-Z0-9]+\]\s*/i, '');
+  const trimmed = withoutCode.split('—')[0].split(' - ')[0].trim() || withoutCode;
+  return trimmed.length > 18 ? `${trimmed.slice(0, 17)}…` : trimmed;
 }
 
 // ============================================================
@@ -313,9 +339,24 @@ function syncTaskbar() {
   document.querySelectorAll('.floating-win.open').forEach(winEl => {
     const tab = document.createElement('button');
     tab.type = 'button';
-    tab.className = 'taskbar-tab' + (winEl.classList.contains('focused') && !winEl.classList.contains('minimized') ? ' active' : '');
-    const cleanTitle = sanitizeRetroWindowTitle(winEl.dataset.winTitle || winEl.id);
-    tab.textContent = cleanTitle || winEl.id;
+    const isActive = winEl.classList.contains('focused') && !winEl.classList.contains('minimized');
+    tab.className = 'taskbar-win-btn' + (isActive ? ' active' : '');
+
+    const iconSvg = TASKBAR_WIN_ICONS[winEl.id] || DEFAULT_TASKBAR_ICON;
+    const labelText = getShortTaskbarLabel(winEl);
+    tab.title = sanitizeRetroWindowTitle(winEl.dataset.winTitle || winEl.id);
+
+    const iconWrap = document.createElement('span');
+    iconWrap.className = 'taskbar-win-icon';
+    iconWrap.innerHTML = iconSvg;
+
+    const textSpan = document.createElement('span');
+    textSpan.className = 'taskbar-win-label';
+    textSpan.textContent = labelText || winEl.id;
+
+    tab.appendChild(iconWrap);
+    tab.appendChild(textSpan);
+
     tab.addEventListener('click', () => {
       if (winEl.classList.contains('minimized') || !winEl.classList.contains('focused')) {
         focusWindow(winEl);
