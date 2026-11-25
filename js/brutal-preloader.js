@@ -4,7 +4,7 @@
 
 (function () {
   window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-  window.__MOD_VERSIONS.brutalPreloader = 'v2026.11.25-per-file-500ms-complete-hold';
+  window.__MOD_VERSIONS.brutalPreloader = 'v2026.11.25-per-file-500ms-complete-hold-v2';
 
   const PER_FILE_MIN_MS = 500;
   const COMPLETE_HOLD_MS = 650;
@@ -16,6 +16,7 @@
   let completionBannerShown = false;
   let powerOffScheduled = false;
   let finished = false;
+  let loopStarted = false;
   let filesCache = null;
 
   const FALLBACK_JS_FILES = [
@@ -50,6 +51,9 @@
 
   function injectBrutalStyle() {
     if (document.getElementById(STYLE_ID)) return;
+    const head = document.head || document.documentElement;
+    if (!head) return;
+
     const style = document.createElement('style');
     style.id = STYLE_ID;
     style.textContent = `
@@ -422,7 +426,7 @@
         }
       }
     `;
-    document.head.appendChild(style);
+    head.appendChild(style);
   }
 
   function buildTickerContent(files) {
@@ -432,11 +436,20 @@
   }
 
   function mountPreloader() {
-    if (document.getElementById(PRELOADER_ID)) return;
     injectBrutalStyle();
+    const targetParent = document.body || document.documentElement;
+    if (!targetParent) return;
+
+    let el = document.getElementById(PRELOADER_ID);
+    if (el) {
+      if (document.body && el.parentElement !== document.body) {
+        document.body.appendChild(el);
+      }
+      return;
+    }
 
     const files = collectJsFileNames();
-    const el = document.createElement('div');
+    el = document.createElement('div');
     el.id = PRELOADER_ID;
     el.setAttribute('role', 'status');
     el.setAttribute('aria-live', 'polite');
@@ -481,8 +494,7 @@
       </div>
     `;
 
-    const parent = document.body || document.documentElement;
-    parent.appendChild(el);
+    targetParent.appendChild(el);
   }
 
   function getPopBarColor(pct) {
@@ -507,7 +519,7 @@
     }
   }
 
-  function showCompletion 연출(filesCount) {
+  function showCompletionBanner(filesCount) {
     if (completionBannerShown) return;
     completionBannerShown = true;
 
@@ -636,21 +648,25 @@
     const files = collectJsFileNames();
     const lastFile = files[files.length - 1] || 'ALL MODULES READY';
     updatePreloaderProgress(1, `${lastFile} — DONE!`, files.length);
-    showCompletion연출(files.length);
+    showCompletionBanner(files.length);
 
     setTimeout(executeTvPowerOffNow, COMPLETE_HOLD_MS);
   }
 
   function runPreloaderLoop() {
     mountPreloader();
+    if (loopStarted) return;
+    loopStarted = true;
+
     const files = collectJsFileNames();
     const totalFiles = Math.max(1, files.length);
     const totalRequiredMs = totalFiles * PER_FILE_MIN_MS;
 
     const tick = () => {
       if (finished || powerOffScheduled) return;
-      const elapsed = Math.max(0, performance.now() - startTime);
+      mountPreloader();
 
+      const elapsed = Math.max(0, performance.now() - startTime);
       const completedSteps = Math.min(totalFiles, Math.floor(elapsed / PER_FILE_MIN_MS));
       const activeIdx = Math.min(totalFiles - 1, completedSteps);
       const stepElapsed = Math.min(PER_FILE_MIN_MS, elapsed - activeIdx * PER_FILE_MIN_MS);
@@ -669,14 +685,15 @@
     requestAnimationFrame(tick);
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', runPreloaderLoop, { once: true });
-    setTimeout(runPreloaderLoop, 0);
-  } else {
-    runPreloaderLoop();
-  }
+  runPreloaderLoop();
+
+  document.addEventListener('DOMContentLoaded', () => {
+    mountPreloader();
+    if (!loopStarted) runPreloaderLoop();
+  }, { once: true });
 
   window.addEventListener('load', () => {
+    mountPreloader();
     const files = collectJsFileNames();
     const totalRequiredMs = Math.max(1, files.length) * PER_FILE_MIN_MS;
     const elapsed = Math.max(0, performance.now() - startTime);
