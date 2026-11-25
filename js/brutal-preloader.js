@@ -4,7 +4,7 @@
 
 (function () {
   window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-  window.__MOD_VERSIONS.brutalPreloader = 'v2026.11.25-per-file-500ms-complete-hold-v2';
+  window.__MOD_VERSIONS.brutalPreloader = 'v2026.11.25-strict-per-file-500ms';
 
   const PER_FILE_MIN_MS = 500;
   const COMPLETE_HOLD_MS = 650;
@@ -431,7 +431,7 @@
 
   function buildTickerContent(files) {
     const joined = files.join('  ///  ');
-    const line = `POP-BRUTAL MODULE PRELOADER  ★  500MS/FILE STEP  ★  ${joined}  ★  `;
+    const line = `POP-BRUTAL MODULE PRELOADER  ★  MIN 500MS / INDEX FILE (${files.length} FILES)  ★  ${joined}  ★  `;
     return `<span class="brutal-ticker-msg">${line}</span><span class="brutal-ticker-msg">${line}</span>`;
   }
 
@@ -504,9 +504,9 @@
     return '#39ff14';
   }
 
-  function triggerSpeechBubblePop(bubbleEl, cardEl, fileName, pct) {
+  function triggerSpeechBubblePop(bubbleEl, cardEl, fileName, fileIndex, totalFiles, pct) {
     if (!bubbleEl) return;
-    bubbleEl.textContent = `⚡ ${fileName} (500ms+)`;
+    bubbleEl.textContent = `⚡ [${fileIndex + 1}/${totalFiles}] ${fileName} (500ms+)`;
 
     bubbleEl.classList.remove('is-popping');
     void bubbleEl.offsetWidth;
@@ -561,7 +561,7 @@
     }
   }
 
-  function updatePreloaderProgress(ratio, currentFile, activeIndex) {
+  function updatePreloaderProgress(ratio, currentFile, activeIndex, totalFiles) {
     const clamped = Math.max(0, Math.min(1, ratio));
     const pct = Math.round(clamped * 100);
 
@@ -580,7 +580,7 @@
     const fileKey = `${activeIndex}:${currentFile || ''}`;
     if (currentFile && fileKey !== lastActiveFileKey) {
       lastActiveFileKey = fileKey;
-      triggerSpeechBubblePop(bubbleEl, cardEl, currentFile, pct);
+      triggerSpeechBubblePop(bubbleEl, cardEl, currentFile, activeIndex, totalFiles, pct);
     }
 
     if (listEl) {
@@ -647,10 +647,53 @@
 
     const files = collectJsFileNames();
     const lastFile = files[files.length - 1] || 'ALL MODULES READY';
-    updatePreloaderProgress(1, `${lastFile} — DONE!`, files.length);
+    updatePreloaderProgress(1, `${lastFile} — DONE!`, files.length, files.length);
     showCompletionBanner(files.length);
 
     setTimeout(executeTvPowerOffNow, COMPLETE_HOLD_MS);
+  }
+
+  // 인덱스 파일 하나당 최소 PER_FILE_MIN_MS(500ms)씩 순차적으로 진행
+  function runPerFileSequentialSteps(files, onAllFilesCompleted) {
+    const totalFiles = Math.max(1, files.length);
+    let currentIndex = 0;
+
+    const runSingleFileStep = () => {
+      if (finished || powerOffScheduled) return;
+      mountPreloader();
+
+      const fileName = files[currentIndex] || files[files.length - 1];
+      const stepStart = performance.now();
+
+      const animateCurrentFile = () => {
+        if (finished || powerOffScheduled) return;
+        mountPreloader();
+
+        const stepElapsed = Math.max(0, performance.now() - stepStart);
+        const withinStepRatio = Math.min(1, stepElapsed / PER_FILE_MIN_MS);
+        const overallRatio = Math.min(1, (currentIndex + withinStepRatio) / totalFiles);
+
+        updatePreloaderProgress(overallRatio, fileName, currentIndex, totalFiles);
+
+        if (stepElapsed < PER_FILE_MIN_MS) {
+          requestAnimationFrame(animateCurrentFile);
+          return;
+        }
+
+        // 해당 파일의 최소 500ms 구간 완료
+        currentIndex += 1;
+        if (currentIndex < totalFiles) {
+          runSingleFileStep();
+        } else {
+          updatePreloaderProgress(1, fileName, totalFiles - 1, totalFiles);
+          onAllFilesCompleted();
+        }
+      };
+
+      requestAnimationFrame(animateCurrentFile);
+    };
+
+    runSingleFileStep();
   }
 
   function runPreloaderLoop() {
@@ -659,45 +702,41 @@
     loopStarted = true;
 
     const files = collectJsFileNames();
-    const totalFiles = Math.max(1, files.length);
-    const totalRequiredMs = totalFiles * PER_FILE_MIN_MS;
+    let filesStepsDone = false;
+    let documentReady = document.readyState !== 'loading';
 
-    const tick = () => {
-      if (finished || powerOffScheduled) return;
-      mountPreloader();
-
-      const elapsed = Math.max(0, performance.now() - startTime);
-      const completedSteps = Math.min(totalFiles, Math.floor(elapsed / PER_FILE_MIN_MS));
-      const activeIdx = Math.min(totalFiles - 1, completedSteps);
-      const stepElapsed = Math.min(PER_FILE_MIN_MS, elapsed - activeIdx * PER_FILE_MIN_MS);
-      const stepRatio = completedSteps >= totalFiles ? 1 : stepElapsed / PER_FILE_MIN_MS;
-
-      const overallRatio = Math.min(1, (activeIdx + stepRatio) / totalFiles);
-      updatePreloaderProgress(overallRatio, files[activeIdx], activeIdx);
-
-      if (elapsed >= totalRequiredMs && document.readyState !== 'loading') {
+    const tryFinish = () => {
+      if (filesStepsDone && documentReady && !powerOffScheduled && !finished) {
         completeWithTvPowerOff();
-        return;
       }
-      requestAnimationFrame(tick);
     };
 
-    requestAnimationFrame(tick);
+    if (!documentReady) {
+      document.addEventListener('DOMContentLoaded', () => {
+        documentReady = true;
+        mountPreloader();
+        tryFinish();
+      }, { once: true });
+    }
+
+    runPerFileSequentialSteps(files, () => {
+      filesStepsDone = true;
+      tryFinish();
+    });
   }
 
   runPreloaderLoop();
 
-  document.addEventListener('DOMContentLoaded', () => {
-    mountPreloader();
-    if (!loopStarted) runPreloaderLoop();
-  }, { once: true });
-
   window.addEventListener('load', () => {
     mountPreloader();
     const files = collectJsFileNames();
-    const totalRequiredMs = Math.max(1, files.length) * PER_FILE_MIN_MS;
+    const minTotalFromStart = Math.max(1, files.length) * PER_FILE_MIN_MS;
     const elapsed = Math.max(0, performance.now() - startTime);
-    const remain = Math.max(0, totalRequiredMs - elapsed);
-    setTimeout(completeWithTvPowerOff, remain);
+    const remain = Math.max(0, minTotalFromStart - elapsed);
+    setTimeout(() => {
+      if (!powerOffScheduled && !finished && elapsed >= minTotalFromStart) {
+        completeWithTvPowerOff();
+      }
+    }, remain);
   }, { once: true });
 })();
