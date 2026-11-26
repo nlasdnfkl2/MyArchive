@@ -1,16 +1,15 @@
 // ============================================================
 // MY-ARCHIVE 95 OS — Retro Recycle Bin Utility (RECYCLE.BIN)
-// (Public Read/Restore, Anonymous Deletion Meta, 30-Day Auto Expiry, Admin Delete, GAS Sync)
+// (Public Read/Restore, Anonymous UI, 30-Day Auto Expiry, Role-Based Permanent Delete, GAS Sync)
 // ============================================================
 
 (function () {
   window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-  window.__MOD_VERSIONS.recycleBin = 'v2026.11.26-recycle-bin-v3';
+  window.__MOD_VERSIONS.recycleBin = 'v2026.11.26-recycle-bin-v4';
 
   const DEFAULT_GAS_URL =
     'https://script.google.com/macros/s/AKfycbwH-hzWi2Z3_oTFt0PWBhzYMP10VEx4e-32E9EW7d5SMF2k_bwxQL0_3ONaQ8Ze3sdKUQ/exec';
   const STORAGE_KEY = 'myarchive95_recycle_bin_v1';
-  const ADMIN_FLAG_KEY = 'myarchive95_recycle_admin_v1';
   const STYLE_ID = 'myarchive95-recycle-bin-style';
   const RETENTION_MS = 30 * 24 * 60 * 60 * 1000; // 30일
 
@@ -24,16 +23,22 @@
     return DEFAULT_GAS_URL;
   }
 
-  function getRequesterName() {
+  function getActiveSessionUser() {
     try {
-      if (window.currentUser && window.currentUser.username) {
-        return String(window.currentUser.username).trim();
+      if (typeof window.getCurrentUser === 'function') {
+        const u = window.getCurrentUser();
+        if (u && u.username) return u;
       }
-      if (window.activeUser && window.activeUser.username) {
-        return String(window.activeUser.username).trim();
-      }
+      if (window.currentOsUser && window.currentOsUser.username) return window.currentOsUser;
+      if (window.currentUser && window.currentUser.username) return window.currentUser;
+      if (window.activeUser && window.activeUser.username) return window.activeUser;
     } catch {}
-    return '';
+    return null;
+  }
+
+  function getRequesterName() {
+    const u = getActiveSessionUser();
+    return u && u.username ? String(u.username).trim() : '';
   }
 
   function escHtml(v) {
@@ -53,31 +58,45 @@
 
   function isAdminUser() {
     try {
-      if (window.isAdmin === true || window.__MYARCHIVE_ADMIN__ === true) return true;
-      if (window.currentUser && ['admin', 'owner'].includes(String(window.currentUser.role || '').toLowerCase())) {
+      const u = getActiveSessionUser();
+      if (u && typeof window.isAdminUser === 'function' && window.isAdminUser(u)) {
         return true;
       }
-      if (localStorage.getItem(ADMIN_FLAG_KEY) === '1') return true;
+      if (window.isAdmin === true || window.__MYARCHIVE_ADMIN__ === true) return true;
+      if (u && ['admin', 'owner'].includes(String(u.role || '').trim().toLowerCase())) {
+        return true;
+      }
     } catch {}
     return false;
   }
 
-  function setAdminUser(enabled) {
-    try {
-      if (enabled) localStorage.setItem(ADMIN_FLAG_KEY, '1');
-      else localStorage.removeItem(ADMIN_FLAG_KEY);
-    } catch {}
-    tone('click');
+  function extractOwnerMeta(item) {
+    if (!item || typeof item !== 'object') return { ownerUser: '', ownerId: '' };
+    const rawUser =
+      item._ownerUser ??
+      item.ownerUsername ??
+      item.owner ??
+      item.author ??
+      item.username ??
+      item.user ??
+      item.createdBy ??
+      '';
+    const rawId = item._ownerId ?? item.ownerId ?? item.owner_id ?? item.userId ?? item.user_id ?? '';
+    return {
+      ownerUser: String(rawUser || '').trim(),
+      ownerId: String(rawId || '').trim()
+    };
   }
 
-  // 삭제자 정보를 제거하고 순수 payload만 추출
+  // UI 표시용으로 사용자/삭제자 관련 필드를 제거한 순수 payload만 추출
   function sanitizePayload(item) {
     if (!item || typeof item !== 'object') {
       return { title: String(item ?? '항목') };
     }
     const forbiddenKeys = new Set([
       'deletedBy', 'deleted_by', 'actor', 'user', 'userId', 'user_id',
-      'author', 'email', 'ip', 'operator', 'ownerId', 'owner_id'
+      'author', 'username', 'createdBy', 'email', 'ip', 'operator',
+      'owner', 'ownerUsername', 'ownerId', 'owner_id', '_ownerUser', '_ownerId'
     ]);
     const clean = {};
     Object.keys(item).forEach(k => {
@@ -86,6 +105,25 @@
       }
     });
     return clean;
+  }
+
+  function canDeleteEntry(entry) {
+    if (isAdminUser()) return true;
+    const u = getActiveSessionUser();
+    if (!u) return false;
+    const role = String(u.role || '').trim().toLowerCase();
+    const myName = String(u.username || '').trim();
+    const myId = String(u.id || '').trim();
+
+    if (!myName || myName === '공용' || role === 'public' || myId === 'USR-PUBLIC') {
+      return false;
+    }
+
+    const ownerUser = String(entry?._ownerUser || '').trim();
+    const ownerId = String(entry?._ownerId || '').trim();
+    if (ownerUser && ownerUser === myName) return true;
+    if (ownerId && myId && ownerId === myId) return true;
+    return false;
   }
 
   function parseDateMs(val) {
@@ -104,10 +142,18 @@
     const deletedMs = parseDateMs(entry.deletedAtMs ?? entry.deletedAt);
     const baseMs = Number.isFinite(deletedMs) ? deletedMs : nowMs;
     if (nowMs - baseMs >= RETENTION_MS) return null;
+
+    const rawSource = entry.payload && typeof entry.payload === 'object'
+      ? { ...entry, ...entry.payload }
+      : entry;
+    const ownerMeta = extractOwnerMeta(rawSource);
+
     return {
       binId: String(entry.binId || entry.id || `bin-${baseMs}-${Math.random().toString(36).slice(2, 7)}`),
       deletedAtMs: baseMs,
       deletedAt: new Date(baseMs).toISOString().replace('T', ' ').slice(0, 19),
+      _ownerUser: ownerMeta.ownerUser,
+      _ownerId: ownerMeta.ownerId,
       payload: sanitizePayload(entry.payload || entry)
     };
   }
@@ -175,6 +221,8 @@
             binId: it.id || it.binId,
             deletedAtMs: parseDateMs(it.deletedAt),
             deletedAt: it.deletedAt,
+            _ownerUser: it._ownerUser || it.ownerUsername || it.author || it.username || '',
+            _ownerId: it._ownerId || it.ownerId || it.userId || '',
             payload: it.payload || it
           }, nowMs))
           .filter(Boolean);
@@ -183,7 +231,13 @@
         const mergedMap = new Map();
         remoteNorm.forEach(item => mergedMap.set(item.binId, item));
         localList.forEach(item => {
-          if (!mergedMap.has(item.binId)) mergedMap.set(item.binId, item);
+          if (!mergedMap.has(item.binId)) {
+            mergedMap.set(item.binId, item);
+          } else {
+            const existing = mergedMap.get(item.binId);
+            if (!existing._ownerUser && item._ownerUser) existing._ownerUser = item._ownerUser;
+            if (!existing._ownerId && item._ownerId) existing._ownerId = item._ownerId;
+          }
         });
 
         const merged = Array.from(mergedMap.values()).sort((a, b) => b.deletedAtMs - a.deletedAtMs);
@@ -197,10 +251,17 @@
   function moveToRecycleBin(item) {
     const nowMs = Date.now();
     const list = loadBin();
+    const sessionUser = getActiveSessionUser();
+    const extracted = extractOwnerMeta(item);
+    const ownerUser = extracted.ownerUser || (sessionUser && sessionUser.username !== '공용' ? String(sessionUser.username).trim() : '');
+    const ownerId = extracted.ownerId || (sessionUser && sessionUser.id !== 'USR-PUBLIC' ? String(sessionUser.id || '').trim() : '');
+
     const entry = {
       binId: `bin-${nowMs}-${Math.random().toString(36).slice(2, 7)}`,
       deletedAtMs: nowMs,
       deletedAt: new Date(nowMs).toISOString().replace('T', ' ').slice(0, 19),
+      _ownerUser: ownerUser,
+      _ownerId: ownerId,
       payload: sanitizePayload(item)
     };
     list.unshift(entry);
@@ -211,7 +272,9 @@
       action: 'move_to_recycle_bin',
       item: {
         ...entry.payload,
-        id: entry.binId
+        id: entry.binId,
+        ownerUsername: ownerUser,
+        ownerId: ownerId
       }
     }).catch(() => {});
 
@@ -225,10 +288,14 @@
     if (idx !== -1) {
       saveBin(list);
       if (removed && removed.payload) {
+        const restoredItem = { ...removed.payload };
+        if (removed._ownerUser && !restoredItem.author) restoredItem.author = removed._ownerUser;
+        if (removed._ownerId && !restoredItem.ownerId) restoredItem.ownerId = removed._ownerId;
+
         if (Array.isArray(window.archiveItems)) {
-          window.archiveItems.unshift(removed.payload);
+          window.archiveItems.unshift(restoredItem);
         }
-        window.dispatchEvent(new CustomEvent('recyclebin:restore', { detail: { item: removed.payload } }));
+        window.dispatchEvent(new CustomEvent('recyclebin:restore', { detail: { item: restoredItem } }));
       }
       tone('open');
     }
@@ -242,15 +309,18 @@
   }
 
   function deletePermanently(binId) {
-    if (!isAdminUser()) return false;
-    const next = loadBin().filter(x => x.binId !== binId);
+    const list = loadBin();
+    const target = list.find(x => x.binId === binId);
+    if (!target || !canDeleteEntry(target)) return false;
+
+    const next = list.filter(x => x.binId !== binId);
     saveBin(next);
     tone('close');
 
     postToGas({
       action: 'delete_recycle_bin_permanent',
       id: binId,
-      requester: getRequesterName() || '문태양'
+      requester: getRequesterName()
     }).catch(() => {});
 
     return true;
@@ -299,11 +369,7 @@
         font-size: 0.72rem;
         font-weight: 700;
         margin-bottom: 8px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 8px;
-        flex-wrap: wrap;
+        line-height: 1.45;
       }
       .rb-list {
         background: #ffffff;
@@ -358,11 +424,7 @@
       </div>
 
       <div class="rb-notice">
-        <span>누구나 삭제된 기록을 확인·복원할 수 있으며, 삭제자 정보는 기록되지 않습니다. 영구 삭제는 관리자 또는 30일 경과 시 자동 처리됩니다.</span>
-        <label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;font-weight:900;">
-          <input type="checkbox" id="rb-admin-toggle" ${admin ? 'checked' : ''} />
-          <span>관리자 모드</span>
-        </label>
+        누구나 삭제된 기록을 확인·복원할 수 있으며, 작성자·삭제자 정보는 표시되지 않습니다. 영구 삭제는 본인 게시물(관리자는 전체) 또는 30일 경과 시 자동 처리됩니다.
       </div>
 
       <div id="rb-feedback" style="font-size:0.72rem;font-weight:800;color:#b30000;margin-bottom:6px;display:none;"></div>
@@ -375,15 +437,16 @@
             const title = p.title || p.name || '이름 없는 기록';
             const cat = p.category || p.type || '기록';
             const remainText = formatRemainingDays(entry.deletedAtMs, nowMs);
+            const deletable = canDeleteEntry(entry);
             return `
               <div class="rb-row" data-bin-id="${escHtml(entry.binId)}">
                 <div style="min-width:0;flex:1;">
-                  <div class="rb-title">[${escHtml(cat)}]${escHtml(title)}</div>
-                  <div class="rb-meta">삭제 시각: ${escHtml(entry.deletedAt)} ·${escHtml(remainText)}</div>
+                  <div class="rb-title">[${escHtml(cat)}] ${escHtml(title)}</div>
+                  <div class="rb-meta">삭제 시각: ${escHtml(entry.deletedAt)} · ${escHtml(remainText)}</div>
                 </div>
                 <div class="rb-actions">
                   <button type="button" class="btn95 sm green" data-rb-restore="${escHtml(entry.binId)}">복원</button>
-                  <button type="button" class="btn95 sm" data-rb-del="${escHtml(entry.binId)}" ${!admin ? 'disabled title="관리자만 영구 삭제 가능"' : ''}>영구 삭제</button>
+                  <button type="button" class="btn95 sm" data-rb-del="${escHtml(entry.binId)}" ${!deletable ? 'disabled title="본인 게시물 또는 관리자만 영구 삭제 가능"' : ''}>영구 삭제</button>
                 </div>
               </div>
             `;
@@ -400,14 +463,9 @@
       fb.style.display = msg ? 'block' : 'none';
     };
 
-    container.querySelector('#rb-admin-toggle')?.addEventListener('change', e => {
-      setAdminUser(Boolean(e.target.checked));
-      renderRecycleBin(container);
-    });
-
     container.querySelector('#rb-btn-empty')?.addEventListener('click', () => {
       if (!emptyRecycleBin()) {
-        showFeedback('관리자 모드에서만 휴지통을 비울 수 있습니다.');
+        showFeedback('관리자 계정에서만 전체 휴지통을 비울 수 있습니다.');
         return;
       }
       renderRecycleBin(container);
@@ -438,7 +496,7 @@
     container.querySelectorAll('[data-rb-del]').forEach(btn => {
       btn.addEventListener('click', () => {
         if (!deletePermanently(btn.dataset.rbDel)) {
-          showFeedback('관리자 모드에서만 영구 삭제할 수 있습니다.');
+          showFeedback('본인 게시물 또는 관리자 계정만 영구 삭제할 수 있습니다.');
           return;
         }
         renderRecycleBin(container);
@@ -483,6 +541,16 @@
     });
   }
 
+  // 계정 변경/로그아웃 시 열려 있는 휴지통 버튼 활성화 상태 즉시 갱신
+  const refreshIfOpen = () => {
+    const stage = document.getElementById('recycle-bin-stage');
+    if (stage && document.getElementById('win-recycle-bin')?.classList.contains('open')) {
+      renderRecycleBin(stage);
+    }
+  };
+  window.addEventListener('user:changed', refreshIfOpen);
+  window.addEventListener('user:logout', refreshIfOpen);
+
   window.RecycleBinApp = {
     render: renderRecycleBin,
     open: openRecycleBinWindow,
@@ -493,7 +561,7 @@
     sync: syncFromCloud,
     getItems: loadBin,
     isAdmin: isAdminUser,
-    setAdmin: setAdminUser
+    canDelete: canDeleteEntry
   };
   window.openRecycleBinWindow = openRecycleBinWindow;
 })();
