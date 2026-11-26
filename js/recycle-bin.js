@@ -1,16 +1,40 @@
 // ============================================================
 // MY-ARCHIVE 95 OS — Retro Recycle Bin Utility (RECYCLE.BIN)
-// (Public Read/Restore, Anonymous Deletion Meta, 30-Day Auto Expiry, Admin Delete)
+// (Public Read/Restore, Anonymous Deletion Meta, 30-Day Auto Expiry, Admin Delete, GAS Sync)
 // ============================================================
 
 (function () {
   window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-  window.__MOD_VERSIONS.recycleBin = 'v2026.11.26-recycle-bin-v2';
+  window.__MOD_VERSIONS.recycleBin = 'v2026.11.26-recycle-bin-v3';
 
+  const DEFAULT_GAS_URL =
+    'https://script.google.com/macros/s/AKfycbwH-hzWi2Z3_oTFt0PWBhzYMP10VEx4e-32E9EW7d5SMF2k_bwxQL0_3ONaQ8Ze3sdKUQ/exec';
   const STORAGE_KEY = 'myarchive95_recycle_bin_v1';
   const ADMIN_FLAG_KEY = 'myarchive95_recycle_admin_v1';
   const STYLE_ID = 'myarchive95-recycle-bin-style';
   const RETENTION_MS = 30 * 24 * 60 * 60 * 1000; // 30일
+
+  function getGasUrl() {
+    if (typeof APPS_SCRIPT_URL === 'string' && APPS_SCRIPT_URL.trim()) {
+      return APPS_SCRIPT_URL.trim();
+    }
+    if (typeof window.APPS_SCRIPT_URL === 'string' && window.APPS_SCRIPT_URL.trim()) {
+      return window.APPS_SCRIPT_URL.trim();
+    }
+    return DEFAULT_GAS_URL;
+  }
+
+  function getRequesterName() {
+    try {
+      if (window.currentUser && window.currentUser.username) {
+        return String(window.currentUser.username).trim();
+      }
+      if (window.activeUser && window.activeUser.username) {
+        return String(window.activeUser.username).trim();
+      }
+    } catch {}
+    return '';
+  }
 
   function escHtml(v) {
     if (typeof esc === 'function') return esc(v);
@@ -30,7 +54,9 @@
   function isAdminUser() {
     try {
       if (window.isAdmin === true || window.__MYARCHIVE_ADMIN__ === true) return true;
-      if (window.currentUser && String(window.currentUser.role || '').toLowerCase() === 'admin') return true;
+      if (window.currentUser && ['admin', 'owner'].includes(String(window.currentUser.role || '').toLowerCase())) {
+        return true;
+      }
       if (localStorage.getItem(ADMIN_FLAG_KEY) === '1') return true;
     } catch {}
     return false;
@@ -62,28 +88,40 @@
     return clean;
   }
 
+  function parseDateMs(val) {
+    if (Number.isFinite(Number(val)) && Number(val) > 0) return Number(val);
+    if (!val) return NaN;
+    const str = String(val).trim();
+    if (/^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}(:\d{2})?$/.test(str)) {
+      const ms = Date.parse(str.replace(' ', 'T') + '+09:00');
+      if (Number.isFinite(ms)) return ms;
+    }
+    return Date.parse(str);
+  }
+
+  function normalizeEntry(entry, nowMs = Date.now()) {
+    if (!entry || typeof entry !== 'object') return null;
+    const deletedMs = parseDateMs(entry.deletedAtMs ?? entry.deletedAt);
+    const baseMs = Number.isFinite(deletedMs) ? deletedMs : nowMs;
+    if (nowMs - baseMs >= RETENTION_MS) return null;
+    return {
+      binId: String(entry.binId || entry.id || `bin-${baseMs}-${Math.random().toString(36).slice(2, 7)}`),
+      deletedAtMs: baseMs,
+      deletedAt: new Date(baseMs).toISOString().replace('T', ' ').slice(0, 19),
+      payload: sanitizePayload(entry.payload || entry)
+    };
+  }
+
   function pruneExpired(list, nowMs = Date.now()) {
     const valid = [];
     let removedAny = false;
     (Array.isArray(list) ? list : []).forEach(entry => {
-      if (!entry || typeof entry !== 'object') {
+      const norm = normalizeEntry(entry, nowMs);
+      if (!norm) {
         removedAny = true;
         return;
       }
-      const deletedMs = Number.isFinite(Number(entry.deletedAtMs))
-        ? Number(entry.deletedAtMs)
-        : Date.parse(entry.deletedAt || '');
-      const baseMs = Number.isFinite(deletedMs) ? deletedMs : nowMs;
-      if (nowMs - baseMs >= RETENTION_MS) {
-        removedAny = true;
-        return;
-      }
-      valid.push({
-        binId: String(entry.binId || `bin-${baseMs}-${Math.random().toString(36).slice(2, 7)}`),
-        deletedAtMs: baseMs,
-        deletedAt: new Date(baseMs).toISOString().replace('T', ' ').slice(0, 19),
-        payload: sanitizePayload(entry.payload)
-      });
+      valid.push(norm);
     });
     return { valid, removedAny };
   }
@@ -112,6 +150,50 @@
     return valid;
   }
 
+  async function postToGas(payload) {
+    const url = getGasUrl();
+    if (!url) return null;
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(payload)
+    });
+    return await res.json();
+  }
+
+  async function syncFromCloud() {
+    const url = getGasUrl();
+    if (!url) return loadBin();
+    try {
+      const sep = url.includes('?') ? '&' : '?';
+      const res = await fetch(`${url}${sep}action=recycle_bin&_=${Date.now()}`);
+      const data = await res.json();
+      if (data && data.status === 'success' && Array.isArray(data.items)) {
+        const nowMs = Date.now();
+        const remoteNorm = data.items
+          .map(it => normalizeEntry({
+            binId: it.id || it.binId,
+            deletedAtMs: parseDateMs(it.deletedAt),
+            deletedAt: it.deletedAt,
+            payload: it.payload || it
+          }, nowMs))
+          .filter(Boolean);
+
+        const localList = loadBin();
+        const mergedMap = new Map();
+        remoteNorm.forEach(item => mergedMap.set(item.binId, item));
+        localList.forEach(item => {
+          if (!mergedMap.has(item.binId)) mergedMap.set(item.binId, item);
+        });
+
+        const merged = Array.from(mergedMap.values()).sort((a, b) => b.deletedAtMs - a.deletedAtMs);
+        saveBin(merged);
+        return merged;
+      }
+    } catch {}
+    return loadBin();
+  }
+
   function moveToRecycleBin(item) {
     const nowMs = Date.now();
     const list = loadBin();
@@ -124,24 +206,39 @@
     list.unshift(entry);
     saveBin(list);
     tone('click');
+
+    postToGas({
+      action: 'move_to_recycle_bin',
+      item: {
+        ...entry.payload,
+        id: entry.binId
+      }
+    }).catch(() => {});
+
     return entry;
   }
 
   function restoreFromRecycleBin(binId) {
     const list = loadBin();
     const idx = list.findIndex(x => x.binId === binId);
-    if (idx === -1) return null;
-    const [removed] = list.splice(idx, 1);
-    saveBin(list);
-
-    if (removed && removed.payload) {
-      if (Array.isArray(window.archiveItems)) {
-        window.archiveItems.unshift(removed.payload);
+    const removed = idx !== -1 ? list.splice(idx, 1)[0] : null;
+    if (idx !== -1) {
+      saveBin(list);
+      if (removed && removed.payload) {
+        if (Array.isArray(window.archiveItems)) {
+          window.archiveItems.unshift(removed.payload);
+        }
+        window.dispatchEvent(new CustomEvent('recyclebin:restore', { detail: { item: removed.payload } }));
       }
-      window.dispatchEvent(new CustomEvent('recyclebin:restore', { detail: { item: removed.payload } }));
+      tone('open');
     }
-    tone('open');
-    return removed.payload;
+
+    postToGas({
+      action: 'restore_recycle_bin',
+      id: binId
+    }).catch(() => {});
+
+    return removed ? removed.payload : null;
   }
 
   function deletePermanently(binId) {
@@ -149,6 +246,13 @@
     const next = loadBin().filter(x => x.binId !== binId);
     saveBin(next);
     tone('close');
+
+    postToGas({
+      action: 'delete_recycle_bin_permanent',
+      id: binId,
+      requester: getRequesterName() || '문태양'
+    }).catch(() => {});
+
     return true;
   }
 
@@ -156,6 +260,12 @@
     if (!isAdminUser()) return false;
     saveBin([]);
     tone('boom');
+
+    postToGas({
+      action: 'empty_recycle_bin',
+      requester: getRequesterName() || '문태양'
+    }).catch(() => {});
+
     return true;
   }
 
@@ -243,6 +353,7 @@
       <div class="rb-toolbar">
         <button type="button" class="btn95 sm pink" id="rb-btn-empty" ${(list.length === 0 || !admin) ? 'disabled' : ''}>휴지통 비우기</button>
         <button type="button" class="btn95 sm" id="rb-btn-demo">+ 테스트 항목 넣기</button>
+        <button type="button" class="btn95 sm" id="rb-btn-sync">시트 동기화</button>
         <span style="margin-left:auto;font-size:0.75rem;font-weight:800;">보관 중: ${list.length}개 (30일 보관)</span>
       </div>
 
@@ -267,8 +378,8 @@
             return `
               <div class="rb-row" data-bin-id="${escHtml(entry.binId)}">
                 <div style="min-width:0;flex:1;">
-                  <div class="rb-title">[${escHtml(cat)}] ${escHtml(title)}</div>
-                  <div class="rb-meta">삭제 시각: ${escHtml(entry.deletedAt)} · ${escHtml(remainText)}</div>
+                  <div class="rb-title">[${escHtml(cat)}]${escHtml(title)}</div>
+                  <div class="rb-meta">삭제 시각: ${escHtml(entry.deletedAt)} ·${escHtml(remainText)}</div>
                 </div>
                 <div class="rb-actions">
                   <button type="button" class="btn95 sm green" data-rb-restore="${escHtml(entry.binId)}">복원</button>
@@ -281,10 +392,11 @@
       </div>
     `;
 
-    const showFeedback = msg => {
+    const showFeedback = (msg, ok = false) => {
       const fb = container.querySelector('#rb-feedback');
       if (!fb) return;
       fb.textContent = msg;
+      fb.style.color = ok ? '#006600' : '#b30000';
       fb.style.display = msg ? 'block' : 'none';
     };
 
@@ -307,6 +419,12 @@
         category: '메모',
         note: '휴지통 테스트용 임시 데이터'
       });
+      renderRecycleBin(container);
+    });
+
+    container.querySelector('#rb-btn-sync')?.addEventListener('click', async () => {
+      showFeedback('Google Sheets 휴지통 동기화 중...', true);
+      await syncFromCloud();
       renderRecycleBin(container);
     });
 
@@ -357,7 +475,12 @@
       winEl.classList.add('open');
       winEl.style.display = 'flex';
     }
-    renderRecycleBin(document.getElementById('recycle-bin-stage'));
+    const stage = document.getElementById('recycle-bin-stage');
+    renderRecycleBin(stage);
+    syncFromCloud().then(() => {
+      const currentStage = document.getElementById('recycle-bin-stage');
+      if (currentStage) renderRecycleBin(currentStage);
+    });
   }
 
   window.RecycleBinApp = {
@@ -367,6 +490,7 @@
     restore: restoreFromRecycleBin,
     deletePermanent: deletePermanently,
     empty: emptyRecycleBin,
+    sync: syncFromCloud,
     getItems: loadBin,
     isAdmin: isAdminUser,
     setAdmin: setAdminUser
