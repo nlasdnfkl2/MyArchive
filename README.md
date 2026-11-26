@@ -11,9 +11,9 @@
 ## 주요 기능
 
 - **아카이브 & 메타데이터:** 도서·음악·영화·시리즈·웹 콘텐츠 감상 기록의 등록, 탐색, 타임라인 조회, 평점·통계 확인 및 로컬 캐시·Google Apps Script 연동을 지원합니다.
-- **내장 앱 & 미니게임:** 멀티 윈도우 매니저(`window-mgr.js`), 테마 및 CRT·화면 보호기·작업 관리자 제어, 위젯(`win95-widgets.js`)과 함께 **GAMEPACK95.EXE** 통합 실행기(`gamepack.js`) 기반의 **카드 솔리테어 95**, **지뢰찾기 95 (8x8)**, **레트로 윷놀이 vs AI**, **작품 별점 하이로우**, 그리고 턴제 디펜스 게임 **SEC-RET**을 제공합니다.
+- **내장 앱 & 미니게임:** 멀티 윈도우 매니저(`window-mgr.js`), 테마 및 CRT·화면 보호기·작업 관리자 제어, 위젯(`win95-widgets.js`), 바탕화면 전용 **SEC-RET** 턴제 리턴 디펜스(`sec-ret.js`, `sec-ret-sprites.js`)와 함께 **GAMEPACK95.EXE** 통합 실행기(`gamepack.js`) 기반의 **카드 솔리테어 95**, **지뢰찾기 95 (8x8)**, **레트로 윷놀이 vs AI**, **작품 별점 하이로우**를 제공합니다.
 - **주크박스 & 브라우저:** 내장 주크박스(`jukebox.js`), 비주얼라이저(`visualizer.js`), 내장 브라우저(`browser-app.js`)를 통해 감상 콘텐츠와 미디어·웹 리소스를 한 데스크톱 환경에서 다룰 수 있습니다.
-- **공개 광장:** 커뮤니티·공유 공간(`community-app.js`)을 통해 감상 기록과 콘텐츠를 둘러보고 공유할 수 있습니다.
+- **유틸리티 & 공개 광장:** 레트로 인쇄 미리보기(`print95.js`), 휴지통(`recycle-bin.js`), 데이터 백업 마법사(`setup-backup.js`)와 공개 커뮤니티·공유 공간(`community-app.js`)을 제공합니다.
 
 ---
 
@@ -42,6 +42,9 @@ MyArchive/
 │   ├── config.js
 │   ├── gamepack.js
 │   ├── jukebox.js
+│   ├── print95.js
+│   ├── recycle-bin.js
+│   ├── setup-backup.js
 │   ├── shell-builder.js
 │   ├── visualizer.js
 │   ├── win95-widgets.js
