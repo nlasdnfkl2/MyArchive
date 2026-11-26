@@ -19,6 +19,17 @@ const ALL_DESKTOP_THEMES = [
 const PORTFOLIO_VIRTUAL_URL = 'https://nlasdnfkl2.github.io/my-webpage/';
 const WM_RESPONSIVE_STYLE_ID = 'myarchive95-wm-responsive-style';
 
+function getTopMenubarBottom() {
+  const menubar = document.querySelector('.os-menubar, .top-menubar');
+  if (menubar) {
+    const rect = menubar.getBoundingClientRect();
+    if (rect.height > 0) {
+      return Math.max(0, Math.round(rect.bottom));
+    }
+  }
+  return 28;
+}
+
 function applyWindowManagerResponsiveStyle() {
   if (document.getElementById(WM_RESPONSIVE_STYLE_ID)) return;
   const parent = document.head || document.documentElement;
@@ -30,7 +41,7 @@ function applyWindowManagerResponsiveStyle() {
     .floating-win {
       box-sizing: border-box;
       max-width: calc(100vw - 12px);
-      max-height: calc(var(--app-vh, 100vh) - 76px);
+      max-height: calc(var(--app-vh, 100vh) - 68px);
       min-width: 0;
     }
     .floating-win.open:not(.minimized) {
@@ -131,11 +142,11 @@ function applyWindowManagerResponsiveStyle() {
         position: fixed !important;
         left: 6px !important;
         right: 6px !important;
-        top: 40px !important;
+        top: var(--menubar-bottom, 30px) !important;
         width: calc(100vw - 12px) !important;
         max-width: calc(100vw - 12px) !important;
         height: auto !important;
-        max-height: calc(var(--app-vh, 100vh) - 92px) !important;
+        max-height: calc(var(--app-vh, 100vh) - var(--menubar-bottom, 30px) - 42px) !important;
         transform: none !important;
       }
       .floating-win .win-body {
@@ -177,6 +188,7 @@ function syncWindowManagerViewportHeight() {
   if (vh > 0) {
     document.documentElement.style.setProperty('--app-vh', `${vh}px`);
   }
+  document.documentElement.style.setProperty('--menubar-bottom', `${getTopMenubarBottom()}px`);
 }
 
 // 구버전 HTML data-win-title에 이모지가 남아 있어도 작업표시줄에는 95년 규격 텍스트만 표시
@@ -237,15 +249,15 @@ function clampWindowToViewport(winEl) {
   if (!winEl) return;
   syncWindowManagerViewportHeight();
 
-  const topbarHeight = document.querySelector('.os-menubar, .top-menubar')?.offsetHeight || 34;
-  const taskbarHeight = document.querySelector('.os-taskbar')?.offsetHeight || 38;
+  const minTop = getTopMenubarBottom();
+  const taskbarHeight = document.querySelector('.os-taskbar')?.offsetHeight || 36;
   const viewportHeight = window.visualViewport?.height || window.innerHeight;
 
   if (window.innerWidth <= 768) {
     if (winEl.classList.contains('open') && !winEl.classList.contains('minimized')) {
       winEl.style.left = '6px';
-      winEl.style.top = `${topbarHeight + 4}px`;
-      winEl.style.maxHeight = `${Math.max(220, Math.round(viewportHeight - topbarHeight - taskbarHeight - 10))}px`;
+      winEl.style.top = `${minTop}px`;
+      winEl.style.maxHeight = `${Math.max(220, Math.round(viewportHeight - minTop - taskbarHeight - 4))}px`;
     }
     return;
   }
@@ -253,27 +265,26 @@ function clampWindowToViewport(winEl) {
   if (winEl.classList.contains('win-maximized')) return;
 
   const maxAvailWidth = Math.max(280, window.innerWidth - 16);
-  const maxAvailHeight = Math.max(200, Math.round(viewportHeight - topbarHeight - taskbarHeight - 12));
+  const maxAvailHeight = Math.max(200, Math.round(viewportHeight - minTop - taskbarHeight - 4));
   winEl.style.maxWidth = `${maxAvailWidth}px`;
   winEl.style.maxHeight = `${maxAvailHeight}px`;
 
   if (winEl.style.transform && winEl.style.transform.includes('translate')) {
     const rect = winEl.getBoundingClientRect();
     winEl.style.transform = 'none';
-    winEl.style.left = `${Math.max(4, rect.left)}px`;
-    winEl.style.top = `${Math.max(topbarHeight + 4, rect.top)}px`;
+    winEl.style.left = `${Math.max(0, rect.left)}px`;
+    winEl.style.top = `${Math.max(minTop, rect.top)}px`;
   }
 
   const winWidth = winEl.offsetWidth || 320;
-  const minTop = topbarHeight + 4;
-  const maxTop = Math.max(minTop, Math.round(viewportHeight - taskbarHeight - 44));
-  const maxLeft = Math.max(4, window.innerWidth - Math.min(winWidth, 180));
+  const maxTop = Math.max(minTop, Math.round(viewportHeight - taskbarHeight - 36));
+  const maxLeft = Math.max(0, window.innerWidth - Math.min(winWidth, 180));
 
   const currentLeft = winEl.offsetLeft;
   const currentTop = winEl.offsetTop;
 
   if (Number.isFinite(currentLeft)) {
-    const clampedLeft = Math.max(4, Math.min(maxLeft, currentLeft));
+    const clampedLeft = Math.max(0, Math.min(maxLeft, currentLeft));
     if (clampedLeft !== currentLeft) {
       winEl.style.left = `${clampedLeft}px`;
     }
@@ -405,11 +416,11 @@ function enableWindowDrag(winEl) {
 
   const onMove = (clientX, clientY) => {
     if (!isDragging) return;
-    const topbarHeight = document.querySelector('.os-menubar, .top-menubar')?.offsetHeight || 32;
+    const minTop = getTopMenubarBottom();
     const taskbarHeight = document.querySelector('.os-taskbar')?.offsetHeight || 36;
     const viewportHeight = window.visualViewport?.height || window.innerHeight;
-    const nextLeft = Math.max(4, Math.min(window.innerWidth - 120, origLeft + (clientX - startX)));
-    const nextTop = Math.max(topbarHeight + 2, Math.min(viewportHeight - taskbarHeight - 36, origTop + (clientY - startY)));
+    const nextLeft = Math.max(0, Math.min(window.innerWidth - 120, origLeft + (clientX - startX)));
+    const nextTop = Math.max(minTop, Math.min(viewportHeight - taskbarHeight - 36, origTop + (clientY - startY)));
     winEl.style.left = `${nextLeft}px`;
     winEl.style.top = `${nextTop}px`;
   };
@@ -521,8 +532,9 @@ function openAboutAndLicenseWindow(initialTab = 'creator') {
     winEl.dataset.winTitle = '제작자 및 라이선스 정보 — MY-ARCHIVE 95';
     winEl.dataset.dynamic = 'true';
 
+    const minTop = getTopMenubarBottom();
     const initLeft = Math.max(12, Math.round((window.innerWidth - Math.min(460, window.innerWidth - 24)) / 2));
-    const initTop = Math.max(44, Math.round((window.innerHeight - 430) / 2));
+    const initTop = Math.max(minTop, Math.round((window.innerHeight - 430) / 2));
     winEl.style.cssText = `width:min(460px, calc(100vw - 16px)); left:${initLeft}px; top:${initTop}px;`;
 
     const buildVer = window.__MOD_VERSIONS?.windowMgr || 'v2026.11.26';
