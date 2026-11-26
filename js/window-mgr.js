@@ -1,10 +1,10 @@
 // ============================================================
 // MY-ARCHIVE 95 OS — Pure Window Manager & Desktop Shell UI
-// (Multi-Window Focus/Drag, 6-Theme Engine, CRT, Widgets, Task Manager, Portfolio, SEC-RET, Utilities & About/License)
+// (Multi-Window Focus/Drag, 6-Theme Engine, CRT, Widgets, Task Manager, Portfolio, SEC-RET, Utilities, Account/Logout & About/License)
 // ============================================================
 
 window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-window.__MOD_VERSIONS.windowMgr = typeof APP_BUILD_VERSION !== 'undefined' ? APP_BUILD_VERSION : 'v2026.11.26-wm-responsive-mobile';
+window.__MOD_VERSIONS.windowMgr = typeof APP_BUILD_VERSION !== 'undefined' ? APP_BUILD_VERSION : 'v2026.11.26-wm-responsive-mobile-acct';
 
 const ALL_DESKTOP_THEMES = [
   'theme-teal',
@@ -18,6 +18,7 @@ const ALL_DESKTOP_THEMES = [
 
 const PORTFOLIO_VIRTUAL_URL = 'https://nlasdnfkl2.github.io/my-webpage/';
 const WM_RESPONSIVE_STYLE_ID = 'myarchive95-wm-responsive-style';
+const ACCOUNT_POPUP_ID = 'myarchive95-account-menu-popup';
 const SEC_RET_HOVER_DESC =
   'SEC-RET.EXE — 1초(SEC) 단위 턴제 체스·리턴(RET) 레트로 디펜스. 이동 칸과 분기점 능력(3회 다이스)만 선택하며 시간 역행·잔상 리턴을 활용합니다.';
 
@@ -134,6 +135,64 @@ function applyWindowManagerResponsiveStyle() {
       white-space: nowrap;
       flex-shrink: 0;
     }
+    #${ACCOUNT_POPUP_ID} {
+      position: fixed;
+      z-index: 2147483640;
+      min-width: 196px;
+      background: #c0c0c0;
+      color: #111111;
+      border-top: 2px solid #ffffff;
+      border-left: 2px solid #ffffff;
+      border-right: 2px solid #404040;
+      border-bottom: 2px solid #404040;
+      box-shadow: 2px 2px 0 #000000;
+      padding: 4px;
+      font-size: 0.78rem;
+      font-weight: 800;
+      display: none;
+    }
+    #${ACCOUNT_POPUP_ID}.open {
+      display: block;
+    }
+    #${ACCOUNT_POPUP_ID} .acct-pop-header {
+      background: #000080;
+      color: #ffffff;
+      padding: 4px 6px;
+      margin-bottom: 4px;
+      font-size: 0.74rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 6px;
+    }
+    #${ACCOUNT_POPUP_ID} .acct-pop-btn {
+      display: block;
+      width: 100%;
+      text-align: left;
+      background: #c0c0c0;
+      color: #111111;
+      border-top: 2px solid #ffffff;
+      border-left: 2px solid #ffffff;
+      border-right: 2px solid #404040;
+      border-bottom: 2px solid #404040;
+      padding: 6px 8px;
+      margin-top: 3px;
+      cursor: pointer;
+      font-size: 0.76rem;
+      font-weight: 800;
+    }
+    #${ACCOUNT_POPUP_ID} .acct-pop-btn:hover {
+      background: #d4d4d4;
+    }
+    #${ACCOUNT_POPUP_ID} .acct-pop-btn:active {
+      border-top: 2px solid #404040;
+      border-left: 2px solid #404040;
+      border-right: 2px solid #ffffff;
+      border-bottom: 2px solid #ffffff;
+    }
+    #${ACCOUNT_POPUP_ID} .acct-pop-btn.danger {
+      color: #990000;
+    }
     #sec-ret-hover-tooltip {
       position: fixed;
       z-index: 2147483600;
@@ -227,6 +286,251 @@ function syncWindowManagerViewportHeight() {
   }
   document.documentElement.style.setProperty('--menubar-bottom', `${getTopMenubarBottom()}px`);
 }
+
+// ============================================================
+// 0. 계정 전환 / 로그아웃 상태 관리 & 팝업 메뉴
+// ============================================================
+const ACCOUNT_TRIGGER_SELECTOR =
+  '[data-current-user], #current-user-label, #current-user-name, #user-badge, .current-user-name, .user-badge-name, [data-account-trigger], .account-chip, .user-pill';
+
+function getCurrentAccountLabel() {
+  try {
+    if (window.currentUser && window.currentUser.username) return String(window.currentUser.username);
+    if (window.activeUser && window.activeUser.username) return String(window.activeUser.username);
+    const saved =
+      localStorage.getItem('myarchive95_current_user') ||
+      localStorage.getItem('currentUser') ||
+      (typeof STORAGE_KEYS !== 'undefined' && STORAGE_KEYS.USER ? localStorage.getItem(STORAGE_KEYS.USER) : null);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (parsed && parsed.username) return String(parsed.username);
+    }
+  } catch {}
+  return '공용';
+}
+
+function applyAccountSwitch(targetUser) {
+  const nextUser = targetUser || { id: 'USR-PUBLIC', username: '공용', role: 'public' };
+  window.currentUser = nextUser;
+  window.activeUser = nextUser;
+
+  try {
+    localStorage.setItem('myarchive95_current_user', JSON.stringify(nextUser));
+    localStorage.setItem('currentUser', JSON.stringify(nextUser));
+    if (typeof STORAGE_KEYS !== 'undefined' && STORAGE_KEYS.USER) {
+      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(nextUser));
+    }
+  } catch {}
+
+  document.querySelectorAll(ACCOUNT_TRIGGER_SELECTOR).forEach(el => {
+    if (el.children.length === 0) {
+      el.textContent = nextUser.username;
+    } else {
+      const nameNode = el.querySelector('.name, .username, span:last-child');
+      if (nameNode) nameNode.textContent = nextUser.username;
+    }
+  });
+
+  if (typeof renderArchiveView === 'function') {
+    try { renderArchiveView(); } catch {}
+  }
+
+  window.dispatchEvent(new CustomEvent('user:changed', { detail: { user: nextUser } }));
+  window.dispatchEvent(new CustomEvent('auth:changed', { detail: { user: nextUser } }));
+}
+
+function openAccountSwitcherModalOrPrompt() {
+  const fnCandidates = [
+    window.openAccountSwitchModal,
+    window.openLoginModal,
+    window.openUserModal,
+    window.openAuthModal
+  ];
+  for (const fn of fnCandidates) {
+    if (typeof fn === 'function') {
+      try {
+        fn();
+        return;
+      } catch {}
+    }
+  }
+
+  const modalWinIds = ['win-login', 'win-auth', 'win-account', 'win-user-switch'];
+  for (const id of modalWinIds) {
+    if (document.getElementById(id)) {
+      openWindow(id);
+      return;
+    }
+  }
+
+  const inputName = window.prompt('전환할 계정 이름을 입력하세요 (예: 공용, 문태양):', getCurrentAccountLabel());
+  if (inputName && inputName.trim()) {
+    const cleanName = inputName.trim();
+    const role = cleanName === '문태양' ? 'owner' : (cleanName === '공용' ? 'public' : 'member');
+    applyAccountSwitch({
+      id: role === 'public' ? 'USR-PUBLIC' : `USR-${cleanName}`,
+      username: cleanName,
+      role
+    });
+  }
+}
+
+function performAccountLogout() {
+  try {
+    localStorage.removeItem('myarchive95_current_user');
+    localStorage.removeItem('currentUser');
+    localStorage.removeItem('myarchive95_session');
+    if (typeof STORAGE_KEYS !== 'undefined') {
+      if (STORAGE_KEYS.USER) localStorage.removeItem(STORAGE_KEYS.USER);
+      if (STORAGE_KEYS.SESSION) localStorage.removeItem(STORAGE_KEYS.SESSION);
+    }
+  } catch {}
+
+  window.currentUser = null;
+  window.activeUser = null;
+
+  applyAccountSwitch({ id: 'USR-PUBLIC', username: '공용', role: 'public' });
+  if (typeof playRetroTone === 'function') playRetroTone('click');
+  window.dispatchEvent(new CustomEvent('auth:logout'));
+
+  if (typeof window.openLoginModal === 'function') {
+    try { window.openLoginModal(); return; } catch {}
+  }
+  if (typeof window.openAuthModal === 'function') {
+    try { window.openAuthModal(); return; } catch {}
+  }
+  const loginWin = document.getElementById('win-login') || document.getElementById('win-auth');
+  if (loginWin) {
+    openWindow(loginWin.id);
+  }
+}
+
+function ensureAccountPopup() {
+  applyWindowManagerResponsiveStyle();
+  let pop = document.getElementById(ACCOUNT_POPUP_ID);
+  if (pop) return pop;
+
+  pop = document.createElement('div');
+  pop.id = ACCOUNT_POPUP_ID;
+  pop.setAttribute('role', 'menu');
+  pop.innerHTML = `
+    <div class="acct-pop-header">
+      <span id="acct-pop-title">계정: 공용</span>
+      <button type="button" id="acct-pop-close" style="background:#c0c0c0;color:#111;border:1px solid #fff;font-size:0.68rem;font-weight:900;cursor:pointer;padding:0 4px;">X</button>
+    </div>
+    <button type="button" class="acct-pop-btn" id="acct-btn-switch">계정 전환</button>
+    <button type="button" class="acct-pop-btn" id="acct-btn-public">공용 계정으로 전환</button>
+    <button type="button" class="acct-pop-btn danger" id="acct-btn-logout">로그아웃</button>
+  `;
+  (document.body || document.documentElement).appendChild(pop);
+
+  pop.querySelector('#acct-pop-close')?.addEventListener('click', e => {
+    e.stopPropagation();
+    pop.classList.remove('open');
+  });
+
+  pop.querySelector('#acct-btn-switch')?.addEventListener('click', e => {
+    e.stopPropagation();
+    pop.classList.remove('open');
+    openAccountSwitcherModalOrPrompt();
+  });
+
+  pop.querySelector('#acct-btn-public')?.addEventListener('click', e => {
+    e.stopPropagation();
+    pop.classList.remove('open');
+    applyAccountSwitch({ id: 'USR-PUBLIC', username: '공용', role: 'public' });
+  });
+
+  pop.querySelector('#acct-btn-logout')?.addEventListener('click', e => {
+    e.stopPropagation();
+    pop.classList.remove('open');
+    performAccountLogout();
+  });
+
+  return pop;
+}
+
+function toggleAccountMenuAtElement(anchorEl) {
+  const pop = ensureAccountPopup();
+  const titleEl = pop.querySelector('#acct-pop-title');
+  if (titleEl) {
+    titleEl.textContent = `계정: ${getCurrentAccountLabel()}`;
+  }
+
+  const willOpen = !pop.classList.contains('open');
+  if (!willOpen) {
+    pop.classList.remove('open');
+    return;
+  }
+
+  pop.classList.add('open');
+  const rect = anchorEl && anchorEl.getBoundingClientRect ? anchorEl.getBoundingClientRect() : null;
+  if (rect) {
+    const left = Math.min(window.innerWidth - 208, Math.max(8, rect.left));
+    const top = Math.min(window.innerHeight - 150, rect.bottom + 4);
+    pop.style.left = `${left}px`;
+    pop.style.top = `${top}px`;
+  } else {
+    pop.style.left = '24px';
+    pop.style.top = '40px';
+  }
+}
+
+document.addEventListener('click', e => {
+  const target = e.target;
+  if (!target || !(target instanceof Element)) return;
+
+  const pop = document.getElementById(ACCOUNT_POPUP_ID);
+
+  // 1) 기존 메뉴/모달 또는 팝업 내 '로그아웃' / '계정 전환' 버튼 처리
+  const actionBtn = target.closest('button, a, [role="menuitem"], .menu-item');
+  if (actionBtn) {
+    const txt = (actionBtn.textContent || '').trim();
+    const isLogoutBtn =
+      actionBtn.id === 'acct-btn-logout' ||
+      actionBtn.id === 'btn-logout' ||
+      actionBtn.id === 'mnu-logout' ||
+      actionBtn.matches('[data-action="logout"], .btn-logout') ||
+      txt === '로그아웃';
+
+    if (isLogoutBtn) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (pop) pop.classList.remove('open');
+      performAccountLogout();
+      return;
+    }
+
+    const isSwitchBtn =
+      actionBtn.id === 'acct-btn-switch' ||
+      actionBtn.id === 'btn-switch-account' ||
+      actionBtn.id === 'mnu-switch-account' ||
+      actionBtn.matches('[data-action="switch-account"], .btn-switch-account') ||
+      txt === '계정 전환';
+
+    if (isSwitchBtn) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (pop) pop.classList.remove('open');
+      openAccountSwitcherModalOrPrompt();
+      return;
+    }
+  }
+
+  // 2) 계정명 요소 클릭 시 계정 팝업 토글
+  const accountTrigger = target.closest(ACCOUNT_TRIGGER_SELECTOR);
+  if (accountTrigger && (!pop || !pop.contains(accountTrigger))) {
+    e.preventDefault();
+    e.stopPropagation();
+    toggleAccountMenuAtElement(accountTrigger);
+    return;
+  }
+
+  // 3) 바깥 클릭 시 계정 팝업 닫기
+  if (pop && pop.classList.contains('open') && !pop.contains(target)) {
+    pop.classList.remove('open');
+  }
+}, true);
 
 // 구버전 HTML data-win-title에 이모지가 남아 있어도 작업표시줄에는 95년 규격 텍스트만 표시
 function sanitizeRetroWindowTitle(rawTitle) {
@@ -1198,6 +1502,7 @@ if (window.visualViewport) {
 
 document.addEventListener('DOMContentLoaded', () => {
   syncWindowManagerViewportHeight();
+  ensureAccountPopup();
   applyDesktopPreferences();
   injectDesktopWidgetIcons();
   injectAboutMenuItems();
@@ -1462,3 +1767,6 @@ window.openAboutAndLicenseWindow = openAboutAndLicenseWindow;
 window.openPortfolioWindow = openPortfolioWindow;
 window.openSecRetWindow = openSecRetWindow;
 window.clampWindowToViewport = clampWindowToViewport;
+window.applyAccountSwitch = applyAccountSwitch;
+window.openAccountSwitcherModalOrPrompt = openAccountSwitcherModalOrPrompt;
+window.performAccountLogout = performAccountLogout;
