@@ -1,22 +1,121 @@
 // ============================================================
-// MY-ARCHIVE 95 OS — SEC-RET (1-Sec Turn Chess Return Defense + Leaderboard)
+// MY-ARCHIVE 95 OS — SEC-RET (1-Sec Turn Chess Return Defense + Leaderboard + Icon Patch)
 // ============================================================
 
 (function () {
   window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-  window.__MOD_VERSIONS.secRet = 'v2026.11.26-sec-ret-v2';
+  window.__MOD_VERSIONS.secRet = 'v2026.11.26-sec-ret-v3-icon-merged';
 
   window.GamePackModules = window.GamePackModules || {};
 
   const DEFAULT_GAS_URL =
     'https://script.google.com/macros/s/AKfycbwH-hzWi2Z3_oTFt0PWBhzYMP10VEx4e-32E9EW7d5SMF2k_bwxQL0_3ONaQ8Ze3sdKUQ/exec';
   const LEADERBOARD_CACHE_KEY = 'myarchive95_secret_leaderboard_v1';
+  const ICON_STYLE_ID = 'myarchive95-secret-icon-style';
+  const SECRET_WIN_ID = 'win-sec-ret-exe';
+  const SECRET_DESKTOP_BTN_ID = 'sec-ret-desktop-icon-btn';
 
   const BOARD_SIZE = 7;
   const MAX_LEVEL = 30;
   const MAX_DICE = 3;
   const STEP_MS = 340;
   const CHOICE_LEVELS = new Set([2, 3, 4, 5, 7, 9, 12, 15, 18, 20, 23, 27, 30]);
+
+  const SECRET_EXE_ICON_SVG = `
+    <svg viewBox="0 0 32 32" width="32" height="32" aria-hidden="true" style="display:block;shape-rendering:crispEdges;">
+      <rect x="2" y="2" width="28" height="28" fill="#141824" stroke="#ffe600" stroke-width="2"/>
+      <circle cx="16" cy="16" r="9" fill="none" stroke="#05d9e8" stroke-width="2"/>
+      <line x1="16" y1="16" x2="16" y2="10" stroke="#ffe600" stroke-width="2"/>
+      <line x1="16" y1="16" x2="21" y2="18" stroke="#ff2a6d" stroke-width="2"/>
+      <rect x="13" y="3" width="6" height="3" fill="#ffe600"/>
+    </svg>
+  `;
+
+  const FALLBACK_SPRITES = {
+    hero: {
+      idle: `<svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" fill="#000080" stroke="#ffe600" stroke-width="2"/><circle cx="12" cy="12" r="4" fill="#05d9e8"/></svg>`,
+      move: `<svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" fill="#111" stroke="#39ff14" stroke-width="2"/><polygon points="9,8 17,12 9,16" fill="#ffe600"/></svg>`,
+      retEcho: `<svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" fill="none" stroke="#00f5d4" stroke-width="2" stroke-dasharray="3 2"/></svg>`
+    },
+    attacks: {
+      rook: `<svg viewBox="0 0 18 18" width="18" height="18" aria-hidden="true"><rect x="4" y="3" width="10" height="4" fill="#ff2a6d"/><rect x="6" y="7" width="6" height="6" fill="#ff2a6d"/><rect x="3" y="13" width="12" height="2" fill="#111"/></svg>`,
+      bishop: `<svg viewBox="0 0 18 18" width="18" height="18" aria-hidden="true"><polygon points="9,2 14,9 9,16 4,9" fill="#a29bfe" stroke="#111" stroke-width="1.5"/></svg>`,
+      knight: `<svg viewBox="0 0 18 18" width="18" height="18" aria-hidden="true"><path d="M5 15V9l4-6 4 2-2 4h3v6H5z" fill="#ff9f43" stroke="#111" stroke-width="1.2"/></svg>`,
+      queen: `<svg viewBox="0 0 18 18" width="18" height="18" aria-hidden="true"><polygon points="2,14 4,5 9,10 14,5 16,14" fill="#ffe600" stroke="#111" stroke-width="1.2"/></svg>`,
+      retEchoStrike: `<svg viewBox="0 0 18 18" width="18" height="18" aria-hidden="true"><circle cx="9" cy="9" r="6" fill="none" stroke="#00f5d4" stroke-width="2"/><circle cx="9" cy="9" r="2" fill="#00f5d4"/></svg>`,
+      retRewindWave: `<svg viewBox="0 0 18 18" width="18" height="18" aria-hidden="true"><polygon points="11,3 4,9 11,15" fill="#39ff14" stroke="#111" stroke-width="1.2"/></svg>`
+    },
+    enemies: {
+      pawn: `<svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true"><circle cx="10" cy="6" r="3.5" fill="#d63031"/><rect x="6" y="10" width="8" height="6" fill="#d63031"/></svg>`,
+      knight: `<svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true"><polygon points="5,16 6,6 13,3 15,7 12,10 15,16" fill="#e17055"/></svg>`,
+      bishop: `<svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true"><polygon points="10,2 15,10 10,18 5,10" fill="#6c5ce7"/></svg>`,
+      rook: `<svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true"><rect x="5" y="4" width="10" height="12" fill="#2d3436" stroke="#ff7675" stroke-width="1.5"/></svg>`,
+      boss: `<svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true"><rect x="3" y="3" width="14" height="14" fill="#6b0000" stroke="#ffe600" stroke-width="2"/><circle cx="10" cy="10" r="3" fill="#ffe600"/></svg>`
+    },
+    abilities: {
+      clockSec: `<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><circle cx="8" cy="8" r="6" fill="#fff" stroke="#111" stroke-width="1.8"/><path d="M8 4.5V8l2.5 1.5" fill="none" stroke="#111" stroke-width="1.8"/></svg>`,
+      dice: `<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><rect x="2" y="2" width="12" height="12" rx="2" fill="#fff" stroke="#111" stroke-width="1.6"/><circle cx="5.5" cy="5.5" r="1.2" fill="#111"/><circle cx="10.5" cy="10.5" r="1.2" fill="#111"/></svg>`,
+      multStat: `<svg viewBox="0 0 18 18" width="18" height="18" aria-hidden="true"><rect x="2" y="2" width="14" height="14" fill="#ffeaa7" stroke="#111" stroke-width="1.5"/><text x="9" y="12" text-anchor="middle" font-size="9" font-weight="900" fill="#111">×</text></svg>`,
+      levelJump: `<svg viewBox="0 0 18 18" width="18" height="18" aria-hidden="true"><polygon points="9,2 15,9 11,9 11,16 7,16 7,9 3,9" fill="#05d9e8" stroke="#111" stroke-width="1.2"/></svg>`,
+      attackMod: `<svg viewBox="0 0 18 18" width="18" height="18" aria-hidden="true"><polygon points="9,2 16,15 9,12 2,15" fill="#ff2a6d" stroke="#111" stroke-width="1.2"/></svg>`,
+      defenseMod: `<svg viewBox="0 0 18 18" width="18" height="18" aria-hidden="true"><polygon points="9,2 15,5 14,12 9,16 4,12 3,5" fill="#55efc4" stroke="#111" stroke-width="1.2"/></svg>`
+    }
+  };
+
+  function getMergedSpriteBank() {
+    const bank = (window.GamePackModules && window.GamePackModules.secretSprites) || {};
+    return {
+      hero: { ...FALLBACK_SPRITES.hero, ...(bank.hero || {}) },
+      attacks: { ...FALLBACK_SPRITES.attacks, ...(bank.attacks || {}) },
+      enemies: { ...FALLBACK_SPRITES.enemies, ...(bank.enemies || {}) },
+      abilities: { ...FALLBACK_SPRITES.abilities, ...(bank.abilities || {}) }
+    };
+  }
+
+  function ensureIconStyles() {
+    if (document.getElementById(ICON_STYLE_ID)) return;
+    const style = document.createElement('style');
+    style.id = ICON_STYLE_ID;
+    style.textContent = `
+      #${SECRET_DESKTOP_BTN_ID} {
+        display: inline-flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        width: 78px;
+        padding: 6px 4px;
+        cursor: pointer;
+        user-select: none;
+        background: transparent;
+        border: 1px dotted transparent;
+        color: #ffffff;
+        text-shadow: 1px 1px 1px #000000;
+        font-size: 0.72rem;
+        font-weight: 800;
+        text-align: center;
+      }
+      #${SECRET_DESKTOP_BTN_ID}:hover,
+      #${SECRET_DESKTOP_BTN_ID}:focus-visible {
+        border-color: #ffe600;
+        background: rgba(0, 0, 128, 0.45);
+        outline: none;
+      }
+      .sec-ret-inline-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+        flex: 0 0 auto;
+      }
+      .sec-ret-inline-icon svg {
+        width: 100%;
+        height: 100%;
+      }
+    `;
+    (document.head || document.documentElement).appendChild(style);
+  }
 
   const ABILITY_POOL = [
     // 1. 특정 기본 능력치 곱증가 (x 배율)
@@ -753,12 +852,7 @@
   }
 
   function renderSecretGame({ stage, icons, playTone, esc, setCleanup }) {
-    const spriteBank = (window.GamePackModules && window.GamePackModules.secretSprites) || {
-      hero: {},
-      attacks: {},
-      enemies: {},
-      abilities: {}
-    };
+    const spriteBank = getMergedSpriteBank();
 
     let state = createInitialState();
     let leaderboard = loadCachedLeaderboard();
@@ -1023,7 +1117,7 @@
         <div class="sunken-box gp-anim-pop" style="margin-top:10px;padding:10px;background:#ffe600;border:2.5px solid #111;">
           <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
             <div style="font-weight:900;font-size:0.84rem;">
-              ${icons.star || ''} Lv.${st.level} 능력 분기점 — 3개 중 1개 선택
+              ${(icons && icons.star) || ''} Lv.${st.level} 능력 분기점 — 3개 중 1개 선택
             </div>
             <button type="button" class="btn95 sm" id="secret-reroll-btn" ${st.diceLeft <= 0 ? 'disabled' : ''} style="display:inline-flex;align-items:center;gap:4px;">
               ${diceIcon}
@@ -1087,7 +1181,7 @@
         bannerHtml = `
           <div class="sunken-box gp-anim-pop" style="margin-top:10px;padding:10px;background:#d8ffdc;border:2px solid #111;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
             <div>
-              <strong style="font-size:0.86rem;">${icons.trophy || ''} SEC-RET 클리어 — ${state.sec}초 / Lv.${state.level}</strong>
+              <strong style="font-size:0.86rem;">${(icons && icons.trophy) || ''} SEC-RET 클리어 — ${state.sec}초 / Lv.${state.level}</strong>
               <div style="font-size:0.75rem;">점수 ${computeScore(state)}점 · 계속 이동하여 기록을 늘리거나 새 게임을 시작할 수 있습니다.</div>
             </div>
             <button type="button" class="btn95 yellow sm" id="secret-restart-btn">새 게임 시작</button>
@@ -1270,9 +1364,157 @@
     refreshLeaderboard(true);
   }
 
+  // ============================================================
+  // SEC-RET.exe 아이콘 주입 & 창 실행
+  // ============================================================
+  function openSecRetExeWindow() {
+    ensureIconStyles();
+
+    if (typeof window.openSecRetWindow === 'function') {
+      try {
+        window.openSecRetWindow();
+        return;
+      } catch {}
+    }
+
+    let winEl = document.getElementById(SECRET_WIN_ID);
+    if (!winEl) {
+      winEl = document.createElement('div');
+      winEl.id = SECRET_WIN_ID;
+      winEl.className = 'floating-win';
+      winEl.dataset.winTitle = 'SEC-RET.exe';
+      winEl.dataset.dynamic = 'true';
+      winEl.style.cssText = 'width:min(680px, calc(100vw - 16px)); left:96px; top:56px; z-index:220;';
+      winEl.innerHTML = `
+        <div class="win-titlebar draggable">
+          <div class="win-title-left">
+            <span style="display:inline-flex;align-items:center;gap:6px;">SEC-RET.exe — RETURN DEFENSE</span>
+          </div>
+          <div class="win-ctrl-btns">
+            <button type="button" class="win-ctrl-btn" data-action="minimize" data-target="${SECRET_WIN_ID}" title="최소화">_</button>
+            <button type="button" class="win-ctrl-btn" data-action="close" data-target="${SECRET_WIN_ID}" title="닫기">X</button>
+          </div>
+        </div>
+        <div class="win-body" style="padding:10px;max-height:78vh;overflow-y:auto;">
+          <div id="sec-ret-exe-stage"></div>
+        </div>
+      `;
+      (document.getElementById('dynamic-windows-container') || document.body).appendChild(winEl);
+      if (typeof enableWindowDrag === 'function') {
+        try { enableWindowDrag(winEl); } catch {}
+      }
+    }
+
+    winEl.classList.add('open');
+    winEl.style.display = 'flex';
+    if (typeof openWindow === 'function') {
+      try { openWindow(SECRET_WIN_ID); } catch {}
+    }
+
+    const stage = document.getElementById('sec-ret-exe-stage');
+    const mod = window.GamePackModules && window.GamePackModules.secret;
+    if (stage && mod && typeof mod.render === 'function') {
+      if (typeof winEl.__cleanupSecRet === 'function') {
+        try { winEl.__cleanupSecRet(); } catch {}
+      }
+      mod.render({
+        stage,
+        icons: window.ICONS || window.RetroIcons || {},
+        playTone: window.playRetroTone || function () {},
+        esc: window.esc || function (s) {
+          return String(s ?? '').replace(/[&<>"']/g, c => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+          }[c]));
+        },
+        setCleanup(fn) {
+          winEl.__cleanupSecRet = fn;
+        }
+      });
+    }
+  }
+
+  function ensureSecRetIcon() {
+    ensureIconStyles();
+
+    const existingCandidates = Array.from(
+      document.querySelectorAll('[data-app], [data-win], [data-target], button, a, .desktop-icon, .icon-item')
+    ).filter(el => {
+      if (el.id === SECRET_DESKTOP_BTN_ID) return false;
+      const txt = (el.textContent || '').trim().toUpperCase();
+      const attr = `${el.dataset.app || ''} ${el.dataset.win || ''} ${el.dataset.target || ''}`.toUpperCase();
+      return txt.includes('SEC-RET') || attr.includes('SEC-RET') || attr.includes('SECRET');
+    });
+
+    existingCandidates.forEach(el => {
+      if (!el.dataset.secRetBound) {
+        el.dataset.secRetBound = '1';
+        el.addEventListener('click', e => {
+          e.preventDefault();
+          e.stopPropagation();
+          openSecRetExeWindow();
+        });
+      }
+      const iconBox = el.querySelector('.icon-img, .app-icon, svg, img');
+      if (!iconBox) {
+        const wrap = document.createElement('span');
+        wrap.className = 'sec-ret-inline-icon';
+        wrap.innerHTML = SECRET_EXE_ICON_SVG;
+        el.prepend(wrap);
+      } else if (iconBox.tagName === 'IMG' && (!iconBox.complete || iconBox.naturalWidth === 0)) {
+        const wrap = document.createElement('span');
+        wrap.className = 'sec-ret-inline-icon';
+        wrap.innerHTML = SECRET_EXE_ICON_SVG;
+        iconBox.replaceWith(wrap);
+      }
+    });
+
+    const desktopContainer =
+      document.querySelector('#desktop-icons') ||
+      document.querySelector('.desktop-icons') ||
+      document.querySelector('.desktop');
+
+    if (desktopContainer && !document.getElementById(SECRET_DESKTOP_BTN_ID)) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.id = SECRET_DESKTOP_BTN_ID;
+      btn.title = 'SEC-RET.exe 실행';
+      btn.innerHTML = `${SECRET_EXE_ICON_SVG}<span>SEC-RET.exe</span>`;
+      btn.addEventListener('click', e => {
+        e.preventDefault();
+        e.stopPropagation();
+        openSecRetExeWindow();
+      });
+      btn.addEventListener('dblclick', e => {
+        e.preventDefault();
+        e.stopPropagation();
+        openSecRetExeWindow();
+      });
+      desktopContainer.appendChild(btn);
+    }
+  }
+
+  function initSecRetIconSync() {
+    ensureSecRetIcon();
+    const observer = new MutationObserver(() => {
+      ensureSecRetIcon();
+    });
+    observer.observe(document.documentElement || document.body, { childList: true, subtree: true });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initSecRetIconSync);
+  } else {
+    initSecRetIconSync();
+  }
+
+  window.openSecRetExeWindow = openSecRetExeWindow;
+  window.ensureSecRetIcon = ensureSecRetIcon;
+
   window.GamePackModules.secret = {
     id: 'secret',
     title: 'SEC-RET // RETURN DEFENSE',
-    render: renderSecretGame
+    render: renderSecretGame,
+    openWindow: openSecRetExeWindow,
+    ensureIcon: ensureSecRetIcon
   };
 })();
