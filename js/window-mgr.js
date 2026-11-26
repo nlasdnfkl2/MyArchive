@@ -1,6 +1,6 @@
 // ============================================================
 // MY-ARCHIVE 95 OS — Pure Window Manager & Desktop Shell UI
-// (Multi-Window Focus/Drag, 6-Theme Engine, CRT, Widgets, Task Manager, Portfolio & About/License)
+// (Multi-Window Focus/Drag, 6-Theme Engine, CRT, Widgets, Task Manager, Portfolio, SEC-RET & About/License)
 // ============================================================
 
 window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
@@ -18,6 +18,8 @@ const ALL_DESKTOP_THEMES = [
 
 const PORTFOLIO_VIRTUAL_URL = 'https://nlasdnfkl2.github.io/my-webpage/';
 const WM_RESPONSIVE_STYLE_ID = 'myarchive95-wm-responsive-style';
+const SEC_RET_HOVER_DESC =
+  'SEC-RET.EXE — 1초(SEC) 단위 턴제 체스·리턴(RET) 레트로 디펜스. 이동 칸과 분기점 능력(3회 다이스)만 선택하며 시간 역행·잔상 리턴을 활용합니다.';
 
 function getTopMenubarBottom() {
   const menubar = document.querySelector('.os-menubar, .top-menubar');
@@ -131,6 +133,41 @@ function applyWindowManagerResponsiveStyle() {
       text-overflow: ellipsis;
       white-space: nowrap;
       flex-shrink: 0;
+    }
+    #sec-ret-hover-tooltip {
+      position: fixed;
+      z-index: 2147483600;
+      max-width: 265px;
+      padding: 8px 10px;
+      background: #fffef5;
+      color: #111111;
+      border: 2.5px solid #111111;
+      box-shadow: 4px 4px 0 #111111;
+      font-family: 'Pretendard Variable', 'Pretendard', sans-serif;
+      font-size: 11.5px;
+      font-weight: 700;
+      line-height: 1.42;
+      pointer-events: none;
+      display: none;
+    }
+    #sec-ret-hover-tooltip .sec-ret-tt-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      margin-bottom: 4px;
+      padding-bottom: 3px;
+      border-bottom: 1.5px solid #111111;
+      font-weight: 900;
+      font-size: 11px;
+    }
+    #sec-ret-hover-tooltip .sec-ret-tt-tags {
+      background: #05d9e8;
+      color: #111111;
+      border: 1.5px solid #111111;
+      padding: 0 4px;
+      font-size: 10px;
+      font-weight: 900;
     }
     @media (max-width: 768px) {
       .desktop-icons,
@@ -657,6 +694,135 @@ function openAboutAndLicenseWindow(initialTab = 'creator') {
 }
 
 // ============================================================
+// 2-2. SEC-RET.EXE 전용 창 & 호버 설명 툴팁
+// ============================================================
+let secRetCleanupFn = null;
+
+function ensureSecRetHoverTooltip() {
+  let tt = document.getElementById('sec-ret-hover-tooltip');
+  if (tt) return tt;
+  const parent = document.body || document.documentElement;
+  if (!parent) return null;
+
+  tt = document.createElement('div');
+  tt.id = 'sec-ret-hover-tooltip';
+  tt.setAttribute('role', 'tooltip');
+  tt.innerHTML = `
+    <div class="sec-ret-tt-head">
+      <span>SEC-RET.EXE</span>
+      <span class="sec-ret-tt-tags">SEC · RET(RETURN·RETRO)</span>
+    </div>
+    <div>${SEC_RET_HOVER_DESC}</div>
+  `;
+  parent.appendChild(tt);
+  return tt;
+}
+
+function positionSecRetHoverTooltip(clientX, clientY) {
+  const tt = ensureSecRetHoverTooltip();
+  if (!tt) return;
+  tt.style.display = 'block';
+  const rect = tt.getBoundingClientRect();
+  const pad = 12;
+  let left = clientX + 14;
+  let top = clientY + 14;
+  if (left + rect.width > window.innerWidth - pad) {
+    left = Math.max(pad, clientX - rect.width - 14);
+  }
+  if (top + rect.height > window.innerHeight - pad) {
+    top = Math.max(pad, clientY - rect.height - 14);
+  }
+  tt.style.left = `${left}px`;
+  tt.style.top = `${top}px`;
+}
+
+function hideSecRetHoverTooltip() {
+  const tt = document.getElementById('sec-ret-hover-tooltip');
+  if (tt) tt.style.display = 'none';
+}
+
+function openSecRetWindow() {
+  const winId = 'win-sec-ret';
+  hideSecRetHoverTooltip();
+
+  if (typeof secRetCleanupFn === 'function') {
+    try { secRetCleanupFn(); } catch {}
+    secRetCleanupFn = null;
+  }
+
+  let winEl = document.getElementById(winId);
+  if (!winEl) {
+    winEl = document.createElement('div');
+    winEl.id = winId;
+    winEl.className = 'floating-win';
+    winEl.dataset.winTitle = 'SEC-RET.EXE — 1초 턴제 체스·리턴(RET) 디펜스';
+    winEl.dataset.dynamic = 'true';
+
+    const minTop = getTopMenubarBottom();
+    const initLeft = Math.max(12, Math.round((window.innerWidth - Math.min(660, window.innerWidth - 24)) / 2));
+    const initTop = Math.max(minTop, Math.round((window.innerHeight - 540) / 2));
+    winEl.style.cssText = `width:min(660px, calc(100vw - 16px)); left:${initLeft}px; top:${initTop}px;`;
+
+    winEl.innerHTML = `
+      <div class="win-titlebar draggable">
+        <div class="win-title-left" style="display:flex;align-items:center;gap:6px;">
+          <svg width="14" height="14" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true" style="flex-shrink:0;">
+            <path fill="#ffe600" d="M6 1h4v2h2v2h-1v2h2v3h-1v2h1v3H3v-3h1v-2H3V7h2V5H4V3h2V1z"/>
+            <path fill="#05d9e8" d="M7 2h2v2H7V2zm-1 3h4v2H6V5z"/>
+          </svg>
+          <span>SEC-RET.EXE — 1초 턴제 체스·리턴(RET) 디펜스</span>
+        </div>
+        <div class="win-ctrl-btns">
+          <button type="button" class="win-ctrl-btn" data-action="minimize" data-target="${winId}" title="최소화">_</button>
+          <button type="button" class="win-ctrl-btn" data-action="close" data-target="${winId}" title="닫기">X</button>
+        </div>
+      </div>
+      <div class="win-body" style="padding:10px;">
+        <div id="sec-ret-stage" class="sunken-box"></div>
+      </div>
+    `;
+
+    (document.getElementById('dynamic-windows-container') || document.body).appendChild(winEl);
+    enableWindowDrag(winEl);
+  }
+
+  openWindow(winId);
+
+  const stage = document.getElementById('sec-ret-stage');
+  if (!stage) return;
+
+  const mod = window.GamePackModules && window.GamePackModules.secret;
+  if (mod && typeof mod.render === 'function') {
+    mod.render({
+      stage,
+      icons: window.GAMEPACK_PIXEL_ICONS || {},
+      playTone: type => {
+        if (typeof playRetroTone === 'function') playRetroTone(type);
+      },
+      getArchivePool: () =>
+        typeof getMyVisibleArchiveItems === 'function'
+          ? getMyVisibleArchiveItems()
+          : Array.isArray(window.archiveItems)
+            ? window.archiveItems
+            : [],
+      esc: typeof esc === 'function' ? esc : s => String(s ?? ''),
+      setCleanup: fn => {
+        secRetCleanupFn = typeof fn === 'function' ? fn : null;
+      }
+    });
+  } else {
+    stage.innerHTML = '<div style="padding:20px;text-align:center;font-weight:900;">SEC-RET 모듈이 로드되지 않았습니다.</div>';
+  }
+}
+
+window.addEventListener('window:closed', ev => {
+  if (ev.detail && ev.detail.id === 'win-sec-ret' && typeof secRetCleanupFn === 'function') {
+    try { secRetCleanupFn(); } catch {}
+    secRetCleanupFn = null;
+  }
+});
+
+// ============================================================
 // 3. 바탕화면 위젯·정보 아이콘 자동 생성 & 상단 메뉴 항목 연결
 // ============================================================
 function injectDesktopWidgetIcons() {
@@ -670,6 +836,17 @@ function injectDesktopWidgetIcons() {
 
   const sampleTag = sampleIcon ? sampleIcon.tagName.toLowerCase() : 'button';
   const sampleClass = sampleIcon ? sampleIcon.className : 'desktop-icon';
+
+  const secRetHeroSvg =
+    window.GamePackModules?.secretSprites?.hero?.idle ||
+    `
+      <svg width="32" height="32" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true">
+        <path fill="#111111" d="M6 1h4v2h2v2h-1v2h2v3h-1v2h1v3H3v-3h1v-2H3V7h2V5H4V3h2V1z"/>
+        <path fill="#05d9e8" d="M7 2h2v2H7V2zm-1 3h4v2H6V5z"/>
+        <path fill="#ffe600" d="M7 5h2v1H7V5z"/>
+        <path fill="#1e90ff" d="M5 7h6v5H5V7z"/>
+        <path fill="#00f5d4" d="M4 13h3v1H4v-1zm5 0h3v1H9v-1z"/>
+      </svg>`;
 
   const widgetDefs = [
     {
@@ -719,6 +896,16 @@ function injectDesktopWidgetIcons() {
       }
     },
     {
+      id: 'icon-sec-ret',
+      label: 'SEC-RET.EXE',
+      title: SEC_RET_HOVER_DESC,
+      hoverTooltip: true,
+      svg: secRetHeroSvg,
+      onOpen: () => {
+        openSecRetWindow();
+      }
+    },
+    {
       id: 'icon-about-license',
       label: '제작자 · 라이선스',
       svg: `
@@ -742,10 +929,16 @@ function injectDesktopWidgetIcons() {
     if (sampleTag === 'button') el.type = 'button';
     el.id = def.id;
     el.className = sampleClass;
+    if (def.title) el.title = def.title;
     el.innerHTML = `
       <span class="desktop-icon-art">${def.svg}</span>
       <span class="desktop-icon-label">${def.label}</span>
     `;
+    if (def.hoverTooltip) {
+      el.addEventListener('pointerenter', e => positionSecRetHoverTooltip(e.clientX, e.clientY));
+      el.addEventListener('pointermove', e => positionSecRetHoverTooltip(e.clientX, e.clientY));
+      el.addEventListener('pointerleave', hideSecRetHoverTooltip);
+    }
     el.addEventListener('click', () => {
       if (typeof playRetroTone === 'function') playRetroTone('open');
       def.onOpen();
@@ -1129,4 +1322,5 @@ window.openTaskManager = openTaskManager;
 window.startWin95Screensaver = startWin95Screensaver;
 window.openAboutAndLicenseWindow = openAboutAndLicenseWindow;
 window.openPortfolioWindow = openPortfolioWindow;
+window.openSecRetWindow = openSecRetWindow;
 window.clampWindowToViewport = clampWindowToViewport;
