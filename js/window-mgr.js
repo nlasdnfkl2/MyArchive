@@ -4,7 +4,7 @@
 // ============================================================
 
 window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-window.__MOD_VERSIONS.windowMgr = typeof APP_BUILD_VERSION !== 'undefined' ? APP_BUILD_VERSION : 'v2026.11.26-wm-responsive-mobile-acct';
+window.__MOD_VERSIONS.windowMgr = typeof APP_BUILD_VERSION !== 'undefined' ? APP_BUILD_VERSION : 'v2026.11.26-wm-top-offset-fix';
 
 const ALL_DESKTOP_THEMES = [
   'theme-teal',
@@ -30,7 +30,42 @@ function getTopMenubarBottom() {
       return Math.max(0, Math.round(rect.bottom));
     }
   }
-  return 28;
+  return 30;
+}
+
+function getWindowCoordinateBounds(winEl) {
+  const menubarBottom = getTopMenubarBottom();
+  const taskbarHeight = document.querySelector('.os-taskbar')?.offsetHeight || 38;
+  const viewportHeight = window.visualViewport?.height || window.innerHeight;
+  const offsetParent = winEl && winEl.offsetParent;
+
+  if (offsetParent && offsetParent !== document.body && offsetParent !== document.documentElement) {
+    const parentRect = offsetParent.getBoundingClientRect();
+    const minTop = Math.max(0, Math.round(menubarBottom - parentRect.top));
+    const availableHeight = Math.max(200, Math.round(viewportHeight - menubarBottom - taskbarHeight));
+    const maxTop = Math.max(minTop, availableHeight - 36);
+    return {
+      minTop,
+      maxTop,
+      menubarBottom,
+      taskbarHeight,
+      viewportHeight,
+      parentLeft: Math.round(parentRect.left),
+      parentTop: Math.round(parentRect.top)
+    };
+  }
+
+  const minTop = menubarBottom;
+  const maxTop = Math.max(minTop, Math.round(viewportHeight - taskbarHeight - 36));
+  return {
+    minTop,
+    maxTop,
+    menubarBottom,
+    taskbarHeight,
+    viewportHeight,
+    parentLeft: 0,
+    parentTop: 0
+  };
 }
 
 function applyWindowManagerResponsiveStyle() {
@@ -41,10 +76,13 @@ function applyWindowManagerResponsiveStyle() {
   const style = document.createElement('style');
   style.id = WM_RESPONSIVE_STYLE_ID;
   style.textContent = `
+    .desktop-workspace {
+      padding-top: 2px;
+    }
     .floating-win {
       box-sizing: border-box;
       max-width: calc(100vw - 12px);
-      max-height: calc(var(--app-vh, 100vh) - 68px);
+      max-height: calc(var(--app-vh, 100vh) - var(--menubar-bottom, 30px) - 42px);
       min-width: 0;
     }
     .floating-win.open:not(.minimized) {
@@ -590,15 +628,13 @@ function clampWindowToViewport(winEl) {
   if (!winEl) return;
   syncWindowManagerViewportHeight();
 
-  const minTop = getTopMenubarBottom();
-  const taskbarHeight = document.querySelector('.os-taskbar')?.offsetHeight || 36;
-  const viewportHeight = window.visualViewport?.height || window.innerHeight;
+  const bounds = getWindowCoordinateBounds(winEl);
 
   if (window.innerWidth <= 768) {
     if (winEl.classList.contains('open') && !winEl.classList.contains('minimized')) {
       winEl.style.left = '6px';
-      winEl.style.top = `${minTop}px`;
-      winEl.style.maxHeight = `${Math.max(220, Math.round(viewportHeight - minTop - taskbarHeight - 4))}px`;
+      winEl.style.top = `${bounds.menubarBottom}px`;
+      winEl.style.maxHeight = `${Math.max(220, Math.round(bounds.viewportHeight - bounds.menubarBottom - bounds.taskbarHeight - 4))}px`;
     }
     return;
   }
@@ -606,19 +642,18 @@ function clampWindowToViewport(winEl) {
   if (winEl.classList.contains('win-maximized')) return;
 
   const maxAvailWidth = Math.max(280, window.innerWidth - 16);
-  const maxAvailHeight = Math.max(200, Math.round(viewportHeight - minTop - taskbarHeight - 4));
+  const maxAvailHeight = Math.max(200, Math.round(bounds.viewportHeight - bounds.menubarBottom - bounds.taskbarHeight - 4));
   winEl.style.maxWidth = `${maxAvailWidth}px`;
   winEl.style.maxHeight = `${maxAvailHeight}px`;
 
   if (winEl.style.transform && winEl.style.transform.includes('translate')) {
     const rect = winEl.getBoundingClientRect();
     winEl.style.transform = 'none';
-    winEl.style.left = `${Math.max(0, rect.left)}px`;
-    winEl.style.top = `${Math.max(minTop, rect.top)}px`;
+    winEl.style.left = `${Math.max(0, Math.round(rect.left - bounds.parentLeft))}px`;
+    winEl.style.top = `${Math.max(bounds.minTop, Math.round(rect.top - bounds.parentTop))}px`;
   }
 
   const winWidth = winEl.offsetWidth || 320;
-  const maxTop = Math.max(minTop, Math.round(viewportHeight - taskbarHeight - 36));
   const maxLeft = Math.max(0, window.innerWidth - Math.min(winWidth, 180));
 
   const currentLeft = winEl.offsetLeft;
@@ -632,7 +667,7 @@ function clampWindowToViewport(winEl) {
   }
 
   if (Number.isFinite(currentTop)) {
-    const clampedTop = Math.max(minTop, Math.min(maxTop, currentTop));
+    const clampedTop = Math.max(bounds.minTop, Math.min(bounds.maxTop, currentTop));
     if (clampedTop !== currentTop) {
       winEl.style.top = `${clampedTop}px`;
     }
@@ -743,10 +778,11 @@ function enableWindowDrag(winEl) {
     focusWindow(winEl);
 
     if (winEl.style.transform && winEl.style.transform.includes('translate')) {
+      const bounds = getWindowCoordinateBounds(winEl);
       const rect = winEl.getBoundingClientRect();
       winEl.style.transform = 'none';
-      winEl.style.left = `${rect.left}px`;
-      winEl.style.top = `${rect.top}px`;
+      winEl.style.left = `${Math.max(0, Math.round(rect.left - bounds.parentLeft))}px`;
+      winEl.style.top = `${Math.max(bounds.minTop, Math.round(rect.top - bounds.parentTop))}px`;
     }
 
     startX = clientX;
@@ -757,11 +793,9 @@ function enableWindowDrag(winEl) {
 
   const onMove = (clientX, clientY) => {
     if (!isDragging) return;
-    const minTop = getTopMenubarBottom();
-    const taskbarHeight = document.querySelector('.os-taskbar')?.offsetHeight || 36;
-    const viewportHeight = window.visualViewport?.height || window.innerHeight;
+    const bounds = getWindowCoordinateBounds(winEl);
     const nextLeft = Math.max(0, Math.min(window.innerWidth - 120, origLeft + (clientX - startX)));
-    const nextTop = Math.max(minTop, Math.min(viewportHeight - taskbarHeight - 36, origTop + (clientY - startY)));
+    const nextTop = Math.max(bounds.minTop, Math.min(bounds.maxTop, origTop + (clientY - startY)));
     winEl.style.left = `${nextLeft}px`;
     winEl.style.top = `${nextTop}px`;
   };
@@ -873,11 +907,6 @@ function openAboutAndLicenseWindow(initialTab = 'creator') {
     winEl.dataset.winTitle = '제작자 및 라이선스 정보 — MY-ARCHIVE 95';
     winEl.dataset.dynamic = 'true';
 
-    const minTop = getTopMenubarBottom();
-    const initLeft = Math.max(12, Math.round((window.innerWidth - Math.min(460, window.innerWidth - 24)) / 2));
-    const initTop = Math.max(minTop, Math.round((window.innerHeight - 430) / 2));
-    winEl.style.cssText = `width:min(460px, calc(100vw - 16px)); left:${initLeft}px; top:${initTop}px;`;
-
     const buildVer = window.__MOD_VERSIONS?.windowMgr || 'v2026.11.26';
 
     winEl.innerHTML = `
@@ -972,6 +1001,10 @@ function openAboutAndLicenseWindow(initialTab = 'creator') {
     `;
 
     (document.getElementById('dynamic-windows-container') || document.body).appendChild(winEl);
+    const bounds = getWindowCoordinateBounds(winEl);
+    const initLeft = Math.max(12, Math.round((window.innerWidth - Math.min(460, window.innerWidth - 24)) / 2));
+    const initTop = Math.max(bounds.minTop, Math.min(bounds.maxTop, Math.round((bounds.viewportHeight - 430) / 2) - bounds.parentTop));
+    winEl.style.cssText = `width:min(460px, calc(100vw - 16px)); left:${initLeft}px; top:${initTop}px;`;
     enableWindowDrag(winEl);
 
     winEl.querySelectorAll('[data-about-tab]').forEach(tabBtn => {
@@ -1062,11 +1095,6 @@ function openSecRetWindow() {
     winEl.dataset.winTitle = 'SEC-RET.EXE — 1초 턴제 체스·리턴(RET) 디펜스';
     winEl.dataset.dynamic = 'true';
 
-    const minTop = getTopMenubarBottom();
-    const initLeft = Math.max(12, Math.round((window.innerWidth - Math.min(660, window.innerWidth - 24)) / 2));
-    const initTop = Math.max(minTop, Math.round((window.innerHeight - 540) / 2));
-    winEl.style.cssText = `width:min(660px, calc(100vw - 16px)); left:${initLeft}px; top:${initTop}px;`;
-
     winEl.innerHTML = `
       <div class="win-titlebar draggable">
         <div class="win-title-left" style="display:flex;align-items:center;gap:6px;">
@@ -1087,6 +1115,10 @@ function openSecRetWindow() {
     `;
 
     (document.getElementById('dynamic-windows-container') || document.body).appendChild(winEl);
+    const bounds = getWindowCoordinateBounds(winEl);
+    const initLeft = Math.max(12, Math.round((window.innerWidth - Math.min(660, window.innerWidth - 24)) / 2));
+    const initTop = Math.max(bounds.minTop, Math.min(bounds.maxTop, Math.round((bounds.viewportHeight - 540) / 2) - bounds.parentTop));
+    winEl.style.cssText = `width:min(660px, calc(100vw - 16px)); left:${initLeft}px; top:${initTop}px;`;
     enableWindowDrag(winEl);
   }
 
