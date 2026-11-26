@@ -3,7 +3,7 @@
 // ============================================================
 
 window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-window.__MOD_VERSIONS.bootLogin = 'v2026.11.26-boot-login-desktop-width-guard';
+window.__MOD_VERSIONS.bootLogin = 'v2026.11.26-boot-login-logout-fix';
 
 const SESSION_USER_KEY = 'myarchive95_current_user_v2';
 const USERS_CACHE_KEY = 'myarchive95_users_cache_v2';
@@ -390,6 +390,35 @@ function setCurrentUser(userObj) {
   updateDesktopUserBadge();
 }
 
+function clearSessionUser() {
+  window.currentOsUser = null;
+  try {
+    localStorage.removeItem(SESSION_USER_KEY);
+    localStorage.removeItem('myarchive95_current_user');
+    localStorage.removeItem('currentUser');
+  } catch {}
+}
+
+function logoutToLoginScreen() {
+  loginSafeTone('click');
+  clearSessionUser();
+  const modal = document.getElementById('win95-account-settings-modal');
+  if (modal) modal.remove();
+  const sm = document.getElementById('start-menu');
+  if (sm) sm.classList.remove('open', 'show');
+  document.getElementById('btn-start')?.classList.remove('pressed');
+  bootState.stage = 'login';
+  setBootStage('login');
+  const pinInput = document.getElementById('login-password');
+  if (pinInput) {
+    pinInput.value = '';
+    pinInput.focus();
+  }
+  window.dispatchEvent(new CustomEvent('user:logout'));
+}
+
+window.logoutToLoginScreen = logoutToLoginScreen;
+
 function updateDesktopUserBadge() {
   const user = getCurrentUser();
   const normRole = String(user?.role || '').trim().toLowerCase();
@@ -548,9 +577,10 @@ function openAccountSettingsModal() {
     if (e.target === modal) closeModal();
   });
 
-  modal.querySelector('#btn-acct-logout')?.addEventListener('click', () => {
-    closeModal();
-    startBiosBootSequence({ skip3d: true });
+  modal.querySelector('#btn-acct-logout')?.addEventListener('click', e => {
+    e.preventDefault();
+    e.stopPropagation();
+    logoutToLoginScreen();
   });
 
   if (!isPublic) {
@@ -820,7 +850,8 @@ function handleLoginAccountSelectChange() {
 // ============================================================
 function setBootStage(stageName) {
   syncLoginViewportHeight();
-  if (bootState.stage === 'done' && stageName !== 'bios' && stageName !== 'intro') {
+  const allowFromDone = stageName === 'bios' || stageName === 'intro' || stageName === 'login';
+  if (bootState.stage === 'done' && !allowFromDone) {
     return;
   }
   clearBootTimers();
@@ -1188,6 +1219,32 @@ async function submitNewUserSignup() {
 // 이벤트 바인딩 & 시작점
 // ============================================================
 function bindBootScreenEvents() {
+  document.getElementById('active-user-badge')?.addEventListener('click', e => {
+    e.preventDefault();
+    e.stopPropagation();
+    openAccountSettingsModal();
+  });
+
+  document.addEventListener('click', e => {
+    const el = e.target instanceof Element ? e.target.closest('button, a, [role="menuitem"], .menu-item') : null;
+    if (!el) return;
+    if (el.closest('#boot-stage-login')) return;
+    const txt = (el.textContent || '').trim();
+    if (
+      el.id === 'btn-logout' ||
+      el.id === 'mnu-logout' ||
+      el.id === 'sm-logoff' ||
+      el.matches('[data-action="logout"], [data-action="logoff"], .btn-logout') ||
+      txt === '로그아웃' ||
+      txt === '로그오프' ||
+      txt === '계정 전환'
+    ) {
+      e.preventDefault();
+      e.stopPropagation();
+      logoutToLoginScreen();
+    }
+  }, true);
+
   document.getElementById('boot-stage-bios')?.addEventListener('click', () => {
     window.playBiosPostBeep?.(760, 0.08);
     bootState.bootSeqId += 1;
@@ -1325,10 +1382,7 @@ function bindBootScreenEvents() {
   });
 
   document.getElementById('sm-logoff')?.addEventListener('click', () => {
-    const sm = document.getElementById('start-menu');
-    if (sm) sm.classList.remove('open');
-    document.getElementById('btn-start')?.classList.remove('pressed');
-    startBiosBootSequence({ skip3d: true });
+    logoutToLoginScreen();
   });
 }
 
