@@ -4,7 +4,7 @@
 
 (function () {
   window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-  window.__MOD_VERSIONS.secRet = 'v2026.11.26-sec-ret-v3-icon-merged';
+  window.__MOD_VERSIONS.secRet = 'v2026.11.26-sec-ret-v4-action-ui';
 
   window.GamePackModules = window.GamePackModules || {};
 
@@ -18,7 +18,7 @@
   const BOARD_SIZE = 7;
   const MAX_LEVEL = 30;
   const MAX_DICE = 3;
-  const STEP_MS = 340;
+  const STEP_MS = 260;
   const CHOICE_LEVELS = new Set([2, 3, 4, 5, 7, 9, 12, 15, 18, 20, 23, 27, 30]);
 
   const SECRET_EXE_ICON_SVG = `
@@ -72,6 +72,11 @@
     };
   }
 
+  function wrapSprite(svgHtml, sizePx = 16) {
+    if (!svgHtml) return '';
+    return `<span class="sec-ret-sprite-slot" style="width:${sizePx}px;height:${sizePx}px;">${svgHtml}</span>`;
+  }
+
   function ensureIconStyles() {
     if (document.getElementById(ICON_STYLE_ID)) return;
     const style = document.createElement('style');
@@ -101,24 +106,62 @@
         background: rgba(0, 0, 128, 0.45);
         outline: none;
       }
-      .sec-ret-inline-icon {
+      .sec-ret-inline-icon,
+      .sec-ret-sprite-slot {
         display: inline-flex;
         align-items: center;
         justify-content: center;
+        flex: 0 0 auto;
+        overflow: hidden;
+        line-height: 0;
+      }
+      .sec-ret-inline-icon {
         width: 24px;
         height: 24px;
-        flex: 0 0 auto;
       }
-      .sec-ret-inline-icon svg {
-        width: 100%;
-        height: 100%;
+      .sec-ret-inline-icon svg,
+      .sec-ret-sprite-slot svg {
+        display: block;
+        width: 100% !important;
+        height: 100% !important;
+        max-width: 100% !important;
+        max-height: 100% !important;
+      }
+      #${SECRET_WIN_ID} .win-body {
+        overflow-x: hidden;
+      }
+      @keyframes secBoardShake {
+        0%, 100% { transform: translate(0, 0); }
+        25% { transform: translate(-3px, 2px); }
+        50% { transform: translate(3px, -2px); }
+        75% { transform: translate(-2px, -1px); }
+      }
+      @keyframes secHitFlash {
+        0% { transform: scale(1.18); filter: brightness(1.7); }
+        100% { transform: scale(1); filter: brightness(1); }
+      }
+      @keyframes secFloatUp {
+        0% { transform: translateY(4px) scale(0.92); opacity: 1; }
+        100% { transform: translateY(-10px) scale(1.06); opacity: 0.95; }
+      }
+      .sec-board-shake {
+        animation: secBoardShake 0.22s linear;
+      }
+      .sec-cell-hit {
+        animation: secHitFlash 0.24s ease-out;
+      }
+      .sec-dmg-pop {
+        animation: secFloatUp 0.45s ease-out forwards;
+      }
+      .sec-move-tile:hover {
+        filter: brightness(1.08);
+        box-shadow: inset 0 0 0 2px #111111;
       }
     `;
     (document.head || document.documentElement).appendChild(style);
   }
 
   const ABILITY_POOL = [
-    // 1. 특정 기본 능력치 곱증가 (x 배율)
     {
       id: 'mult_atk',
       kind: 'mult',
@@ -162,8 +205,6 @@
         st.multRet = +(st.multRet * 1.35).toFixed(3);
       }
     },
-
-    // 2. 다음 능력 선택 분기점까지 즉시 레벨업
     {
       id: 'jump_to_next_choice',
       kind: 'jump',
@@ -184,8 +225,6 @@
         api.gainLevels(2, true);
       }
     },
-
-    // 3. 체스 기물 모티브 & RET 공격 추가/강화
     {
       id: 'atk_rook',
       kind: 'attack',
@@ -252,8 +291,6 @@
         st.attacks.retWave = (st.attacks.retWave || 0) + 1;
       }
     },
-
-    // 4. 이동 기동 확장 & 방어/귀환 스킬 추가/강화
     {
       id: 'move_knight_leap',
       kind: 'defense',
@@ -416,7 +453,7 @@
     const startX = Math.floor(BOARD_SIZE / 2);
     const startY = Math.floor(BOARD_SIZE / 2);
     const st = {
-      status: 'playing', // 'playing' | 'choosing' | 'victory' | 'gameover'
+      status: 'playing',
       sec: 0,
       level: 1,
       xp: 0,
@@ -440,6 +477,7 @@
       pendingChoices: null,
       pickedHistory: [],
       scoreSubmittedForRun: false,
+      shakeBoard: false,
       attacks: {
         rook: 1,
         bishop: 0,
@@ -463,7 +501,7 @@
       ],
       enemies: [],
       fxCells: new Map(),
-      logs: ['[0s] SEC-RET 기동 완료. 이동할 칸을 선택해 1초를 진행하세요.']
+      logs: ['[0s] SEC-RET 기동! 초록/하늘/주황 칸을 눌러 1초씩 전진하세요.']
     };
     st.hp = getMaxHp(st);
     st.history[0].hp = st.hp;
@@ -476,9 +514,14 @@
     if (st.logs.length > 6) st.logs.length = 6;
   }
 
-  function markFx(st, x, y, color, text = '') {
+  function markFx(st, x, y, color, text = '', isHit = false) {
     if (x < 0 || y < 0 || x >= BOARD_SIZE || y >= BOARD_SIZE) return;
-    st.fxCells.set(`${x},${y}`, { color, text, ttl: 1 });
+    const prev = st.fxCells.get(`${x},${y}`);
+    st.fxCells.set(`${x},${y}`, {
+      color,
+      text: text || (prev ? prev.text : ''),
+      isHit: isHit || Boolean(prev && prev.isHit)
+    });
   }
 
   function getEnemyAt(st, x, y) {
@@ -532,6 +575,74 @@
     }
 
     return Array.from(targets.values());
+  }
+
+  function computeAttackPreviewCells(st, originX, originY, nextSec, echoPos = null) {
+    const preview = new Set();
+    const dirs4 = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+    const diag4 = [[1, 1], [1, -1], [-1, 1], [-1, -1]];
+    const knight8 = [
+      [2, 1], [2, -1], [-2, 1], [-2, -1],
+      [1, 2], [1, -2], [-1, 2], [-1, -2]
+    ];
+
+    if (st.attacks.rook > 0) {
+      for (const [dx, dy] of dirs4) {
+        for (let r = 1; r <= 3; r++) {
+          const tx = originX + dx * r;
+          const ty = originY + dy * r;
+          if (tx < 0 || ty < 0 || tx >= BOARD_SIZE || ty >= BOARD_SIZE) break;
+          preview.add(`${tx},${ty}`);
+        }
+      }
+    }
+    if (st.attacks.bishop > 0) {
+      for (const [dx, dy] of diag4) {
+        for (let r = 1; r <= 3; r++) {
+          const tx = originX + dx * r;
+          const ty = originY + dy * r;
+          if (tx < 0 || ty < 0 || tx >= BOARD_SIZE || ty >= BOARD_SIZE) break;
+          preview.add(`${tx},${ty}`);
+        }
+      }
+    }
+    if (st.attacks.knight > 0) {
+      for (const [dx, dy] of knight8) {
+        const tx = originX + dx;
+        const ty = originY + dy;
+        if (tx >= 0 && ty >= 0 && tx < BOARD_SIZE && ty < BOARD_SIZE) {
+          preview.add(`${tx},${ty}`);
+        }
+      }
+    }
+    if (st.attacks.queen > 0 && nextSec % 2 === 0) {
+      for (const [dx, dy] of [...dirs4, ...diag4]) {
+        const tx = originX + dx;
+        const ty = originY + dy;
+        if (tx >= 0 && ty >= 0 && tx < BOARD_SIZE && ty < BOARD_SIZE) {
+          preview.add(`${tx},${ty}`);
+        }
+      }
+    }
+    if (st.attacks.retEcho > 0 && echoPos) {
+      for (const [dx, dy] of dirs4) {
+        const tx = echoPos.x + dx;
+        const ty = echoPos.y + dy;
+        if (tx >= 0 && ty >= 0 && tx < BOARD_SIZE && ty < BOARD_SIZE) {
+          preview.add(`${tx},${ty}`);
+        }
+      }
+    }
+    if (st.attacks.retWave > 0 && nextSec % 3 === 0) {
+      for (const [dx, dy] of [...dirs4, ...diag4]) {
+        const tx = originX + dx;
+        const ty = originY + dy;
+        if (tx >= 0 && ty >= 0 && tx < BOARD_SIZE && ty < BOARD_SIZE) {
+          preview.add(`${tx},${ty}`);
+        }
+      }
+    }
+    return preview;
   }
 
   function makeEnemy(st, forceType = null) {
@@ -640,7 +751,8 @@
     const isCrit = Math.random() < st.critChance;
     const dmg = Math.max(1, Math.round(rawDmg * (isCrit ? st.multCritDmg : 1)));
     enemy.hp -= dmg;
-    markFx(st, enemy.x, enemy.y, isCrit ? '#ffe600' : color, label || (isCrit ? `${dmg}!` : `${dmg}`));
+    st.shakeBoard = true;
+    markFx(st, enemy.x, enemy.y, isCrit ? '#ffe600' : color, label || (isCrit ? `${dmg}!!` : `-${dmg}`), true);
 
     if (enemy.hp <= 0) {
       enemy.hp = 0;
@@ -661,12 +773,13 @@
       const absorbed = Math.min(st.shield, dmg);
       st.shield -= absorbed;
       dmg -= absorbed;
-      markFx(st, st.x, st.y, '#05d9e8', `SHD -${absorbed}`);
+      markFx(st, st.x, st.y, '#05d9e8', `SHD -${absorbed}`, true);
     }
 
     if (dmg > 0) {
       st.hp = Math.max(0, st.hp - dmg);
-      markFx(st, st.x, st.y, '#ff4757', `-${dmg}`);
+      st.shakeBoard = true;
+      markFx(st, st.x, st.y, '#ff4757', `-${dmg}`, true);
     }
 
     if (st.defenses.thorn > 0 && fromEnemy && fromEnemy.hp > 0) {
@@ -683,7 +796,7 @@
       st.hp = Math.min(getMaxHp(st), restoreHp);
       st.shield = Math.max(st.shield, snap.shield || 0);
       st.returnCooldown = Math.max(4, 9 - st.defenses.return3s);
-      markFx(st, st.x, st.y, '#39ff14', 'RETURN 3S!');
+      markFx(st, st.x, st.y, '#39ff14', 'RETURN 3S!', true);
       pushLog(st, `[${st.sec}s] 3S RETURN 발동! ${snap.sec}s 시점으로 회귀했습니다.`);
       return;
     }
@@ -852,12 +965,14 @@
   }
 
   function renderSecretGame({ stage, icons, playTone, esc, setCleanup }) {
+    ensureIconStyles();
     const spriteBank = getMergedSpriteBank();
 
     let state = createInitialState();
     let leaderboard = loadCachedLeaderboard();
     let lbStatusMsg = '';
     let busyTurn = false;
+    let hoverTarget = null;
     let timers = [];
     let destroyed = false;
 
@@ -950,8 +1065,10 @@
       if (!chosen) return;
 
       busyTurn = true;
+      hoverTarget = null;
       clearTimers();
       state.fxCells.clear();
+      state.shakeBoard = false;
 
       state.sec += 1;
       state.x = chosen.x;
@@ -988,6 +1105,7 @@
         paint();
 
         schedule(() => {
+          state.shakeBoard = false;
           if (state.status !== 'gameover') {
             stepEnemiesOneSec(state);
           }
@@ -1032,6 +1150,7 @@
     function restartGame() {
       clearTimers();
       busyTurn = false;
+      hoverTarget = null;
       lbStatusMsg = '';
       state = createInitialState();
       if (typeof playTone === 'function') playTone('click');
@@ -1059,7 +1178,7 @@
               <div style="max-height:140px;overflow-y:auto;">
                 ${topRows.map((row, idx) => `
                   <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;padding:4px 6px;border-bottom:1px solid #e5e5e5;font-family:var(--font-mono,Consolas,monospace);font-size:0.71rem;">
-                    <span><strong>#${idx + 1} ${esc(row.player || '익명')}</strong> · Lv.${esc(row.mode || '-')} · ${esc(row.turns ?? 0)}s</span>
+                    <span><strong>#${idx + 1} ${esc(row.player || '익명')}</strong> · ${esc(row.mode || '-')} · ${esc(row.turns ?? 0)}s</span>
                     <strong style="color:#b30000;">${esc(row.score ?? 0)}점</strong>
                   </div>
                 `).join('')}
@@ -1089,11 +1208,14 @@
       if (st.moveModes.knight > 0) defBadges.push(`L도약×${st.moveModes.knight}`);
       if (st.moveModes.dashRange > 0) defBadges.push(`활주+${st.moveModes.dashRange}`);
 
+      const nextChoiceLv = getNextChoiceLevelAfter(st.level);
+
       return `
         <div class="sunken-box" style="margin-top:10px;padding:8px;background:#fffef5;font-size:0.74rem;">
           <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:4px;">
             <strong>공격(체스·RET):</strong>
             <span>${esc(atkBadges.join(' · ') || '없음')}</span>
+            <span class="tag-mini" style="margin-left:auto;">다음 분기: Lv.${nextChoiceLv}</span>
           </div>
           <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:4px;">
             <strong>방어·기동·귀환:</strong>
@@ -1112,7 +1234,7 @@
 
     function renderChoiceOverlay(st) {
       if (st.status !== 'choosing' || !st.pendingChoices) return '';
-      const diceIcon = spriteBank.abilities.dice || '';
+      const diceIcon = wrapSprite(spriteBank.abilities.dice, 15);
       return `
         <div class="sunken-box gp-anim-pop" style="margin-top:10px;padding:10px;background:#ffe600;border:2.5px solid #111;">
           <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
@@ -1126,13 +1248,14 @@
           </div>
           <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:8px;">
             ${st.pendingChoices.map((c, idx) => {
-              const iconSvg =
+              const rawIconSvg =
                 (c.spriteKey && spriteBank.attacks[c.spriteKey]) ||
                 (c.kind === 'mult' && spriteBank.abilities.multStat) ||
                 (c.kind === 'jump' && spriteBank.abilities.levelJump) ||
                 (c.kind === 'attack' && spriteBank.abilities.attackMod) ||
                 spriteBank.abilities.defenseMod ||
                 '';
+              const iconSvg = wrapSprite(rawIconSvg, 18);
               return `
                 <button type="button" class="btn95 secret-choice-btn" data-cidx="${idx}" style="text-align:left;padding:8px;background:#ffffff;display:flex;flex-direction:column;gap:4px;height:auto;white-space:normal;">
                   <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;width:100%;">
@@ -1156,15 +1279,19 @@
       const moveTargets = state.status === 'playing' && !busyTurn ? getMoveTargets(state) : [];
       const moveMap = new Map(moveTargets.map(t => [`${t.x},${t.y}`, t.mode]));
       const echoSnap = state.history.length >= 3 ? state.history[state.history.length - 3] : null;
+      const previewCells = hoverTarget
+        ? computeAttackPreviewCells(state, hoverTarget.x, hoverTarget.y, state.sec + 1, echoSnap)
+        : new Set();
+
       const needXp = xpRequiredForLevel(state.level);
       const xpPct = state.level >= MAX_LEVEL ? 100 : Math.min(100, Math.round((state.xp / needXp) * 100));
       const hpPct = Math.max(0, Math.min(100, Math.round((state.hp / getMaxHp(state)) * 100)));
 
-      const clockIcon = spriteBank.abilities.clockSec || '';
-      const heroSvg =
-        (busyTurn ? spriteBank.hero.move : spriteBank.hero.idle) ||
-        '<span style="font-weight:900;">R</span>';
-      const echoSvg = spriteBank.hero.retEcho || '';
+      const clockIcon = wrapSprite(spriteBank.abilities.clockSec, 16);
+      const heroSvg = spriteBank.hero[busyTurn ? 'move' : 'idle']
+        ? wrapSprite(spriteBank.hero[busyTurn ? 'move' : 'idle'], 26)
+        : '<span style="font-weight:900;">R</span>';
+      const echoSvg = wrapSprite(spriteBank.hero.retEcho, 22);
 
       let bannerHtml = '';
       if (state.status === 'gameover') {
@@ -1192,60 +1319,84 @@
       const cellsHtml = [];
       for (let y = 0; y < BOARD_SIZE; y++) {
         for (let x = 0; x < BOARD_SIZE; x++) {
+          const coordKey = `${x},${y}`;
           const isDark = (x + y) % 2 === 1;
           const isHero = state.x === x && state.y === y;
           const isEcho = !isHero && echoSnap && echoSnap.x === x && echoSnap.y === y && state.attacks.retEcho > 0;
           const enemy = getEnemyAt(state, x, y);
-          const moveMode = moveMap.get(`${x},${y}`);
-          const fx = state.fxCells.get(`${x},${y}`);
+          const moveMode = moveMap.get(coordKey);
+          const isPreview = previewCells.has(coordKey);
+          const fx = state.fxCells.get(coordKey);
 
-          let bg = isDark ? '#9fb3a8' : '#f4f1e4';
-          let borderStyle = '1px solid #4a5550';
+          let bg = isDark ? '#8fa69b' : '#f4f1e4';
+          let borderStyle = '1px solid #3f4a45';
           let cursor = 'default';
           let dataAttr = '';
+          let extraClass = '';
 
           if (moveMode) {
             cursor = 'pointer';
+            extraClass += ' sec-move-tile';
             bg = moveMode === 'knight' ? '#ffeaa7' : moveMode === 'dash' ? '#c7ecee' : '#d8ffdc';
             borderStyle = '2px solid #008000';
             dataAttr = `data-mx="${x}" data-my="${y}"`;
           }
 
+          if (isPreview) {
+            borderStyle = '2px solid #ff2a6d';
+            if (!moveMode) {
+              bg = enemy ? '#ff7675' : '#ffd6e0';
+            }
+          }
+
+          if (fx && fx.isHit) {
+            extraClass += ' sec-cell-hit';
+          }
+
           let inner = '';
           if (isEcho) {
-            inner += `<div style="position:absolute;inset:2px;display:flex;align-items:center;justify-content:center;pointer-events:none;">${echoSvg}</div>`;
+            inner += `<div style="position:absolute;inset:2px;display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:0.75;">${echoSvg}</div>`;
           }
           if (enemy) {
-            const eSvg = spriteBank.enemies[enemy.type] || spriteBank.enemies.pawn || '';
+            const eSvg = wrapSprite(spriteBank.enemies[enemy.type] || spriteBank.enemies.pawn, 22);
+            const eHpPct = Math.max(8, Math.min(100, Math.round((enemy.hp / Math.max(1, enemy.maxHp)) * 100)));
             inner += `
-              <div style="position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;line-height:1;">
-                <div style="width:24px;height:24px;">${eSvg}</div>
-                <span style="font-size:0.62rem;font-weight:900;background:#111;color:#fff;padding:0 3px;">${enemy.hp}</span>
+              <div style="position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;line-height:1;width:100%;">
+                ${eSvg}
+                <div style="width:82%;height:4px;background:#222;border:1px solid #000;margin-top:1px;">
+                  <div style="width:${eHpPct}%;height:100%;background:${isPreview ? '#ffe600' : '#ff4757'};"></div>
+                </div>
+                <span style="font-size:0.58rem;font-weight:900;background:#111;color:#fff;padding:0 2px;margin-top:1px;">${enemy.hp}</span>
               </div>
             `;
           }
           if (isHero) {
             inner += `
               <div style="position:relative;z-index:3;display:flex;flex-direction:column;align-items:center;line-height:1;">
-                <div style="width:28px;height:28px;">${heroSvg}</div>
-                <span style="font-size:0.62rem;font-weight:900;background:#000080;color:#ffe600;padding:0 3px;">RET</span>
+                ${heroSvg}
+                <span style="font-size:0.6rem;font-weight:900;background:#000080;color:#ffe600;padding:0 3px;">RET</span>
               </div>
             `;
           } else if (moveMode && !enemy) {
             const dotColor = moveMode === 'knight' ? '#e67e22' : moveMode === 'dash' ? '#0984e3' : '#008000';
-            inner += `<span style="width:8px;height:8px;border-radius:50%;background:${dotColor};opacity:0.75;pointer-events:none;"></span>`;
+            inner += `<span style="width:8px;height:8px;border-radius:50%;background:${dotColor};opacity:0.8;pointer-events:none;"></span>`;
+          }
+
+          if (isPreview && !fx) {
+            inner += `<div style="position:absolute;inset:2px;border:1.5px dashed #ff2a6d;pointer-events:none;z-index:2;"></div>`;
           }
 
           if (fx) {
             inner += `
-              <div style="position:absolute;inset:0;z-index:4;background:${fx.color};opacity:0.32;pointer-events:none;"></div>
-              ${fx.text ? `<span style="position:absolute;top:1px;right:2px;z-index:5;font-size:0.62rem;font-weight:900;color:#111;background:#fff;padding:0 2px;border:1px solid #111;pointer-events:none;">${esc(fx.text)}</span>` : ''}
+              <div style="position:absolute;inset:0;z-index:4;background:${fx.color};opacity:0.35;pointer-events:none;"></div>
+              ${fx.text ? `<span class="sec-dmg-pop" style="position:absolute;top:1px;right:2px;z-index:5;font-size:0.62rem;font-weight:900;color:#111;background:#fff;padding:0 2px;border:1px solid #111;pointer-events:none;">${esc(fx.text)}</span>` : ''}
             `;
           }
 
           cellsHtml.push(`
             <button
               type="button"
+              class="${extraClass.trim()}"
               ${dataAttr}
               ${moveMode ? '' : 'disabled'}
               style="position:relative;aspect-ratio:1/1;width:100%;background:${bg};border:${borderStyle};cursor:${cursor};display:flex;align-items:center;justify-content:center;padding:0;box-sizing:border-box;overflow:hidden;"
@@ -1275,7 +1426,7 @@
               <span>SHD ${state.shield}</span>
             </div>
             <div style="height:8px;background:#e0e0e0;border:1px solid #111;">
-              <div style="height:100%;width:${hpPct}%;background:#ff4757;"></div>
+              <div style="height:100%;width:${hpPct}%;background:#ff4757;transition:width 0.18s ease;"></div>
             </div>
           </div>
           <div class="sunken-box" style="padding:5px 7px;background:#fff;">
@@ -1284,24 +1435,25 @@
               <span>${state.level >= MAX_LEVEL ? 'MAX' : `${state.xp}/${needXp}`}</span>
             </div>
             <div style="height:8px;background:#e0e0e0;border:1px solid #111;">
-              <div style="height:100%;width:${xpPct}%;background:#05d9e8;"></div>
+              <div style="height:100%;width:${xpPct}%;background:#05d9e8;transition:width 0.18s ease;"></div>
             </div>
           </div>
         </div>
 
-        <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,210px);gap:10px;align-items:start;">
-          <div style="display:grid;grid-template-columns:repeat(${BOARD_SIZE},minmax(0,1fr));border:3px solid #111;background:#111;max-width:390px;width:100%;">
+        <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,215px);gap:10px;align-items:start;">
+          <div class="${state.shakeBoard ? 'sec-board-shake' : ''}" style="display:grid;grid-template-columns:repeat(${BOARD_SIZE},minmax(0,1fr));border:3px solid #111;background:#111;max-width:390px;width:100%;">
             ${cellsHtml.join('')}
           </div>
 
           <div class="sunken-box" style="padding:8px;background:#fff;font-size:0.73rem;">
-            <div style="font-weight:900;margin-bottom:5px;border-bottom:1px solid #808080;padding-bottom:3px;">턴 조작 안내</div>
-            <div style="margin-bottom:6px;line-height:1.4;">
-- <strong>초록/하늘/주황 칸</strong> 클릭 시 <strong>+1초</strong> 진행<br>
-- 이동 칸 선택 &amp; 분기점 능력 선택만 가능
+            <div style="font-weight:900;margin-bottom:5px;border-bottom:1px solid #808080;padding-bottom:3px;">전투 · 조작 가이드</div>
+            <div style="margin-bottom:6px;line-height:1.42;">
+              • 이동 가능 칸 위에 마우스를 올리면 <strong>공격 사거리</strong>가 표시됩니다.<br>
+              • 이동 칸을 클릭하면 <strong>+1초</strong>가 흐르며 기물·RET 공격이 발동합니다.<br>
+              • 적 기물이 <strong>RET</strong>와 1칸 이내에 닿으면 반격 피해를 줍니다.
             </div>
             <div style="font-weight:900;margin-bottom:4px;border-bottom:1px solid #808080;padding-bottom:3px;">초시계 로그</div>
-            <div style="display:flex;flex-direction:column;gap:3px;font-family:var(--font-mono,Consolas,monospace);font-size:0.69rem;max-height:165px;overflow-y:auto;">
+            <div style="display:flex;flex-direction:column;gap:3px;font-family:var(--font-mono,Consolas,monospace);font-size:0.69rem;max-height:155px;overflow-y:auto;">
               ${state.logs.map(l => `<div>${esc(l)}</div>`).join('')}
             </div>
           </div>
@@ -1314,9 +1466,21 @@
       `;
 
       stage.querySelectorAll('[data-mx][data-my]').forEach(btn => {
+        const mx = Number(btn.dataset.mx);
+        const my = Number(btn.dataset.my);
+        btn.addEventListener('mouseenter', () => {
+          if (busyTurn || state.status !== 'playing') return;
+          hoverTarget = { x: mx, y: my };
+          paint();
+        });
+        btn.addEventListener('mouseleave', () => {
+          if (!hoverTarget) return;
+          if (hoverTarget.x === mx && hoverTarget.y === my) {
+            hoverTarget = null;
+            paint();
+          }
+        });
         btn.addEventListener('click', () => {
-          const mx = Number(btn.dataset.mx);
-          const my = Number(btn.dataset.my);
           advanceOneSecond(mx, my);
         });
       });
@@ -1364,9 +1528,6 @@
     refreshLeaderboard(true);
   }
 
-  // ============================================================
-  // SEC-RET.exe 아이콘 주입 & 창 실행
-  // ============================================================
   function openSecRetExeWindow() {
     ensureIconStyles();
 
