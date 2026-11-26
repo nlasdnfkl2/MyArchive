@@ -4,7 +4,7 @@
 
 (function () {
   window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-  window.__MOD_VERSIONS.brutalPreloader = 'v2026.11.25-check-filename-only';
+  window.__MOD_VERSIONS.brutalPreloader = 'v2026.11.26-check-filename-only';
 
   const TARGET_AVG_MS = 4500, HOLD_MS = 1000, WAIT_SETUP_KEY = 'myarchive95_setup_v1';
   const LOADER_ID = 'brutal-js-preloader', STYLE_ID = 'brutal-js-preloader-style';
@@ -17,12 +17,16 @@
     ['js/community-app.js', 4.2],
     ['js/boot-animation.js', 3.4],
     ['js/window-mgr.js', 3.2],
-    ['js/gamepack.js', 3.0],
+    ['js/game-yut.js', 2.6],
+    ['js/game-solitaire.js', 2.2],
     ['js/shell-builder.js', 2.8],
     ['js/boot-login.js', 2.6],
     ['js/visualizer.js', 2.4],
     ['js/win95-widgets.js', 2.2],
     ['js/jukebox.js', 2.0],
+    ['js/game-minesweeper.js', 1.8],
+    ['js/game-hilo.js', 1.6],
+    ['js/gamepack.js', 1.6],
     ['js/config.js', 1.8],
     ['js/boot-wait.js', 1.6],
     ['js/boot-controller.js', 1.4]
