@@ -1,12 +1,12 @@
 // ============================================================
 // MY-ARCHIVE 95 OS — Retro Mini-Game Pack (GAMEPACK95.EXE)
-// (Solitaire 95, Classic Bevel Minesweeper, Retro Yut vs AI & Hi-Lo + Responsive Guard)
+// (Solitaire 95, Classic Bevel Minesweeper, Retro Yut vs AI & Hi-Lo + Pixel FX)
 // ============================================================
 
 window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
 window.__MOD_VERSIONS.gamepack = typeof APP_BUILD_VERSION !== 'undefined'
   ? APP_BUILD_VERSION
-  : 'v2026.11.26-gamepack-responsive-mobile';
+  : 'v2026.11.26-gamepack-pixel-yut-anim';
 
 const GP_RESPONSIVE_STYLE_ID = 'myarchive95-gamepack-responsive-style';
 
@@ -41,6 +41,35 @@ const GAMEPACK_PIXEL_ICONS = {
       <path fill="#111111" d="M6 1h4v14H6V1z"/>
       <path fill="#f5deb3" d="M7 2h2v12H7V2z"/>
       <path fill="#b8860b" d="M7 5h2v1H7V5zm0 5h2v1H7v-1z"/>
+    </svg>`,
+  nodeDot: `
+    <svg width="10" height="10" viewBox="0 0 8 8" shape-rendering="crispEdges" aria-hidden="true" style="flex-shrink:0;">
+      <rect x="2" y="1" width="4" height="6" fill="#6d4c2f"/>
+      <rect x="1" y="2" width="6" height="4" fill="#8d6542"/>
+      <rect x="3" y="3" width="2" height="2" fill="#fff3c4"/>
+    </svg>`,
+  nodeStar: `
+    <svg width="12" height="12" viewBox="0 0 8 8" shape-rendering="crispEdges" aria-hidden="true" style="flex-shrink:0;">
+      <rect x="3" y="0" width="2" height="8" fill="#d63031"/>
+      <rect x="0" y="3" width="8" height="2" fill="#d63031"/>
+      <rect x="2" y="2" width="4" height="4" fill="#ffd83b"/>
+    </svg>`,
+  nodeGoal: `
+    <svg width="12" height="12" viewBox="0 0 8 8" shape-rendering="crispEdges" aria-hidden="true" style="flex-shrink:0;">
+      <rect x="1" y="1" width="2" height="6" fill="#111111"/>
+      <rect x="3" y="1" width="4" height="3" fill="#008000"/>
+    </svg>`,
+  tokenPlayer: `
+    <svg width="12" height="12" viewBox="0 0 8 8" shape-rendering="crispEdges" aria-hidden="true" style="flex-shrink:0;">
+      <rect x="2" y="1" width="4" height="6" fill="#111111"/>
+      <rect x="1" y="2" width="6" height="4" fill="#1e90ff"/>
+      <rect x="3" y="2" width="2" height="2" fill="#b8ecff"/>
+    </svg>`,
+  tokenAi: `
+    <svg width="12" height="12" viewBox="0 0 8 8" shape-rendering="crispEdges" aria-hidden="true" style="flex-shrink:0;">
+      <rect x="2" y="1" width="4" height="6" fill="#111111"/>
+      <rect x="1" y="2" width="6" height="4" fill="#ff4757"/>
+      <rect x="3" y="2" width="2" height="2" fill="#ffd1d6"/>
     </svg>`
 };
 
@@ -52,6 +81,36 @@ function applyGamePackResponsiveStyle() {
   const style = document.createElement('style');
   style.id = GP_RESPONSIVE_STYLE_ID;
   style.textContent = `
+    @keyframes gpPopIn {
+      0% { transform: scale(0.92) translateY(2px); opacity: 0.65; }
+      70% { transform: scale(1.03) translateY(-1px); opacity: 1; }
+      100% { transform: scale(1) translateY(0); opacity: 1; }
+    }
+    @keyframes gpYutToss {
+      0% { transform: translateY(0) rotate(0deg); }
+      35% { transform: translateY(-7px) rotate(-6deg); }
+      70% { transform: translateY(2px) rotate(4deg); }
+      100% { transform: translateY(0) rotate(0deg); }
+    }
+    @keyframes gpPulseTarget {
+      0%, 100% { box-shadow: inset 0 0 0 2px #d63031, 0 0 0 0 rgba(214, 48, 49, 0.35); }
+      50% { box-shadow: inset 0 0 0 2px #d63031, 0 0 0 3px rgba(214, 48, 49, 0); }
+    }
+    .gp-anim-pop {
+      animation: gpPopIn 0.22s steps(5, end);
+    }
+    .gp-anim-toss {
+      animation: gpYutToss 0.34s steps(5, end);
+    }
+    .gp-yut-target {
+      animation: gpPulseTarget 1.1s infinite;
+    }
+    .gp-sol-card {
+      transition: transform 0.12s ease, background-color 0.12s ease, border-color 0.12s ease;
+    }
+    .gp-sol-card:active {
+      transform: translateY(1px);
+    }
     #gamepack-body .gp-tab-bar {
       display: flex;
       flex-wrap: wrap;
@@ -113,10 +172,11 @@ function applyGamePackResponsiveStyle() {
       display: grid;
       grid-template-columns: repeat(5, minmax(0, 1fr));
       gap: 4px;
-      background: #c8b27c;
+      background: #b99b62;
       border: 2.5px solid #111111;
       padding: 6px;
       margin-bottom: 10px;
+      box-shadow: inset 0 0 0 2px #e6d2a2;
     }
     .gp-yut-footer-grid {
       display: grid;
@@ -128,6 +188,16 @@ function applyGamePackResponsiveStyle() {
       grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 12px;
       margin-bottom: 12px;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .gp-anim-pop,
+      .gp-anim-toss,
+      .gp-yut-target {
+        animation: none !important;
+      }
+      .gp-sol-card {
+        transition: none !important;
+      }
     }
     @media (max-width: 768px) {
       #gamepack-body .gp-tab-bar .pill-btn {
@@ -248,7 +318,7 @@ function renderGamePackShell() {
 }
 
 // ============================================================
-// 1. 클론다이크 솔리테어 95 (PC 클릭 및 모바일 터치 최적화)
+// 1. 클론다이크 솔리테어 95 (PC 클릭 및 모바일 터치 최적화 + 애니메이션)
 // ============================================================
 function renderSolitaireGame() {
   const stage = document.getElementById('gamepack-stage');
@@ -296,6 +366,7 @@ function renderSolitaireGame() {
   const foundations = { S: [], H: [], D: [], C: [] };
   let selected = null;
   let moves = 0;
+  let lastActionKey = '';
 
   const revealTopTableau = () => {
     tableau.forEach(pile => {
@@ -325,6 +396,7 @@ function renderSolitaireGame() {
         foundations[top.suit].push(waste.pop());
         moves++;
         selected = null;
+        lastActionKey = `f:${top.suit}`;
         safePlayGameTone('open');
         return true;
       }
@@ -337,6 +409,7 @@ function renderSolitaireGame() {
           revealTopTableau();
           moves++;
           selected = null;
+          lastActionKey = `f:${top.suit}`;
           safePlayGameTone('open');
           return true;
         }
@@ -356,6 +429,8 @@ function renderSolitaireGame() {
 
   const draw = () => {
     const isWon = checkSolitaireWin();
+    const animKey = lastActionKey;
+    lastActionKey = '';
 
     stage.innerHTML = `
       <div class="box-head">
@@ -368,11 +443,11 @@ function renderSolitaireGame() {
 
       <div style="background:#006432;border:2px solid #111;padding:8px;color:#fff;box-sizing:border-box;">
         <div class="gp-sol-top-grid">
-          <button type="button" id="sol-stock" style="height:56px;min-width:0;border:2px solid #111;background:${stock.length ? '#000080' : 'rgba(255,255,255,0.15)'};color:#ffd83b;font-weight:900;font-size:0.75rem;cursor:pointer;">
+          <button type="button" id="sol-stock" class="${animKey === 'stock' ? 'gp-anim-pop' : ''}" style="height:56px;min-width:0;border:2px solid #111;background:${stock.length ? '#000080' : 'rgba(255,255,255,0.15)'};color:#ffd83b;font-weight:900;font-size:0.75rem;cursor:pointer;">
             ${stock.length ? `DECK<br/>(${stock.length})` : '[RELOAD]'}
           </button>
 
-          <div id="sol-waste" style="height:56px;min-width:0;border:2px solid ${selected && selected.zone === 'waste' ? '#ffd83b' : '#111'};background:${waste.length ? '#ffffff' : 'rgba(255,255,255,0.1)'};color:${waste.length ? waste[waste.length - 1].color : '#ccc'};display:flex;align-items:center;justify-content:center;font-weight:900;font-size:0.9rem;cursor:pointer;box-shadow:${selected && selected.zone === 'waste' ? '0 0 0 2px #ffd83b' : 'none'};">
+          <div id="sol-waste" class="${animKey === 'waste' ? 'gp-anim-pop' : ''}" style="height:56px;min-width:0;border:2px solid ${selected && selected.zone === 'waste' ? '#ffd83b' : '#111'};background:${waste.length ? '#ffffff' : 'rgba(255,255,255,0.1)'};color:${waste.length ? waste[waste.length - 1].color : '#ccc'};display:flex;align-items:center;justify-content:center;font-weight:900;font-size:0.9rem;cursor:pointer;box-shadow:${selected && selected.zone === 'waste' ? '0 0 0 2px #ffd83b' : 'none'};transform:${selected && selected.zone === 'waste' ? 'translateY(-2px)' : 'none'};transition:transform 0.12s ease;">
             ${waste.length ? esc(waste[waste.length - 1].label) : 'WASTE'}
           </div>
 
@@ -381,7 +456,8 @@ function renderSolitaireGame() {
           ${SUITS.map(s => {
             const pile = foundations[s.key];
             const top = pile[pile.length - 1];
-            return `<button type="button" class="sol-found" data-suit="${s.key}" style="height:56px;min-width:0;border:2px solid #111;background:${top ? '#ffffff' : 'rgba(255,255,255,0.15)'};color:${top ? top.color : '#ffd83b'};font-weight:900;font-size:0.86rem;cursor:pointer;">
+            const fAnim = animKey === `f:${s.key}` ? 'gp-anim-pop' : '';
+            return `<button type="button" class="sol-found ${fAnim}" data-suit="${s.key}" style="height:56px;min-width:0;border:2px solid #111;background:${top ? '#ffffff' : 'rgba(255,255,255,0.15)'};color:${top ? top.color : '#ffd83b'};font-weight:900;font-size:0.86rem;cursor:pointer;">
               ${top ? esc(top.label) : `${s.symbol} A`}
             </button>`;
           }).join('')}
@@ -393,10 +469,11 @@ function renderSolitaireGame() {
               ${pile.length === 0 ? `<div style="height:44px;display:flex;align-items:center;justify-content:center;font-size:0.7rem;color:rgba(255,255,255,0.5);">[K]</div>` : ''}
               ${pile.map((card, cIdx) => {
                 const isSel = selected && selected.zone === 'tableau' && selected.col === colIdx && cIdx >= selected.idx;
+                const isLanded = animKey === `t:${colIdx}:${cIdx}`;
                 if (!card.faceUp) {
                   return `<div style="height:20px;background:#000080;border:1.5px solid #111;"></div>`;
                 }
-                return `<button type="button" class="sol-card gp-sol-card" data-col="${colIdx}" data-cidx="${cIdx}" style="height:34px;min-width:0;border:2px solid ${isSel ? '#ffd83b' : '#111'};background:${isSel ? '#fff6bf' : '#ffffff'};color:${card.color};font-weight:900;font-size:0.82rem;text-align:left;padding:0 4px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                return `<button type="button" class="sol-card gp-sol-card ${isLanded ? 'gp-anim-pop' : ''}" data-col="${colIdx}" data-cidx="${cIdx}" style="height:34px;min-width:0;border:2px solid ${isSel ? '#ffd83b' : '#111'};background:${isSel ? '#fff6bf' : '#ffffff'};color:${card.color};font-weight:900;font-size:0.82rem;text-align:left;padding:0 4px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transform:${isSel ? 'translateY(-2px)' : 'none'};">
                   ${esc(card.label)}
                 </button>`;
               }).join('')}
@@ -425,6 +502,7 @@ function renderSolitaireGame() {
           moves++;
           movedAny = true;
           progress = true;
+          lastActionKey = `f:${c.suit}`;
         }
         for (let col = 0; col < 7; col++) {
           const pile = tableau[col];
@@ -435,6 +513,7 @@ function renderSolitaireGame() {
             moves++;
             movedAny = true;
             progress = true;
+            lastActionKey = `f:${c.suit}`;
           }
         }
       }
@@ -453,9 +532,11 @@ function renderSolitaireGame() {
         const drawn = stock.pop();
         drawn.faceUp = true;
         waste.push(drawn);
+        lastActionKey = 'waste';
       } else if (waste.length > 0) {
         stock = waste.reverse().map(c => ({ ...c, faceUp: false }));
         waste = [];
+        lastActionKey = 'stock';
       }
       moves++;
       safePlayGameTone('click');
@@ -495,6 +576,7 @@ function renderSolitaireGame() {
           foundations[targetSuit].push(movingCard);
           moves++;
           selected = null;
+          lastActionKey = `f:${targetSuit}`;
           safePlayGameTone('open');
           draw();
         }
@@ -521,10 +603,13 @@ function renderSolitaireGame() {
           if (movingCard && canMoveToTableau(movingCard, col)) {
             if (selected.zone === 'waste') {
               tableau[col].push(waste.pop());
+              lastActionKey = `t:${col}:${tableau[col].length - 1}`;
             } else {
+              const startLandIdx = tableau[col].length;
               const movedSlice = tableau[selected.col].splice(selected.idx);
               tableau[col].push(...movedSlice);
               revealTopTableau();
+              lastActionKey = `t:${col}:${startLandIdx}`;
             }
             moves++;
             selected = null;
@@ -559,6 +644,7 @@ function renderSolitaireGame() {
           }
           moves++;
           selected = null;
+          lastActionKey = `t:${col}:0`;
           safePlayGameTone('click');
           draw();
         }
@@ -747,7 +833,7 @@ function renderMinesweeperGame() {
 }
 
 // ============================================================
-// 3. 레트로 윷놀이 vs AI (직관적 사각형 윷판 + 도착 미리보기 + 칸 클릭 이동)
+// 3. 레트로 윷놀이 vs AI (도트 칸 그래픽 + 윷가락·말 애니메이션)
 // ============================================================
 function renderRetroYutGame() {
   const stage = document.getElementById('gamepack-stage');
@@ -755,35 +841,35 @@ function renderRetroYutGame() {
 
   const NODE_META = {
     0: { label: '출발 대기', short: '대기', kind: 'start' },
-    1: { label: '1칸(우)', short: '1', kind: 'outer', r: 3, c: 4 },
-    2: { label: '2칸(우)', short: '2', kind: 'outer', r: 2, c: 4 },
-    3: { label: '3칸(우)', short: '3', kind: 'outer', r: 1, c: 4 },
-    4: { label: '4칸(우)', short: '4', kind: 'outer', r: 0, c: 4 },
-    5: { label: '우상 모서리★', short: '5★', kind: 'corner', r: 0, c: 3 },
-    6: { label: '6칸(상)', short: '6', kind: 'outer', r: 0, c: 2 },
-    7: { label: '7칸(상)', short: '7', kind: 'outer', r: 0, c: 1 },
-    8: { label: '8칸(상)', short: '8', kind: 'outer', r: 0, c: 0 },
-    9: { label: '9칸(상)', short: '9', kind: 'outer', r: 1, c: 0 },
-    10: { label: '좌상 모서리★', short: '10★', kind: 'corner', r: 2, c: 0 },
-    11: { label: '11칸(좌)', short: '11', kind: 'outer', r: 3, c: 0 },
-    12: { label: '12칸(좌)', short: '12', kind: 'outer', r: 4, c: 0 },
-    13: { label: '13칸(좌)', short: '13', kind: 'outer', r: 4, c: 1 },
-    14: { label: '14칸(좌)', short: '14', kind: 'outer', r: 4, c: 2 },
-    15: { label: '좌하 모서리', short: '15', kind: 'corner', r: 4, c: 3 },
-    16: { label: '16칸(하)', short: '16', kind: 'outer', r: 4, c: 4 },
-    17: { label: '17칸(하)', short: '17', kind: 'outer', r: 3, c: 3 },
-    18: { label: '18칸(하)', short: '18', kind: 'outer', r: 3, c: 1 },
-    19: { label: '19칸(하)', short: '19', kind: 'outer', r: 1, c: 3 },
-    20: { label: '출발·골인점', short: '출/골', kind: 'goal', r: 4, c: 4 },
-    21: { label: '우상 지름길1', short: '우지1', kind: 'diag', r: 1, c: 3 },
-    22: { label: '우상 지름길2', short: '우지2', kind: 'diag', r: 2, c: 3 },
-    23: { label: '중앙 방★', short: '중앙★', kind: 'center', r: 2, c: 2 },
-    24: { label: '중앙→좌하1', short: '중좌1', kind: 'diag', r: 3, c: 1 },
-    25: { label: '중앙→좌하2', short: '중좌2', kind: 'diag', r: 3, c: 2 },
-    26: { label: '좌상 지름길1', short: '좌지1', kind: 'diag', r: 2, c: 1 },
-    27: { label: '좌상 지름길2', short: '좌지2', kind: 'diag', r: 1, c: 1 },
-    28: { label: '중앙→골인1', short: '중골1', kind: 'diag', r: 3, c: 3 },
-    29: { label: '중앙→골인2', short: '중골2', kind: 'diag', r: 3, c: 2 },
+    1: { label: '1칸(우)', short: '1', kind: 'outer' },
+    2: { label: '2칸(우)', short: '2', kind: 'outer' },
+    3: { label: '3칸(우)', short: '3', kind: 'outer' },
+    4: { label: '4칸(우)', short: '4', kind: 'outer' },
+    5: { label: '우상 모서리★', short: '5★', kind: 'corner' },
+    6: { label: '6칸(상)', short: '6', kind: 'outer' },
+    7: { label: '7칸(상)', short: '7', kind: 'outer' },
+    8: { label: '8칸(상)', short: '8', kind: 'outer' },
+    9: { label: '9칸(상)', short: '9', kind: 'outer' },
+    10: { label: '좌상 모서리★', short: '10★', kind: 'corner' },
+    11: { label: '11칸(좌)', short: '11', kind: 'outer' },
+    12: { label: '12칸(좌)', short: '12', kind: 'outer' },
+    13: { label: '13칸(좌)', short: '13', kind: 'outer' },
+    14: { label: '14칸(좌)', short: '14', kind: 'outer' },
+    15: { label: '좌하 모서리', short: '15', kind: 'corner' },
+    16: { label: '16칸(하)', short: '16', kind: 'outer' },
+    17: { label: '17칸(하)', short: '17', kind: 'outer' },
+    18: { label: '18칸(하)', short: '18', kind: 'outer' },
+    19: { label: '19칸(하)', short: '19', kind: 'outer' },
+    20: { label: '출발·골인점', short: '출/골', kind: 'goal' },
+    21: { label: '우상 지름길1', short: '우지1', kind: 'diag' },
+    22: { label: '우상 지름길2', short: '우지2', kind: 'diag' },
+    23: { label: '중앙 방★', short: '중앙★', kind: 'center' },
+    24: { label: '중앙→좌하1', short: '중좌1', kind: 'diag' },
+    25: { label: '중앙→좌하2', short: '중좌2', kind: 'diag' },
+    26: { label: '좌상 지름길1', short: '좌지1', kind: 'diag' },
+    27: { label: '좌상 지름길2', short: '좌지2', kind: 'diag' },
+    28: { label: '중앙→골인1', short: '중골1', kind: 'diag' },
+    29: { label: '중앙→골인2', short: '중골2', kind: 'diag' },
     GOAL: { label: '완주(GOAL)', short: '완주', kind: 'goal' }
   };
 
@@ -816,6 +902,8 @@ function renderRetroYutGame() {
   let statusMsg = '내 차례! [윷 던지기]를 눌러 한 판 시작하세요.';
   let winner = null;
   let aiTimerId = null;
+  let tossAnimFlag = false;
+  let movedNodeId = null;
 
   const clearAiTimer = () => {
     if (aiTimerId) {
@@ -938,6 +1026,7 @@ function renderRetroYutGame() {
     stacked.forEach(idx => {
       tokens[side][idx] = destPos;
     });
+    movedNodeId = destPos;
 
     let captured = false;
     if (destPos !== 'GOAL' && destPos !== 0) {
@@ -1027,6 +1116,7 @@ function renderRetroYutGame() {
       const rolled = rollYut();
       sticks = rolled.sticks;
       pendingThrow = rolled;
+      tossAnimFlag = true;
       lastThrowLabel = `${rolled.name} (+${rolled.steps})`;
       safePlayGameTone('click');
       statusMsg = `AI가 [${rolled.name} +${rolled.steps}칸]을 던졌습니다.`;
@@ -1048,6 +1138,12 @@ function renderRetroYutGame() {
   };
 
   cleanupActiveGame = () => clearAiTimer();
+
+  const renderNodeGraphic = (nodeId, kind) => {
+    if (nodeId === 20) return GAMEPACK_PIXEL_ICONS.nodeGoal;
+    if (kind === 'center' || kind === 'corner') return GAMEPACK_PIXEL_ICONS.nodeStar;
+    return GAMEPACK_PIXEL_ICONS.nodeDot;
+  };
 
   const draw = () => {
     ensureValidActiveToken();
@@ -1079,7 +1175,9 @@ function renderRetroYutGame() {
 
     const renderBoardCell = (nodeId) => {
       if (nodeId === null) {
-        return `<div style="min-height:52px;border:1px dashed rgba(17,17,17,0.12);background:rgba(255,255,255,0.25);"></div>`;
+        return `<div style="min-height:54px;border:1px dashed rgba(90,65,30,0.22);background:rgba(255,248,225,0.22);display:flex;align-items:center;justify-content:center;">
+          <span style="width:6px;height:6px;background:rgba(110,80,40,0.18);display:inline-block;"></span>
+        </div>`;
       }
 
       const meta = NODE_META[nodeId];
@@ -1089,12 +1187,13 @@ function renderRetroYutGame() {
       const isNormalTarget = normalDest === nodeId;
       const isShortcutTarget = shortcutDest === nodeId;
       const isTarget = isNormalTarget || isShortcutTarget;
+      const isJustMoved = movedNodeId === nodeId;
 
-      let bg = '#ffffff';
-      if (nodeId === 20) bg = '#e8f5e9';
-      else if (meta.kind === 'center') bg = '#ffe0f0';
-      else if (meta.kind === 'corner') bg = '#fff3b0';
-      else if (meta.kind === 'diag') bg = '#e3f4ff';
+      let bg = '#fffdf7';
+      if (nodeId === 20) bg = '#dff7e3';
+      else if (meta.kind === 'center') bg = '#ffe1f0';
+      else if (meta.kind === 'corner') bg = '#fff1a8';
+      else if (meta.kind === 'diag') bg = '#e0f3ff';
 
       if (isTarget) bg = '#b8ff9e';
 
@@ -1104,22 +1203,29 @@ function renderRetroYutGame() {
 
       return `
         <button type="button"
-          class="yut-board-cell"
+          class="yut-board-cell ${isTarget ? 'gp-yut-target' : ''} ${isJustMoved ? 'gp-anim-pop' : ''}"
           data-node="${nodeId}"
           data-sc="${isShortcutTarget && !isNormalTarget ? '1' : '0'}"
-          style="min-height:54px;min-width:0;width:100%;border:${isTarget ? '2.5px solid #d63031' : '1.5px solid #111'};background:${bg};padding:3px;display:flex;flex-direction:column;justify-content:space-between;align-items:stretch;cursor:${isTarget ? 'pointer' : 'default'};text-align:left;position:relative;box-sizing:border-box;">
+          style="min-height:56px;min-width:0;width:100%;border:${isTarget ? '2.5px solid #d63031' : '1.5px solid #111'};background:${bg};padding:3px;display:flex;flex-direction:column;justify-content:space-between;align-items:stretch;cursor:${isTarget ? 'pointer' : 'default'};text-align:left;position:relative;box-sizing:border-box;">
           <div style="display:flex;justify-content:space-between;align-items:center;gap:2px;min-width:0;">
-            <span style="font-size:0.66rem;font-weight:900;color:#111;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(meta.short)}</span>
+            <span style="display:inline-flex;align-items:center;gap:2px;font-size:0.66rem;font-weight:900;color:#111;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+              ${renderNodeGraphic(nodeId, meta.kind)}
+              <span>${esc(meta.short)}</span>
+            </span>
             ${targetHint ? `<span style="background:#d63031;color:#fff;font-size:0.6rem;font-weight:900;padding:0 3px;border:1px solid #111;flex-shrink:0;">${esc(targetHint)}</span>` : ''}
           </div>
           <div style="display:flex;flex-wrap:wrap;gap:2px;min-height:18px;align-items:center;">
-            ${pHere.length ? `<span style="background:#000080;color:#fff;font-size:0.64rem;font-weight:900;padding:1px 4px;border:1px solid #111;">${pHere.join('+')}</span>` : ''}
-            ${aiHere.length ? `<span style="background:#d63031;color:#fff;font-size:0.64rem;font-weight:900;padding:1px 4px;border:1px solid #111;">${aiHere.join('+')}</span>` : ''}
+            ${pHere.length ? `<span style="display:inline-flex;align-items:center;gap:2px;background:#000080;color:#fff;font-size:0.64rem;font-weight:900;padding:1px 4px;border:1px solid #111;">${GAMEPACK_PIXEL_ICONS.tokenPlayer}${pHere.join('+')}</span>` : ''}
+            ${aiHere.length ? `<span style="display:inline-flex;align-items:center;gap:2px;background:#d63031;color:#fff;font-size:0.64rem;font-weight:900;padding:1px 4px;border:1px solid #111;">${GAMEPACK_PIXEL_ICONS.tokenAi}${aiHere.join('+')}</span>` : ''}
             ${!pHere.length && !aiHere.length && isTarget ? `<span style="font-size:0.62rem;font-weight:900;color:#005a16;">도착점</span>` : ''}
           </div>
         </button>
       `;
     };
+
+    const shouldToss = tossAnimFlag;
+    tossAnimFlag = false;
+    movedNodeId = null;
 
     stage.innerHTML = `
       <div class="box-head">
@@ -1140,7 +1246,7 @@ function renderRetroYutGame() {
 
         <div style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap;background:#decb9c;border:2px solid #111;padding:6px;margin-bottom:8px;">
           ${sticks.map((isFlat, i) => `
-            <div style="width:36px;height:52px;border:2px solid #111;background:${isFlat ? '#fff9e0' : '#c69563'};display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:3px 0;font-size:0.68rem;font-weight:900;">
+            <div class="${shouldToss ? 'gp-anim-toss' : ''}" style="width:36px;height:52px;border:2px solid #111;background:${isFlat ? '#fff9e0' : '#c69563'};display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:3px 0;font-size:0.68rem;font-weight:900;box-shadow:2px 2px 0 rgba(0,0,0,0.22);">
               <span>${i + 1}</span>
               <span>${isFlat ? '배' : '등'}</span>
               <span>${isFlat ? '■' : '●'}</span>
@@ -1154,8 +1260,8 @@ function renderRetroYutGame() {
 
         <div class="gp-yut-footer-grid">
           <div style="background:#fff;border:2px solid #111;padding:8px;min-width:0;">
-            <div style="font-size:0.75rem;font-weight:900;color:#000080;margin-bottom:6px;">
-              내 말 선택 & 이동 (초록색 도착 칸을 눌러도 이동 가능)
+            <div style="font-size:0.75rem;font-weight:900;color:#000080;margin-bottom:6px;display:flex;align-items:center;gap:4px;">
+              ${GAMEPACK_PIXEL_ICONS.tokenPlayer}<span>내 말 선택 & 이동 (초록색 도착 칸을 눌러도 이동 가능)</span>
             </div>
             <div style="display:flex;flex-direction:column;gap:6px;">
               ${tokens.player.map((pos, idx) => {
@@ -1193,7 +1299,9 @@ function renderRetroYutGame() {
           </div>
 
           <div style="background:#fff;border:2px solid #111;padding:8px;min-width:0;">
-            <div style="font-size:0.75rem;font-weight:900;color:#d63031;margin-bottom:6px;">AI 말 위치</div>
+            <div style="font-size:0.75rem;font-weight:900;color:#d63031;margin-bottom:6px;display:flex;align-items:center;gap:4px;">
+              ${GAMEPACK_PIXEL_ICONS.tokenAi}<span>AI 말 위치</span>
+            </div>
             <div style="display:flex;flex-direction:column;gap:5px;font-size:0.74rem;font-weight:800;">
               ${tokens.ai.map((pos, idx) => {
                 const posLabel = pos === 'GOAL' ? '완주!' : NODE_META[pos].label;
@@ -1220,6 +1328,7 @@ function renderRetroYutGame() {
       const rolled = rollYut();
       sticks = rolled.sticks;
       pendingThrow = rolled;
+      tossAnimFlag = true;
       lastThrowLabel = `${rolled.name} (+${rolled.steps})`;
       safePlayGameTone('click');
 
@@ -1308,7 +1417,7 @@ function renderStarHiLoGame() {
       </div>
       <p style="font-size:0.82rem;font-weight:800;margin-bottom:10px;">${esc(feedback)}</p>
       <div class="gp-hilo-grid">
-        <div class="sunken-box" style="text-align:center;background:#fff6bf;min-width:0;">
+        <div class="sunken-box gp-anim-pop" style="text-align:center;background:#fff6bf;min-width:0;">
           <div style="font-size:0.75rem;font-weight:800;">[기준 작품]</div>
           <div style="font-size:0.95rem;font-weight:900;margin:4px 0;word-break:break-word;">${esc(leftItem.title)}</div>
           <div style="font-size:0.75rem;color:#555;margin-bottom:6px;word-break:break-word;">${esc(leftItem.creator)}</div>
@@ -1316,7 +1425,7 @@ function renderStarHiLoGame() {
             ${GAMEPACK_PIXEL_ICONS.star}<span>${leftItem.rating}점</span>
           </div>
         </div>
-        <div class="sunken-box" style="text-align:center;background:#e8f8ff;min-width:0;">
+        <div class="sunken-box ${revealed ? 'gp-anim-pop' : ''}" style="text-align:center;background:#e8f8ff;min-width:0;">
           <div style="font-size:0.75rem;font-weight:800;">[도전 작품]</div>
           <div style="font-size:0.95rem;font-weight:900;margin:4px 0;word-break:break-word;">${esc(rightItem.title)}</div>
           <div style="font-size:0.75rem;color:#555;margin-bottom:6px;word-break:break-word;">${esc(rightItem.creator)}</div>
