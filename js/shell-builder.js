@@ -4,7 +4,7 @@
 
 (function () {
   window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-  window.__MOD_VERSIONS.shellBuilder = 'v2026.11.26-login-dialog-pc-width-fix';
+  window.__MOD_VERSIONS.shellBuilder = 'v2026.11.26-splash-and-login-pc-width-fix';
 
   function buildArchiveShellHtml() {
     return `
@@ -40,8 +40,8 @@
     </div>
 
     <!-- 2. Windows 95 부팅 스플래시 (로딩 창) -->
-    <div id="boot-stage-splash" class="boot-stage" style="display:none;width:100%;height:100%;">
-      <div class="win95-splash-card">
+    <div id="boot-stage-splash" class="boot-stage" style="display:none;width:100%;height:100%;flex-direction:column;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;">
+      <div class="win95-splash-card" style="width:min(460px, 100%);max-width:460px;margin:0 auto;box-sizing:border-box;">
         <div class="win95-flag-grid" aria-hidden="true">
           <span style="background:#ff4b4b;"></span>
           <span style="background:#4be36a;"></span>
@@ -52,7 +52,7 @@
         <div class="win95-splash-title">MY-ARCHIVE <span class="win95-splash-95">95</span></div>
         <div class="win95-splash-desc">이용자 명부 및 중앙 공개 자료실 전산망을 초기화하는 중...</div>
       </div>
-      <div class="win95-boot-track"><div class="win95-boot-runner"></div></div>
+      <div class="win95-boot-track" style="width:min(460px, 100%);max-width:460px;margin:14px auto 0;box-sizing:border-box;"><div class="win95-boot-runner"></div></div>
     </div>
 
     <!-- 3. 정통 Windows 95 로그온 대화상자 -->
