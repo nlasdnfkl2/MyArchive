@@ -1,12 +1,16 @@
 // ============================================================
-// MY-ARCHIVE 95 OS — SEC-RET (1-Sec Turn Chess Return Defense)
+// MY-ARCHIVE 95 OS — SEC-RET (1-Sec Turn Chess Return Defense + Leaderboard)
 // ============================================================
 
 (function () {
   window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-  window.__MOD_VERSIONS.secRet = 'v2026.11.26-sec-ret-v1';
+  window.__MOD_VERSIONS.secRet = 'v2026.11.26-sec-ret-v2';
 
   window.GamePackModules = window.GamePackModules || {};
+
+  const DEFAULT_GAS_URL =
+    'https://script.google.com/macros/s/AKfycbwH-hzWi2Z3_oTFt0PWBhzYMP10VEx4e-32E9EW7d5SMF2k_bwxQL0_3ONaQ8Ze3sdKUQ/exec';
+  const LEADERBOARD_CACHE_KEY = 'myarchive95_secret_leaderboard_v1';
 
   const BOARD_SIZE = 7;
   const MAX_LEVEL = 30;
@@ -216,6 +220,81 @@
     }
   ];
 
+  function getGasUrl() {
+    if (typeof APPS_SCRIPT_URL === 'string' && APPS_SCRIPT_URL.trim()) {
+      return APPS_SCRIPT_URL.trim();
+    }
+    if (typeof window.APPS_SCRIPT_URL === 'string' && window.APPS_SCRIPT_URL.trim()) {
+      return window.APPS_SCRIPT_URL.trim();
+    }
+    return DEFAULT_GAS_URL;
+  }
+
+  function getCurrentPlayerName() {
+    try {
+      if (window.currentUser && window.currentUser.username) {
+        return String(window.currentUser.username).trim();
+      }
+      if (window.activeUser && window.activeUser.username) {
+        return String(window.activeUser.username).trim();
+      }
+    } catch {}
+    return '공용';
+  }
+
+  function computeScore(st) {
+    return Math.max(0, Math.round(st.kills * 120 + st.level * 180 + st.sec * 15));
+  }
+
+  function loadCachedLeaderboard() {
+    try {
+      const raw = localStorage.getItem(LEADERBOARD_CACHE_KEY);
+      const parsed = raw ? JSON.parse(raw) : [];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+
+  function saveCachedLeaderboard(entries) {
+    try {
+      localStorage.setItem(LEADERBOARD_CACHE_KEY, JSON.stringify(Array.isArray(entries) ? entries : []));
+    } catch {}
+  }
+
+  async function fetchSecRetLeaderboard() {
+    const url = getGasUrl();
+    if (!url) return loadCachedLeaderboard();
+    try {
+      const sep = url.includes('?') ? '&' : '?';
+      const res = await fetch(`${url}${sep}action=secret_leaderboard&limit=15&_=${Date.now()}`);
+      const data = await res.json();
+      if (data && data.status === 'success' && Array.isArray(data.entries)) {
+        saveCachedLeaderboard(data.entries);
+        return data.entries;
+      }
+    } catch {}
+    return loadCachedLeaderboard();
+  }
+
+  async function submitSecRetLeaderboardScore(payload) {
+    const url = getGasUrl();
+    if (!url) return null;
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({
+        action: 'submit_secret_score',
+        ...payload
+      })
+    });
+    const data = await res.json();
+    if (data && data.status === 'success' && Array.isArray(data.entries)) {
+      saveCachedLeaderboard(data.entries);
+    }
+    return data;
+  }
+
   function getMaxHp(st) {
     return Math.max(20, Math.round(st.baseMaxHp * st.multHp));
   }
@@ -245,7 +324,7 @@
       kills: 0,
       x: startX,
       y: startY,
-      lastAction: 'move', // 'idle' | 'move'
+      lastAction: 'move',
       baseMaxHp: 100,
       baseAtk: 14,
       baseArmor: 2,
@@ -261,8 +340,9 @@
       choiceQueue: [],
       pendingChoices: null,
       pickedHistory: [],
+      scoreSubmittedForRun: false,
       attacks: {
-        rook: 1, // 기본 룩 참격 1개 보유
+        rook: 1,
         bishop: 0,
         knight: 0,
         queen: 0,
@@ -283,7 +363,7 @@
         { sec: 0, x: startX, y: startY, hp: 100, shield: 0 }
       ],
       enemies: [],
-      fxCells: new Map(), // "x,y" -> { color, label, ttl }
+      fxCells: new Map(),
       logs: ['[0s] SEC-RET 기동 완료. 이동할 칸을 선택해 1초를 진행하세요.']
     };
     st.hp = getMaxHp(st);
@@ -318,7 +398,6 @@
       }
     };
 
-    // 기본 8방향 인접 이동
     for (let dy = -1; dy <= 1; dy++) {
       for (let dx = -1; dx <= 1; dx++) {
         if (dx === 0 && dy === 0) continue;
@@ -326,7 +405,6 @@
       }
     }
 
-    // 직선·대각선 활주(2~3칸)
     const dashSteps = st.moveModes.dashRange > 0 ? Math.min(3, 1 + st.moveModes.dashRange) : 0;
     if (dashSteps >= 2) {
       const dirs = [
@@ -344,7 +422,6 @@
       }
     }
 
-    // 나이트(L자) 도약 이동
     if (st.moveModes.knight > 0) {
       const jumps = [
         [2, 1], [2, -1], [-2, 1], [-2, -1],
@@ -493,13 +570,11 @@
       markFx(st, st.x, st.y, '#ff4757', `-${dmg}`);
     }
 
-    // 가시 톱니 반사 피해
     if (st.defenses.thorn > 0 && fromEnemy && fromEnemy.hp > 0) {
       const thornDmg = Math.max(4, Math.round(getAtk(st) * 0.45 * st.defenses.thorn));
       damageEnemy(st, fromEnemy, thornDmg, '#a29bfe', `THN ${thornDmg}`);
     }
 
-    // 3초 전 귀환(3S RETURN) 발동 판정
     if (st.hp <= 0 && st.defenses.return3s > 0 && st.returnCooldown <= 0) {
       const snapIdx = Math.max(0, st.history.length - 1 - 3);
       const snap = st.history[snapIdx] || st.history[0];
@@ -530,7 +605,6 @@
       [1, 2], [1, -2], [-1, 2], [-1, -2]
     ];
 
-    // 1) 룩(Rook): 4방향 직선 참격
     if (st.attacks.rook > 0) {
       const dmg = Math.round(baseAtk * (0.85 + (st.attacks.rook - 1) * 0.35));
       for (const [dx, dy] of dirs4) {
@@ -545,7 +619,6 @@
       }
     }
 
-    // 2) 비숍(Bishop): 4개 대각선 프리즘
     if (st.attacks.bishop > 0) {
       const dmg = Math.round(baseAtk * (0.9 + (st.attacks.bishop - 1) * 0.35));
       for (const [dx, dy] of diag4) {
@@ -560,7 +633,6 @@
       }
     }
 
-    // 3) 나이트(Knight): L자 충격파
     if (st.attacks.knight > 0) {
       const dmg = Math.round(baseAtk * (1.1 + (st.attacks.knight - 1) * 0.4));
       for (const [dx, dy] of knight8) {
@@ -573,7 +645,6 @@
       }
     }
 
-    // 4) 퀸(Queen): 2초마다 8방향 왕관파
     if (st.attacks.queen > 0 && st.sec % 2 === 0) {
       const dmg = Math.round(baseAtk * (1.15 + (st.attacks.queen - 1) * 0.4));
       for (const [dx, dy] of [...dirs4, ...diag4]) {
@@ -585,7 +656,6 @@
       }
     }
 
-    // 5) RET 잔상 공명(2초 전 위치 잔상에서 4방향 타격)
     if (st.attacks.retEcho > 0) {
       const echoSnap = st.history[Math.max(0, st.history.length - 1 - 2)];
       if (echoSnap) {
@@ -601,7 +671,6 @@
       }
     }
 
-    // 6) RET 역행 펄스(3초마다 주변 1칸 적 밀어내기 + 피해)
     if (st.attacks.retWave > 0 && st.sec % 3 === 0) {
       const waveDmg = Math.round(baseAtk * st.multRet * (1.0 + (st.attacks.retWave - 1) * 0.4));
       for (const [dx, dy] of [...dirs4, ...diag4]) {
@@ -645,7 +714,6 @@
       const dy = st.y - e.y;
       const dist = Math.max(Math.abs(dx), Math.abs(dy));
 
-      // 인접(1칸 이내) 시 공격
       if (dist <= 1) {
         applyDamageToHero(st, e.atk, e);
         if (st.status === 'gameover') return;
@@ -675,7 +743,6 @@
       }
     }
 
-    // 스폰 주기: 초반 2초마다, 이후 1초마다 적 추가
     const aliveCount = st.enemies.filter(e => e.hp > 0).length;
     const maxCap = Math.min(14, 5 + Math.floor(st.level / 2));
     if (aliveCount < maxCap && (st.sec % 2 === 1 || st.level >= 5)) {
@@ -694,6 +761,8 @@
     };
 
     let state = createInitialState();
+    let leaderboard = loadCachedLeaderboard();
+    let lbStatusMsg = '';
     let busyTurn = false;
     let timers = [];
     let destroyed = false;
@@ -716,6 +785,50 @@
       destroyed = true;
       clearTimers();
     });
+
+    async function refreshLeaderboard(forcePaint = true) {
+      const list = await fetchSecRetLeaderboard();
+      if (destroyed) return;
+      leaderboard = list;
+      if (forcePaint) paint();
+    }
+
+    async function submitScoreNow(playerNameInput = '') {
+      const playerName = String(playerNameInput || getCurrentPlayerName() || '공용').trim().slice(0, 20) || '공용';
+      const score = computeScore(state);
+      lbStatusMsg = '리더보드 등록 중...';
+      paint();
+
+      try {
+        const res = await submitSecRetLeaderboardScore({
+          player: playerName,
+          score,
+          wave: Math.max(1, Math.floor(state.sec / 5) + 1),
+          turns: state.sec,
+          mode: `Lv.${state.level} / ${state.kills}킬`,
+          note: state.pickedHistory.slice(-2).join(', ')
+        });
+        if (destroyed) return;
+        if (res && res.status === 'success') {
+          state.scoreSubmittedForRun = true;
+          if (Array.isArray(res.entries)) leaderboard = res.entries;
+          lbStatusMsg = res.rank ? `등록 완료! 현재 ${res.rank}위 (${score}점)` : `등록 완료! (${score}점)`;
+        } else {
+          lbStatusMsg = (res && res.message) || '리더보드 등록에 실패했습니다.';
+        }
+      } catch {
+        lbStatusMsg = '네트워크 오류로 리더보드에 등록하지 못했습니다.';
+      }
+      paint();
+    }
+
+    function maybeAutoSubmitRunEnd() {
+      if (state.scoreSubmittedForRun) return;
+      if (state.status !== 'gameover' && state.status !== 'victory') return;
+      if (state.sec <= 0 && state.kills <= 0) return;
+      state.scoreSubmittedForRun = true;
+      submitScoreNow();
+    }
 
     const jumpApi = {
       gainLevels(n, allowChoiceTrigger) {
@@ -746,7 +859,6 @@
       clearTimers();
       state.fxCells.clear();
 
-      // Step 1 (+1 SEC): 이동 및 시간 경과
       state.sec += 1;
       state.x = chosen.x;
       state.y = chosen.y;
@@ -771,17 +883,16 @@
       if (typeof playTone === 'function') playTone('click');
       paint();
 
-      // Step 2 (+340ms): 체스 공격 및 RET 잔상 발동
       schedule(() => {
         if (state.status === 'gameover') {
           busyTurn = false;
+          maybeAutoSubmitRunEnd();
           paint();
           return;
         }
         runAttacksForTurn(state, playTone);
         paint();
 
-        // Step 3 (+680ms): 적 1초 이동·공격·스폰 및 레벨 분기점 판정
         schedule(() => {
           if (state.status !== 'gameover') {
             stepEnemiesOneSec(state);
@@ -792,6 +903,7 @@
           }
           flushChoiceQueue(state);
           busyTurn = false;
+          maybeAutoSubmitRunEnd();
           paint();
         }, STEP_MS);
       }, STEP_MS);
@@ -826,9 +938,42 @@
     function restartGame() {
       clearTimers();
       busyTurn = false;
+      lbStatusMsg = '';
       state = createInitialState();
       if (typeof playTone === 'function') playTone('click');
       paint();
+    }
+
+    function renderLeaderboardPanel(st) {
+      const curScore = computeScore(st);
+      const topRows = (Array.isArray(leaderboard) ? leaderboard : []).slice(0, 8);
+
+      return `
+        <div class="sunken-box" style="margin-top:10px;padding:8px;background:#ffffff;font-size:0.74rem;">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:6px;border-bottom:1px solid #808080;padding-bottom:4px;">
+            <strong style="color:#000080;">SEC-RET 리더보드 (현재 점수: ${curScore}점)</strong>
+            <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;">
+              <input type="text" id="secret-player-input" value="${esc(getCurrentPlayerName())}" maxlength="20" placeholder="닉네임" style="width:88px;padding:2px 5px;font-size:0.72rem;border:1.5px solid #111;" />
+              <button type="button" class="btn95 sm green" id="secret-submit-score-btn">점수 등록</button>
+              <button type="button" class="btn95 sm" id="secret-refresh-lb-btn">새로고침</button>
+            </div>
+          </div>
+          ${lbStatusMsg ? `<div style="margin-bottom:6px;font-size:0.71rem;font-weight:800;color:#000080;">${esc(lbStatusMsg)}</div>` : ''}
+          ${topRows.length === 0
+            ? `<div style="padding:10px;text-align:center;color:#555;">등록된 리더보드 기록이 없습니다.</div>`
+            : `
+              <div style="max-height:140px;overflow-y:auto;">
+                ${topRows.map((row, idx) => `
+                  <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;padding:4px 6px;border-bottom:1px solid #e5e5e5;font-family:var(--font-mono,Consolas,monospace);font-size:0.71rem;">
+                    <span><strong>#${idx + 1} ${esc(row.player || '익명')}</strong> · Lv.${esc(row.mode || '-')} · ${esc(row.turns ?? 0)}s</span>
+                    <strong style="color:#b30000;">${esc(row.score ?? 0)}점</strong>
+                  </div>
+                `).join('')}
+              </div>
+            `
+          }
+        </div>
+      `;
     }
 
     function renderAbilitySummaryBar(st) {
@@ -933,7 +1078,7 @@
           <div class="sunken-box gp-anim-pop" style="margin-top:10px;padding:10px;background:#ffd1d6;border:2px solid #111;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
             <div>
               <strong style="font-size:0.86rem;">GAME OVER — ${state.sec}초 생존 / Lv.${state.level}</strong>
-              <div style="font-size:0.75rem;">처치 ${state.kills}기 · 다시 시작해 30레벨에 도전하세요.</div>
+              <div style="font-size:0.75rem;">처치 ${state.kills}기 · 점수 ${computeScore(state)}점 · 다시 시작해 30레벨에 도전하세요.</div>
             </div>
             <button type="button" class="btn95 yellow sm" id="secret-restart-btn">새 게임 시작</button>
           </div>
@@ -943,7 +1088,7 @@
           <div class="sunken-box gp-anim-pop" style="margin-top:10px;padding:10px;background:#d8ffdc;border:2px solid #111;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
             <div>
               <strong style="font-size:0.86rem;">${icons.trophy || ''} SEC-RET 클리어 — ${state.sec}초 / Lv.${state.level}</strong>
-              <div style="font-size:0.75rem;">계속 이동하여 기록을 늘리거나 새 게임을 시작할 수 있습니다.</div>
+              <div style="font-size:0.75rem;">점수 ${computeScore(state)}점 · 계속 이동하여 기록을 늘리거나 새 게임을 시작할 수 있습니다.</div>
             </div>
             <button type="button" class="btn95 yellow sm" id="secret-restart-btn">새 게임 시작</button>
           </div>
@@ -1024,6 +1169,7 @@
             </span>
             <span class="tag-mini">LV.${state.level}/${MAX_LEVEL}</span>
             <span class="tag-mini">DICE ${state.diceLeft}/${MAX_DICE}</span>
+            <span class="tag-mini">PTS ${computeScore(state)}</span>
           </div>
           <button type="button" class="btn95 sm" id="secret-reset-top">초기화</button>
         </div>
@@ -1057,8 +1203,8 @@
           <div class="sunken-box" style="padding:8px;background:#fff;font-size:0.73rem;">
             <div style="font-weight:900;margin-bottom:5px;border-bottom:1px solid #808080;padding-bottom:3px;">턴 조작 안내</div>
             <div style="margin-bottom:6px;line-height:1.4;">
-              • <strong>초록/하늘/주황 칸</strong> 클릭 시 <strong>+1초</strong> 진행<br>
-              • 이동 칸 선택 &amp; 분기점 능력 선택만 가능
+- <strong>초록/하늘/주황 칸</strong> 클릭 시 <strong>+1초</strong> 진행<br>
+- 이동 칸 선택 &amp; 분기점 능력 선택만 가능
             </div>
             <div style="font-weight:900;margin-bottom:4px;border-bottom:1px solid #808080;padding-bottom:3px;">초시계 로그</div>
             <div style="display:flex;flex-direction:column;gap:3px;font-family:var(--font-mono,Consolas,monospace);font-size:0.69rem;max-height:165px;overflow-y:auto;">
@@ -1070,6 +1216,7 @@
         ${renderChoiceOverlay(state)}
         ${bannerHtml}
         ${renderAbilitySummaryBar(state)}
+        ${renderLeaderboardPanel(state)}
       `;
 
       stage.querySelectorAll('[data-mx][data-my]').forEach(btn => {
@@ -1095,9 +1242,32 @@
 
       const resetTopBtn = stage.querySelector('#secret-reset-top');
       if (resetTopBtn) resetTopBtn.addEventListener('click', restartGame);
+
+      const submitScoreBtn = stage.querySelector('#secret-submit-score-btn');
+      if (submitScoreBtn) {
+        submitScoreBtn.addEventListener('click', () => {
+          const inputEl = stage.querySelector('#secret-player-input');
+          submitScoreNow(inputEl ? inputEl.value : '');
+        });
+      }
+
+      const refreshLbBtn = stage.querySelector('#secret-refresh-lb-btn');
+      if (refreshLbBtn) {
+        refreshLbBtn.addEventListener('click', () => {
+          lbStatusMsg = '리더보드 갱신 중...';
+          paint();
+          refreshLeaderboard(true).then(() => {
+            if (!destroyed) {
+              lbStatusMsg = '';
+              paint();
+            }
+          });
+        });
+      }
     }
 
     paint();
+    refreshLeaderboard(true);
   }
 
   window.GamePackModules.secret = {
