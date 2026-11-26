@@ -4,7 +4,7 @@
 
 (function () {
   window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-  window.__MOD_VERSIONS.shellBuilder = 'v2026.11.25-no-top-ascii';
+  window.__MOD_VERSIONS.shellBuilder = 'v2026.11.26-login-dialog-pc-width-fix';
 
   function buildArchiveShellHtml() {
     return `
@@ -56,8 +56,8 @@
     </div>
 
     <!-- 3. 정통 Windows 95 로그온 대화상자 -->
-    <div id="boot-stage-login" class="boot-stage-login" style="display:none;">
-      <div class="win95-login-dialog" role="dialog" aria-labelledby="win95-logon-title">
+    <div id="boot-stage-login" class="boot-stage-login" style="display:none;width:100%;height:100%;align-items:center;justify-content:center;padding:12px;box-sizing:border-box;">
+      <div class="win95-login-dialog" role="dialog" aria-labelledby="win95-logon-title" style="width:min(460px, 100%);max-width:460px;margin:0 auto;box-sizing:border-box;">
         <div class="win95-logon-titlebar">
           <div class="win95-logon-title-left">
             <svg width="14" height="14" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true">
