@@ -370,3 +370,26 @@ body.boot-locked { overflow: hidden !important; }
 
 #bios-boot-screen:has(input), #boot-overlay:has(input), .bios-boot-screen:has(input) { background: #008080 !important; width: 100vw !important; height: 100vh !important; }
 #bios-boot-screen:has(input) > div, #boot-overlay:has(input) > div, .bios-boot-screen:has(input) > div { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: transparent !important; }
+/* 메뉴바(30px) 바로 아래에 붙도록 여백 최소화 */
+.desktop-workspace {
+  top: 30px;
+  height: calc(100dvh - 68px);
+  padding-top: 2px; /* 기존 10px에서 축소 */
+}
+
+.floating-win {
+  /* 기본 상단 오프셋을 0으로 두어 워크스페이스 최상단(메뉴바 직하단)까지 올라갈 수 있게 함 */
+  top: 0px;
+}
+
+.floating-win.win-maximized {
+  top: 30px !important;
+  max-height: calc(100dvh - 68px) !important;
+}
+
+@media (max-width: 768px) {
+  .floating-win {
+    top: 32px !important; /* 기존 38px에서 축소 */
+    max-height: calc(100dvh - 70px);
+  }
+}
