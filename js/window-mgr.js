@@ -1,6 +1,6 @@
 // ============================================================
 // MY-ARCHIVE 95 OS — Pure Window Manager & Desktop Shell UI
-// (Multi-Window Focus/Drag, 6-Theme Engine, CRT, Widgets, Task Manager, Portfolio, SEC-RET & About/License)
+// (Multi-Window Focus/Drag, 6-Theme Engine, CRT, Widgets, Task Manager, Portfolio, SEC-RET, Utilities & About/License)
 // ============================================================
 
 window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
@@ -825,6 +825,43 @@ window.addEventListener('window:closed', ev => {
 // ============================================================
 // 3. 바탕화면 위젯·정보 아이콘 자동 생성 & 상단 메뉴 항목 연결
 // ============================================================
+function getRecycleBinIconSvg(hasItems) {
+  return hasItems
+    ? `
+      <svg width="32" height="32" viewBox="0 0 32 32" shape-rendering="crispEdges" aria-hidden="true">
+        <rect x="8" y="4" width="16" height="3" fill="#c0c0c0" stroke="#111111" stroke-width="1.5"/>
+        <rect x="13" y="2" width="6" height="2" fill="#808080" stroke="#111111" stroke-width="1"/>
+        <polygon points="7,7 25,7 23,28 9,28" fill="#e0e0e0" stroke="#111111" stroke-width="2"/>
+        <rect x="10" y="5" width="5" height="4" fill="#ffe600" stroke="#111111" stroke-width="1"/>
+        <rect x="16" y="4" width="6" height="5" fill="#48dbfb" stroke="#111111" stroke-width="1"/>
+        <rect x="12" y="11" width="2" height="13" fill="#666666"/>
+        <rect x="15" y="11" width="2" height="13" fill="#666666"/>
+        <rect x="18" y="11" width="2" height="13" fill="#666666"/>
+      </svg>`
+    : `
+      <svg width="32" height="32" viewBox="0 0 32 32" shape-rendering="crispEdges" aria-hidden="true">
+        <rect x="8" y="5" width="16" height="3" fill="#c0c0c0" stroke="#111111" stroke-width="1.5"/>
+        <rect x="13" y="3" width="6" height="2" fill="#808080" stroke="#111111" stroke-width="1"/>
+        <polygon points="7,8 25,8 23,28 9,28" fill="#e0e0e0" stroke="#111111" stroke-width="2"/>
+        <rect x="12" y="11" width="2" height="13" fill="#808080"/>
+        <rect x="15" y="11" width="2" height="13" fill="#808080"/>
+        <rect x="18" y="11" width="2" height="13" fill="#808080"/>
+      </svg>`;
+}
+
+function refreshRecycleBinDesktopIcon() {
+  const iconEl = document.getElementById('icon-recycle-bin');
+  if (!iconEl) return;
+  const items = window.RecycleBinApp?.getItems?.() || [];
+  const count = items.length;
+  const artEl = iconEl.querySelector('.desktop-icon-art');
+  const labelEl = iconEl.querySelector('.desktop-icon-label');
+  if (artEl) artEl.innerHTML = getRecycleBinIconSvg(count > 0);
+  if (labelEl) labelEl.textContent = count > 0 ? `RECYCLE.BIN (${count})` : 'RECYCLE.BIN';
+}
+
+window.addEventListener('recyclebin:changed', refreshRecycleBinDesktopIcon);
+
 function injectDesktopWidgetIcons() {
   const sampleIcon =
     document.getElementById('icon-jukebox') ||
@@ -847,6 +884,8 @@ function injectDesktopWidgetIcons() {
         <path fill="#1e90ff" d="M5 7h6v5H5V7z"/>
         <path fill="#00f5d4" d="M4 13h3v1H4v-1zm5 0h3v1H9v-1z"/>
       </svg>`;
+
+  const binInitialCount = (window.RecycleBinApp?.getItems?.() || []).length;
 
   const widgetDefs = [
     {
@@ -906,6 +945,49 @@ function injectDesktopWidgetIcons() {
       }
     },
     {
+      id: 'icon-print95',
+      label: 'PRINT95.EXE',
+      title: 'PRINT95.EXE — 도트 매트릭스·A4·인덱스 카드 감상 기록 인쇄 미리보기',
+      svg: `
+        <svg width="32" height="32" viewBox="0 0 32 32" shape-rendering="crispEdges" aria-hidden="true">
+          <rect x="8" y="3" width="16" height="8" fill="#ffffff" stroke="#111111" stroke-width="2"/>
+          <rect x="4" y="10" width="24" height="12" fill="#c0c0c0" stroke="#111111" stroke-width="2"/>
+          <rect x="21" y="13" width="3" height="3" fill="#00cc44"/>
+          <rect x="8" y="18" width="16" height="11" fill="#fffef7" stroke="#111111" stroke-width="2"/>
+          <rect x="11" y="21" width="10" height="1.5" fill="#111111"/>
+          <rect x="11" y="24" width="7" height="1.5" fill="#111111"/>
+        </svg>`,
+      onOpen: () => {
+        if (typeof window.openPrint95Window === 'function') window.openPrint95Window();
+      }
+    },
+    {
+      id: 'icon-setup-backup',
+      label: 'SETUP.EXE',
+      title: 'SETUP.EXE — 감상 기록 JSON / CSV / Markdown 데이터 백업 마법사',
+      svg: `
+        <svg width="32" height="32" viewBox="0 0 32 32" shape-rendering="crispEdges" aria-hidden="true">
+          <rect x="4" y="4" width="24" height="24" fill="#008080" stroke="#111111" stroke-width="2"/>
+          <rect x="8" y="4" width="16" height="9" fill="#ffffff" stroke="#111111" stroke-width="1.5"/>
+          <rect x="17" y="6" width="4" height="5" fill="#111111"/>
+          <rect x="7" y="16" width="18" height="10" fill="#ffe600" stroke="#111111" stroke-width="1.5"/>
+          <rect x="10" y="19" width="12" height="2" fill="#111111"/>
+          <rect x="10" y="22" width="8" height="2" fill="#000080"/>
+        </svg>`,
+      onOpen: () => {
+        if (typeof window.openSetupBackupWindow === 'function') window.openSetupBackupWindow();
+      }
+    },
+    {
+      id: 'icon-recycle-bin',
+      label: binInitialCount > 0 ? `RECYCLE.BIN (${binInitialCount})` : 'RECYCLE.BIN',
+      title: 'RECYCLE.BIN — 삭제한 감상 기록 임시 보관 및 복원·영구 비우기',
+      svg: getRecycleBinIconSvg(binInitialCount > 0),
+      onOpen: () => {
+        if (typeof window.openRecycleBinWindow === 'function') window.openRecycleBinWindow();
+      }
+    },
+    {
       id: 'icon-about-license',
       label: '제작자 · 라이선스',
       svg: `
@@ -954,44 +1036,75 @@ function injectAboutMenuItems() {
     existingMenuBtn.addEventListener('click', () => openAboutAndLicenseWindow('creator'));
   }
 
-  if (!document.getElementById('mnu-open-about-license')) {
-    const dropdownLists = document.querySelectorAll(
-      '.top-menubar .menu-dropdown, .menubar .menu-dropdown, .win-menubar .menu-dropdown, .menu-list, [role="menu"]'
-    );
-    const targetDropdown = dropdownLists.length ? dropdownLists[dropdownLists.length - 1] : null;
+  const extraMenuEntries = [
+    {
+      mnuId: 'mnu-open-print95',
+      smId: 'sm-print95',
+      label: 'PRINT95.EXE (인쇄 미리보기)...',
+      action: () => window.openPrint95Window?.()
+    },
+    {
+      mnuId: 'mnu-open-setup-backup',
+      smId: 'sm-setup-backup',
+      label: 'SETUP.EXE (데이터 백업 마법사)...',
+      action: () => window.openSetupBackupWindow?.()
+    },
+    {
+      mnuId: 'mnu-open-recycle-bin',
+      smId: 'sm-recycle-bin',
+      label: 'RECYCLE.BIN (휴지통)...',
+      action: () => window.openRecycleBinWindow?.()
+    },
+    {
+      mnuId: 'mnu-open-about-license',
+      smId: 'sm-about-license',
+      label: '제작자 및 라이선스 정보...',
+      action: () => openAboutAndLicenseWindow('creator')
+    }
+  ];
 
-    if (targetDropdown) {
-      const sampleItem = targetDropdown.querySelector('button, a, .menu-item, li');
-      const sep = document.createElement('div');
-      sep.style.cssText = 'height:1px;background:#808080;border-bottom:1px solid #ffffff;margin:4px 2px;';
-      targetDropdown.appendChild(sep);
+  const dropdownLists = document.querySelectorAll(
+    '.top-menubar .menu-dropdown, .menubar .menu-dropdown, .win-menubar .menu-dropdown, .menu-list, [role="menu"]'
+  );
+  const targetDropdown = dropdownLists.length ? dropdownLists[dropdownLists.length - 1] : null;
 
+  if (targetDropdown && !document.getElementById('mnu-open-about-license')) {
+    const sampleItem = targetDropdown.querySelector('button, a, .menu-item, li');
+    const sep = document.createElement('div');
+    sep.style.cssText = 'height:1px;background:#808080;border-bottom:1px solid #ffffff;margin:4px 2px;';
+    targetDropdown.appendChild(sep);
+
+    extraMenuEntries.forEach(entry => {
+      if (document.getElementById(entry.mnuId)) return;
       const mnuBtn = document.createElement(sampleItem && sampleItem.tagName.toLowerCase() === 'a' ? 'a' : 'button');
       if (mnuBtn.tagName.toLowerCase() === 'button') mnuBtn.type = 'button';
-      if (mnuBtn.tagName.toLowerCase() === 'a') mnuBtn.href = '#about-license';
-      mnuBtn.id = 'mnu-open-about-license';
+      if (mnuBtn.tagName.toLowerCase() === 'a') mnuBtn.href = `#${entry.mnuId}`;
+      mnuBtn.id = entry.mnuId;
       if (sampleItem && sampleItem.className) mnuBtn.className = sampleItem.className;
-      mnuBtn.textContent = '제작자 및 라이선스 정보...';
+      mnuBtn.textContent = entry.label;
       mnuBtn.addEventListener('click', e => {
         e.preventDefault();
-        openAboutAndLicenseWindow('creator');
+        entry.action();
       });
       targetDropdown.appendChild(mnuBtn);
-    }
+    });
   }
 
   const startMenuList = document.querySelector('#start-menu .start-menu-items, #start-menu-list, .start-menu-list');
-  if (startMenuList && !document.getElementById('sm-about-license')) {
-    const smBtn = document.createElement('button');
-    smBtn.type = 'button';
-    smBtn.id = 'sm-about-license';
-    smBtn.className = 'start-menu-item';
-    smBtn.textContent = '제작자 및 라이선스 정보';
-    smBtn.addEventListener('click', () => {
-      document.getElementById('start-menu')?.classList.add('hidden');
-      openAboutAndLicenseWindow('creator');
+  if (startMenuList) {
+    extraMenuEntries.forEach(entry => {
+      if (document.getElementById(entry.smId)) return;
+      const smBtn = document.createElement('button');
+      smBtn.type = 'button';
+      smBtn.id = entry.smId;
+      smBtn.className = 'start-menu-item';
+      smBtn.textContent = entry.label.replace(/\.\.\.$/, '');
+      smBtn.addEventListener('click', () => {
+        document.getElementById('start-menu')?.classList.add('hidden');
+        entry.action();
+      });
+      startMenuList.appendChild(smBtn);
     });
-    startMenuList.appendChild(smBtn);
   }
 }
 
@@ -1152,6 +1265,31 @@ document.addEventListener('DOMContentLoaded', () => {
   bindLauncher(['icon-jukebox', 'mnu-open-jukebox', 'tray-jukebox-mini'], 'win-jukebox');
   bindLauncher(['icon-visualizer', 'mnu-open-visualizer'], 'win-visualizer');
   bindLauncher(['icon-gamepack', 'mnu-open-gamepack'], 'win-gamepack');
+
+  // 유틸리티 런처 바인딩 (PRINT95.EXE, RECYCLE.BIN, SETUP.EXE)
+  ['mnu-open-print95', 'sm-print95'].forEach(sel => {
+    const el = document.getElementById(sel);
+    if (el && !el.dataset.bound) {
+      el.dataset.bound = 'true';
+      el.addEventListener('click', () => window.openPrint95Window?.());
+    }
+  });
+
+  ['mnu-open-recycle-bin', 'sm-recycle-bin'].forEach(sel => {
+    const el = document.getElementById(sel);
+    if (el && !el.dataset.bound) {
+      el.dataset.bound = 'true';
+      el.addEventListener('click', () => window.openRecycleBinWindow?.());
+    }
+  });
+
+  ['mnu-open-setup-backup', 'sm-setup-backup'].forEach(sel => {
+    const el = document.getElementById(sel);
+    if (el && !el.dataset.bound) {
+      el.dataset.bound = 'true';
+      el.addEventListener('click', () => window.openSetupBackupWindow?.());
+    }
+  });
 
   // 위젯 런처 바인딩 (CD Player, Mood Music AI, Clock 95, Calendar 95 + 작업표시줄 시계 클릭 연동)
   ['mnu-open-cdplayer', 'sm-cdplayer'].forEach(sel => {
