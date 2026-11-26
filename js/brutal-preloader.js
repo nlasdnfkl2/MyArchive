@@ -26,12 +26,12 @@
     ['js/config.js', 1.8],
     ['js/boot-wait.js', 1.6],
     ['js/boot-controller.js', 1.4],
-    ['game/solitaire.js', 2.2],
-    ['game/minesweeper.js', 1.8],
-    ['game/yut.js', 2.6],
-    ['game/hilo.js', 1.6],
-    ['game/sec-ret-sprites.js', 1.4],
-    ['game/sec-ret.js', 1.8],
+    ['js/game/solitaire.js', 2.2],
+    ['js/game/minesweeper.js', 1.8],
+    ['js/game/yut.js', 2.6],
+    ['js/game/hilo.js', 1.6],
+    ['js/game/sec-ret-sprites.js', 1.4],
+    ['js/game/sec-ret.js', 1.8],
     ['js/gamepack.js', 1.6]
   ];
 
