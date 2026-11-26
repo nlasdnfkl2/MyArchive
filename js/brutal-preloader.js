@@ -4,32 +4,34 @@
 
 (function () {
   window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
-  window.__MOD_VERSIONS.brutalPreloader = 'v2026.11.26-check-filename-only';
+  window.__MOD_VERSIONS.brutalPreloader = 'v2026.11.26-fast-path-labels';
 
-  const TARGET_AVG_MS = 4500, HOLD_MS = 1000, WAIT_SETUP_KEY = 'myarchive95_setup_v1';
+  const TARGET_AVG_MS = 3500, HOLD_MS = 1000, WAIT_SETUP_KEY = 'myarchive95_setup_v1';
   const LOADER_ID = 'brutal-js-preloader', STYLE_ID = 'brutal-js-preloader-style';
   const BINARY_AUDIO_URL = './test.txt';
   const START_TS = performance.now();
 
   const FILE_WEIGHTS = [
+    ['css/style.css', 2.4],
     ['js/archive-app.js', 6.8],
     ['js/browser-app.js', 4.6],
     ['js/community-app.js', 4.2],
     ['js/boot-animation.js', 3.4],
     ['js/window-mgr.js', 3.2],
-    ['js/game-yut.js', 2.6],
-    ['js/game-solitaire.js', 2.2],
     ['js/shell-builder.js', 2.8],
     ['js/boot-login.js', 2.6],
     ['js/visualizer.js', 2.4],
     ['js/win95-widgets.js', 2.2],
     ['js/jukebox.js', 2.0],
-    ['js/game-minesweeper.js', 1.8],
-    ['js/game-hilo.js', 1.6],
-    ['js/gamepack.js', 1.6],
     ['js/config.js', 1.8],
     ['js/boot-wait.js', 1.6],
-    ['js/boot-controller.js', 1.4]
+    ['js/boot-controller.js', 1.4],
+    ['game/solitaire.js', 2.2],
+    ['game/minesweeper.js', 1.8],
+    ['game/yut.js', 2.6],
+    ['game/hilo.js', 1.6],
+    ['game/sec-ret.js', 1.8],
+    ['js/gamepack.js', 1.6]
   ];
 
   let lastKey = '', bannerShown = false, powerOffQueued = false, done = false, started = false;
@@ -76,6 +78,15 @@
   }
 
   window.__stopWaitMusicForBios = stopPreloaderAndWaitAudioForBios;
+
+  // 경로 폴더명에 맞춘 로딩 라벨 생성 (예: game/sec-ret.js -> [GAME] game/sec-ret.js)
+  function formatModuleLabel(filePath) {
+    const clean = String(filePath || '').replace(/^\.\//, '');
+    if (!clean) return 'MODULE';
+    const parts = clean.split('/');
+    const folder = parts.length > 1 ? parts[0].toUpperCase() : 'ROOT';
+    return `[${folder}] ${clean}`;
+  }
 
   // Base64 문자열 또는 2진수(0/1) 문자열을 모두 Uint8Array로 변환
   function parseTextToBytes(rawText) {
@@ -455,7 +466,7 @@
     const raw = entries.map(([, w]) => w * (0.75 + Math.random() * 0.5));
     const sum = raw.reduce((a, b) => a + b, 0) || 1;
     const totalTarget = TARGET_AVG_MS * (0.92 + Math.random() * 0.16);
-    return raw.map((v) => Math.max(110, Math.round((v / sum) * totalTarget)));
+    return raw.map((v) => Math.max(70, Math.round((v / sum) * totalTarget)));
   }
 
   function estimateTotalBootMs(durations) {
@@ -512,7 +523,7 @@
   }
 
   const buildTicker = (files) => {
-    const line = `MY-ARCHIVE 95 WIN95 PRELOADER ★ TEST.TXT BINARY REWIND ★ ${files.join(' /// ')} ★ `;
+    const line = `MY-ARCHIVE 95 WIN95 PRELOADER ★ TEST.TXT BINARY REWIND ★ ${files.map(formatModuleLabel).join(' /// ')} ★ `;
     return `<span class="brutal-ticker-msg">${line}</span><span class="brutal-ticker-msg">${line}</span>`;
   };
 
@@ -544,7 +555,7 @@
             <div class="brutal-complete-stamp" id="brutal-complete-stamp">★ WIN95 SYSTEM MODULES READY — LAUNCHING MY-ARCHIVE 95 ★</div>
           </div>
           <div class="brutal-file-list" id="brutal-loader-list">
-            ${files.map((f, i) => `<div class="brutal-file-item" data-file-idx="${i}" title="${f}">${f}</div>`).join('')}
+            ${files.map((f, i) => `<div class="brutal-file-item" data-file-idx="${i}" title="${f}">${formatModuleLabel(f)}</div>`).join('')}
           </div>
         </div>
       </div>
@@ -579,7 +590,7 @@
     if (file && key !== lastKey) {
       lastKey = key;
       if (bubbleEl) {
-        bubbleEl.textContent = `✓ [${idx + 1}/${total}] ${file}`;
+        bubbleEl.textContent = `✓ [${idx + 1}/${total}] ${formatModuleLabel(file)}`;
         reanimate(bubbleEl, 'is-popping');
       }
       if (cardEl && pct < 100) reanimate(cardEl, 'is-punching');
@@ -613,7 +624,7 @@
     if (badge) { badge.textContent = 'WIN95 READY'; badge.classList.add('is-complete'); }
     if (pct) { pct.textContent = '100%'; pct.classList.add('is-complete'); }
     if (title) title.textContent = 'WIN95 MODULES LOADED — READY!';
-    if (bubble) { bubble.textContent = `✓ ${count} WIN95 MODULES LOADED!`; bubble.classList.add('is-complete'); reanimate(bubble, 'is-popping'); }
+    if (bubble) { bubble.textContent = `✓ ${count} MODULES LOADED!`; bubble.classList.add('is-complete'); reanimate(bubble, 'is-popping'); }
     document.getElementById('brutal-complete-stamp')?.classList.add('is-visible');
     const listEl = document.getElementById('brutal-loader-list');
     if (listEl) {
@@ -652,7 +663,8 @@
   function finishSequence(files) {
     if (powerOffQueued || done) return;
     powerOffQueued = true;
-    updateProgress(1, `${files[files.length - 1] || 'WIN95 MODULES'} — LOADED!`, files.length, files.length);
+    const lastLabel = files[files.length - 1] ? formatModuleLabel(files[files.length - 1]) : 'MODULES';
+    updateProgress(1, `${lastLabel} — LOADED!`, files.length, files.length);
     showComplete(files.length);
     setTimeout(powerOffNow, HOLD_MS);
   }
@@ -667,7 +679,7 @@
       if (done || powerOffQueued) return;
       mount(files);
       const file = files[idx] || files[total - 1];
-      const stepMs = durations[idx] || 200;
+      const stepMs = durations[idx] || 120;
       const t0 = performance.now();
 
       const tick = () => {
