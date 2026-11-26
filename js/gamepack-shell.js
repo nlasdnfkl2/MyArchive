@@ -5,7 +5,7 @@
 window.__MOD_VERSIONS = window.__MOD_VERSIONS || {};
 window.__MOD_VERSIONS.gamepack = typeof APP_BUILD_VERSION !== 'undefined'
   ? APP_BUILD_VERSION
-  : 'v2026.11.26-gamepack-shell-modular';
+  : 'v2026.11.26-gamepack-shell';
 
 window.GamePackModules = window.GamePackModules || {};
 
@@ -302,7 +302,7 @@ function launchActiveGame(tabId) {
       setCleanup: setGameCleanup
     });
   } else {
-    stage.innerHTML = `<div style="padding:20px;text-align:center;font-weight:800;">모듈(${esc(tabId)})이 로드되지 않았습니다. 스크립트 포함 순서를 확인하십시오.</div>`;
+    stage.innerHTML = `<div style="padding:20px;text-align:center;font-weight:800;">모듈(${esc(tabId)})이 로드되지 않았습니다.</div>`;
   }
 }
 
