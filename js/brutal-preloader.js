@@ -30,6 +30,7 @@
     ['game/minesweeper.js', 1.8],
     ['game/yut.js', 2.6],
     ['game/hilo.js', 1.6],
+    ['game/sec-ret-sprites.js', 1.4],
     ['game/sec-ret.js', 1.8],
     ['js/gamepack.js', 1.6]
   ];
